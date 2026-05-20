@@ -1,0 +1,80 @@
+\ examples/52-trace-pilot-f2-brain.6th
+\ Pilot F.2 visual trace — brain encoding map (PSH3 direction).
+\
+\ Demo 34 shows the discriminator numerically (waking Φ_PA=80000;
+\ propofol Φ_PA=0) but emits no figure.  The substrate topology —
+\ DMN hub + 7 cortical areas, thalamocortical self-loop — is
+\ invisible.
+\
+\ Two panels:
+\   case=1  waking (thalamocortical loop active)   →  Φ_PA = 80000
+\   case=2  propofol (decoupling)                  →  Φ_PA = 0
+\
+\ Same 7 functional-connectivity edges in both panels.  The single
+\ difference: the red self-arc on the DMN hub.  PSH3 direction
+\ visible at a glance.
+
+use prelude
+use phi
+use dot
+use debug
+
+: snap-f2 ( case-num observer-id -- )
+  "=== SNAPSHOT case=" .
+  swap .
+  "rule=" . "pilot-f2-brain-encoding" .
+  "seed=" . "DMN-hub+7-areas" .
+  "event=" . "event" load .
+  "observer=" . dup .
+  "nodes=" . NODES .
+  "edges=" . EDGES .
+  "out=" . dup OUT .
+  "self-ref=" . dup dup EDGE? .
+  "phi-pa=" . phi-pa .
+  "===" . cr
+  dot-snapshot ;
+
+\ ============================================================
+\ Case 1 — waking (thalamocortical loop active).
+\ ============================================================
+
+MARK "DMN" store
+MARK "n1" store  MARK "n2" store  MARK "n3" store
+MARK "n4" store  MARK "n5" store  MARK "n6" store  MARK "n7" store
+
+"DMN" load "DMN" load EDGE+
+"DMN" load "n1" load EDGE+   "DMN" load "n2" load EDGE+
+"DMN" load "n3" load EDGE+   "DMN" load "n4" load EDGE+
+"DMN" load "n5" load EDGE+   "DMN" load "n6" load EDGE+
+"DMN" load "n7" load EDGE+
+
+"DMN" load phi-pa 80000 assert-eq
+"psh3-waking-thalamocortical-loop" "event" store
+1 "DMN" load snap-f2
+
+RESET
+
+\ ============================================================
+\ Case 2 — propofol (decoupled, no self-loop).
+\ ============================================================
+
+MARK "DMN2" store
+MARK "m1" store  MARK "m2" store  MARK "m3" store
+MARK "m4" store  MARK "m5" store  MARK "m6" store  MARK "m7" store
+
+"DMN2" load "m1" load EDGE+   "DMN2" load "m2" load EDGE+
+"DMN2" load "m3" load EDGE+   "DMN2" load "m4" load EDGE+
+"DMN2" load "m5" load EDGE+   "DMN2" load "m6" load EDGE+
+"DMN2" load "m7" load EDGE+
+
+"DMN2" load phi-pa 0 assert-eq
+"psh3-propofol-decoupled" "event" store
+2 "DMN2" load snap-f2
+
+cr
+"=== Pilot F.2 brain visual trace ===" . cr
+"PSH3 waking (loop):    Φ_PA = 80000" . cr
+"PSH3 propofol (no loop): Φ_PA = 0" . cr
+"Render with: make trace-pilot-f2" . cr
+
+REPORT

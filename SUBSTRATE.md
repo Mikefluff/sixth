@@ -1,7 +1,7 @@
 # Sixth Substrate — Foundational Pointer Architecture
 
 This document accompanies the Sixth substrate implementation in
-`sixth/primitives/substrate.rkt` and the 50 emergence demonstrations
+`sixth/primitives/substrate.rkt` and the 54 emergence demonstrations
 under `examples/`. The goal is *not* to derive physics — it is to
 build the minimum formal artifact in which structures such as
 numbers, time, space, conservation laws, particles, self-reference,
@@ -44,7 +44,7 @@ two tokens (`EDGE+`), or a transformation of those relations
 
 ## What the demos demonstrate
 
-The 50 demonstrations live in `examples/` (file-by-file index in
+The 54 demonstrations live in `examples/` (file-by-file index in
 [`examples/README.md`](./examples/README.md)). Each isolates a
 single derivation chain, organised in thirteen phases:
 
@@ -67,14 +67,14 @@ single derivation chain, organised in thirteen phases:
   `first-distinction`, `re-entry`, `i-not-i`, `first-pointer`,
   `recognition`, `closure-of-not-i`, `shell-formation`)
 
-All 707 assertions pass deterministically. Run the regression in
+All 724 assertions pass deterministically. Run the regression in
 one command:
 
 ```bash
 make verify
 # language tests:    ok
 # substrate tests:   ok
-# examples:          707 / 707 ✓ across 50 demos
+# examples:          724 / 724 ✓ across 54 demos
 # docs build:        ok
 # artifact status:   reproducible
 ```
@@ -168,7 +168,7 @@ minimal, the formal lineage is rich.
 ### ML / contemporary
 
 - **V. Vanchurin, _The world as a neural network_ (2020); _Geometric
-  Learning Dynamics_ (2025, arXiv:2504.14728)** — physics-as-learning-
+  Learning Dynamics_ (2025, arXiv:2544.14728)** — physics-as-learning-
   dynamics. Sixth provides a discrete counterpart on which similar
   emergence arguments can be tested directly.
 
@@ -234,7 +234,7 @@ sufficient for the released demos and can be extended further.
 cd /Users/mikefluff/Documents/Programming/sixt
 raco pkg install --link .          # install the Sixth Racket collection
 
-# the whole regression — all 50 demos, all 707 assertions
+# the whole regression — all 54 demos, all 724 assertions
 make verify
 
 # any single demo

@@ -1,11 +1,11 @@
-# `examples/` — the 50 demonstrations
+# `examples/` — the 54 demonstrations
 
 This directory holds Sixth's reproducible emergence demonstrations.
 Each file is a standalone Sixth program; `raco test
-tests/examples-test.rkt` (or `make verify`) executes all 50 and
-asserts a cumulative 707 ✓ / 0 ✗.
+tests/examples-test.rkt` (or `make verify`) executes all 54 and
+asserts a cumulative 724 ✓ / 0 ✗.
 
-The demos are organised in thirteen phases:
+The demos are organised in fourteen phases:
 
 | Phase | Demos | Asserts | What it shows |
 |-------|-------|---------|---------------|
@@ -22,6 +22,8 @@ The demos are organised in thirteen phases:
 | Foundation visual traces              | 42–46 | 30 | Conway blinker / glider, Rule 110, Rule 90, Rule 184 1D glider — substrate-state-aware DOT (each cell carries `[label="NGET"]`); the renderer colours alive cells red, dead light grey, and reuses a stable layout across animation frames |
 | Atomic-build traces                   | 47–48 | 10 | One snapshot per **primitive operation** — every `MARK` and every `EDGE+` becomes its own frame. Demo 47 builds Pilot D in 76 atomic frames; demo 48 builds the sacred hello world in 7 frames with PA-ontological event labels (`void`, `first-distinction`, `observer-state`, `i-not-i`, `first-pointer`, `re-entry`, `phi-pa-measurement`). Entity-by-entity emergence through `MARK` (distinction) and `EDGE+` (pointer) alone. |
 | PA-ontological decomposition          | 49    |  5 | First shell of Pilot D unfolded as Spencer-Brown / PA v9.0 events — answers the reviewer question "*где различие я / не-я?*" that demo 37 hides inside a single `shell-built` macro. 10 frames: `void → first-distinction → observer-state → re-entry → i-not-i → first-pointer → recognition → second-not-i → closure-of-not-i → shell-formation`. End-state matches demo 37 step 1 exactly (4 nodes, 13 edges, Φ_PA = 40000). |
+| Pilot E visual trace                  | 50    |  9 | Substrate-internal Φ_PA measurement on three observers. Same scope (case 1 vs case 2 both have 5 out-edges) yields Φ_PA=0 without self-loop and Φ_PA=50000 with it — PSH1 self-reference factor visible as the red self-arc on the observer node. |
+| Pilot F visual traces                 | 51–53 |  8 | F.1 transformer encoding (PSH1/PSH2); F.2 brain encoding (PSH3 waking vs propofol); F.4 ant-colony encoding (PSH5 living vs dead). Each is a side-by-side comparison where the SOLE topological difference is the observer self-loop, and Φ_PA flips between concrete values labelled in the panel title. |
 
 The visual-trace pilots emit GraphViz DOT blocks on stdout that the
 companion Python renderer (`code/render_trace.py`) parses into
@@ -311,6 +313,14 @@ make trace-long-epoch CYCLES=2000 SNAP=200
 
 ## Foundation visual traces (42–46)
 
+**Scope.** These five traces are *foundation* demos — they show
+that the substrate hosts Conway's Life and Wolfram CA dynamics
+(substrate ⊇ classical CA). They are sanity checks on the
+substrate's universal-computation claim, **not** substrate-monism
+content. The observer-self-loop / Φ_PA discriminators that PA v9.0
+is about appear in Pilots A–F (demos 21–36) and their visual
+traces (37–41, 49–53).
+
 State-aware DOT (`dot-snapshot-state` from `stdlib/dot.6th`) emits
 each node's NGET as a `[label="N"]` attribute. The renderer parses
 the label and colours alive cells (NGET=1) red, dead cells (NGET=0)
@@ -388,6 +398,60 @@ make forensic-pa-ontological-shell # + JSONL evidence + diff view
 Spencer-Brown / PA v9.0 events.  Every frame is one ontologically
 distinct moment, labelled by the PA-spec event it
 realises.](../docs/figures/pa_ontological_shell.png)
+
+## Pilot E visual trace (50)
+
+Demo 32 verified Φ_PA numerically but emitted no figure.  Pilot E
+is THE substrate-monism load-bearing demo (same 38 primitives BUILD
+and COMPUTE), so it deserves a visible trace.
+
+| Demo | File | ✓ | Property |
+|------|------|---|----------|
+| 50 | `50-trace-pilot-e-phi-pa.6th` | 9 | Three observers × Φ_PA: case 1 non-reflexive scope-5 (Φ=0); case 2 reflexive scope-5 (Φ=50000); case 3 demo-31-shape scope-13 (Φ=130000). PSH1 self-reference discriminator visible. |
+
+```bash
+make trace-pilot-e
+make forensic-pilot-e   # + JSONL + diff view
+```
+
+![Pilot E — substrate-internal Φ_PA measurement.  Same scope (5
+out-edges) yields Φ_PA = 0 without self-loop and Φ_PA = 50000 with
+it.  The self-loop is the substrate's PSH1 self-reference factor,
+visible as the red arc on the observer
+node.](../docs/figures/pilot_e_trace.png)
+
+## Pilot F visual traces — F.1 / F.2 / F.4 (51–53)
+
+Demos 33, 34, 36 each show a PSH discriminator numerically but
+emitted no figure.  The substrate topology — feedforward transformer
+(F.1), DMN-hub brain (F.2), queen-pheromone colony (F.4) — is now
+rendered side-by-side with the PSH-positive and PSH-negative cases.
+
+| Demo | File | ✓ | Property |
+|------|------|---|----------|
+| 51 | `51-trace-pilot-f1-transformer.6th` | 4 | Transformer encoding: 12 attention heads × 4 layers + KV-cache observer self-loop. PSH1 single-pass Φ_PA=0; PSH2 cache-back-edge Φ_PA=40000. |
+| 52 | `52-trace-pilot-f2-brain.6th`       | 2 | Brain encoding: DMN hub + 7 cortical areas. PSH3 waking thalamocortical loop Φ_PA=80000; propofol decoupling Φ_PA=0. |
+| 53 | `53-trace-pilot-f4-colony.6th`      | 2 | Ant-colony encoding: queen chamber + 5 trail junctions + trail triangle. PSH5 living colony (queen-pheromone self-loop) Φ_PA=60000; dead colony Φ_PA=0. |
+
+```bash
+make trace-pilot-f1 trace-pilot-f2 trace-pilot-f4
+make forensic-pilot-f1 forensic-pilot-f2 forensic-pilot-f4
+```
+
+![Pilot F.1 transformer encoding — single-pass vs KV-cache reuse.
+Only difference: the red self-arc representing the cross-step
+observer back-edge that KV-cache reuse implies.  Φ_PA: 0 →
+40000.](../docs/figures/pilot_f1_trace.png)
+
+![Pilot F.2 brain encoding — DMN-hub observer with vs without
+thalamocortical self-loop.  Identical 7 functional-connectivity
+edges; only the loop differs.  Φ_PA: 80000 →
+0.](../docs/figures/pilot_f2_trace.png)
+
+![Pilot F.4 ant-colony encoding — queen observer with vs without
+pheromone self-loop.  Substrate-monism's novel swarm-cognition
+prediction visible without invoking eliminativism or panpsychism.
+Φ_PA: 60000 → 0.](../docs/figures/pilot_f4_trace.png)
 
 ## Forensic trace mode
 
@@ -491,10 +555,10 @@ Register the demo in `tests/examples-test.rkt`:
 ```scheme
 (define expected
   '(...
-    ("50-my-new-demo.6th"           N)))   ; N = expected ✓
+    ("54-my-new-demo.6th"           N)))   ; N = expected ✓
 ```
 
-Update the cumulative gate (currently 707) and `make verify` passes
+Update the cumulative gate (currently 724) and `make verify` passes
 cleanly. To add a visual trace, `use dot` and emit `dot-snapshot`
 calls between substrate operations.
 

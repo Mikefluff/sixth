@@ -180,7 +180,9 @@ def render(snapshots, out_path: Path, title: str | None) -> None:
 _PRIMARY_KEYS = ("step", "shell-count", "cycle", "case", "frame")
 _DELTA_KEYS = ("Δn", "Δe", "Δlive")
 _HEADER_KEYS = ("rule", "seed")
+_PA_KEYS = ("phi-pa", "phi-integ", "phi-bidir", "nsum-O", "target-min", "self-ref")
 _HIDDEN_KEYS = (set(_PRIMARY_KEYS) | set(_DELTA_KEYS) | set(_HEADER_KEYS)
+                | set(_PA_KEYS)
                 | {"event", "observer", "nodes", "edges"})
 
 
@@ -207,11 +209,18 @@ def _panel_title(meta: dict[str, str], idx: int) -> str:
     if deltas:
         line2.append(" ".join(deltas))
 
+    # Pull PA-specific signals (Φ_PA family, NSUM target, self-ref) onto
+    # their own line — these are what makes the panel substrate-monism
+    # readable rather than "yet another graph snapshot".
+    pa_line = [f"{k}={meta[k]}" for k in _PA_KEYS if k in meta]
+
     extras = [f"{k}={v}" for k, v in meta.items() if k not in _HIDDEN_KEYS]
 
     lines = ["  ·  ".join(line1)]
     if line2:
         lines.append("  ·  ".join(line2))
+    if pa_line:
+        lines.append("  ".join(pa_line))
     if extras:
         lines.append(" ".join(extras))
     return "\n".join(lines)
@@ -410,8 +419,17 @@ def _draw_snapshot(ax, meta, graph, idx, fixed_pos=None) -> None:
         return "#d04040" if n == observer_id else "#909090"
 
     node_colors = [_node_colour(n) for n in graph.nodes]
+    # Observer is structurally load-bearing in PA — give it ~2× area so
+    # the figure encodes its role rather than treating it as one node
+    # among many.  Self-loops get extra width because the Spencer-Brown
+    # bootstrap distinction is THE visual marker of substrate-monism.
+    node_sizes = [400 if n == observer_id else 200 for n in graph.nodes]
     edge_colors = [
-        "#a04040" if u == v else "#606060"
+        "#c43030" if u == v else "#606060"
+        for (u, v) in graph.edges
+    ]
+    edge_widths = [
+        2.4 if u == v else 0.8
         for (u, v) in graph.edges
     ]
     if fixed_pos is not None:
@@ -431,14 +449,14 @@ def _draw_snapshot(ax, meta, graph, idx, fixed_pos=None) -> None:
         edge_color=edge_colors,
         arrows=True,
         arrowsize=8,
-        width=0.8,
+        width=edge_widths,
         connectionstyle="arc3,rad=0.08",
     )
     nx.draw_networkx_nodes(
         graph, pos, ax=ax,
         node_color=node_colors,
-        node_size=180,
-        linewidths=0.5,
+        node_size=node_sizes,
+        linewidths=0.8,
         edgecolors="black",
     )
     nx.draw_networkx_labels(

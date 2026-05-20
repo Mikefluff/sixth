@@ -17,3 +17,10 @@ __pycache__/
 
 # Logs
 *.log
+
+# verify_figures.sh / verify_repro.sh temp files (regenerated per run)
+docs/figures/*_check_throwaway.png
+docs/figures/*_forensic_check.jsonl
+docs/figures/*_repro_a.jsonl
+docs/figures/*_repro_b.jsonl
+docs/figures/*_trace_check.dot

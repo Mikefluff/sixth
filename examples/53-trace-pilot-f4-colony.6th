@@ -1,0 +1,89 @@
+\ examples/53-trace-pilot-f4-colony.6th
+\ Pilot F.4 visual trace — ant colony encoding map (PSH5).
+\
+\ Demo 36 shows the discriminator numerically (living-colony
+\ Φ_PA=60000; dead-colony Φ_PA=0) but emits no figure.  PSH5 is
+\ the novel substrate-monist prediction — no brain required, no
+\ neural tissue invoked — and deserves a visible substrate trace.
+\
+\ Two panels:
+\   case=1  living colony (queen self-loop)    →  Φ_PA = 60000
+\   case=2  dead colony   (no queen self-loop) →  Φ_PA = 0
+\
+\ Same 6-node topology in both panels.  Only the red self-arc on
+\ the queen node differs.  Substrate-monism's non-trivial swarm-
+\ cognition prediction visible at a glance.
+
+use prelude
+use graph
+use phi
+use dot
+use debug
+
+: snap-f4 ( case-num observer-id -- )
+  "=== SNAPSHOT case=" .
+  swap .
+  "rule=" . "pilot-f4-colony-encoding" .
+  "seed=" . "queen+5-junctions+trail-triangle" .
+  "event=" . "event" load .
+  "observer=" . dup .
+  "nodes=" . NODES .
+  "edges=" . EDGES .
+  "out=" . dup OUT .
+  "self-ref=" . dup dup EDGE? .
+  "phi-pa=" . phi-pa .
+  "===" . cr
+  dot-snapshot ;
+
+\ ============================================================
+\ Case 1 — living colony (queen pheromone self-loop active).
+\ ============================================================
+
+MARK "Q" store
+MARK "j1" store  MARK "j2" store  MARK "j3" store
+MARK "j4" store  MARK "j5" store
+
+"Q" load "Q" load EDGE+
+"Q" load "j1" load EDGE+   "Q" load "j2" load EDGE+
+"Q" load "j3" load EDGE+   "Q" load "j4" load EDGE+
+"Q" load "j5" load EDGE+
+
+"j1" load "j2" load bi-edge
+"j2" load "j3" load bi-edge
+"j3" load "j1" load bi-edge
+"j4" load "j5" load bi-edge
+
+"Q" load phi-pa 60000 assert-eq
+"psh5-living-queen-self-loop" "event" store
+1 "Q" load snap-f4
+
+RESET
+
+\ ============================================================
+\ Case 2 — dead colony (no queen self-loop).
+\ ============================================================
+
+MARK "Qd" store
+MARK "k1" store  MARK "k2" store  MARK "k3" store
+MARK "k4" store  MARK "k5" store
+
+"Qd" load "k1" load EDGE+   "Qd" load "k2" load EDGE+
+"Qd" load "k3" load EDGE+   "Qd" load "k4" load EDGE+
+"Qd" load "k5" load EDGE+
+
+"k1" load "k2" load bi-edge
+"k2" load "k3" load bi-edge
+"k3" load "k1" load bi-edge
+"k4" load "k5" load bi-edge
+
+"Qd" load phi-pa 0 assert-eq
+"psh5-dead-no-self-loop" "event" store
+2 "Qd" load snap-f4
+
+cr
+"=== Pilot F.4 colony visual trace ===" . cr
+"PSH5 living (loop):  Φ_PA = 60000" . cr
+"PSH5 dead (no loop): Φ_PA = 0" . cr
+"Render with: make trace-pilot-f4" . cr
+
+REPORT

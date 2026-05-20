@@ -64,6 +64,18 @@ NODES 4 assert-eq
 : phase-restore dup NSUM 5 > if drop 10 else NGET then ;
 : cycle         ' phase-decay STEP-CA  ' phase-restore STEP-CA ;
 
+\ Two-phase cycle that takes a snapshot after each half — makes the
+\ autopoiesis dynamics VISIBLE rather than collapsing each cycle
+\ into a structurally-identical end-state snapshot.
+: cycle-with-snap ( i -- )
+  dup
+  ' phase-decay STEP-CA
+  "after-phase-decay" "event" store
+  dup snap-with
+  ' phase-restore STEP-CA
+  "after-phase-restore" "event" store
+  snap-with ;
+
 \ ============================================================
 \ Snapshot helper (observer id encoded in metadata so the renderer
 \ can highlight the right node)
@@ -93,10 +105,11 @@ NODES 4 assert-eq
 
 : epoch-step
   "epoch-i" load max-cycles < if
-    cycle
     "epoch-i" load 1 + "epoch-i" store
     "epoch-i" load snap-every mod 0 = if
-      "epoch-i" load snap-with
+      "epoch-i" load cycle-with-snap         \ visible decay→restore
+    else
+      cycle                                  \ silent fast cycle
     then
     epoch-step
   then ;
@@ -107,11 +120,6 @@ NODES 4 assert-eq
 
 \ Run the epoch.
 epoch-step
-
-\ Final snapshot if not aligned to snap-every.
-"epoch-i" load snap-every mod 0 = not if
-  "epoch-i" load snap-with
-then
 
 \ ============================================================
 \ End-state assertions — observer must survive the epoch

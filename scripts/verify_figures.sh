@@ -30,6 +30,10 @@ DEMOS=(
   "examples/47-trace-atomic-pilot-d.6th  atomic_pilot_d_f"
   "examples/48-trace-atomic-hello.6th    atomic_hello_f"
   "examples/49-trace-pa-ontological-shell.6th  pa_ontological_shell_f"
+  "examples/50-trace-pilot-e-phi-pa.6th        pilot_e"
+  "examples/51-trace-pilot-f1-transformer.6th  pilot_f1"
+  "examples/52-trace-pilot-f2-brain.6th        pilot_f2"
+  "examples/53-trace-pilot-f4-colony.6th       pilot_f4"
 )
 
 check_one () {

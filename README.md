@@ -1,23 +1,23 @@
 # Sixth
 
 > A minimal executable substrate language —
-> 38 primitives, 49 reproducible demos, 707 ✓ across them all,
+> 38 primitives, 49 reproducible demos, 724 ✓ across them all,
 > reference implementation for the Pointer Architecture v9.0 preprint.
 
 ```
 language tests:    ok
 substrate tests:   ok
-examples:          707 / 707 ✓ across 50 demos
+examples:          724 / 724 ✓ across 54 demos
 docs build:        ok
 ffi optional:      n/a
 renderer tests:    ok
-figures fresh:     ok (11 forensic JSONL traces match)
+figures fresh:     ok (16 forensic JSONL traces match)
 artifact status:   reproducible
 ```
 
 Stronger reproducibility evidence via `make verify-repro` — runs
 each forensic-trace demo twice, hashes the JSONL, asserts byte-
-identical outputs across all 11 demos × 2 runs.
+identical outputs across all 16 demos × 2 runs.
 
 ![Pilot D evolution — substrate-internally-driven cosmogenesis,
 shell-count 0 → 4, observer node in red.](./docs/figures/pilot_d_trace.png)
@@ -54,7 +54,7 @@ raco pkg install --link .
 # Spencer-Brown's first mark — the sacred hello world
 racket -l sixth/cli -- run examples/00-first-distinction.6th
 
-# the whole regression — all 50 demos, all 707 assertions
+# the whole regression — all 54 demos, all 724 assertions
 make verify
 ```
 
@@ -80,8 +80,12 @@ foundational demos (`01-numbers` … `20-conway-glider`, 352 ✓):
 | (foundation visual) | 42–46 | 30 | State-aware DOT traces — Conway blinker / glider, Wolfram Rule 110 / 90, Rule 184 1D glider. Per-cell NGET colours alive=red / dead=grey. `make foundation-gifs`. |
 | (atomic) | 47–48 | 10 | One snapshot per primitive operation. Demo 47 = Pilot D in 76 frames; demo 48 = sacred hello world in 7 frames (events: `void`, `first-distinction`, `observer-state`, `i-not-i`, `first-pointer`, `re-entry`, `phi-pa-measurement`). Entity-by-entity emergence. `make atomic-gifs`. |
 | (PA-ontological) | 49 | 5 | First shell of Pilot D unfolded as Spencer-Brown / PA v9.0 events: `void → first-distinction → observer-state → re-entry → i-not-i → first-pointer → recognition → second-not-i → closure-of-not-i → shell-formation`. Opens the macro that demo 37 collapses into one frame. `make trace-pa-ontological-shell`. |
+| (Pilot E trace) | 50 | 9 | Three observers × Φ_PA computed substrate-internally. case 1 (non-reflexive, scope 5) → Φ_PA=0; case 2 (reflexive, scope 5) → Φ_PA=50000; case 3 (demo-31 shape, scope 13) → Φ_PA=130000. PSH1 self-reference discriminator visible. `make trace-pilot-e`. |
+| (Pilot F.1 trace) | 51 | 4 | Transformer encoding (12 heads × 4 layers). PSH1 single-pass Φ_PA=0; PSH2 KV-cache back-edge Φ_PA=40000. `make trace-pilot-f1`. |
+| (Pilot F.2 trace) | 52 | 2 | Brain encoding (DMN hub + 7 cortical areas). PSH3 waking thalamocortical loop Φ_PA=80000; propofol decoupled Φ_PA=0. `make trace-pilot-f2`. |
+| (Pilot F.4 trace) | 53 | 2 | Ant-colony encoding (queen + 5 trail junctions). PSH5 living colony with queen-pheromone self-loop Φ_PA=60000; dead colony Φ_PA=0. `make trace-pilot-f4`. |
 
-Cumulative: **707 ✓ / 0 ✗ across 50 demos** (Pilots A–F core + 3 substrate-monism trace pilots + 2 long-epoch parametric + 5 foundation visual traces (Conway blinker/glider, Rule 110/90, 1D glider) + 2 atomic-build traces showing entity-by-entity emergence).
+Cumulative: **724 ✓ / 0 ✗ across 54 demos** (Pilots A–F core + 3 substrate-monism trace pilots + 2 long-epoch parametric + 5 foundation visual traces (Conway blinker/glider, Rule 110/90, 1D glider) + 2 atomic-build traces showing entity-by-entity emergence).
 
 ## Running and rendering
 
@@ -89,10 +93,10 @@ Cumulative: **707 ✓ / 0 ✗ across 50 demos** (Pilots A–F core + 3 substrate
 # one-shot artifact-status report (Tier-1 verification, see CLAIMS.md)
 make verify
 
-# any of the 50 demos
+# any of the 54 demos
 racket -l sixth/cli -- run examples/35-phi-pa-split-brain-toy.6th
 
-# all 50 demos against the rackunit regression gate
+# all 54 demos against the rackunit regression gate
 raco test tests/examples-test.rkt
 
 # render the three static trace figures (Pilots C, D, F.3)
@@ -134,12 +138,13 @@ stdlib/       Sixth-language standard library (prelude, peano,
               candidate substrate-readable observability measures;
               dot.6th emits GraphViz DOT snapshots for the
               visual-trace pilots.
-examples/     50 emergence demonstrations
+examples/     54 emergence demonstrations
               (00 hello + 01–20 foundations + 21–36 Pilots A–F +
               37–39 substrate-monism traces + 40–41 long-epoch
               parametric + 42–46 foundation visual traces +
               47–48 atomic-build traces + 49 PA-ontological
-              shell decomposition).
+              shell decomposition + 50 Pilot E visual trace +
+              51–53 Pilot F.1/F.2/F.4 visual traces).
               See `examples/README.md` for the full demo catalogue
               with embedded figures and animations.
 code/         Python tooling. render_trace.py reads dot.6th
@@ -147,7 +152,7 @@ code/         Python tooling. render_trace.py reads dot.6th
               SVG / PDF or animated GIF.
 scripts/      verify.sh (artifact-status report; backs `make verify`)
 tests/        rackunit suites — lexer, parser, VM, substrate,
-              loader, examples-test.rkt (regression gate at 707 ✓)
+              loader, examples-test.rkt (regression gate at 724 ✓)
 docs/         Scribble manual + embedded README figure
 build/        regeneratable artefacts (raco scribble HTML, render
               outputs) — gitignored

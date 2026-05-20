@@ -33,8 +33,10 @@ use debug
   "observer=" . "O" load .
   "nodes=" . NODES .
   "edges=" . EDGES .
+  "nget-O=" . "O" load NGET .
+  "nsum-O=" . "O" load NSUM .
   "===" . cr
-  dot-snapshot ;
+  dot-snapshot-state ;
 
 \ ============================================================
 \ t=0 — the void plus first distinction
@@ -76,10 +78,23 @@ build-shell  3 snap-with
 : phase-restore dup NSUM 5 > if drop 10 else NGET then ;
 : cycle         ' phase-decay STEP-CA  ' phase-restore STEP-CA ;
 
-"decay-cycles" "event" store
-cycle cycle cycle cycle cycle
-cycle cycle cycle cycle cycle
+\ Make the autopoiesis dynamics VISIBLE — snapshot AFTER first
+\ phase-decay (substrate-features collapse to NGET=2) and AFTER
+\ the matching phase-restore (NGET returns to 10).  Without these
+\ two frames the figure shows two structurally identical panels
+\ before/after and the decay/restore loop is invisible.
+' phase-decay STEP-CA
+"after-phase-decay" "event" store 31 snap-with
 
+' phase-restore STEP-CA
+"after-phase-restore" "event" store 32 snap-with
+
+\ Complete the remaining 9 cycles silently — substrate must survive
+\ the full autopoiesis pressure.
+cycle cycle cycle cycle cycle
+cycle cycle cycle cycle
+
+"decay-cycles-completed" "event" store
 3 snap-with
 
 \ Verify substrate alive after decay

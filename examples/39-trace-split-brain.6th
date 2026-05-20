@@ -35,6 +35,8 @@ use debug
   "observer=" . "O" load .
   "nodes=" . NODES .
   "edges=" . EDGES .
+  "phi-pa=" . "O" load phi-pa .
+  "phi-integ=" . "O" load phi-integ .
   "===" . cr
   dot-snapshot ;
 

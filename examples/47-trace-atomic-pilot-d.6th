@@ -37,17 +37,25 @@ use debug
   "===" . cr
   dot-snapshot-state ;
 
+\ Semantic-event helpers — each frame labelled by the PA-ontological
+\ primitive it realised, not by "primitive-applied".  The three
+\ ontological primitives (distinction = MARK; pointer = EDGE+;
+\ state-attach = NSET) map one-to-one to the three event labels.
+: snap-distinction    "distinction"   "event" store snap-atom ;
+: snap-pointer        "pointer"       "event" store snap-atom ;
+: snap-state-attach   "state-attach"  "event" store snap-atom ;
+
 \ Bi-edge expanded into two atomic EDGE+ calls + snapshot after each.
 : atomic-bi-edge ( a b -- )
-  2dup EDGE+ snap-atom
-  swap EDGE+ snap-atom ;
+  2dup EDGE+ snap-pointer
+  swap EDGE+ snap-pointer ;
 
 \ Shell construction expanded so EVERY MARK and EVERY directed edge
-\ produces one snapshot frame.
+\ produces one snapshot frame, labelled by ontological primitive.
 : atomic-shell
-  MARK "s1" store snap-atom
-  MARK "s2" store snap-atom
-  MARK "s3" store snap-atom
+  MARK "s1" store snap-distinction
+  MARK "s2" store snap-distinction
+  MARK "s3" store snap-distinction
 
   "s1" load "s2" load atomic-bi-edge
   "s2" load "s3" load atomic-bi-edge
@@ -57,27 +65,28 @@ use debug
   "O"  load "s2" load atomic-bi-edge
   "O"  load "s3" load atomic-bi-edge
 
-  "s1" load 10 NSET snap-atom
-  "s2" load 10 NSET snap-atom
-  "s3" load 10 NSET snap-atom ;
+  "s1" load 10 NSET snap-state-attach
+  "s2" load 10 NSET snap-state-attach
+  "s3" load 10 NSET snap-state-attach ;
 
 \ ============================================================
 \ Atomic build — every step is one primitive operation.
 \ ============================================================
 
-\ (void)
+\ (void) — no event yet
 snap-atom
-"primitive-applied" "event" store
 
 \ The first distinction — one MARK.  The substrate exists.
-MARK "O" store snap-atom
+MARK "O" store
+"first-distinction" "event" store snap-atom
 
 \ Observer state — one NSET.  The token now carries a value.
-"O" load 10 NSET snap-atom
+"O" load 10 NSET snap-state-attach
 
 \ The bootstrap distinction — one EDGE+ from observer to observer.
 \ A self-loop.  Spencer-Brown's re-entry as one substrate operation.
-"O" load "O" load EDGE+ snap-atom
+"O" load "O" load EDGE+
+"re-entry" "event" store snap-atom
 
 \ Now four shells, atomic.
 atomic-shell

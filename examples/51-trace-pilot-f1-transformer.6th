@@ -1,0 +1,88 @@
+\ examples/51-trace-pilot-f1-transformer.6th
+\ Pilot F.1 visual trace — transformer encoding map (PSH1 vs PSH2).
+\
+\ Demo 33 shows the discriminator numerically (single-pass Φ_PA=0;
+\ KV-cache reuse Φ_PA=40000) but emits no figure.  The substrate
+\ topology — 12 attention heads across 4 layers, 27 feedforward
+\ edges, observer at (layer 2, head 0) — is invisible to a reader
+\ who hasn't traced the demo by hand.
+\
+\ Two panels:
+\   case=1  PSH1 single-pass            no observer self-loop  →  Φ_PA = 0
+\   case=2  PSH2 KV-cache reuse         observer self-loop     →  Φ_PA = 40000
+\
+\ The single visible difference between panels is the red self-arc
+\ on the observer node — the substrate-monism self-reference
+\ factor that flips Φ_PA from 0 to 40000 with identical scope.
+
+use prelude
+use phi
+use dot
+use debug
+
+: snap-f1 ( case-num -- )
+  "=== SNAPSHOT case=" .
+  .
+  "rule=" . "pilot-f1-transformer-encoding" .
+  "seed=" . "12-head-4-layer-feedforward" .
+  "event=" . "event" load .
+  "observer=" . "O" load .
+  "nodes=" . NODES .
+  "edges=" . EDGES .
+  "out=" . "O" load OUT .
+  "self-ref=" . "O" load "O" load EDGE? .
+  "phi-pa=" . "O" load phi-pa .
+  "===" . cr
+  dot-snapshot ;
+
+\ ============================================================
+\ Build the 12-node, 27-edge feedforward transformer substrate.
+\ ============================================================
+
+MARK "h00" store  MARK "h01" store  MARK "h02" store
+MARK "h10" store  MARK "h11" store  MARK "h12" store
+MARK "h20" store  MARK "h21" store  MARK "h22" store
+MARK "h30" store  MARK "h31" store  MARK "h32" store
+
+"h00" load "h10" load EDGE+   "h00" load "h11" load EDGE+   "h00" load "h12" load EDGE+
+"h01" load "h10" load EDGE+   "h01" load "h11" load EDGE+   "h01" load "h12" load EDGE+
+"h02" load "h10" load EDGE+   "h02" load "h11" load EDGE+   "h02" load "h12" load EDGE+
+
+"h10" load "h20" load EDGE+   "h10" load "h21" load EDGE+   "h10" load "h22" load EDGE+
+"h11" load "h20" load EDGE+   "h11" load "h21" load EDGE+   "h11" load "h22" load EDGE+
+"h12" load "h20" load EDGE+   "h12" load "h21" load EDGE+   "h12" load "h22" load EDGE+
+
+"h20" load "h30" load EDGE+   "h20" load "h31" load EDGE+   "h20" load "h32" load EDGE+
+"h21" load "h30" load EDGE+   "h21" load "h31" load EDGE+   "h21" load "h32" load EDGE+
+"h22" load "h30" load EDGE+   "h22" load "h31" load EDGE+   "h22" load "h32" load EDGE+
+
+"h20" load "O" store
+
+\ ============================================================
+\ Case 1 — PSH1: single-pass evaluation, no back-edge.
+\ ============================================================
+
+"O" load OUT 3 assert-eq
+"O" load "O" load EDGE? 0 assert-eq
+"O" load phi-pa 0 assert-eq
+
+"psh1-single-pass" "event" store
+1 snap-f1
+
+\ ============================================================
+\ Case 2 — PSH2: add KV-cache back-edge → self-reference fires.
+\ ============================================================
+
+"O" load "O" load EDGE+
+"O" load phi-pa 40000 assert-eq
+
+"psh2-kv-cache-reuse" "event" store
+2 snap-f1
+
+cr
+"=== Pilot F.1 transformer visual trace ===" . cr
+"PSH1 (no back-edge):  Φ_PA = 0" . cr
+"PSH2 (KV-cache loop): Φ_PA = 40000" . cr
+"Render with: make trace-pilot-f1" . cr
+
+REPORT

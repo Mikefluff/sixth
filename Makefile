@@ -16,7 +16,9 @@
         forensic-rule110 forensic-rule90 forensic-glider-1d \
         forensic-atomic-pilot-d forensic-atomic-hello \
         forensic-long-epoch-growth forensic-pa-ontological-shell forensic-all \
+        forensic-pilot-e forensic-pilot-f1 forensic-pilot-f2 forensic-pilot-f4 \
         trace-pa-ontological-shell gif-pa-ontological-shell \
+        trace-pilot-e trace-pilot-f1 trace-pilot-f2 trace-pilot-f4 \
         foundation-gifs all-figures \
         gif-pilot-c gif-pilot-d gif-split-brain gifs
 
@@ -282,6 +284,54 @@ gif-pa-ontological-shell:
 	      --title "PA-ontological shell — Spencer-Brown bootstrap, frame by frame"
 	@echo "→ open build/figures/pa_ontological_shell.gif"
 
+# Pilot E — substrate-internal Phi_PA measurement (3 observers).
+trace-pilot-e:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- run examples/50-trace-pilot-e-phi-pa.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/pilot_e_trace.png \
+	      --title "Pilot E — substrate-internal Φ_PA measurement (3 observers)"
+	@echo "→ open build/figures/pilot_e_trace.png"
+
+# Pilot F.1 transformer encoding (PSH1 vs PSH2).
+trace-pilot-f1:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- run examples/51-trace-pilot-f1-transformer.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/pilot_f1_trace.png \
+	      --title "Pilot F.1 — transformer encoding (PSH1 single-pass vs PSH2 KV-cache)"
+	@echo "→ open build/figures/pilot_f1_trace.png"
+
+# Pilot F.2 brain encoding (PSH3 waking vs propofol).
+trace-pilot-f2:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- run examples/52-trace-pilot-f2-brain.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/pilot_f2_trace.png \
+	      --title "Pilot F.2 — brain encoding (PSH3 waking thalamocortical vs propofol)"
+	@echo "→ open build/figures/pilot_f2_trace.png"
+
+# Pilot F.4 ant-colony encoding (PSH5 living vs dead).
+trace-pilot-f4:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- run examples/53-trace-pilot-f4-colony.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/pilot_f4_trace.png \
+	      --title "Pilot F.4 — ant colony encoding (PSH5 living queen vs dead colony)"
+	@echo "→ open build/figures/pilot_f4_trace.png"
+
+forensic-pilot-e:
+	@bash scripts/forensic.sh examples/50-trace-pilot-e-phi-pa.6th pilot_e "Pilot E"
+
+forensic-pilot-f1:
+	@bash scripts/forensic.sh examples/51-trace-pilot-f1-transformer.6th pilot_f1 "Pilot F.1 transformer"
+
+forensic-pilot-f2:
+	@bash scripts/forensic.sh examples/52-trace-pilot-f2-brain.6th pilot_f2 "Pilot F.2 brain"
+
+forensic-pilot-f4:
+	@bash scripts/forensic.sh examples/53-trace-pilot-f4-colony.6th pilot_f4 "Pilot F.4 colony"
+
 # Forensic trace — image + JSONL evidence + per-step diff view.
 # Produces three artefacts per pilot so an external reviewer can
 # audit the substrate execution from machine-readable logs, not
@@ -326,8 +376,10 @@ forensic-all: forensic-pilot-d forensic-pilot-c forensic-split-brain \
               forensic-conway-blinker forensic-conway-glider \
               forensic-rule110 forensic-rule90 forensic-glider-1d \
               forensic-atomic-pilot-d forensic-atomic-hello \
-              forensic-long-epoch-growth forensic-pa-ontological-shell
-	@echo "→ all 12 forensic traces rendered (PNG + JSONL + diff per demo)"
+              forensic-long-epoch-growth forensic-pa-ontological-shell \
+              forensic-pilot-e forensic-pilot-f1 \
+              forensic-pilot-f2 forensic-pilot-f4
+	@echo "→ all 16 forensic traces rendered (PNG + JSONL + diff per demo)"
 
 # Visibly growing substrate over a long epoch (demo 41 — shell added
 # every GROW cycles; structure changes across frames).

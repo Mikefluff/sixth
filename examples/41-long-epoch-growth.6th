@@ -106,6 +106,9 @@ build-shell
     "epoch-i" load 1 + "epoch-i" store
     "epoch-i" load grow-every mod 0 = if
       build-shell
+      "shell-grown" "event" store
+    else
+      "autopoiesis-cycle" "event" store
     then
     "epoch-i" load snap-every mod 0 = if
       "epoch-i" load snap-with

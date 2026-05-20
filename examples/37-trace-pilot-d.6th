@@ -38,6 +38,9 @@ use debug
   "observer=" . "O" load .
   "nodes=" . NODES .
   "edges=" . EDGES .
+  "nsum-O=" . "O" load NSUM .
+  "target-min=" . 90 .
+  "phi-pa=" . "O" load phi-pa .
   "===" . cr
   dot-snapshot ;
 
