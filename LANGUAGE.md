@@ -50,7 +50,7 @@ the first tier is plain stack/arithmetic/control.
 
 If you reject every interpretive claim of the v9.0 preprint, Sixth
 still gives you: a Forth-like language with `#lang sixth` integration,
-a hypergraph rewriting engine with 23 substrate primitives, 38 demos
+a hypergraph rewriting engine with 23 substrate primitives, 40 demos
 of emergence from 15+23 base operations, a Racket-FFI PyTorch bridge,
 and a Scribble-rendered manual.
 
@@ -168,8 +168,9 @@ rendered as five panels (shell-count 0..4); render with
 
 - 38 primitives. No promotion of stdlib to primitive without
   documented justification.
-- 634 ✓ across 38 demos. The regression gate
-  (`tests/examples-test.rkt`) enforces `pass=634 fail=0`.
+- 646 ✓ across 40 demos. The regression gate
+  (`tests/examples-test.rkt`) enforces `pass=646 fail=0`. Single-
+  command verification: `make verify`.
 - `legacy/` holds the original chibi-Scheme prototype as a parity
   oracle. Not maintained; preserved for comparison.
 - TCO is mandatory. The VM optimises tail calls; no recursion-depth

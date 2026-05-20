@@ -26,7 +26,7 @@ self-measurement via three candidate substrate-readable observability
 measures, toy substrates instantiating the transformer / brain /
 split-brain / ant-colony encoding maps of the v9.0 preprint, and a
 visual-trace pilot that renders Pilot D evolution as a multi-panel
-figure — is derived in 38 demos totaling 634 assertions.
+figure — is derived in 40 demos totaling 646 assertions.
 
 **What the substrate is and is not.** Sixth is a minimal executable
 substrate on which hypotheses about difference, pointers, self-
@@ -57,13 +57,13 @@ foundational demos (`01-numbers` … `20-conway-glider`, 352 ✓):
 | **D** Substrate-internally-driven cosmogenesis | 31 | 17 | Observer establishes its own self-loop at `t=0+` (the substrate-monist bootstrap distinction), then drives further construction via a substrate-readable halting predicate `NSUM(O) ≥ target-min` — no host counter, no programmer-chosen shell count. Closes the substrate-monism gap of Pilot C. |
 | **E** Substrate-internal `Φ_PA` measurement | 32 | 12 | `stdlib/phi.6th` defines `phi-pa = OUT(O) · [O EDGE? O] · L_max` from three primitives alone. Demo 32 verifies the worked values 0 / 50000 / 130000 across non-reflexive / reflexive / demo-31-shape observers. The substrate measures itself; consciousness's structural form is substrate-readable by the same 38 primitives that build it. |
 | **F** Encoding-map demonstrations | 33–36 | 46 | Toy substrates instantiating the preprint's substrate-encoding maps. F.1 (demo 33, transformer): single-pass Φ=0 (PSH1), KV-cache reuse Φ=40000 (PSH2). F.2 (demo 34, brain): waking Φ=80000 (PSH3 high), propofol Φ=0 (PSH3 low). F.3 (demo 35, split-brain): basic Φ_PA indifferent, Φ_integ halves at callosotomy (PSH4 motivates alt-measures). F.4 (demo 36, ant colony): living queen Φ=60000, dead 0 (PSH5). Real-data application is future work. |
-| **(trace)** Visual-trace pilot | 37 | 6 | Replays Pilot D with `dot-snapshot` after each shell-build cycle. Sixth's `stdlib/dot.6th` emits GraphViz DOT to stdout; `code/render_trace.py` parses snapshots and renders a multi-panel matplotlib figure. Generate via `make trace-pilot-d`. Honours the reviewer's request for visual instrumentation of substrate evolution. |
+| **(trace)** Visual-trace pilots | 37–39 | 18 | Three render pilots using Sixth's `stdlib/dot.6th` + `code/render_trace.py`. Demo 37: Pilot D evolution (5 panels, 1 node → 13 nodes / 49 edges). Demo 38: Pilot C cosmogenesis bootstrap (6 panels including post-autopoiesis state). Demo 39: split-brain intact vs callosotomy (2 panels with phi-pa indifferent / phi-integ halved). Generate all three with `make traces`. Honours the reviewer's request for visual instrumentation of substrate evolution. |
 
 The sacred hello world is `examples/00-first-distinction.6th`: one
 MARK, one boundary, one EDGE, one self-loop, one conflict, one
 resolve — Spencer-Brown's first mark realised in the substrate.
 
-Cumulative: 634 ✓ / 0 ✗ across 38 demos.
+Cumulative: 646 ✓ / 0 ✗ across 40 demos.
 
 ## Quickstart
 
@@ -74,12 +74,20 @@ raco pkg install --link .
 # the sacred hello world — Spencer-Brown's first mark
 racket -l sixth/cli -- run examples/00-first-distinction.6th
 
-# any of the 38 demos
+# any of the 40 demos
 racket -l sixth/cli -- run examples/35-phi-pa-split-brain-toy.6th
 
-# run all 38 demos against the rackunit regression gate
+# run all 40 demos against the rackunit regression gate
 raco test tests/examples-test.rkt
-# → examples regression: 634 / 634 ✓ across 38 demos
+# → examples regression: 646 / 646 ✓ across 40 demos
+
+# one-shot artifact-status (Tier-1 verification, see CLAIMS.md)
+make verify
+# → artifact status:  reproducible
+
+# render all visual trace figures (Pilots C, D, F.3)
+make traces
+# → build/figures/{pilot_c,pilot_d,split_brain}_trace.png
 
 # REPL
 racket -l sixth/cli -- repl
@@ -106,14 +114,15 @@ stdlib/       Sixth-language standard library (prelude, peano, graph,
               primitives. phi.6th defines three candidate substrate-
               readable observability measures; dot.6th emits substrate
               snapshots as GraphViz DOT for the visual-trace pilot.
-examples/     38 emergence demonstrations (00 hello + 01–36 + 37 trace)
+examples/     40 emergence demonstrations
+              (00 hello + 01–36 + 37–39 visual traces)
 code/         Python tooling. render_trace.py reads dot.6th snapshots
               from stdin and renders multi-panel matplotlib figures.
 tests/        rackunit suites — lexer, parser, VM, substrate, loader,
-              examples-test.rkt (regression gate at 634 ✓)
-CLAIMS.md     three-tier taxonomy: what is proved by tests / what is
-              demonstrated on synthetic data / what remains a
-              philosophical conjecture under F5
+              examples-test.rkt (regression gate at 646 ✓)
+CLAIMS.md     three-tier taxonomy: Tier 1 proven by tests / Tier 2
+              demonstrated by examples / Tier 3 philosophical hypothesis
+              under F5. Single-command verification: `make verify`.
 LANGUAGE.md   Sixth as a stand-alone Forth-like programming language,
               evaluable without engaging any cosmology / consciousness
               claim of the v9.0 preprint
