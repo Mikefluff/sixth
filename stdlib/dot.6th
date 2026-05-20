@@ -28,6 +28,13 @@ use prelude
 : dot-node ( n -- )
   "  " . dot-emit-id " ;" . cr ;
 
+\ State-aware node — emits "id" [label="NGET"] ; so the renderer can
+\ colour nodes by substrate-state (e.g. Conway alive/dead cells).
+: dot-node-state ( n -- )
+  dup
+  "  " . swap dot-emit-id
+  " [label=" . 34 emit NGET . 34 emit "];" . cr ;
+
 : dot-edge ( src dst -- )
   "  " . swap dot-emit-id " -> " . dot-emit-id " ;" . cr ;
 
@@ -43,5 +50,14 @@ use prelude
 : dot-snapshot ( -- )
   dot-header
   ' dot-node EACH
+  ' dot-edge EACH-EDGE
+  dot-footer ;
+
+\ Same shape as dot-snapshot but each node line carries [label="NGET"];
+\ used by Conway / autopoiesis-state traces where the visualisation
+\ wants per-cell state coloured (alive/dead, decay/restore).
+: dot-snapshot-state ( -- )
+  dot-header
+  ' dot-node-state EACH
   ' dot-edge EACH-EDGE
   dot-footer ;

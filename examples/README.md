@@ -18,7 +18,8 @@ The demos are organised in seven phases:
 | Pilot E (Φ_PA measurement)            | 32 | 12 | substrate measures its own substrate-monist scalar |
 | Pilot F (encoding maps)               | 33–36 | 46 | toy substrates for PSH1–PSH5 (transformer / brain / split-brain / colony) |
 | Visual traces                         | 37–39 | 18 | DOT snapshot pilots — Pilots D, C, F.3 rendered as multi-panel figures or animated GIFs |
-| Long-epoch parametric                 | 40 | 11 | TCO-safe long autopoiesis runs, CLI-driven cycle count |
+| Long-epoch parametric                 | 40–41 | 16 | TCO-safe long autopoiesis runs, CLI-driven cycle count; demo 41 grows the substrate every K cycles for visible long-epoch evolution |
+| Conway visual trace                   | 42 | 7 | Conway's Game of Life blinker on 5×5 grid; state-aware DOT rendering shows alive/dead cells over time |
 
 The visual-trace pilots emit GraphViz DOT blocks on stdout that the
 companion Python renderer (`code/render_trace.py`) parses into
@@ -55,12 +56,31 @@ snapshot that demonstrates substrate survival under harsh decay
 13-edge intact brain vs 9-edge callosotomised
 brain.](../docs/figures/split_brain_trace.png)
 
-Long-epoch autopoiesis at scale (CLI-parametric; `make
-trace-long-epoch CYCLES=N SNAP=K`):
+Conway's Game of Life blinker on a 5×5 substrate grid — alive cells
+red, oscillates with period 2 (vertical ⇄ horizontal); structure
+fixed, state visible in colour:
 
-![Long-epoch animation — 100 cycles of canonical autopoiesis,
-substrate topology stable, NSUM/NGET invariant across
-cycles.](../docs/figures/long_epoch.gif)
+![Conway blinker — 9 frames showing period-2 oscillation between
+vertical and horizontal three-cell bars on a 5×5 Moore-grid
+substrate. State-aware colouring honours per-cell NGET via the
+DOT `[label="N"]` attribute.](../docs/figures/conway_blinker.gif)
+
+Long-epoch with visible substrate growth (demo 41; CLI-parametric
+via `make trace-long-epoch-growth-gif CYCLES_G=N SNAP_G=K GROW=G`):
+
+![Long-epoch growth — 200 cycles, observer-rooted substrate grows
+by one 3-node shell every 40 cycles, stable layout across frames
+shows the cosmos expanding around the
+observer.](../docs/figures/long_epoch_growth.gif)
+
+Static high-density variant (demo 40 — stable autopoiesis, included
+for the "structurally invariant by design" stability proof):
+
+![Long-epoch stable autopoiesis — 11 panels at cycle 0 / 20 / … / 200;
+substrate topology stays invariant by design (canonical decay-restore
+returns NGET to 10 each cycle for reflexive observers). Compare with
+the growth variant above to see what "alive but unchanging" vs
+"alive and expanding" looks like.](../docs/figures/long_epoch_200.png)
 
 ## Sacred hello world
 
@@ -223,26 +243,43 @@ make trace-pilot-c     gif-pilot-c
 make trace-split-brain gif-split-brain
 ```
 
-## Long-epoch parametric pilot (40)
+## Long-epoch parametric pilots (40–41)
 
 | Demo | File | ✓ | Property |
 |------|------|---|----------|
-| 40 | `40-long-epoch-autopoiesis.6th` | 11 | reflexive observer + 3-node ring; canonical autopoiesis for N cycles; snapshot every K cycles |
+| 40 | `40-long-epoch-autopoiesis.6th` | 11 | reflexive observer + 3-node ring; canonical autopoiesis for N cycles; snapshot every K cycles. **Structurally invariant** by design (NSUM > threshold → restore returns NGET to 10 every cycle); the resulting trace is the stability proof. Use this when you want to show the substrate-state space is at a fixed point. |
+| 41 | `41-long-epoch-growth.6th`     |  5 | same loop but grows the substrate by adding a 3-node shell every `grow-every` cycles. **Visibly expanding** topology across snapshots — the GIF actually moves. Use this when you want the animation to show change. |
 
-The cycle count and snapshot interval are controlled by CLI
-`-D KEY=VAL` flags. Defaults are 50 cycles with snapshots every 10;
-override via:
+Both demos read `max-cycles`, `snap-every`, and (for demo 41)
+`grow-every` from memory keys, populated via CLI `-D KEY=VAL` flags.
+Defaults are tuned for the regression-gate runtime; override for
+demonstration runs:
 
 ```bash
-# 10 000 cycles in ~340ms (TCO-safe tail recursion)
+# stable autopoiesis at 10 000 cycles (~340ms, TCO-safe)
 racket -l sixth/cli -- -D max-cycles=10000 -D snap-every=1000 \
                       run examples/40-long-epoch-autopoiesis.6th
 
-# rendered as static PNG
-make trace-long-epoch CYCLES=2000 SNAP=200
+# growing substrate at 200 cycles, snap every 20, +shell every 40
+racket -l sixth/cli -- -D max-cycles=200 -D snap-every=20 -D grow-every=40 \
+                      run examples/41-long-epoch-growth.6th
 
-# rendered as animated GIF
-make trace-long-epoch-gif CYCLES=2000 SNAP=200
+# rendered as animated GIF (visibly expanding cosmos)
+make trace-long-epoch-growth-gif CYCLES_G=200 SNAP_G=20 GROW=40
+
+# stable variant as static PNG (use to demonstrate invariance)
+make trace-long-epoch CYCLES=2000 SNAP=200
+```
+
+## Conway visual trace (42)
+
+| Demo | File | ✓ | Property |
+|------|------|---|----------|
+| 42 | `42-trace-conway-blinker.6th` | 7 | Conway's Game of Life blinker (cells 8, 13, 18) on 5×5 Moore-grid substrate; 9 snapshots across 8 Conway steps; state-aware DOT (`dot-snapshot-state`) emits each node's NGET as a `[label="N"]` attribute. The renderer parses the label and colours alive cells (NGET=1) red, dead cells (NGET=0) light grey. Period-2 oscillation is visible cycle-by-cycle. |
+
+```bash
+make trace-conway-blinker    # build/figures/conway_blinker.png
+make gif-conway-blinker      # build/figures/conway_blinker.gif
 ```
 
 ## How rendering works

@@ -30,8 +30,9 @@ import networkx as nx
 SNAPSHOT_HEADER = re.compile(r"^===\s*SNAPSHOT\s*(.*?)\s*===\s*$")
 DIGRAPH_OPEN = re.compile(r"^\s*digraph\s+\w+\s*\{")
 DIGRAPH_CLOSE = re.compile(r"^\s*\}\s*$")
-NODE_LINE = re.compile(r'^\s*"([^"]+)"\s*;\s*$')
+NODE_LINE = re.compile(r'^\s*"([^"]+)"\s*(\[[^\]]*\])?\s*;\s*$')
 EDGE_LINE = re.compile(r'^\s*"([^"]+)"\s*->\s*"([^"]+)"\s*;\s*$')
+LABEL_ATTR = re.compile(r'label\s*=\s*"([^"]*)"')
 
 
 def _strip(node_id: str) -> str:
@@ -40,22 +41,29 @@ def _strip(node_id: str) -> str:
 
 
 def parse_snapshots(stream: Iterator[str]):
-    """Yield (metadata: dict[str,str], graph: nx.DiGraph) per snapshot."""
+    """Yield (metadata: dict[str,str], graph: nx.DiGraph) per snapshot.
+    Graph nodes may carry a 'label' attribute extracted from DOT
+    [label="N"] which the renderer uses for state-aware colouring
+    (e.g. Conway alive/dead)."""
     current_meta: dict[str, str] | None = None
     in_digraph = False
     nodes: set[str] = set()
+    node_labels: dict[str, str] = {}
     edges: list[tuple[str, str]] = []
 
     def emit():
-        nonlocal current_meta, nodes, edges
+        nonlocal current_meta, nodes, node_labels, edges
         if current_meta is None:
             return None
         graph = nx.DiGraph()
         graph.add_nodes_from(nodes)
+        for nid, lbl in node_labels.items():
+            graph.nodes[nid]["label"] = lbl
         graph.add_edges_from(edges)
         m = current_meta
         current_meta = None
         nodes = set()
+        node_labels = {}
         edges = []
         return m, graph
 
@@ -107,7 +115,12 @@ def parse_snapshots(stream: Iterator[str]):
             continue
         node = NODE_LINE.match(line)
         if node:
-            nodes.add(_strip(node.group(1)))
+            nid = _strip(node.group(1))
+            nodes.add(nid)
+            attrs = node.group(2) or ""
+            m = LABEL_ATTR.search(attrs)
+            if m:
+                node_labels[nid] = m.group(1).strip()
             continue
 
     yielded = emit()
@@ -172,25 +185,41 @@ def _observer_node(meta: dict[str, str], graph) -> str | None:
     return next(iter(graph.nodes), None)
 
 
-def _draw_snapshot(ax, meta, graph, idx) -> None:
+def _draw_snapshot(ax, meta, graph, idx, fixed_pos=None) -> None:
     if graph.number_of_nodes() == 0:
         ax.set_axis_off()
         ax.set_title(_panel_title(meta, idx), fontsize=9)
         return
 
     observer_id = _observer_node(meta, graph)
-    node_colors = [
-        "#d04040" if n == observer_id else "#909090"
-        for n in graph.nodes
-    ]
+    has_labels = any("label" in graph.nodes[n] for n in graph.nodes)
+
+    def _node_colour(n: str) -> str:
+        # State-aware: label "1" / "0" (Conway alive/dead) trumps observer.
+        if has_labels:
+            lbl = graph.nodes[n].get("label", "")
+            try:
+                v = int(lbl)
+            except ValueError:
+                v = 0
+            return "#d04040" if v > 0 else "#e0e0e0"
+        return "#d04040" if n == observer_id else "#909090"
+
+    node_colors = [_node_colour(n) for n in graph.nodes]
     edge_colors = [
         "#a04040" if u == v else "#606060"
         for (u, v) in graph.edges
     ]
-    try:
-        pos = nx.kamada_kawai_layout(graph)
-    except Exception:
-        pos = nx.spring_layout(graph, seed=42)
+    if fixed_pos is not None:
+        pos = {n: fixed_pos[n] for n in graph.nodes if n in fixed_pos}
+        if len(pos) != graph.number_of_nodes():
+            # Fall back if any node is missing from fixed positions.
+            pos = nx.kamada_kawai_layout(graph)
+    else:
+        try:
+            pos = nx.kamada_kawai_layout(graph)
+        except Exception:
+            pos = nx.spring_layout(graph, seed=42)
 
     ax.clear()
     nx.draw_networkx_edges(
@@ -218,11 +247,32 @@ def _draw_snapshot(ax, meta, graph, idx) -> None:
     ax.set_title(_panel_title(meta, idx), fontsize=9)
 
 
+def _union_layout(snaps):
+    """Pre-compute positions for the union of all snapshot graphs so
+    a node that appears across multiple frames stays in the same
+    place — eliminates the "jiggle" the user reported on early GIFs."""
+    union = nx.DiGraph()
+    for _meta, graph in snaps:
+        union.add_nodes_from(graph.nodes)
+        union.add_edges_from(graph.edges)
+    if union.number_of_nodes() == 0:
+        return {}
+    try:
+        return nx.kamada_kawai_layout(union)
+    except Exception:
+        return nx.spring_layout(union, seed=42)
+
+
 def render_gif(snapshots, out_path: Path, title: str | None,
                fps: int) -> None:
     snaps = list(snapshots)
     if not snaps:
         sys.exit("no snapshots found in input")
+
+    # Compute layout ONCE on the union of every snapshot's graph so
+    # nodes that persist across frames stay in the same place — kills
+    # the layout-jiggle problem reported on early GIFs.
+    union_pos = _union_layout(snaps)
 
     fig, ax = plt.subplots(figsize=(6.5, 6.5))
     if title:
@@ -230,7 +280,7 @@ def render_gif(snapshots, out_path: Path, title: str | None,
 
     def frame(idx):
         meta, graph = snaps[idx]
-        _draw_snapshot(ax, meta, graph, idx)
+        _draw_snapshot(ax, meta, graph, idx, fixed_pos=union_pos)
         return []
 
     animation = anim.FuncAnimation(

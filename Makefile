@@ -1,6 +1,8 @@
 .PHONY: install test test-unit test-examples test-bridges repl docs clean legacy-parity \
         verify trace-pilot-c trace-pilot-d trace-split-brain traces \
         trace-long-epoch trace-long-epoch-gif \
+        trace-long-epoch-growth trace-long-epoch-growth-gif \
+        trace-conway-blinker gif-conway-blinker \
         gif-pilot-c gif-pilot-d gif-split-brain gifs
 
 install:
@@ -108,8 +110,53 @@ gif-split-brain:
 	      --title "Pilot F.3 — split-brain: intact vs callosotomy"
 	@echo "→ open build/figures/split_brain_trace.gif"
 
-gifs: gif-pilot-c gif-pilot-d gif-split-brain
+gifs: gif-pilot-c gif-pilot-d gif-split-brain gif-conway-blinker \
+      trace-long-epoch-growth-gif
 	@echo "→ all visual-trace GIFs rendered to build/figures/"
+
+# Conway's Game of Life blinker on 5×5 grid — substrate state changes
+# cycle-by-cycle (alive/dead colouring honours dot-snapshot-state).
+trace-conway-blinker:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- run examples/42-trace-conway-blinker.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/conway_blinker.png \
+	      --title "Conway's Game of Life — blinker on 5×5 substrate grid"
+	@echo "→ open build/figures/conway_blinker.png"
+
+gif-conway-blinker:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- run examples/42-trace-conway-blinker.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/conway_blinker.gif --fps 2 \
+	      --title "Conway's Game of Life — blinker on 5×5 substrate grid"
+	@echo "→ open build/figures/conway_blinker.gif"
+
+# Visibly growing substrate over a long epoch (demo 41 — shell added
+# every GROW cycles; structure changes across frames).
+CYCLES_G ?= 100
+SNAP_G   ?= 10
+GROW     ?= 20
+
+trace-long-epoch-growth:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- -D max-cycles=$(CYCLES_G) -D snap-every=$(SNAP_G) \
+	                     -D grow-every=$(GROW) \
+	  run examples/41-long-epoch-growth.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/long_epoch_growth.png \
+	      --title "Long-epoch growth — $(CYCLES_G) cycles, +shell every $(GROW)"
+	@echo "→ open build/figures/long_epoch_growth.png"
+
+trace-long-epoch-growth-gif:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- -D max-cycles=$(CYCLES_G) -D snap-every=$(SNAP_G) \
+	                     -D grow-every=$(GROW) \
+	  run examples/41-long-epoch-growth.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/long_epoch_growth.gif --fps 3 \
+	      --title "Long-epoch growth — $(CYCLES_G) cycles, +shell every $(GROW)"
+	@echo "→ open build/figures/long_epoch_growth.gif"
 
 verify:
 	@bash scripts/verify.sh

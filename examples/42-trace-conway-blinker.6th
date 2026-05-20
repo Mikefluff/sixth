@@ -1,0 +1,132 @@
+\ examples/42-trace-conway-blinker.6th
+\ Visual-trace pilot — Conway's Game of Life blinker on the substrate.
+\
+\ Replays demo 19 (Conway blinker on a 5×5 Moore-grid substrate) and
+\ snapshots cell states after every Conway step.  The structure
+\ (25 cells, 144 edges) stays fixed — what changes is the per-cell
+\ NGET value (alive/dead), which the renderer reads from the DOT
+\ [label="N"] attribute and colours red/grey.
+\
+\ Blinker oscillates with period 2:
+\   step 0  vertical bar       cells {8, 13, 18} alive
+\   step 1  horizontal bar     cells {12, 13, 14} alive
+\   step 2  vertical bar       cells {8, 13, 18} alive
+\   ...
+\ We run 8 steps so the animation cycles through 4 full oscillations,
+\ giving the GIF visible motion frame-by-frame.
+
+use prelude
+use peano
+use graph
+use phi
+use dot
+use debug
+
+\ ============================================================
+\ Conway rule on substrate features (same as demo 19).
+\ ============================================================
+
+: conway
+  dup NSUM "cw-sum" store
+  NGET "cw-st" store
+  "cw-sum" load 3 = if 1 else
+    "cw-sum" load 2 = "cw-st" load 1 = * if 1 else 0 then
+  then ;
+
+\ ============================================================
+\ 5×5 grid (25 cells, 144 edges) — substrate construction.
+\ ============================================================
+
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+drop drop drop drop drop drop drop drop drop drop
+drop drop drop drop drop drop drop drop drop drop
+drop drop drop drop drop
+
+1 2 bi-edge   2 3 bi-edge   3 4 bi-edge   4 5 bi-edge
+6 7 bi-edge   7 8 bi-edge   8 9 bi-edge   9 10 bi-edge
+11 12 bi-edge   12 13 bi-edge   13 14 bi-edge   14 15 bi-edge
+16 17 bi-edge   17 18 bi-edge   18 19 bi-edge   19 20 bi-edge
+21 22 bi-edge   22 23 bi-edge   23 24 bi-edge   24 25 bi-edge
+
+1 6 bi-edge   6 11 bi-edge   11 16 bi-edge   16 21 bi-edge
+2 7 bi-edge   7 12 bi-edge   12 17 bi-edge   17 22 bi-edge
+3 8 bi-edge   8 13 bi-edge   13 18 bi-edge   18 23 bi-edge
+4 9 bi-edge   9 14 bi-edge   14 19 bi-edge   19 24 bi-edge
+5 10 bi-edge   10 15 bi-edge   15 20 bi-edge   20 25 bi-edge
+
+1 7 bi-edge   2 8 bi-edge   3 9 bi-edge   4 10 bi-edge
+6 12 bi-edge   7 13 bi-edge   8 14 bi-edge   9 15 bi-edge
+11 17 bi-edge   12 18 bi-edge   13 19 bi-edge   14 20 bi-edge
+16 22 bi-edge   17 23 bi-edge   18 24 bi-edge   19 25 bi-edge
+
+2 6 bi-edge   3 7 bi-edge   4 8 bi-edge   5 9 bi-edge
+7 11 bi-edge   8 12 bi-edge   9 13 bi-edge   10 14 bi-edge
+12 16 bi-edge   13 17 bi-edge   14 18 bi-edge   15 19 bi-edge
+17 21 bi-edge   18 22 bi-edge   19 23 bi-edge   20 24 bi-edge
+
+NODES 25 assert-eq
+EDGES 144 assert-eq
+
+: clear-all
+  1 0 NSET   2 0 NSET   3 0 NSET   4 0 NSET   5 0 NSET
+  6 0 NSET   7 0 NSET   8 0 NSET   9 0 NSET  10 0 NSET
+  11 0 NSET  12 0 NSET  13 0 NSET  14 0 NSET  15 0 NSET
+  16 0 NSET  17 0 NSET  18 0 NSET  19 0 NSET  20 0 NSET
+  21 0 NSET  22 0 NSET  23 0 NSET  24 0 NSET  25 0 NSET ;
+
+\ Initial blinker — vertical at column 3 (cells 8, 13, 18).
+clear-all
+8 1 NSET    13 1 NSET    18 1 NSET
+
+\ ============================================================
+\ Snapshot helper — state-aware (each node carries [label="NGET"]).
+\ ============================================================
+
+: snap-with ( step -- )
+  "=== SNAPSHOT step=" .
+  .
+  "alive=" . 0
+  1 NGET +    2 NGET +    3 NGET +    4 NGET +    5 NGET +
+  6 NGET +    7 NGET +    8 NGET +    9 NGET +   10 NGET +
+  11 NGET +  12 NGET +   13 NGET +   14 NGET +   15 NGET +
+  16 NGET +  17 NGET +   18 NGET +   19 NGET +   20 NGET +
+  21 NGET +  22 NGET +   23 NGET +   24 NGET +   25 NGET + .
+  "===" . cr
+  dot-snapshot-state ;
+
+\ ============================================================
+\ Run 8 Conway steps, snap before + after each.
+\ ============================================================
+
+0 snap-with
+
+' conway STEP-CA      1 snap-with
+' conway STEP-CA      2 snap-with
+' conway STEP-CA      3 snap-with
+' conway STEP-CA      4 snap-with
+' conway STEP-CA      5 snap-with
+' conway STEP-CA      6 snap-with
+' conway STEP-CA      7 snap-with
+' conway STEP-CA      8 snap-with
+
+\ ============================================================
+\ Oscillation invariants  (period 2)
+\ ============================================================
+
+\ At step 8 (even), back to original vertical orientation.
+8 NGET 1 assert-eq
+13 NGET 1 assert-eq
+18 NGET 1 assert-eq
+12 NGET 0 assert-eq
+14 NGET 0 assert-eq
+
+cr
+"=== Conway blinker trace ===" . cr
+"9 snapshots (step 0..8) — vertical ⇄ horizontal oscillation." . cr
+"Render with: make gif-conway-blinker" . cr
+
+REPORT

@@ -70,7 +70,10 @@
     ("38-trace-pilot-c.6th"                 6)
     ("39-trace-split-brain.6th"             6)
     ;; Phase P — long-epoch / parametric (CLI --define)
-    ("40-long-epoch-autopoiesis.6th"       11)))
+    ("40-long-epoch-autopoiesis.6th"       11)
+    ("41-long-epoch-growth.6th"             5)
+    ;; Phase Q — Conway visual trace
+    ("42-trace-conway-blinker.6th"          7)))
 
 (define (run-demo file)
   (define out
@@ -95,8 +98,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 657
-                (format "cumulative ✓ count: ~a (expected 657)" total-pass)))
+  (check-equal? total-pass 669
+                (format "cumulative ✓ count: ~a (expected 669)" total-pass)))
 
-(displayln (format "examples regression: ~a / 657 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 669 ✓ across ~a demos"
                    total-pass (length expected)))

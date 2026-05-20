@@ -1,13 +1,13 @@
 # Sixth
 
 > A minimal executable substrate language —
-> 38 primitives, 41 reproducible demos, 657 ✓ across them all,
+> 38 primitives, 43 reproducible demos, 669 ✓ across them all,
 > reference implementation for the Pointer Architecture v9.0 preprint.
 
 ```
 language tests:    ok
 substrate tests:   ok
-examples:          657 / 657 ✓ across 41 demos
+examples:          669 / 669 ✓ across 43 demos
 docs build:        ok
 artifact status:   reproducible
 ```
@@ -47,7 +47,7 @@ raco pkg install --link .
 # Spencer-Brown's first mark — the sacred hello world
 racket -l sixth/cli -- run examples/00-first-distinction.6th
 
-# the whole regression — all 41 demos, all 657 assertions
+# the whole regression — all 43 demos, all 669 assertions
 make verify
 ```
 
@@ -71,7 +71,7 @@ foundational demos (`01-numbers` … `20-conway-glider`, 352 ✓):
 | (trace) | 37–39 | 18 | DOT-rendered snapshots of Pilots D, C, F.3 via `stdlib/dot.6th` + `code/render_trace.py`. Single command `make traces`. |
 | (long)  | 40    | 11 | Parametric long-epoch autopoiesis. CLI `-D max-cycles=N -D snap-every=K` drives arbitrary run lengths (TCO-safe). |
 
-Cumulative: **657 ✓ / 0 ✗ across 41 demos.**
+Cumulative: **669 ✓ / 0 ✗ across 43 demos** (Pilots A–F core + 3 trace pilots + 2 long-epoch + Conway visual trace).
 
 ## Running and rendering
 
@@ -79,10 +79,10 @@ Cumulative: **657 ✓ / 0 ✗ across 41 demos.**
 # one-shot artifact-status report (Tier-1 verification, see CLAIMS.md)
 make verify
 
-# any of the 41 demos
+# any of the 43 demos
 racket -l sixth/cli -- run examples/35-phi-pa-split-brain-toy.6th
 
-# all 41 demos against the rackunit regression gate
+# all 43 demos against the rackunit regression gate
 raco test tests/examples-test.rkt
 
 # render the three static trace figures (Pilots C, D, F.3)
@@ -133,7 +133,7 @@ code/         Python tooling. render_trace.py reads dot.6th
               SVG / PDF or animated GIF.
 scripts/      verify.sh (artifact-status report; backs `make verify`)
 tests/        rackunit suites — lexer, parser, VM, substrate,
-              loader, examples-test.rkt (regression gate at 657 ✓)
+              loader, examples-test.rkt (regression gate at 669 ✓)
 docs/         Scribble manual + embedded README figure
 build/        regeneratable artefacts (raco scribble HTML, render
               outputs) — gitignored

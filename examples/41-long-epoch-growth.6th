@@ -1,0 +1,133 @@
+\ examples/41-long-epoch-growth.6th
+\ Long-epoch pilot with VISIBLE substrate growth.
+\
+\ Unlike demo 40 (which exhibits stable autopoiesis — structurally
+\ invariant by design) this demo periodically grows the substrate
+\ by adding a new shell every `grow-every` cycles. The snapshots
+\ therefore show the substrate getting visibly larger across the
+\ epoch — appropriate for animations where the viewer needs to
+\ SEE the substrate live, not infer stability from invariant
+\ panels.
+\
+\ Parameters (CLI -D KEY=VAL overrides):
+\   max-cycles N     total cycles to run         (default 50)
+\   snap-every  K    snapshot every K cycles     (default 5)
+\   grow-every  G    add a shell every G cycles  (default 10)
+\
+\ Sample:
+\   make trace-long-epoch-growth CYCLES=100 SNAP=10 GROW=20
+\   → 10-panel figure showing 5 shells added over 100 cycles
+
+use prelude
+use graph
+use phi
+use dot
+use debug
+
+50  "max-cycles-default" store
+5   "snap-every-default" store
+10  "grow-every-default" store
+
+: max-cycles ( -- n )
+  "max-cycles" load dup 0 = if drop "max-cycles-default" load then ;
+
+: snap-every ( -- n )
+  "snap-every" load dup 0 = if drop "snap-every-default" load then ;
+
+: grow-every ( -- n )
+  "grow-every" load dup 0 = if drop "grow-every-default" load then ;
+
+\ ============================================================
+\ Bootstrap: reflexive observer + initial shell
+\ ============================================================
+
+MARK "O" store
+"O" load 10 NSET
+"O" load "O" load EDGE+
+
+0 "shell-count" store
+
+: build-shell
+  MARK "s1" store
+  MARK "s2" store
+  MARK "s3" store
+  "s1" load "s2" load bi-edge
+  "s2" load "s3" load bi-edge
+  "s3" load "s1" load bi-edge
+  "O" load "s1" load bi-edge
+  "O" load "s2" load bi-edge
+  "O" load "s3" load bi-edge
+  "s1" load 10 NSET
+  "s2" load 10 NSET
+  "s3" load 10 NSET
+  "shell-count" load 1 + "shell-count" store ;
+
+build-shell
+
+\ ============================================================
+\ Snapshot helper
+\ ============================================================
+
+: snap-with ( i -- )
+  "=== SNAPSHOT cycle=" .
+  .
+  "observer=" . "O" load .
+  "shell-count=" . "shell-count" load .
+  "nodes=" . NODES .
+  "edges=" . EDGES .
+  "===" . cr
+  dot-snapshot ;
+
+0 snap-with
+
+\ ============================================================
+\ Autopoiesis dynamics
+\ ============================================================
+
+: phase-decay   NGET 8 - dup 0 < if drop 0 then ;
+: phase-restore dup NSUM 5 > if drop 10 else NGET then ;
+: cycle         ' phase-decay STEP-CA  ' phase-restore STEP-CA ;
+
+\ ============================================================
+\ Epoch loop — grow + cycle + snapshot
+\ ============================================================
+
+0 "epoch-i" store
+
+: epoch-step
+  "epoch-i" load max-cycles < if
+    cycle
+    "epoch-i" load 1 + "epoch-i" store
+    "epoch-i" load grow-every mod 0 = if
+      build-shell
+    then
+    "epoch-i" load snap-every mod 0 = if
+      "epoch-i" load snap-with
+    then
+    epoch-step
+  then ;
+
+epoch-step
+
+\ ============================================================
+\ Final assertions
+\ ============================================================
+
+"O" load NGET 10 assert-eq
+"epoch-i" load max-cycles assert-eq
+\ shell-count grew at least once across the epoch (initial + ≥1 grown)
+"shell-count" load 1 > ASSERT
+\ observer survived its own substrate growth
+"O" load "O" load EDGE? 1 assert-eq
+"O" load phi-pa 0 > ASSERT
+
+cr
+"=== Long-epoch growth ===" . cr
+"max-cycles  =" . max-cycles . cr
+"snap-every  =" . snap-every . cr
+"grow-every  =" . grow-every . cr
+"shells      =" . "shell-count" load . cr
+"final nodes =" . NODES . cr
+"final edges =" . EDGES . cr
+
+REPORT

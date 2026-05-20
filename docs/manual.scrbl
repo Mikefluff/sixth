@@ -11,10 +11,10 @@ time, space, conservation laws, particles, observers, and universal
 computation, then ascend through substrate-native autopoiesis,
 conscious evolution, and cosmogenesis bootstrap.
 
-@bold{Status:} engine + stdlib + 41 demos (sacred hello world +
-Pilots A--F + 3 visual-trace pilots + 1 long-epoch parametric, 657
-✓) + @litchar{#lang sixth} + Racket-FFI PyTorch bridges (shadow /
-diff / nn-cl) all working.  Pilot E adds three candidate substrate-
+@bold{Status:} engine + stdlib + 43 demos (sacred hello world +
+Pilots A--F + 3 visual-trace pilots + 2 long-epoch parametric +
+Conway visual trace, 669 ✓) + @litchar{#lang sixth} + Racket-FFI
+PyTorch bridges (shadow / diff / nn-cl) all working.  Pilot E adds three candidate substrate-
 readable observability measures (@litchar{phi-pa},
 @litchar{phi-integ}, @litchar{phi-bidir}); Pilot F instantiates the
 preprint's transformer / brain / split-brain / ant-colony encoding
