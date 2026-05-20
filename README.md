@@ -126,6 +126,8 @@ stdlib/       Sixth-language standard library (prelude, peano,
               visual-trace pilots.
 examples/     41 emergence demonstrations
               (00 hello + 01–36 + 37–39 traces + 40 long-epoch)
+              See `examples/README.md` for the full demo catalogue
+              with embedded figures and animations.
 code/         Python tooling. render_trace.py reads dot.6th
               snapshots from stdin; emits static multi-panel PNG /
               SVG / PDF or animated GIF.

@@ -1,6 +1,7 @@
 .PHONY: install test test-unit test-examples test-bridges repl docs clean legacy-parity \
         verify trace-pilot-c trace-pilot-d trace-split-brain traces \
-        trace-long-epoch trace-long-epoch-gif gif-pilot-d
+        trace-long-epoch trace-long-epoch-gif \
+        gif-pilot-c gif-pilot-d gif-split-brain gifs
 
 install:
 	raco pkg install --link --auto .
@@ -90,6 +91,25 @@ gif-pilot-d:
 	      --out build/figures/pilot_d_trace.gif --fps 2 \
 	      --title "Pilot D — substrate-internally-driven cosmogenesis"
 	@echo "→ open build/figures/pilot_d_trace.gif"
+
+gif-pilot-c:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- run examples/38-trace-pilot-c.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/pilot_c_trace.gif --fps 2 \
+	      --title "Pilot C — cosmogenesis bootstrap"
+	@echo "→ open build/figures/pilot_c_trace.gif"
+
+gif-split-brain:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- run examples/39-trace-split-brain.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/split_brain_trace.gif --fps 1 \
+	      --title "Pilot F.3 — split-brain: intact vs callosotomy"
+	@echo "→ open build/figures/split_brain_trace.gif"
+
+gifs: gif-pilot-c gif-pilot-d gif-split-brain
+	@echo "→ all visual-trace GIFs rendered to build/figures/"
 
 verify:
 	@bash scripts/verify.sh
