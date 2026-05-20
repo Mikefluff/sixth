@@ -1,0 +1,89 @@
+\ examples/37-trace-pilot-d.6th
+\ Visual-trace pilot — Pilot D substrate evolution.
+\
+\ Replays demo 31 (Pilot D substrate-internally-driven cosmogenesis)
+\ with a DOT snapshot emitted after each shell-build cycle.  The
+\ snapshots stream to stdout interleaved with sentinel header lines
+\ that the `code/render_trace.py` renderer parses to produce a
+\ multi-panel SVG/PNG showing the substrate's evolution from
+\ a single self-loop to a 13-node 49-edge cosmos.
+\
+\ Each snapshot is preceded by a sentinel line:
+\   === SNAPSHOT shell-count=N nodes=N edges=N ===
+\ followed by a complete `digraph substrate { ... }` block.
+\
+\ This is the substrate-readable answer to the reviewer's request
+\ for a visual trace: "without visualisation people won't see that
+\ the system lives."
+
+use prelude
+use graph
+use phi
+use dot
+use debug
+
+\ ============================================================
+\ Snapshot helper — sentinel + dot-snapshot
+\ ============================================================
+
+: snap ( -- )
+  "=== SNAPSHOT shell-count=" .
+  "shell-count" load .
+  "nodes=" . NODES .
+  "edges=" . EDGES .
+  "===" . cr
+  dot-snapshot ;
+
+\ ============================================================
+\ Pilot D state
+\ ============================================================
+
+MARK "O" store
+"O" load 10 NSET
+"O" load "O" load EDGE+
+0 "shell-count" store
+
+snap
+
+: build-shell
+  MARK "s1" store
+  MARK "s2" store
+  MARK "s3" store
+  "s1" load "s2" load bi-edge
+  "s2" load "s3" load bi-edge
+  "s3" load "s1" load bi-edge
+  "O"  load "s1" load bi-edge
+  "O"  load "s2" load bi-edge
+  "O"  load "s3" load bi-edge
+  "s1" load 10 NSET
+  "s2" load 10 NSET
+  "s3" load 10 NSET
+  "shell-count" load 1 + "shell-count" store ;
+
+\ Build 4 shells and snapshot after each.
+build-shell snap
+build-shell snap
+build-shell snap
+build-shell snap
+
+\ ============================================================
+\ Final-state verification (matches demo 31 outcomes)
+\ ============================================================
+
+"shell-count" load 4 assert-eq
+NODES 13 assert-eq
+EDGES 49 assert-eq
+\ NSUM(O) = sum of NGET of 13 out-neighbours (self + 12 shell nodes),
+\ all set to 10 by NSET = 13 · 10 = 130.  Demo 31 reports 100 because
+\ it runs phase-decay/phase-restore cycles AFTER construction; demo
+\ 37 snapshots construction only.
+"O" load NSUM 130 assert-eq
+"O" load NGET 10 assert-eq
+"O" load phi-pa 130000 assert-eq
+
+cr
+"=== Pilot D evolution traced ===" . cr
+"5 substrate snapshots emitted (shell-count 0..4)." . cr
+"Pipe to: python3 code/render_trace.py --out figures/pilot_d_trace.png" . cr
+
+REPORT

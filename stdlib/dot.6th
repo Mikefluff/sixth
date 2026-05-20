@@ -1,0 +1,47 @@
+\ stdlib/dot.6th — substrate snapshot as GraphViz DOT.
+\
+\ Emits a DOT-format text snapshot of the current substrate to
+\ stdout, suitable for piping to `dot -Tsvg -o out.svg`.
+\
+\ Sixth nodes display as `#n<id>`. The `#` is illegal in a bare DOT
+\ identifier, so each id is quoted (emit char 34 = '"' around the
+\ rendering). Quoted DOT identifiers are unambiguous; the internal
+\ trailing-space from `.` is tolerated by GraphViz.
+\
+\ Usage:
+\   use dot
+\   dot-snapshot       \ emits a complete DOT digraph to stdout
+\
+\ Helpers (composable into per-step trace, see examples/37):
+\   dot-header  ( -- )            opening line + style
+\   dot-footer  ( -- )            closing brace
+\   dot-node    ( n -- )          single node line
+\   dot-edge    ( src dst -- )    single edge line
+\   dot-snapshot                  full digraph (header + EACH + EACH-EDGE + footer)
+
+use prelude
+
+\ Emit a quoted node identifier: "  "#n42"  "
+: dot-emit-id ( n -- )
+  34 emit . 34 emit ;
+
+: dot-node ( n -- )
+  "  " . dot-emit-id " ;" . cr ;
+
+: dot-edge ( src dst -- )
+  "  " . swap dot-emit-id " -> " . dot-emit-id " ;" . cr ;
+
+: dot-header ( -- )
+  "digraph substrate {" . cr
+  "  rankdir=LR;" . cr
+  "  node [shape=circle, fontsize=10, fixedsize=true, width=0.45];" . cr
+  "  edge [arrowsize=0.6];" . cr ;
+
+: dot-footer ( -- )
+  "}" . cr ;
+
+: dot-snapshot ( -- )
+  dot-header
+  ' dot-node EACH
+  ' dot-edge EACH-EDGE
+  dot-footer ;

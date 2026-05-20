@@ -64,7 +64,9 @@
     ("33-phi-pa-transformer-toy.6th"       10)
     ("34-phi-pa-brain-toy.6th"             12)
     ("35-phi-pa-split-brain-toy.6th"       14)
-    ("36-phi-pa-ant-colony-toy.6th"        10)))
+    ("36-phi-pa-ant-colony-toy.6th"        10)
+    ;; Phase O — visual trace pilot
+    ("37-trace-pilot-d.6th"                 6)))
 
 (define (run-demo file)
   (define out
@@ -89,8 +91,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 628
-                (format "cumulative ✓ count: ~a (expected 628)" total-pass)))
+  (check-equal? total-pass 634
+                (format "cumulative ✓ count: ~a (expected 634)" total-pass)))
 
-(displayln (format "examples regression: ~a / 628 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 634 ✓ across ~a demos"
                    total-pass (length expected)))

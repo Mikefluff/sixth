@@ -27,6 +27,14 @@ docs-html:
 docs-pdf:
 	raco scribble --pdf --dest build/docs docs/manual.scrbl
 
+trace-pilot-d:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- run examples/37-trace-pilot-d.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/pilot_d_trace.png \
+	      --title "Pilot D — substrate-internally-driven cosmogenesis"
+	@echo "→ open build/figures/pilot_d_trace.png"
+
 examples-all:
 	@for f in examples/*.6th; do \
 	  echo "=== $$f ==="; \
