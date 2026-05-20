@@ -9,8 +9,15 @@ language tests:    ok
 substrate tests:   ok
 examples:          702 / 702 ✓ across 49 demos
 docs build:        ok
+ffi optional:      n/a
+renderer tests:    ok
+figures fresh:     ok (11 forensic JSONL traces match)
 artifact status:   reproducible
 ```
+
+Stronger reproducibility evidence via `make verify-repro` — runs
+each forensic-trace demo twice, hashes the JSONL, asserts byte-
+identical outputs across all 11 demos × 2 runs.
 
 ![Pilot D evolution — substrate-internally-driven cosmogenesis,
 shell-count 0 → 4, observer node in red.](./docs/figures/pilot_d_trace.png)
@@ -143,7 +150,9 @@ docs/         Scribble manual + embedded README figure
 build/        regeneratable artefacts (raco scribble HTML, render
               outputs) — gitignored
 legacy/       original chibi-Scheme prototype + first-pass PyTorch
-              bridges, preserved unmodified as parity oracle
+              bridges. Frozen historical reference; production
+              implementation is the Racket-hosted sixth/ collection
+              (see legacy/README.md). Not maintained, not in CI.
 CLAIMS.md     three-tier epistemic taxonomy:
               Tier 1 proven by tests / Tier 2 demonstrated by
               examples / Tier 3 philosophical-or-research-hypothesis

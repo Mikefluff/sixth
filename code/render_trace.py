@@ -372,12 +372,21 @@ def render_diff(snapshots, out_path: Path, title: str | None) -> None:
 
 def _observer_node(meta: dict[str, str], graph) -> str | None:
     """Sixth's snapshot metadata may carry `observer=N` — honour it
-    so the highlighted node is the substrate's actual observer rather
-    than whichever node happens to come first in graph.nodes."""
+    so the highlighted node is the substrate's actual observer.
+
+    Fallback when metadata is missing: pick the node with the highest
+    out-degree (observers in every Pilot demo are the substrate's
+    highest-OUT node by construction).  Tie-break on lowest node id
+    for determinism."""
     obs = meta.get("observer") if meta else None
     if obs and obs in graph.nodes:
         return obs
-    return next(iter(graph.nodes), None)
+    if graph.number_of_nodes() == 0:
+        return None
+    return max(
+        graph.nodes,
+        key=lambda n: (graph.out_degree(n), -int(n) if str(n).lstrip("-").isdigit() else 0),
+    )
 
 
 def _draw_snapshot(ax, meta, graph, idx, fixed_pos=None) -> None:

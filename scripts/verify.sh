@@ -76,6 +76,24 @@ else
     report "ffi optional:" "n/a"
 fi
 
+# ---- renderer unit tests (Python) ----
+if python3 tests/render-test.py >/dev/null 2>&1
+then
+    report "renderer tests:" "ok"
+else
+    report "renderer tests:" "FAIL"
+    FAIL=1
+fi
+
+# ---- figure freshness (committed forensic JSONL = fresh regen) ----
+if bash scripts/verify_figures.sh >/dev/null 2>&1
+then
+    report "figures fresh:" "ok (11 forensic JSONL traces match)"
+else
+    report "figures fresh:" "STALE (run 'make forensic-all' + commit)"
+    FAIL=1
+fi
+
 # ---- verdict ----
 echo
 if [ "$FAIL" -eq 0 ]; then

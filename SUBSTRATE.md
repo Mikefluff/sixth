@@ -1,14 +1,12 @@
 # Sixth Substrate — Foundational Pointer Architecture
 
-## Покажется так, как и должно
-
 This document accompanies the Sixth substrate implementation in
-`sixth-substrate.scm` and the 19 emergence demonstrations
-`demo-*.6th`. The goal is *not* to derive physics — it is to build
-the minimum formal artifact in which structures such as numbers, time,
-space, conservation laws, particles, self-reference, observers, and
-universal computation are demonstrably *derived from*, rather than
-*postulated alongside*, the substrate.
+`sixth/primitives/substrate.rkt` and the 49 emergence demonstrations
+under `examples/`. The goal is *not* to derive physics — it is to
+build the minimum formal artifact in which structures such as
+numbers, time, space, conservation laws, particles, self-reference,
+observers, autopoiesis, and universal computation are demonstrably
+*derived from*, rather than *postulated alongside*, the substrate.
 
 The substrate has only three ontological primitives:
 
@@ -19,62 +17,62 @@ The substrate has only three ontological primitives:
 ```
 
 Everything else — counting, ordering, space, motion, observation,
-self-knowing — emerges from how those three are composed.
+self-knowing, universal computation, autopoiesis, cosmogenesis —
+emerges from how those three compose.
 
 
-## Mapping to Pointer Architecture v8.0 primitives
+## Mapping to Pointer Architecture v9.0 primitives
 
-PA v8.0 (Savchenko) declares five primitive components of any
-substrate-of-cognition:
+PA v9.0 (Savchenko 2026) declares five primitive components of any
+substrate-of-cognition `𝒮 = (G, R, C, A, π)`:
 
-| PA primitive          | Substrate realization                                       |
-|-----------------------|-------------------------------------------------------------|
-| **G** (graph)         | Hypergraph of `MARK`ed nodes plus `EDGE+` adjacency        |
-| **R** (rewriting)     | `STEP`, `EACH`, `EACH-EDGE`, `EACH-2PATH`, `STEP-CA`        |
-| **C** (commit)        | Snapshot-then-commit semantics of `STEP-CA` and `EACH-*`    |
+| PA primitive          | Substrate realization                                        |
+|-----------------------|--------------------------------------------------------------|
+| **G** (graph)         | Hypergraph of `MARK`ed nodes plus `EDGE+` adjacency          |
+| **R** (rewriting)     | `STEP`, `EACH`, `EACH-EDGE`, `EACH-2PATH`, `STEP-CA`         |
+| **C** (commit)        | Snapshot-then-commit semantics of `STEP-CA` and `EACH-*`     |
 | **A** (archive)       | `BORN(n)` records the step a node was created                |
-| **π** (observer)      | A node whose `EDGE+` set is its view of the substrate      |
+| **π** (observer)      | A node whose `EDGE+` set is its view of the substrate        |
 
-The complete substrate engine — 23 primitives on top of base Sixth — is
-listed in the README.  Every primitive operates on the bare difference
-+ pointer level: a token (MARKed), a relation between two tokens
-(EDGE+), or a transformation of those relations (STEP / EACH /
-STEP-CA).
+The complete substrate engine — 23 primitives on top of base Sixth —
+is listed in [`LANGUAGE.md`](./LANGUAGE.md) and
+`docs/substrate.scrbl`. Every primitive operates on the bare
+difference + pointer level: a token (`MARK`ed), a relation between
+two tokens (`EDGE+`), or a transformation of those relations
+(`STEP` / `EACH` / `STEP-CA`).
 
 
 ## What the demos demonstrate
 
-The 19 demonstrations (`demo-*.6th`, runnable individually or together
-via `demo-all.6th`) each isolate a single derivation chain:
+The 49 demonstrations live in `examples/` (file-by-file index in
+[`examples/README.md`](./examples/README.md)). Each isolates a
+single derivation chain, organised in twelve phases:
 
-| # | Demo                | Derived structure                                  |
-|---|---------------------|----------------------------------------------------|
-| 1 | numbers             | Peano arithmetic from MARK + EDGE+ + IN + PREV     |
-| 2 | time                | Causal ordering as STEP-index of rewrites         |
-| 3 | stable              | Fixed points of local rewrite rules               |
-| 4 | conflict            | Rule-order = physics-choice (different futures)   |
-| 5 | loop                | Self-reference as cyclic pointer topology         |
-| 6 | observers           | Observer-relative facts on partial views          |
-| 7 | rewrite             | Transitive closure from {{x,y},{y,z}}⇒{x,z}        |
-| 8 | distance            | 1D BFS metric from edge-relaxation                |
-| 9 | ca (Rule 90)        | Sierpinski fractal from XOR neighbour rule        |
-|10 | self-model          | Substrate contains its own description (Quine)    |
-|11 | energy              | Edge-Δ monotone → 0 (thermodynamic equilibrium)   |
-|12 | wolfram             | Classical Wolfram hypergraph rule on substrate     |
-|13 | conservation        | Ring + shift rule → invariant cell-sum (mass)     |
-|14 | grid                | 2D Manhattan metric from grid topology            |
-|15 | glider              | Rule 184 single-car propagating particle          |
-|16 | rule110             | Turing-complete dynamics from minimal substrate   |
-|17 | consensus           | Intersubjective truth = view intersection          |
-|18 | morphism            | Structure-preserving subgraph map (category)       |
-|19 | conway              | Game-of-Life blinker on 5×5 Moore-grid (2D CA)    |
+- **00** — sacred hello world (Spencer-Brown's first mark)
+- **01–20** — foundations: arithmetic, time, space, conservation
+  laws, cellular automata, Conway's Life, BFS, morphism
+- **21–25** Pilot A — substrate-native autopoiesis
+- **26–29** Pilot B — conscious evolution (observer-driven, Lamarck-style)
+- **30** Pilot C — cosmogenesis bootstrap
+- **31** Pilot D — substrate-internally-driven cosmogenesis
+- **32** Pilot E — substrate-internal Φ_PA measurement
+- **33–36** Pilot F — encoding-map demonstrations (transformer / brain
+  / split-brain / colony)
+- **37–39** — substrate-monism visual traces (Pilots D, C, F.3)
+- **40–41** — long-epoch parametric pilots
+- **42–46** — foundation visual traces (Conway, Wolfram CA)
+- **47–48** — atomic-build traces (one snapshot per primitive operation)
 
-All 320 assertions across these 19 demos pass.
+All 702 assertions pass deterministically. Run the regression in
+one command:
 
-```
-$ echo 'loadfile demo-all.6th
-quit' | chibi-scheme sixth-substrate.scm | tail -1
-REPORT  nodes=25  edges=144  steps=0  pass=320  fail=0
+```bash
+make verify
+# language tests:    ok
+# substrate tests:   ok
+# examples:          702 / 702 ✓ across 49 demos
+# docs build:        ok
+# artifact status:   reproducible
 ```
 
 
@@ -86,9 +84,10 @@ Stack operations: `dup` `drop` `swap` `over`.
 Arithmetic: `+` `-` `*` `/` `mod`.
 Comparison: `=` `<` `>`.
 Memory: `store` `load`.
-Control: `if`/`else`/`then`, `:`/`;`, `eval`, `loadfile`.
+I/O: `.` `cr` `emit`.
+Definition: `:`/`;`.
 
-### Layer 1 — substrate (23, added in this work)
+### Layer 1 — substrate (23)
 
 ```
 Difference:        MARK
@@ -102,23 +101,26 @@ Syntactic:         '       (tick — push next token literal)
 Test/admin:        ASSERT  RESET   REPORT
 ```
 
-That is 38 operations total. Every demo above uses only these.
+That is 38 operations total. Every demo uses only these; stdlib
+helpers (`bi-edge`, `clique`, `grid-2d`, `rule110`, `phi-pa`, …)
+are composed from the 38 in Sixth itself, under `stdlib/`.
 
 
 ## Related work
 
-This is research-program territory; the demos are deliberately minimal,
-the formal lineage is rich.
+This is research-program territory; the demos are deliberately
+minimal, the formal lineage is rich.
 
 ### Foundational
 
-- **G. Spencer-Brown, _Laws of Form_ (1969)** — single primitive (the
-  mark of distinction), develops calculus of distinctions, paradox of
-  self-reference. Closest formal predecessor of "start from
-  difference".
+- **G. Spencer-Brown, _Laws of Form_ (1969)** — single primitive
+  (the mark of distinction), develops calculus of distinctions,
+  paradox of self-reference. Closest formal predecessor of "start
+  from difference". Realised explicitly in demos 00 and 48.
 
 - **F. Varela & H. Maturana, _Autopoiesis_ (1972)** — self-producing
-  systems via distinction. Observer included.
+  systems via distinction. Observer included. Operationalised in
+  Pilot A (demos 21–25).
 
 - **G. Bateson, _Steps to an Ecology of Mind_ (1972)** — "the
   difference that makes a difference" as definition of information.
@@ -134,9 +136,10 @@ the formal lineage is rich.
 - **J. A. Wheeler, _It from Bit_ (1990)** — matter from information
   distinction; participatory universe.
 
-- **S. Wolfram, _A New Kind of Science_ (2002) and the Wolfram Physics
-  Project (2020–)** — hypergraph rewriting from minimal rules.
-  Demos 7, 12, 13, 15, 19 are direct instantiations of this style.
+- **S. Wolfram, _A New Kind of Science_ (2002) and the Wolfram
+  Physics Project (2020–)** — hypergraph rewriting from minimal
+  rules. Demos 09, 12, 13, 15, 16, 19, 20, 42–46 are direct
+  instantiations.
 
 - **L. Smolin, _The Trouble with Physics_; "relational physics"** —
   no absolute frame; all properties are relations between observers.
@@ -148,12 +151,12 @@ the formal lineage is rich.
 
 - **K. Gödel, incompleteness via self-reference (1931)**.
 
-- **D. Hofstadter, _Gödel, Escher, Bach_ (1979); _I Am a Strange Loop_
-  (2007)** — recursive self-modeling. Demo 10 is the substrate-level
-  realization of his "strange loop" structure.
+- **D. Hofstadter, _Gödel, Escher, Bach_ (1979); _I Am a Strange
+  Loop_ (2007)** — recursive self-modeling. Demo 10 is the
+  substrate-level realization of his "strange loop" structure.
 
 - **C. Rovelli, _Relational Quantum Mechanics_ (1996)** — observer-
-  dependent facts. Demos 6, 17 instantiate this for substrate.
+  dependent facts. Demos 06, 17 instantiate this for substrate.
 
 - **F. Varela & H. von Foerster, _second-order cybernetics_** —
   observer included in observed system.
@@ -162,62 +165,87 @@ the formal lineage is rich.
 
 - **V. Vanchurin, _The world as a neural network_ (2020); _Geometric
   Learning Dynamics_ (2025, arXiv:2504.14728)** — physics-as-learning-
-  dynamics. Our substrate provides a discrete counterpart on which
-  similar emergence arguments can be tested directly.
+  dynamics. Sixth provides a discrete counterpart on which similar
+  emergence arguments can be tested directly.
 
-- **W. Witten, _Algebraic Observer Programme_ (2022)** —
-  observer-relative subalgebras of operators. Demo 6, 17 are the
-  substrate version (subgraph as observer subalgebra).
+- **E. Witten, _Algebraic Observer Programme_ (2022)** — observer-
+  relative subalgebras of operators. Demos 06, 17 are the substrate
+  version (subgraph as observer subalgebra). The v9.0 preprint's
+  `sec:substrate-cone` proposes that the Sixth substrate is the
+  discrete substructure realising the algebraic-observer programme.
 
-- **M. Savchenko, _Pointer Architecture v8.0_ (2026)** —
-  the present PhD substrate. This artifact is its foundational layer.
+- **M. Savchenko, _Pointer Architecture v9.0_ (2026)** — the
+  preprint for which Sixth is the reference implementation. Sixth
+  proves the language layer (Tier 1 of [`CLAIMS.md`](./CLAIMS.md));
+  the v9.0 preprint takes Tiers 2 and 3 on top.
 
 
 ## Open directions
 
-The substrate is sufficient for the demos above and can be
-straightforwardly extended in several directions.
+Several directions remain after the v9.0 cut. The substrate is
+sufficient for the released demos and can be extended further.
 
-**Engine extensions (1-2 days each):**
-- declarative pattern matching with multi-edge LHS and named variables;
+**Engine extensions:**
+- declarative pattern matching with multi-edge LHS and named
+  variables (Wolfram-style rewrite rules with binding);
 - explicit conflict resolution as first-class primitives (priority,
   random, energy-min);
 - typed/labelled edges for richer hypergraph patterns;
-- compiled hot path for large-scale CA runs.
+- compiled hot path for large-scale CA runs;
+- parallel rule application via Racket places or futures.
 
 **More emergence proofs:**
 - propagating gliders in Conway 2D Life (needs ≥7×7 grid);
-- Rule 110 universal-computation embedding;
-- substrate-level analog of Noether's theorem;
-- emergent entropy and second law;
+- substrate-level analog of Noether's theorem with rigorous proof;
+- emergent entropy and second law from substrate dynamics;
 - multi-substrate morphism composition (full category).
 
-**Bridge to applied PA:**
-- substrate primitives realized as PyTorch vectorized operations
-  ("NN-shadow");
-- direct comparison of NN-substrate runs to Sixth-substrate runs on
-  identical tasks;
-- using substrate-validated rules as inductive biases for neural
-  architectures.
+**Bridges to applied PA (Phase H — partially shipped):**
+- `sixth/bridges/torch/` ships shadow / diff / nn — Substrate ⇄
+  Tensor view, autograd over substrate features, and the
+  Substrate-NN continual-learning architecture, all via native
+  Racket FFI to libtorch (no Python in the path);
+- still pending: direct comparison of NN-substrate runs to Sixth-
+  substrate runs on identical tasks; using substrate-validated
+  rules as inductive biases for neural architectures.
+
+**Companion preprints (v9.0 future work):**
+- real Mamba Φ_PA computation for PSH2 corroboration (companion
+  preprint #1);
+- real EEG analysis on Casali PCI for PSH3/PSH4 corroboration
+  (companion preprint #2);
+- ant-colony cartography collaboration with myrmecologists for PSH5.
 
 **Formalisation:**
 - categorical (functorial) account of `EACH-*` operators;
-- proof of substrate Turing-completeness via Rule 110 embedding;
+- formal Turing-completeness proof via the released Rule 110 demos
+  (16 + 44);
 - formal connection of substrate primitives to Spencer-Brown's
   algebra.
 
 
 ## Running the artefact
 
-```
+```bash
 cd /Users/mikefluff/Documents/Programming/sixt
-echo 'loadfile demo-all.6th
-quit' | chibi-scheme sixth-substrate.scm
+raco pkg install --link .          # install the Sixth Racket collection
+
+# the whole regression — all 49 demos, all 702 assertions
+make verify
+
+# any single demo
+racket -l sixth/cli -- run examples/00-first-distinction.6th
+
+# REPL
+racket -l sixth/cli -- repl
 ```
 
-Individual demos run the same way with `demo-<name>.6th` substituted.
+The legacy chibi-Scheme prototype is preserved unmodified under
+`legacy/` for historical reference; the production implementation
+is Racket-hosted (Phase A–I of the refactor plan complete; see
+[`README.md`](./README.md) and [`docs/migration.scrbl`](./docs/migration.scrbl)).
 
-This artefact is reproducible, minimal, and self-contained. It is the
-foundational layer beneath the Pointer Architecture v8.0 PhD: the
-substrate from which a NN-shadow implementation should be derived,
-rather than the other way around.
+This artefact is reproducible, minimal, and self-contained. It is
+the foundational layer beneath the Pointer Architecture v9.0
+preprint: the substrate from which an NN-shadow implementation
+should be derived, rather than the other way around.

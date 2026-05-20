@@ -1,5 +1,6 @@
-.PHONY: install test test-unit test-examples test-bridges repl docs clean legacy-parity \
-        verify trace-pilot-c trace-pilot-d trace-split-brain traces \
+.PHONY: install test test-unit test-examples test-bridges test-render repl docs clean legacy-parity \
+        verify verify-figures verify-repro \
+        trace-pilot-c trace-pilot-d trace-split-brain traces \
         trace-long-epoch trace-long-epoch-gif \
         trace-long-epoch-growth trace-long-epoch-growth-gif \
         trace-conway-blinker gif-conway-blinker \
@@ -9,8 +10,13 @@
         trace-glider-1d gif-glider-1d \
         trace-atomic-pilot-d gif-atomic-pilot-d \
         trace-atomic-hello gif-atomic-hello \
-        atomic-gifs forensic-pilot-d \
-        foundation-gifs \
+        atomic-gifs \
+        forensic-pilot-d forensic-pilot-c forensic-split-brain \
+        forensic-conway-blinker forensic-conway-glider \
+        forensic-rule110 forensic-rule90 forensic-glider-1d \
+        forensic-atomic-pilot-d forensic-atomic-hello \
+        forensic-long-epoch-growth forensic-all \
+        foundation-gifs all-figures \
         gif-pilot-c gif-pilot-d gif-split-brain gifs
 
 install:
@@ -258,20 +264,46 @@ atomic-gifs: gif-atomic-hello gif-atomic-pilot-d
 # Forensic trace — image + JSONL evidence + per-step diff view.
 # Produces three artefacts per pilot so an external reviewer can
 # audit the substrate execution from machine-readable logs, not
-# only the rendered figure.  Demo 37 (Pilot D) is the showcase.
+# only the rendered figure.  Backed by scripts/forensic.sh.
 forensic-pilot-d:
-	@mkdir -p build/figures
-	@racket -l sixth/cli -- run examples/37-trace-pilot-d.6th > build/figures/pilot_d_trace.dot
-	python3 code/render_trace.py build/figures/pilot_d_trace.dot \
-	    --out build/figures/pilot_d_forensic.png \
-	    --jsonl build/figures/pilot_d_forensic.jsonl \
-	    --title "Pilot D — forensic trace"
-	python3 code/render_trace.py build/figures/pilot_d_trace.dot \
-	    --out build/figures/pilot_d_diff.png --diff \
-	    --title "Pilot D"
-	@echo "→ build/figures/pilot_d_forensic.png  (snapshots + deltas)"
-	@echo "→ build/figures/pilot_d_forensic.jsonl (machine-readable trace)"
-	@echo "→ build/figures/pilot_d_diff.png      (per-step DIFF view)"
+	@bash scripts/forensic.sh examples/37-trace-pilot-d.6th pilot_d "Pilot D"
+
+forensic-pilot-c:
+	@bash scripts/forensic.sh examples/38-trace-pilot-c.6th pilot_c "Pilot C"
+
+forensic-split-brain:
+	@bash scripts/forensic.sh examples/39-trace-split-brain.6th split_brain "Pilot F.3 split-brain"
+
+forensic-conway-blinker:
+	@bash scripts/forensic.sh examples/42-trace-conway-blinker.6th conway_blinker_f "Conway blinker"
+
+forensic-conway-glider:
+	@bash scripts/forensic.sh examples/43-trace-conway-glider.6th conway_glider_f "Conway glider"
+
+forensic-rule110:
+	@bash scripts/forensic.sh examples/44-trace-rule110.6th rule110_f "Wolfram Rule 110"
+
+forensic-rule90:
+	@bash scripts/forensic.sh examples/45-trace-rule90.6th rule90_f "Wolfram Rule 90"
+
+forensic-glider-1d:
+	@bash scripts/forensic.sh examples/46-trace-glider-1d.6th glider_1d_f "Rule 184 1D glider"
+
+forensic-atomic-pilot-d:
+	@bash scripts/forensic.sh examples/47-trace-atomic-pilot-d.6th atomic_pilot_d_f "Pilot D atomic"
+
+forensic-atomic-hello:
+	@bash scripts/forensic.sh examples/48-trace-atomic-hello.6th atomic_hello_f "Sacred hello atomic"
+
+forensic-long-epoch-growth:
+	@bash scripts/forensic.sh examples/41-long-epoch-growth.6th long_epoch_growth_f "Long-epoch growth"
+
+forensic-all: forensic-pilot-d forensic-pilot-c forensic-split-brain \
+              forensic-conway-blinker forensic-conway-glider \
+              forensic-rule110 forensic-rule90 forensic-glider-1d \
+              forensic-atomic-pilot-d forensic-atomic-hello \
+              forensic-long-epoch-growth
+	@echo "→ all 11 forensic traces rendered (PNG + JSONL + diff per demo)"
 
 # Visibly growing substrate over a long epoch (demo 41 — shell added
 # every GROW cycles; structure changes across frames).
@@ -301,6 +333,37 @@ trace-long-epoch-growth-gif:
 
 verify:
 	@bash scripts/verify.sh
+
+# Python renderer unit tests — guard the panel-title / JSONL /
+# delta-annotation logic that the forensic trace pipeline depends on.
+test-render:
+	@python3 tests/render-test.py
+
+# Stronger reproducibility check — run each forensic demo twice,
+# hash the JSONL outputs, assert byte-identical.  Substrate is fully
+# deterministic, so any drift here is a host-side bug.  Not part of
+# default `verify` (adds ~30s); separate target for paper-level claims.
+verify-repro:
+	@bash scripts/verify_repro.sh
+
+# Verify that committed figures match what the .6th demos produce now.
+# Re-runs every forensic-grade demo, regenerates its JSONL, and diffs
+# against the committed copy under docs/figures/.  JSONL is deterministic
+# (text, sorted keys); PNG/GIF carry matplotlib timestamps and are
+# intentionally excluded.  Single non-zero exit on drift.
+verify-figures:
+	@bash scripts/verify_figures.sh
+
+# Render every figure the repository ships — static PNGs, animated GIFs,
+# forensic PNG + JSONL + diff for all 11 trace-grade demos.  Idempotent;
+# safe to re-run.  Output under build/figures/.
+all-figures: traces gifs foundation-gifs atomic-gifs forensic-all \
+             trace-conway-blinker trace-conway-glider \
+             trace-rule110 trace-rule90 trace-glider-1d \
+             trace-atomic-pilot-d trace-atomic-hello \
+             trace-long-epoch-growth \
+             trace-long-epoch trace-long-epoch-gif
+	@echo "→ all figures rendered to build/figures/"
 
 examples-all:
 	@for f in examples/*.6th; do \
