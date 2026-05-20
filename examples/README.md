@@ -113,14 +113,20 @@ by one 3-node shell every 40 cycles, stable layout across frames
 shows the cosmos expanding around the
 observer.](../docs/figures/long_epoch_growth.gif)
 
-Static high-density variant (demo 40 — stable autopoiesis, included
-for the "structurally invariant by design" stability proof):
+Static high-density variant (demo 40 — stable autopoiesis with
+sub-cycle snapshots so the decay/restore dance is visible):
 
-![Long-epoch stable autopoiesis — 11 panels at cycle 0 / 20 / … / 200;
-substrate topology stays invariant by design (canonical decay-restore
-returns NGET to 10 each cycle for reflexive observers). Compare with
-the growth variant above to see what "alive but unchanging" vs
-"alive and expanding" looks like.](../docs/figures/long_epoch_200.png)
+![Long-epoch stable autopoiesis — 21 panels at every snap-every
+interval, ALTERNATING after-phase-decay (ring nodes light pink,
+NGET=2; observer stays bold red) and after-phase-restore (ring
+nodes deep red, NGET=10).  Substrate topology is structurally
+invariant by design (n=4 e=13 across every panel — no rewiring
+under canonical autopoiesis) but the per-node NGET dance is the
+actual stability proof: ring nodes nearly die every decay phase
+and are restored to full vitality every restore phase, indefinitely.
+Earlier versions of this figure showed 11 identical panels because
+the snapshot rate matched the cycle rate — "the substrate lives"
+was invisible.](../docs/figures/long_epoch_200.png)
 
 ## Sacred hello world
 
