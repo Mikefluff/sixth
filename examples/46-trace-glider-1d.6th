@@ -1,0 +1,71 @@
+\ examples/46-trace-glider-1d.6th
+\ Visual-trace pilot — Rule 184 1D glider ("car").
+\
+\ Replays demo 15 with snapshots after every STEP-CA. Rule 184 is
+\ the canonical traffic-flow CA: a "car" (live cell) advances one
+\ cell to the right per step if the right neighbour is empty. Demo
+\ shows the substrate-internal propagation as a moving particle —
+\ classical analogue of substrate-level momentum.
+\
+\ 5 snapshots: car starts at c3, advances to c4 → c5 → c6 → c7
+\ before evaporating at the boundary (no right neighbour at the end
+\ of an open chain).
+
+use prelude
+use peano
+use phi
+use dot
+use debug
+
+: rule184
+  dup PREV NGET "r184-L" store
+  dup NGET "r184-C" store
+  NEXT NGET "r184-R" store
+  "r184-L" load "r184-C" load not * "r184-C" load "r184-R" load * + 0 > if 1 else 0 then ;
+
+\ 7-cell chain.
+zero "c1" store
+"c1" load succ "c2" store
+"c2" load succ "c3" store
+"c3" load succ "c4" store
+"c4" load succ "c5" store
+"c5" load succ "c6" store
+"c6" load succ "c7" store
+
+NODES 7 assert-eq
+EDGES 6 assert-eq
+
+\ Initial: car at c3.
+"c1" load 0 NSET  "c2" load 0 NSET  "c3" load 1 NSET
+"c4" load 0 NSET  "c5" load 0 NSET  "c6" load 0 NSET  "c7" load 0 NSET
+
+: snap-with ( step -- )
+  "=== SNAPSHOT step=" .
+  .
+  "===" . cr
+  dot-snapshot-state ;
+
+0 snap-with
+
+' rule184 STEP-CA    1 snap-with
+"c4" load NGET 1 assert-eq
+
+' rule184 STEP-CA    2 snap-with
+"c5" load NGET 1 assert-eq
+
+' rule184 STEP-CA    3 snap-with
+"c6" load NGET 1 assert-eq
+
+' rule184 STEP-CA    4 snap-with
+"c7" load NGET 1 assert-eq
+
+\ One more step — car at c7 evaporates (boundary, no right neighbour).
+' rule184 STEP-CA    5 snap-with
+"c7" load NGET 0 assert-eq
+
+cr
+"=== Rule 184 1D glider trace ===" . cr
+"6 snapshots — car advances c3 → c7 then evaporates at boundary." . cr
+"Render with: make gif-glider-1d" . cr
+
+REPORT

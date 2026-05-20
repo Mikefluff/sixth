@@ -26,12 +26,15 @@ trigger F0 of the v9.0 preprint.
    `sixth/primitives/*.rkt`, the module loader resolves the stdlib,
    and a `#lang sixth` reader is registered.
 
-2. **All 43 demonstrations pass deterministically.** `examples-test.rkt`
-   asserts cumulative `pass=669 fail=0` across 43 demos covering
+2. **All 49 demonstrations pass deterministically.** `examples-test.rkt`
+   asserts cumulative `pass=702 fail=0` across 49 demos covering
    the sacred hello world (00), foundations (01–20), Pilots A–F
-   (21–36), three visual-trace pilots (37 Pilot D, 38 Pilot C,
-   39 split-brain), two long-epoch parametric pilots (40 stable, 41
-   growing), and the Conway blinker visual trace (42).
+   (21–36), three substrate-monism visual-trace pilots (37 Pilot D,
+   38 Pilot C, 39 split-brain), two long-epoch parametric pilots
+   (40 stable, 41 growing), five foundation visual traces (42
+   Conway blinker, 43 Conway glider, 44 Rule 110, 45 Rule 90, 46
+   Rule 184 1D glider), and two atomic-build traces (47 Pilot D
+   one primitive per frame, 48 sacred hello world atomic).
 
 3. **The Φ_PA stdlib word reproduces Definition def:phi-pa.** Demo 32
    asserts `phi-pa` on three canonical observers (non-reflexive

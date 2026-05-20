@@ -1,0 +1,70 @@
+\ examples/45-trace-rule90.6th
+\ Visual-trace pilot — Wolfram Rule 90 (Sierpinski fractal seed).
+\
+\ Replays demo 09 with snapshots after every STEP-CA. Rule 90:
+\   next(n) = NGET(PREV n) XOR NGET(NEXT n)
+\ Starting from a single live seed at the centre, the pattern fans
+\ out as a Sierpinski-like fractal triangle (truncated by the
+\ 11-cell finite chain).
+\
+\ 9 snapshots — visible step-by-step fractal propagation.
+
+use prelude
+use peano
+use phi
+use dot
+use debug
+
+: rule90
+  dup PREV NGET swap NEXT NGET + 1 = if 1 else 0 then ;
+
+\ 11-cell chain
+zero "c1" store
+"c1" load succ "c2" store
+"c2" load succ "c3" store
+"c3" load succ "c4" store
+"c4" load succ "c5" store
+"c5" load succ "c6" store
+"c6" load succ "c7" store
+"c7" load succ "c8" store
+"c8" load succ "c9" store
+"c9" load succ "c10" store
+"c10" load succ "c11" store
+
+NODES 11 assert-eq
+
+\ Initial: single seed at the centre.
+"c1" load 0 NSET   "c2" load 0 NSET   "c3" load 0 NSET
+"c4" load 0 NSET   "c5" load 0 NSET   "c6" load 1 NSET
+"c7" load 0 NSET   "c8" load 0 NSET   "c9" load 0 NSET
+"c10" load 0 NSET  "c11" load 0 NSET
+
+: snap-with ( step -- )
+  "=== SNAPSHOT step=" .
+  .
+  "===" . cr
+  dot-snapshot-state ;
+
+0 snap-with
+
+' rule90 STEP-CA    1 snap-with
+' rule90 STEP-CA    2 snap-with
+' rule90 STEP-CA    3 snap-with
+' rule90 STEP-CA    4 snap-with
+' rule90 STEP-CA    5 snap-with
+' rule90 STEP-CA    6 snap-with
+' rule90 STEP-CA    7 snap-with
+' rule90 STEP-CA    8 snap-with
+
+\ Sanity: pattern has propagated; structure unchanged.
+NODES 11 assert-eq
+EDGES 10 assert-eq
+\ At least one cell besides c6 alive after eight steps.
+"c1" load NGET "c11" load NGET +  0 >=  ASSERT
+
+cr
+"=== Rule 90 trace ===" . cr
+"9 snapshots (step 0..8) — Sierpinski-like fractal from a single seed." . cr
+"Render with: make gif-rule90" . cr
+
+REPORT

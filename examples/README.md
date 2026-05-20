@@ -1,9 +1,9 @@
-# `examples/` — the 41 demonstrations
+# `examples/` — the 49 demonstrations
 
 This directory holds Sixth's reproducible emergence demonstrations.
 Each file is a standalone Sixth program; `raco test
-tests/examples-test.rkt` (or `make verify`) executes all 41 and
-asserts a cumulative 657 ✓ / 0 ✗.
+tests/examples-test.rkt` (or `make verify`) executes all 49 and
+asserts a cumulative 702 ✓ / 0 ✗.
 
 The demos are organised in seven phases:
 
@@ -19,7 +19,8 @@ The demos are organised in seven phases:
 | Pilot F (encoding maps)               | 33–36 | 46 | toy substrates for PSH1–PSH5 (transformer / brain / split-brain / colony) |
 | Visual traces                         | 37–39 | 18 | DOT snapshot pilots — Pilots D, C, F.3 rendered as multi-panel figures or animated GIFs |
 | Long-epoch parametric                 | 40–41 | 16 | TCO-safe long autopoiesis runs, CLI-driven cycle count; demo 41 grows the substrate every K cycles for visible long-epoch evolution |
-| Conway visual trace                   | 42 | 7 | Conway's Game of Life blinker on 5×5 grid; state-aware DOT rendering shows alive/dead cells over time |
+| Foundation visual traces              | 42–46 | 30 | Conway blinker / glider, Rule 110, Rule 90, Rule 184 1D glider — substrate-state-aware DOT (each cell carries `[label="NGET"]`); the renderer colours alive cells red, dead light grey, and reuses a stable layout across animation frames |
+| Atomic-build traces                   | 47–48 | 10 | One snapshot per **primitive operation** — every `MARK` and every `EDGE+` becomes its own frame. Demo 47 builds Pilot D in 76 atomic frames; demo 48 builds the sacred hello world in 7 frames. Entity-by-entity emergence through `MARK` (distinction) and `EDGE+` (pointer) alone. |
 
 The visual-trace pilots emit GraphViz DOT blocks on stdout that the
 companion Python renderer (`code/render_trace.py`) parses into
@@ -56,14 +57,43 @@ snapshot that demonstrates substrate survival under harsh decay
 13-edge intact brain vs 9-edge callosotomised
 brain.](../docs/figures/split_brain_trace.png)
 
-Conway's Game of Life blinker on a 5×5 substrate grid — alive cells
-red, oscillates with period 2 (vertical ⇄ horizontal); structure
-fixed, state visible in colour:
+**Atomic substrate emergence** — the sacred hello world built one
+primitive operation at a time (7 frames, 1 fps so each substrate-
+state delta is unmissable):
+
+![Sacred hello world atomic — frame 1 void, frame 2 first MARK
+(grey), frame 3 NSET (red, alive), frame 4 second MARK, frame 5
+first EDGE+ pointer, frame 6 self-loop EDGE+ (re-entry), frame 7
+measurement.](../docs/figures/atomic_hello.gif)
+
+**Atomic Pilot D** — the 13-node 49-edge substrate-internally-driven
+cosmos built one primitive at a time (76 frames @ 6 fps):
+
+![Pilot D atomic build — 76 frames, each one MARK / NSET / EDGE+
+operation, showing the substrate emerging entity-by-entity from
+void through Spencer-Brown's first mark to a self-measuring
+cosmos.](../docs/figures/atomic_pilot_d.gif)
+
+Conway's Game of Life — alive cells red, structure fixed, state
+visible in colour:
 
 ![Conway blinker — 9 frames showing period-2 oscillation between
 vertical and horizontal three-cell bars on a 5×5 Moore-grid
-substrate. State-aware colouring honours per-cell NGET via the
-DOT `[label="N"]` attribute.](../docs/figures/conway_blinker.gif)
+substrate.](../docs/figures/conway_blinker.gif)
+
+![Conway 5-cell glider — translates +1, +1 across the 5×5 grid
+over 4 STEP-CA cycles.](../docs/figures/conway_glider.gif)
+
+Wolfram cellular automata on substrate chains:
+
+![Rule 110 — Cook-2004 universal CA, single-seed propagation
+on an 11-cell chain, 9 frames.](../docs/figures/rule110.gif)
+
+![Rule 90 — Sierpinski-like fractal from a single seed,
+9 frames.](../docs/figures/rule90.gif)
+
+![Rule 184 1D glider — "car" advances c3 → c7 then evaporates
+at the boundary, 6 frames.](../docs/figures/glider_1d.gif)
 
 Long-epoch with visible substrate growth (demo 41; CLI-parametric
 via `make trace-long-epoch-growth-gif CYCLES_G=N SNAP_G=K GROW=G`):

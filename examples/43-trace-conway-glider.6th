@@ -1,0 +1,100 @@
+\ examples/43-trace-conway-glider.6th
+\ Visual-trace pilot — Conway's Game of Life 5-cell glider.
+\
+\ Replays demo 20 with a snapshot after each STEP-CA so the glider's
+\ (+1, +1) diagonal translation across the 5×5 substrate grid is
+\ visible frame-by-frame. State-aware DOT (dot-snapshot-state)
+\ encodes per-cell NGET as [label="N"]; renderer colours alive=red,
+\ dead=grey.
+\
+\ Initial pattern: cells {2, 8, 11, 12, 13} alive (canonical glider).
+\ 4 STEP-CA cycles — period 4, after which the glider has translated
+\ one cell diagonally.
+
+use prelude
+use peano
+use graph
+use phi
+use dot
+use debug
+
+: conway
+  dup NSUM "cw-sum" store
+  NGET "cw-st" store
+  "cw-sum" load 3 = if 1 else
+    "cw-sum" load 2 = "cw-st" load 1 = * if 1 else 0 then
+  then ;
+
+\ 5×5 grid (25 cells, 144 edges) — same Moore-grid as the blinker demo
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+drop drop drop drop drop drop drop drop drop drop
+drop drop drop drop drop drop drop drop drop drop
+drop drop drop drop drop
+
+1 2 bi-edge   2 3 bi-edge   3 4 bi-edge   4 5 bi-edge
+6 7 bi-edge   7 8 bi-edge   8 9 bi-edge   9 10 bi-edge
+11 12 bi-edge   12 13 bi-edge   13 14 bi-edge   14 15 bi-edge
+16 17 bi-edge   17 18 bi-edge   18 19 bi-edge   19 20 bi-edge
+21 22 bi-edge   22 23 bi-edge   23 24 bi-edge   24 25 bi-edge
+
+1 6 bi-edge   6 11 bi-edge   11 16 bi-edge   16 21 bi-edge
+2 7 bi-edge   7 12 bi-edge   12 17 bi-edge   17 22 bi-edge
+3 8 bi-edge   8 13 bi-edge   13 18 bi-edge   18 23 bi-edge
+4 9 bi-edge   9 14 bi-edge   14 19 bi-edge   19 24 bi-edge
+5 10 bi-edge   10 15 bi-edge   15 20 bi-edge   20 25 bi-edge
+
+1 7 bi-edge   2 8 bi-edge   3 9 bi-edge   4 10 bi-edge
+6 12 bi-edge   7 13 bi-edge   8 14 bi-edge   9 15 bi-edge
+11 17 bi-edge   12 18 bi-edge   13 19 bi-edge   14 20 bi-edge
+16 22 bi-edge   17 23 bi-edge   18 24 bi-edge   19 25 bi-edge
+
+2 6 bi-edge   3 7 bi-edge   4 8 bi-edge   5 9 bi-edge
+7 11 bi-edge   8 12 bi-edge   9 13 bi-edge   10 14 bi-edge
+12 16 bi-edge   13 17 bi-edge   14 18 bi-edge   15 19 bi-edge
+17 21 bi-edge   18 22 bi-edge   19 23 bi-edge   20 24 bi-edge
+
+NODES 25 assert-eq
+EDGES 144 assert-eq
+
+: clear-all
+  1 0 NSET   2 0 NSET   3 0 NSET   4 0 NSET   5 0 NSET
+  6 0 NSET   7 0 NSET   8 0 NSET   9 0 NSET  10 0 NSET
+  11 0 NSET  12 0 NSET  13 0 NSET  14 0 NSET  15 0 NSET
+  16 0 NSET  17 0 NSET  18 0 NSET  19 0 NSET  20 0 NSET
+  21 0 NSET  22 0 NSET  23 0 NSET  24 0 NSET  25 0 NSET ;
+
+\ Initial glider — cells {2, 8, 11, 12, 13}.
+clear-all
+2 1 NSET   8 1 NSET   11 1 NSET   12 1 NSET   13 1 NSET
+
+: snap-with ( step -- )
+  "=== SNAPSHOT step=" .
+  .
+  "===" . cr
+  dot-snapshot-state ;
+
+0 snap-with
+
+' conway STEP-CA      1 snap-with
+' conway STEP-CA      2 snap-with
+' conway STEP-CA      3 snap-with
+' conway STEP-CA      4 snap-with
+
+\ After 4 steps the glider has translated (+1, +1) — final live set is
+\ {8, 14, 17, 18, 19}, matching demo 20.
+8 NGET 1 assert-eq
+14 NGET 1 assert-eq
+17 NGET 1 assert-eq
+18 NGET 1 assert-eq
+19 NGET 1 assert-eq
+
+cr
+"=== Conway glider trace ===" . cr
+"5 snapshots over 4 STEP-CA cycles — glider translates +1, +1." . cr
+"Render with: make gif-conway-glider" . cr
+
+REPORT

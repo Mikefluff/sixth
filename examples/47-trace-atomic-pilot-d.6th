@@ -1,0 +1,104 @@
+\ examples/47-trace-atomic-pilot-d.6th
+\ Atomic visual trace — Pilot D substrate built one primitive at a time.
+\
+\ Existing Pilot D trace (demo 37) snapshots after each SHELL is built.
+\ This demo snapshots after EACH SINGLE PRIMITIVE OPERATION — every
+\ MARK is a new node, every EDGE+ is a new pointer, every NSET is a
+\ state change.  The substrate emerges entity-by-entity through the
+\ two ontological operations: distinction (MARK) and pointer (EDGE+).
+\
+\ The resulting animation has ~70 frames for a 4-shell Pilot D, each
+\ showing exactly one substrate-state delta.  No block-by-block jumps.
+
+use prelude
+use graph
+use phi
+use dot
+use debug
+
+\ ============================================================
+\ Snapshot helper — increments a global counter so each frame's
+\ label is monotonic, regardless of how many primitives fired
+\ between explicit snap-with calls.
+\ ============================================================
+
+0 "frame-i" store
+
+: snap-atom ( -- )
+  "frame-i" load 1 + dup "frame-i" store
+  "=== SNAPSHOT frame=" .
+  .
+  "nodes=" . NODES .
+  "edges=" . EDGES .
+  "===" . cr
+  dot-snapshot-state ;
+
+\ Bi-edge expanded into two atomic EDGE+ calls + snapshot after each.
+: atomic-bi-edge ( a b -- )
+  2dup EDGE+ snap-atom
+  swap EDGE+ snap-atom ;
+
+\ Shell construction expanded so EVERY MARK and EVERY directed edge
+\ produces one snapshot frame.
+: atomic-shell
+  MARK "s1" store snap-atom
+  MARK "s2" store snap-atom
+  MARK "s3" store snap-atom
+
+  "s1" load "s2" load atomic-bi-edge
+  "s2" load "s3" load atomic-bi-edge
+  "s3" load "s1" load atomic-bi-edge
+
+  "O"  load "s1" load atomic-bi-edge
+  "O"  load "s2" load atomic-bi-edge
+  "O"  load "s3" load atomic-bi-edge
+
+  "s1" load 10 NSET snap-atom
+  "s2" load 10 NSET snap-atom
+  "s3" load 10 NSET snap-atom ;
+
+\ ============================================================
+\ Atomic build — every step is one primitive operation.
+\ ============================================================
+
+\ (void)
+snap-atom
+
+\ The first distinction — one MARK.  The substrate exists.
+MARK "O" store snap-atom
+
+\ Observer state — one NSET.  The token now carries a value.
+"O" load 10 NSET snap-atom
+
+\ The bootstrap distinction — one EDGE+ from observer to observer.
+\ A self-loop.  Spencer-Brown's re-entry as one substrate operation.
+"O" load "O" load EDGE+ snap-atom
+
+\ Now four shells, atomic.
+atomic-shell
+atomic-shell
+atomic-shell
+atomic-shell
+
+\ ============================================================
+\ End-state invariants — same as demo 31.
+\ ============================================================
+
+NODES 13 assert-eq
+EDGES 49 assert-eq
+"O" load OUT 13 assert-eq
+"O" load "O" load EDGE? 1 assert-eq
+"O" load phi-pa 130000 assert-eq
+
+cr
+"=== Atomic Pilot D trace ===" . cr
+"frames emitted    :" . "frame-i" load . cr
+"final NODES       :" . NODES . cr
+"final EDGES       :" . EDGES . cr
+cr
+"Each frame represents exactly one primitive operation —" . cr
+"one MARK, one EDGE+, or one NSET.  The substrate's entity-by-" . cr
+"entity emergence through distinction and pointer alone." . cr
+"Render with: make gif-atomic-pilot-d" . cr
+
+REPORT

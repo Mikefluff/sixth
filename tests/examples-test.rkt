@@ -72,8 +72,15 @@
     ;; Phase P — long-epoch / parametric (CLI --define)
     ("40-long-epoch-autopoiesis.6th"       11)
     ("41-long-epoch-growth.6th"             5)
-    ;; Phase Q — Conway visual trace
-    ("42-trace-conway-blinker.6th"          7)))
+    ;; Phase Q — foundation visual traces (state-aware)
+    ("42-trace-conway-blinker.6th"          7)
+    ("43-trace-conway-glider.6th"           7)
+    ("44-trace-rule110.6th"                 5)
+    ("45-trace-rule90.6th"                  4)
+    ("46-trace-glider-1d.6th"               7)
+    ;; Phase R — atomic-build traces (one primitive per frame)
+    ("47-trace-atomic-pilot-d.6th"          5)
+    ("48-trace-atomic-hello.6th"            5)))
 
 (define (run-demo file)
   (define out
@@ -98,8 +105,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 669
-                (format "cumulative ✓ count: ~a (expected 669)" total-pass)))
+  (check-equal? total-pass 702
+                (format "cumulative ✓ count: ~a (expected 702)" total-pass)))
 
-(displayln (format "examples regression: ~a / 669 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 702 ✓ across ~a demos"
                    total-pass (length expected)))

@@ -1,0 +1,82 @@
+\ examples/48-trace-atomic-hello.6th
+\ Atomic visual trace — Spencer-Brown's first mark, one primitive per frame.
+\
+\ The most pedagogical trace in the entire repository.  Eight frames,
+\ each one primitive operation, showing the substrate emerging from
+\ literal void through difference (MARK) and pointer (EDGE+) alone.
+\
+\ Frames:
+\   1  the void                 NODES=0  EDGES=0
+\   2  first MARK (A)           NODES=1  EDGES=0
+\   3  first NSET  (A=1)        NODES=1  EDGES=0   state attached
+\   4  second MARK (B)          NODES=2  EDGES=0   one more distinction
+\   5  first EDGE+  (A → B)     NODES=2  EDGES=1   first pointer
+\   6  first self-loop (A → A)  NODES=2  EDGES=2   re-entry
+\
+\ The animation runs at 1 fps for emphasis — every frame is
+\ ontologically significant.  Six moments to the universe.
+
+use prelude
+use phi
+use dot
+use debug
+
+0 "frame-i" store
+
+: snap-atom ( -- )
+  "frame-i" load 1 + dup "frame-i" store
+  "=== SNAPSHOT frame=" .
+  .
+  "nodes=" . NODES .
+  "edges=" . EDGES .
+  "===" . cr
+  dot-snapshot-state ;
+
+\ Frame 1 — the void.
+snap-atom
+
+\ Frame 2 — the first distinction.  Spencer-Brown's first mark.
+MARK "A" store
+snap-atom
+
+\ Frame 3 — substrate-state attaches to the token.
+"A" load 1 NSET
+snap-atom
+
+\ Frame 4 — a second token exists.  Distinction begets multiplicity.
+MARK "B" store
+snap-atom
+
+\ Frame 5 — the first pointer.  A relates to B.
+"A" load "B" load EDGE+
+snap-atom
+
+\ Frame 6 — re-entry.  A points at itself.  The strange loop is born.
+"A" load "A" load EDGE+
+snap-atom
+
+\ Frame 7 — measurement.  Same primitives compute Φ_PA on the substrate.
+\ This frame is the substrate AFTER the measurement; the state itself
+\ does not change.  Verify Φ_PA = 2 · 1 · 10000 = 20000.
+"A" load phi-pa 20000 assert-eq
+snap-atom
+
+\ Final invariants — same as sacred hello world demo 00.
+NODES 2 assert-eq
+EDGES 2 assert-eq
+"A" load OUT 2 assert-eq
+"A" load "A" load EDGE? 1 assert-eq
+
+cr
+"=== Atomic sacred hello world ===" . cr
+"frames     :" . "frame-i" load . cr
+"NODES      :" . NODES . cr
+"EDGES      :" . EDGES . cr
+"phi-pa(A)  :" . "A" load phi-pa . cr
+cr
+"Six moments + the measurement frame.  The minimum executable" . cr
+"substrate that contains all six ontological moments of Sixth," . cr
+"each one a single primitive call.  Render with:" . cr
+"  make gif-atomic-hello" . cr
+
+REPORT
