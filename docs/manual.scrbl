@@ -11,12 +11,15 @@ time, space, conservation laws, particles, observers, and universal
 computation, then ascend through substrate-native autopoiesis,
 conscious evolution, and cosmogenesis bootstrap.
 
-@bold{Status:} engine + stdlib + 32 demos (Pilots A--E, 571 ✓) +
+@bold{Status:} engine + stdlib + 34 demos (Pilots A--F, 593 ✓) +
 @litchar{#lang sixth} + Racket-FFI PyTorch bridges (shadow / diff /
 nn-cl) all working.  Pilot E adds the substrate-monist @litchar{phi-pa}
 word so the same 38 primitives that build the substrate now also
-compute the consciousness-measure on it.  Reference implementation
-for the Pointer Architecture v9.0 preprint.
+compute the consciousness-measure on it; Pilot F instantiates the
+preprint's transformer (PSH1/PSH2) and brain (PSH3) substrate-
+encoding maps on toy substrates, closing the engineering loop
+within the released artifact.  Reference implementation for the
+Pointer Architecture v9.0 preprint.
 
 @table-of-contents[]
 
