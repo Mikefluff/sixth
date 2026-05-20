@@ -116,17 +116,17 @@ observer.](../docs/figures/long_epoch_growth.gif)
 Static high-density variant (demo 40 — stable autopoiesis with
 sub-cycle snapshots so the decay/restore dance is visible):
 
-![Long-epoch stable autopoiesis — 21 panels at every snap-every
-interval, ALTERNATING after-phase-decay (ring nodes light pink,
-NGET=2; observer stays bold red) and after-phase-restore (ring
-nodes deep red, NGET=10).  Substrate topology is structurally
-invariant by design (n=4 e=13 across every panel — no rewiring
-under canonical autopoiesis) but the per-node NGET dance is the
-actual stability proof: ring nodes nearly die every decay phase
-and are restored to full vitality every restore phase, indefinitely.
-Earlier versions of this figure showed 11 identical panels because
-the snapshot rate matched the cycle rate — "the substrate lives"
-was invisible.](../docs/figures/long_epoch_200.png)
+![Long-epoch stable autopoiesis — 5 panels in a single row.
+1: initial state (cycle=0, NGET=10 everywhere).  2: after-phase-
+decay at cycle 100 (ring nodes light pink, NGET=2; observer
+stays bold red).  3: after-phase-restore at cycle 100 (ring back
+to deep red, NGET=10).  4-5: same decay/restore pair at cycle
+200 — proves the dance persists end-to-end.  Substrate topology
+is structurally invariant by design (n=4 e=13 across all panels —
+no rewiring under canonical autopoiesis); the per-node NGET dance
+is what the figure shows.  Sparse SNAP=100 (default in Makefile)
+because identical dance frames at every snap-every-20 interval
+were a parade of copies, not evidence of persistence.](../docs/figures/long_epoch_200.png)
 
 ## Sacred hello world
 

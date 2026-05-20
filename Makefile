@@ -77,10 +77,17 @@ traces: trace-pilot-c trace-pilot-d trace-split-brain
 	@echo "→ all visual traces rendered to build/figures/"
 
 # Long-epoch parametric run with snapshot every K cycles, static PNG.
-# Override CYCLES / SNAP / OUT on the command line, e.g.:
+# Override CYCLES / SNAP on the command line, e.g.:
 #   make trace-long-epoch CYCLES=2000 SNAP=200
-CYCLES ?= 500
-SNAP   ?= 50
+#
+# Default SNAP is chosen sparse on purpose: demo 40 emits TWO sub-cycle
+# snapshots per snap moment (after-phase-decay + after-phase-restore),
+# so SNAP=K with CYCLES=N produces 1 + 2·(N/K) frames.  CYCLES=200
+# SNAP=100 → 5 frames (initial, decay@100, restore@100, decay@200,
+# restore@200) — enough to show the dance + persistence without
+# repeating an identical pair 10 times.
+CYCLES ?= 200
+SNAP   ?= 100
 
 trace-long-epoch:
 	@mkdir -p build/figures
