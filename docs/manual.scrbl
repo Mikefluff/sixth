@@ -8,10 +8,13 @@ Sixth is a small Forth-like stack language hosted on Racket with an
 attached hypergraph-rewriting substrate.  From 15 base primitives and
 23 substrate primitives, the bundled emergence demos derive numbers,
 time, space, conservation laws, particles, observers, and universal
-computation.
+computation, then ascend through substrate-native autopoiesis,
+conscious evolution, and cosmogenesis bootstrap.
 
-@bold{Status:} engine + stdlib + 20 demos + @litchar{#lang sixth} all
-working.  PyTorch FFI bridge planned for Phase H.
+@bold{Status:} engine + stdlib + 31 demos (Pilots A--D, 559 ✓) +
+@litchar{#lang sixth} + Racket-FFI PyTorch bridges (shadow / diff /
+nn-cl) all working.  Reference implementation for the Pointer
+Architecture v9.0 preprint.
 
 @table-of-contents[]
 

@@ -1,53 +1,139 @@
-# Sixth — foundational substrate language
+# Sixth — substrate-research language
 
 > 15 base primitives + 23 substrate primitives.
 > From `MARK` and `EDGE+` rise numbers, time, space, conservation laws,
-> particles, observers, and universal computation.
+> particles, observers, autopoietic patterns, and a substrate-internally
+> driven cosmogenesis.
 
-Sixth is a small Forth-like stack language hosted on Racket, with an
-attached hypergraph-rewriting substrate.  The language is the engine
-through which a Pointer-Architecture substrate is built up from the
-single primitive of *difference* (`MARK` — create a fresh distinguishable
-token) plus the primitive of *pointer* (`EDGE+` — relate one token to
-another) plus the primitive of *rewrite* (`EACH` family + `STEP-CA` —
-apply a rule to the substrate).
+Sixth is a small Forth-like stack language hosted on Racket with an
+attached hypergraph-rewriting substrate. It is the operational
+realisation of the Pointer Architecture substrate
+`𝒮 = (G, R, C, A, π)` of the v9.0 preprint, and serves as the released
+artifact behind that paper's load-bearing claim L0 (operational
+substrate).
 
-20 emergence demonstrations (`examples/`) cover Peano arithmetic, causal
-time, fixed-point stability, rule-order resolution, self-reference,
-relational facts, transitive closure, 1D and 2D distance, Rule 90 / 110
-cellular automata, Wolfram hypergraph rewriting, conservation laws,
-Conway's Game of Life with both blinker and glider, intersubjective
-consensus, and category-style substrate morphism.
+The 38 primitives factor into three ontological moves:
 
-A native Racket-FFI bridge to libtorch (`sixth/bridges/torch/`) lifts
-the same substrate into autograd, enabling differentiable substrate
-operations and a Substrate-NN architecture for continual learning.
+- **Difference** — `MARK` creates a fresh distinguishable token.
+- **Pointer** — `EDGE+` relates one token to another.
+- **Rewrite** — `EACH` / `STEP-CA` family applies a rule across the substrate.
+
+Everything else — Peano arithmetic, causal time, fixed-point stability,
+1D/2D distance, Rule 110, Conway's Game of Life, Maturana–Varela
+autopoiesis, conscious evolution, and a substrate-resident observer that
+bootstraps its own 13-node 49-edge cosmos — is derived in 31 demos
+totaling 559 assertions.
+
+## Pilots A–D
+
+The substrate-native pilots are four levels of ascent above the
+foundational demos (`01-numbers` … `20-conway-glider`, 352 ✓):
+
+| Pilot | Demos | Asserts | What |
+|-------|-------|---------|------|
+| **A** Substrate-native autopoiesis | 21–25 | 81 | Self-producing rings; observer collapse; reflexive vs non-reflexive persistence. Operationalises Maturana–Varela on the discrete substrate. |
+| **B** Conscious evolution | 26–29 | 88 | Symbiosis, reproduction with mutation, observer-driven selection (Lamarck-style, not blind Darwin), goal-directed observer behaviour. |
+| **C** Cosmogenesis bootstrap | 30 | 21 | 13-node, 48-edge substrate constructed by a substrate-resident observer from one `MARK` at `t=0`; persists under harsh autopoietic decay (d=8, τ=5). |
+| **D** Substrate-internally-driven cosmogenesis | 31 | 17 | Observer establishes its own self-loop at `t=0+` (the substrate-monist bootstrap distinction), then drives further construction via a substrate-readable halting predicate `NSUM(O) ≥ target-min` — no host counter, no programmer-chosen shell count. Closes the substrate-monism gap of Pilot C. |
+
+Cumulative: 559 ✓ / 0 ✗ across 31 demos.
 
 ## Quickstart
 
 ```bash
+# install the package and stdlib (one-time)
 raco pkg install --link .
-raco test sixth
-racket -l sixth/cli -- examples/all.6th
+
+# run a single demo
+racket -l sixth/cli -- run examples/31-observer-driven-cosmogenesis.6th
+
+# run all 31 demos against the rackunit regression gate
+raco test tests/examples-test.rkt
+# → examples regression: 559 / 559 ✓ across 31 demos
+
+# REPL
+racket -l sixth/cli -- repl
 ```
 
-REPL:
-
-```bash
-racket -l sixth/repl
-```
-
-`#lang sixth` files:
+`#lang sixth` is first-class — any Racket-aware editor (DrRacket,
+racket-mode) can run `.rkt` files starting with `#lang sixth`:
 
 ```racket
 #lang sixth
-3 4 + .   \ prints 7
+: factorial dup 1 > if dup 1 - factorial * else drop 1 then ;
+5 factorial .   \ prints 120
 ```
 
-## Status
+## Repository layout
 
-Refactor in progress (Phase A of I).  Original chibi-Scheme prototype
-is preserved unmodified in `legacy/` as a parity oracle.
+```
+sixth/        engine — lexer, parser, compiler, VM,
+              38 primitives (15 base + 23 substrate), module loader,
+              REPL, CLI, #lang sixth reader, PyTorch FFI bridges
+stdlib/       Sixth-language standard library (prelude, peano, graph,
+              grid, ca, bfs, debug) — all helpers above the 38
+              primitives live here, none of them are themselves
+              primitives
+examples/     31 emergence demonstrations (01–31)
+tests/        rackunit suites — lexer, parser, VM, substrate, loader,
+              examples-test.rkt (regression gate at 559 ✓)
+docs/         Scribble manual — language reference, substrate
+              foundations, stdlib word index, architecture notes,
+              migration guide
+legacy/       original chibi-Scheme prototype + first-pass PyTorch
+              bridges, preserved unmodified as parity oracle
+build/        regeneratable artefacts (raco scribble HTML, etc.) —
+              gitignored
+```
 
-See [`SUBSTRATE.md`](./SUBSTRATE.md) for the foundational PA mapping
-and literature references.
+## Documentation
+
+Render the Scribble manual to HTML:
+
+```bash
+make docs-html
+# → open build/docs/manual.html
+```
+
+The manual covers:
+
+- `language.scrbl` — syntax, semantics, every base primitive
+- `substrate.scrbl` — the substrate's foundational mapping and the
+  ontological role of each substrate primitive
+- `stdlib.scrbl` — every stdlib word with stack effect
+- `architecture.scrbl` — lexer / parser / compiler / VM / substrate /
+  bridges module boundaries
+- `migration.scrbl` — chibi-Scheme → Racket migration notes for the
+  legacy prototype
+
+## PyTorch FFI bridges
+
+`sixth/bridges/torch/` lifts the substrate into autograd via the
+native Racket FFI to libtorch (no Python in the path). Three shapes:
+
+- `shadow.rkt`  — Substrate ⇄ Tensor mirror; lossless round-trip
+- `diff.rkt`    — autograd-aware operations over substrate features
+- `nn.rkt`      — Substrate-NN continual-learning architecture
+                  (port of `legacy/substrate_nn_cl.py`)
+
+Bridge tests run via `raco test tests/bridges/torch-test.rkt`; they
+skip cleanly if libtorch is absent.
+
+## Reference
+
+Sixth is the operational substrate behind:
+
+**Pointer Architecture v9.0** (preprint pending arXiv submission).
+The paper defines `𝒮 = (G, R, C, A, π)` formally, maps it to Sixth's
+38 primitives, derives the substrate-monist `Φ_PA` measure of
+consciousness from Pilots A–D, and posits the substrate-monist
+identity thesis as a working hypothesis under the falsifier F5.
+
+See [`SUBSTRATE.md`](./SUBSTRATE.md) for the substrate-philosophical
+mapping and literature references inherited by the v9.0 preprint
+(Spencer-Brown, Maturana–Varela, Hofstadter, Rovelli, Wolfram, Friston,
+Whitehead, Spinoza).
+
+## License
+
+MIT. See `info.rkt`.
