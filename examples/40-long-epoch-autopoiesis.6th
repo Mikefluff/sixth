@@ -95,7 +95,7 @@ NODES 4 assert-eq
   "nsum=" . "O" load NSUM .
   "nget=" . "O" load NGET .
   "===" . cr
-  dot-snapshot ;
+  dot-snapshot-state ;
 
 \ ============================================================
 \ Epoch loop  — TCO-safe tail recursion

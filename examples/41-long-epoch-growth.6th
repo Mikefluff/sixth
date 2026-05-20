@@ -81,7 +81,7 @@ build-shell
   "nodes=" . NODES .
   "edges=" . EDGES .
   "===" . cr
-  dot-snapshot ;
+  dot-snapshot-state ;
 
 0 snap-with
 "autopoiesis+growth-cycle" "event" store

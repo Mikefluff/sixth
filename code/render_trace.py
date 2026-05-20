@@ -157,9 +157,10 @@ def render(snapshots, out_path: Path, title: str | None) -> None:
         squeeze=False,
     )
 
+    label_max = _global_label_max(snaps)
     for idx, (meta, graph) in enumerate(snaps):
         ax = axes[idx // cols][idx % cols]
-        _draw_snapshot(ax, meta, graph, idx)
+        _draw_snapshot(ax, meta, graph, idx, label_max=label_max)
 
     # Hide unused axes.
     for i in range(n, rows * cols):
@@ -398,7 +399,24 @@ def _observer_node(meta: dict[str, str], graph) -> str | None:
     )
 
 
-def _draw_snapshot(ax, meta, graph, idx, fixed_pos=None) -> None:
+def _global_label_max(snaps) -> int:
+    """Compute the max integer node-label seen across the whole trace.
+    Per-snapshot max would collapse (e.g. autopoiesis after-decay where
+    every node = 2 and after-restore where every node = 10) into
+    identical visuals; a trace-wide max preserves the gradient."""
+    g_max = 0
+    for _meta, g in snaps:
+        for n in g.nodes:
+            lbl = g.nodes[n].get("label", "")
+            try:
+                v = int(lbl)
+            except (TypeError, ValueError):
+                v = 0
+            g_max = max(g_max, v)
+    return g_max
+
+
+def _draw_snapshot(ax, meta, graph, idx, fixed_pos=None, label_max=None) -> None:
     if graph.number_of_nodes() == 0:
         ax.set_axis_off()
         ax.set_title(_panel_title(meta, idx), fontsize=9)
@@ -407,29 +425,59 @@ def _draw_snapshot(ax, meta, graph, idx, fixed_pos=None) -> None:
     observer_id = _observer_node(meta, graph)
     has_labels = any("label" in graph.nodes[n] for n in graph.nodes)
 
-    def _node_colour(n: str) -> str:
-        # State-aware: label "1" / "0" (Conway alive/dead) trumps observer.
-        if has_labels:
-            lbl = graph.nodes[n].get("label", "")
+    # Build a label→intensity scale so NGET=2 vs NGET=10 render as
+    # visually distinct shades, not collapsed into binary "alive/dead".
+    # Conway demos keep binary semantics (max=1); autopoiesis demos
+    # (max=10) get full gradient.  Use trace-wide max (passed in)
+    # rather than per-snapshot max, otherwise after-decay and
+    # after-restore frames each normalise to their own max and look
+    # identical even though NGET genuinely changed.
+    label_values: dict[str, int] = {}
+    if has_labels:
+        for n in graph.nodes:
             try:
-                v = int(lbl)
+                label_values[n] = int(graph.nodes[n].get("label", "0") or "0")
             except ValueError:
-                v = 0
-            return "#d04040" if v > 0 else "#e0e0e0"
-        return "#d04040" if n == observer_id else "#909090"
+                label_values[n] = 0
+    max_lbl = label_max if label_max is not None else (
+        max(label_values.values(), default=0) if has_labels else 0
+    )
+
+    def _label_colour(v: int) -> str:
+        # Light grey at 0 → deep red at max.  Linear ramp through a fixed
+        # palette so output is deterministic without matplotlib colormap
+        # state.  Five stops are enough to read "decayed vs restored".
+        if max_lbl == 0:
+            return "#e0e0e0"
+        ratio = max(0.0, min(1.0, v / max_lbl))
+        stops = ["#e8e8e8", "#f5c4c4", "#e98080", "#d04040", "#a01818"]
+        idx = int(round(ratio * (len(stops) - 1)))
+        return stops[idx]
+
+    def _node_colour(n: str) -> str:
+        # State-aware: label intensity for non-observers; observer keeps
+        # its distinctive red regardless of label so it never disappears
+        # into the background during an autopoiesis decay frame.
+        if n == observer_id:
+            return "#c43030"
+        if has_labels:
+            return _label_colour(label_values.get(n, 0))
+        return "#909090"
 
     node_colors = [_node_colour(n) for n in graph.nodes]
-    # Observer is structurally load-bearing in PA — give it ~2× area so
-    # the figure encodes its role rather than treating it as one node
-    # among many.  Self-loops get extra width because the Spencer-Brown
-    # bootstrap distinction is THE visual marker of substrate-monism.
-    node_sizes = [400 if n == observer_id else 200 for n in graph.nodes]
+    # Observer is structurally load-bearing in PA — give it ~3× area and
+    # a thick black border so the figure encodes its role rather than
+    # treating it as one node among many.  Self-loops get extra width
+    # because the Spencer-Brown bootstrap distinction is THE visual
+    # marker of substrate-monism.
+    node_sizes = [550 if n == observer_id else 220 for n in graph.nodes]
+    node_borders = [2.2 if n == observer_id else 0.8 for n in graph.nodes]
     edge_colors = [
         "#c43030" if u == v else "#606060"
         for (u, v) in graph.edges
     ]
     edge_widths = [
-        2.4 if u == v else 0.8
+        2.6 if u == v else 0.8
         for (u, v) in graph.edges
     ]
     if fixed_pos is not None:
@@ -456,7 +504,7 @@ def _draw_snapshot(ax, meta, graph, idx, fixed_pos=None) -> None:
         graph, pos, ax=ax,
         node_color=node_colors,
         node_size=node_sizes,
-        linewidths=0.8,
+        linewidths=node_borders,
         edgecolors="black",
     )
     nx.draw_networkx_labels(
@@ -495,6 +543,7 @@ def render_gif(snapshots, out_path: Path, title: str | None,
     # nodes that persist across frames stay in the same place — kills
     # the layout-jiggle problem reported on early GIFs.
     union_pos = _union_layout(snaps)
+    label_max = _global_label_max(snaps)
 
     fig, ax = plt.subplots(figsize=(6.5, 6.5))
     suptitle = _figure_suptitle(snaps, title)
@@ -503,7 +552,8 @@ def render_gif(snapshots, out_path: Path, title: str | None,
 
     def frame(idx):
         meta, graph = snaps[idx]
-        _draw_snapshot(ax, meta, graph, idx, fixed_pos=union_pos)
+        _draw_snapshot(ax, meta, graph, idx,
+                       fixed_pos=union_pos, label_max=label_max)
         return []
 
     animation = anim.FuncAnimation(
