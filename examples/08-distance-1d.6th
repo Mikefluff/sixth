@@ -1,0 +1,79 @@
+\ examples/08-distance-1d.6th — Distance from graph topology via BFS relax.
+\
+\ No node knows its position; no coordinates exist.  Yet the shortest-
+\ edge-path metric emerges from one local rule (relax x→y if d(x)+1<d(y))
+\ iterated to fixed point.  Space is a fixed point of relaxation.
+
+use prelude
+use peano
+use bfs
+use debug
+
+\ Directed chain a→b→c→d→e.
+zero "a" store
+zero "b" store
+zero "c" store
+zero "d" store
+zero "e" store
+"a" load "b" load EDGE+
+"b" load "c" load EDGE+
+"c" load "d" load EDGE+
+"d" load "e" load EDGE+
+
+NODES 5 assert-eq
+EDGES 4 assert-eq
+
+"a" load bfs-init drop
+
+"a" load NGET 0 assert-eq
+"b" load NGET -1 assert-eq
+"e" load NGET -1 assert-eq
+
+bfs-step
+"b" load NGET 1 assert-eq
+bfs-step
+"c" load NGET 2 assert-eq
+bfs-step
+"d" load NGET 3 assert-eq
+bfs-step
+"e" load NGET 4 assert-eq
+
+bfs-step
+"e" load NGET 4 assert-eq
+"a" load NGET 0 assert-eq
+
+\ Triangle inequality on diamond a→b, a→c, b→d, c→d.
+RESET
+zero "a" store
+zero "b" store
+zero "c" store
+zero "d" store
+"a" load "b" load EDGE+
+"a" load "c" load EDGE+
+"b" load "d" load EDGE+
+"c" load "d" load EDGE+
+
+"a" load bfs-init drop
+bfs-step bfs-step bfs-step
+
+"a" load NGET 0 assert-eq
+"b" load NGET 1 assert-eq
+"c" load NGET 1 assert-eq
+"d" load NGET 2 assert-eq
+
+\ d(b,d) = 1.
+RESET
+zero "a" store
+zero "b" store
+zero "c" store
+zero "d" store
+"a" load "b" load EDGE+
+"a" load "c" load EDGE+
+"b" load "d" load EDGE+
+"c" load "d" load EDGE+
+
+"b" load bfs-init drop
+bfs-step bfs-step
+"d" load NGET 1 assert-eq
+
+REPORT

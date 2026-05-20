@@ -1,0 +1,19 @@
+# Racket compiled bytecode
+compiled/
+*.dep
+*.zo
+
+# Build artifacts (regeneratable via raco test / make)
+build/
+
+# Editor / OS
+*.swp
+*~
+.DS_Store
+
+# Python (in legacy/)
+__pycache__/
+*.pyc
+
+# Logs
+*.log

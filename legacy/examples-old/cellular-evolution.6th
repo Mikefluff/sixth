@@ -1,0 +1,167 @@
+: grid-size 16 ;
+: pop-size 10 ;
+
+: init-random 42 "seed" store ;
+
+: random 
+  "seed" load 1103515245 * 12345 + dup "seed" store ;
+
+: random-mod 
+  random swap mod ;
+
+: init-ca-grid
+  1000 "grid" store
+  grid-size 0 init-grid-y ;
+
+: init-grid-y
+  dup grid-size < if
+    grid-size 0 init-grid-x
+    1+ init-grid-y
+  else drop then ;
+
+: init-grid-x
+  over over < if
+    100 random-mod 30 < if 1 else 0 then
+    2 pick 2 pick set-ca-cell
+    1+ init-grid-x
+  else 2drop drop then ;
+
+: get-ca-cell
+  grid-size * + "grid" load + load ;
+
+: set-ca-cell
+  grid-size * + "grid" load + store ;
+
+: count-ca-neighbors
+  0 "neighbors" store
+  dup 1- over 1- check-ca-neighbor
+  dup   over 1- check-ca-neighbor
+  dup 1+ over 1- check-ca-neighbor
+  dup 1- over   check-ca-neighbor
+  dup 1+ over   check-ca-neighbor
+  dup 1- over 1+ check-ca-neighbor
+  dup   over 1+ check-ca-neighbor
+  dup 1+ over 1+ check-ca-neighbor
+  2drop "neighbors" load ;
+
+: check-ca-neighbor
+  over 0 < if 2drop else
+  over grid-size < if
+    dup 0 < if 2drop else
+    dup grid-size < if
+      get-ca-cell "neighbors" load + "neighbors" store
+    else drop drop then
+    then
+  else 2drop then
+  then ;
+
+: step-ca
+  2000 "new-grid" store
+  grid-size 0 step-ca-y ;
+
+: step-ca-y
+  dup grid-size < if
+    grid-size 0 step-ca-x
+    1+ step-ca-y
+  else drop then ;
+
+: step-ca-x
+  over over < if
+    over 2 pick get-ca-cell "current" store
+    over 2 pick count-ca-neighbors "n" store
+    
+    "current" load if
+      "n" load 2 = if 1 else
+      "n" load 3 = if 1 else 0 then then
+    else
+      "n" load 3 = if 1 else 0 then
+    then
+    
+    over 2 pick "new-grid" load + grid-size * + store
+    1+ step-ca-x
+  else 2drop drop then ;
+
+: copy-ca-grid
+  grid-size 0 copy-ca-y ;
+
+: copy-ca-y
+  dup grid-size < if
+    grid-size 0 copy-ca-x
+    1+ copy-ca-y
+  else drop then ;
+
+: copy-ca-x
+  over over < if
+    over 2 pick "new-grid" load + grid-size * + load
+    over 2 pick set-ca-cell
+    1+ copy-ca-x
+  else 2drop drop then ;
+
+: count-ca-living
+  0 "living" store
+  grid-size 0 count-living-y ;
+
+: count-living-y
+  dup grid-size < if
+    grid-size 0 count-living-x
+    1+ count-living-y
+  else drop then ;
+
+: count-living-x
+  over over < if
+    over 2 pick get-ca-cell "living" load + "living" store
+    1+ count-living-x
+  else 2drop drop then ;
+
+: ca-fitness
+  init-ca-grid
+  5 0 fitness-loop
+  count-ca-living "living" load ;
+
+: fitness-loop
+  dup 5 < if
+    step-ca copy-ca-grid
+    1+ fitness-loop
+  else drop then ;
+
+: init-ca-population
+  3000 "population" store
+  pop-size 0 init-pop-loop ;
+
+: init-pop-loop
+  dup pop-size < if
+    random-mod dup "population" load + store
+    1+ init-pop-loop
+  else drop then ;
+
+: evolve-ca-population
+  pop-size 0 evolve-loop ;
+
+: evolve-loop
+  dup pop-size < if
+    100 random-mod 20 < if
+      random-mod over "population" load + store
+    then
+    1+ evolve-loop
+  else drop then ;
+
+: demo-cellular-evolution
+  init-random
+  init-ca-population
+  5 0 evolution-demo-loop ;
+
+: evolution-demo-loop
+  dup 5 < if
+    evolve-ca-population
+    1+ evolution-demo-loop
+  else drop then ;
+
+: test-cellular-evolution
+  demo-cellular-evolution
+  ca-fitness 0 > if 1 else 0 then ;
+
+: cellular-evolution-demo
+  test-cellular-evolution
+  demo-cellular-evolution
+  ca-fitness 10 > if 1 else 0 then
+  * ; 

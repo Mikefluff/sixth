@@ -1,0 +1,476 @@
+: world-size 32 ;
+: population-count 50 ;
+: generations 100 ;
+: mutation-rate 15 ;
+: elite-count 5 ;
+
+: init-evolution-system
+  123456 "rng-state" store
+  10000 "world-grid" store
+  20000 "next-world" store  
+  30000 "gene-pool" store
+  40000 "fitness-scores" store
+  50000 "rule-formulas" store ;
+
+: advance-rng
+  "rng-state" load 
+  1103515245 * 12345 + 
+  dup "rng-state" store ;
+
+: random-in-range
+  advance-rng swap mod ;
+
+: encode-rule-formula
+  8 0 encode-formula-loop ;
+
+: encode-formula-loop
+  dup 8 < if
+    256 random-in-range 
+    over "rule-formulas" load + store
+    1+ encode-formula-loop
+  else drop then ;
+
+: decode-rule-formula
+  "neighbors" load "rule-formulas" load + load ;
+
+: evolve-rule-formula
+  dup decode-rule-formula "base-rule" store
+  
+  "current-cell" load if
+    "base-rule" load 2 mod if
+      "neighbors" load 2 = if 1 else
+      "neighbors" load 3 = if 1 else
+      "neighbors" load 4 = if "base-rule" load 4 mod 2 / else
+      0 then then then
+    else
+      "neighbors" load 1 = if "base-rule" load 8 mod 4 / else
+      "neighbors" load 2 = if "base-rule" load 16 mod 8 / else
+      "neighbors" load 3 = if 1 else
+      0 then then then
+    then
+  else
+    "base-rule" load 32 mod 16 / if
+      "neighbors" load 3 = if 1 else
+      "neighbors" load 2 = if "base-rule" load 64 mod 32 / else
+      "neighbors" load 4 = if "base-rule" load 128 mod 64 / else
+      0 then then then
+    else
+      "neighbors" load 3 = if 1 else 0 then
+    then
+  then ;
+
+: init-world-grid
+  world-size 0 init-world-row ;
+
+: init-world-row
+  dup world-size < if
+    world-size 0 init-world-cell
+    1+ init-world-row
+  else drop then ;
+
+: init-world-cell
+  over over < if
+    100 random-in-range 35 < if 1 else 0 then
+    2 pick 2 pick set-world-cell
+    1+ init-world-cell
+  else 2drop drop then ;
+
+: get-world-cell
+  world-size * + "world-grid" load + load ;
+
+: set-world-cell
+  world-size * + "world-grid" load + store ;
+
+: get-next-cell
+  world-size * + "next-world" load + load ;
+
+: set-next-cell
+  world-size * + "next-world" load + store ;
+
+: count-cell-neighbors
+  0 "neighbor-sum" store
+  
+  over 1- over 1- wrap-and-count
+  over   over 1- wrap-and-count
+  over 1+ over 1- wrap-and-count
+  over 1- over   wrap-and-count
+  over 1+ over   wrap-and-count
+  over 1- over 1+ wrap-and-count
+  over   over 1+ wrap-and-count
+  over 1+ over 1+ wrap-and-count
+  
+  2drop "neighbor-sum" load ;
+
+: wrap-and-count
+  over 0 < if world-size 1- + then
+  over world-size < if else world-size - then
+  dup 0 < if world-size 1- + then
+  dup world-size < if else world-size - then
+  
+  get-world-cell "neighbor-sum" load + "neighbor-sum" store ;
+
+: simulate-generation
+  "current-individual" load "active-rule" store
+  world-size 0 simulate-row ;
+
+: simulate-row
+  dup world-size < if
+    world-size 0 simulate-cell
+    1+ simulate-row
+  else drop then ;
+
+: simulate-cell
+  over over < if
+    over 2 pick get-world-cell "current-cell" store
+    over 2 pick count-cell-neighbors "neighbors" store
+    
+    "active-rule" load evolve-rule-formula
+    over 2 pick set-next-cell
+    
+    1+ simulate-cell
+  else 2drop drop then ;
+
+: copy-next-to-current
+  world-size 0 copy-world-row ;
+
+: copy-world-row
+  dup world-size < if
+    world-size 0 copy-world-cell
+    1+ copy-world-row
+  else drop then ;
+
+: copy-world-cell
+  over over < if
+    over 2 pick get-next-cell
+    over 2 pick set-world-cell
+    1+ copy-world-cell
+  else 2drop drop then ;
+
+: evaluate-individual-fitness
+  dup "current-individual" store
+  init-world-grid
+  
+  0 "total-fitness" store
+  
+  20 0 fitness-generation-loop
+  
+  "total-fitness" load
+  complexity-bonus +
+  stability-bonus +
+  diversity-bonus + ;
+
+: fitness-generation-loop
+  dup 20 < if
+    simulate-generation
+    copy-next-to-current
+    calculate-generation-fitness
+    1+ fitness-generation-loop
+  else drop then ;
+
+: calculate-generation-fitness
+  count-living-cells "living" store
+  count-stable-patterns "stable" store
+  count-oscillating-patterns "oscillating" store
+  
+  "living" load "stable" load 2 * + "oscillating" load 3 * +
+  "total-fitness" load + "total-fitness" store ;
+
+: count-living-cells
+  0 "cell-count" store
+  world-size 0 count-living-row ;
+
+: count-living-row
+  dup world-size < if
+    world-size 0 count-living-cell
+    1+ count-living-row
+  else drop then ;
+
+: count-living-cell
+  over over < if
+    over 2 pick get-world-cell "cell-count" load + "cell-count" store
+    1+ count-living-cell
+  else 2drop drop then ;
+
+: count-stable-patterns
+  save-world-state
+  simulate-generation copy-next-to-current
+  compare-with-saved 5 * ;
+
+: save-world-state
+  60000 "saved-world" store
+  world-size 0 save-world-row ;
+
+: save-world-row
+  dup world-size < if
+    world-size 0 save-world-cell
+    1+ save-world-row
+  else drop then ;
+
+: save-world-cell
+  over over < if
+    over 2 pick get-world-cell
+    over 2 pick "saved-world" load + world-size * + store
+    1+ save-world-cell
+  else 2drop drop then ;
+
+: compare-with-saved
+  0 "match-count" store
+  world-size 0 compare-row ;
+
+: compare-row
+  dup world-size < if
+    world-size 0 compare-cell
+    1+ compare-row
+  else drop then ;
+
+: compare-cell
+  over over < if
+    over 2 pick get-world-cell
+    over 2 pick "saved-world" load + world-size * + load = if
+      "match-count" load 1+ "match-count" store
+    then
+    1+ compare-cell
+  else 2drop drop then ;
+
+: count-oscillating-patterns
+  save-world-state
+  simulate-generation copy-next-to-current
+  simulate-generation copy-next-to-current
+  compare-with-saved 3 * ;
+
+: complexity-bonus
+  count-pattern-diversity 2 * ;
+
+: count-pattern-diversity
+  0 "pattern-types" store
+  world-size 2 - 1 pattern-scan-row ;
+
+: pattern-scan-row
+  dup world-size 2 - < if
+    world-size 2 - 1 pattern-scan-cell
+    1+ pattern-scan-row
+  else drop then ;
+
+: pattern-scan-cell
+  over over < if
+    over 2 pick analyze-local-pattern if
+      "pattern-types" load 1+ "pattern-types" store
+    then
+    1+ pattern-scan-cell
+  else 2drop drop then ;
+
+: analyze-local-pattern
+  dup get-world-cell
+  over 1+ over get-world-cell +
+  over over 1+ get-world-cell +
+  over 1+ over 1+ get-world-cell +
+  + + + 2 > ;
+
+: stability-bonus
+  count-edge-stability ;
+
+: count-edge-stability
+  0 "edge-score" store
+  world-size 0 edge-stability-row ;
+
+: edge-stability-row
+  dup world-size < if
+    dup 0 get-world-cell 
+    dup world-size 1- get-world-cell +
+    0 over get-world-cell +
+    world-size 1- over get-world-cell +
+    + + + "edge-score" load + "edge-score" store
+    1+ edge-stability-row
+  else drop then ;
+
+: diversity-bonus
+  calculate-entropy 10 * ;
+
+: calculate-entropy
+  count-living-cells "total" store
+  "total" load 0 = if 0 else
+  "total" load world-size world-size * 2 * / 10 *
+  then ;
+
+: init-gene-pool
+  population-count 0 init-individual-loop ;
+
+: init-individual-loop
+  dup population-count < if
+    dup encode-rule-formula
+    1+ init-individual-loop
+  else drop then ;
+
+: genetic-evolution-cycle
+  evaluate-population
+  rank-by-fitness
+  eliminate-weak-individuals
+  breed-elite-individuals
+  mutate-population ;
+
+: evaluate-population
+  population-count 0 evaluation-loop ;
+
+: evaluation-loop
+  dup population-count < if
+    dup evaluate-individual-fitness
+    dup "fitness-scores" load + store
+    1+ evaluation-loop
+  else drop then ;
+
+: rank-by-fitness
+  population-count 1 ranking-sort-loop ;
+
+: ranking-sort-loop
+  dup 1 > if
+    dup 1- 0 bubble-sort-pass
+    1- ranking-sort-loop
+  else drop then ;
+
+: bubble-sort-pass
+  over over < if
+    dup get-fitness-score
+    dup 1+ get-fitness-score < if
+      dup dup 1+ swap-individuals
+    then
+    1+ bubble-sort-pass
+  else 2drop then ;
+
+: get-fitness-score
+  "fitness-scores" load + load ;
+
+: swap-individuals
+  8 0 swap-genes-loop ;
+
+: swap-genes-loop
+  dup 8 < if
+    2 pick "rule-formulas" load + over + load "temp1" store
+    2 pick 1+ "rule-formulas" load + over + load "temp2" store
+    "temp2" load 3 pick "rule-formulas" load + over + store
+    "temp1" load 3 pick 1+ "rule-formulas" load + over + store
+    1+ swap-genes-loop
+  else 2drop drop then ;
+
+: eliminate-weak-individuals
+  population-count elite-count - elite-count elimination-loop ;
+
+: elimination-loop
+  dup population-count < if
+    dup randomize-individual
+    1+ elimination-loop
+  else 2drop then ;
+
+: randomize-individual
+  8 0 randomize-genes-loop ;
+
+: randomize-genes-loop
+  dup 8 < if
+    256 random-in-range
+    2 pick "rule-formulas" load + over + store
+    1+ randomize-genes-loop
+  else 2drop then ;
+
+: breed-elite-individuals
+  elite-count elite-count breeding-loop ;
+
+: breeding-loop
+  dup population-count < if
+    elite-count random-in-range "parent1" store
+    elite-count random-in-range "parent2" store
+    dup "parent1" load "parent2" load crossover-individuals
+    1+ breeding-loop
+  else drop then ;
+
+: crossover-individuals
+  8 0 crossover-genes-loop ;
+
+: crossover-genes-loop
+  dup 8 < if
+    2 random-in-range 0 = if
+      over "rule-formulas" load + over + load
+      2 pick "rule-formulas" load + over + store
+    else
+      over 1+ "rule-formulas" load + over + load
+      2 pick "rule-formulas" load + over + store
+    then
+    1+ crossover-genes-loop
+  else 2drop drop then ;
+
+: mutate-population
+  elite-count population-count mutation-loop ;
+
+: mutation-loop
+  dup population-count < if
+    100 random-in-range mutation-rate < if
+      dup mutate-individual
+    then
+    1+ mutation-loop
+  else 2drop then ;
+
+: mutate-individual
+  8 random-in-range "gene-pos" store
+  256 random-in-range
+  dup "rule-formulas" load + "gene-pos" load + store ;
+
+: run-advanced-evolution
+  init-evolution-system
+  init-gene-pool
+  
+  generations 0 evolution-main-loop ;
+
+: evolution-main-loop
+  dup generations < if
+    genetic-evolution-cycle
+    dup 10 mod 0 = if
+      dup show-generation-progress
+    then
+    1+ evolution-main-loop
+  else drop then ;
+
+: show-generation-progress
+  "Generation: " 
+  dup 
+  " Best fitness: "
+  0 get-fitness-score ;
+
+: get-best-individual
+  0 ;
+
+: test-evolved-automaton
+  get-best-individual "current-individual" store
+  init-world-grid
+  
+  50 0 test-evolution-loop
+  
+  count-living-cells 100 > ;
+
+: test-evolution-loop
+  dup 50 < if
+    simulate-generation
+    copy-next-to-current
+    1+ test-evolution-loop
+  else drop then ;
+
+: advanced-automaton-demo
+  run-advanced-evolution
+  test-evolved-automaton
+  if 1 else 0 then ;
+
+: benchmark-evolution-performance
+  init-evolution-system
+  init-gene-pool
+  
+  20 0 benchmark-loop
+  
+  0 get-fitness-score 500 > ;
+
+: benchmark-loop
+  dup 20 < if
+    genetic-evolution-cycle
+    1+ benchmark-loop
+  else drop then ;
+
+: ultimate-cellular-demo
+  advanced-automaton-demo
+  benchmark-evolution-performance
+  * ; 

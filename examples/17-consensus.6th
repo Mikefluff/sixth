@@ -1,0 +1,71 @@
+\ examples/17-consensus.6th — Intersubjective truth as observer intersection.
+\
+\ Facts both observers confirm = intersection of their views.  The
+\ "consensus subset" is the substrate-level analogue of intersubjective
+\ reality — only patterns visible to multiple observers survive as shared
+\ truths.  Pure topology, no special "objective view" anywhere.
+
+use prelude
+use peano
+use debug
+
+zero "A" store
+zero "B" store
+zero "C" store
+zero "D" store
+zero "E" store
+zero "O1" store
+zero "O2" store
+
+\ O1 sees A,B,C,D.  O2 sees C,D,E.
+"O1" load "A" load EDGE+
+"O1" load "B" load EDGE+
+"O1" load "C" load EDGE+
+"O1" load "D" load EDGE+
+
+"O2" load "C" load EDGE+
+"O2" load "D" load EDGE+
+"O2" load "E" load EDGE+
+
+NODES 7 assert-eq
+EDGES 7 assert-eq
+"O1" load OUT 4 assert-eq
+"O2" load OUT 3 assert-eq
+
+: both-see
+  "cs-a" store
+  "O1" load "cs-a" load EDGE?
+  "O2" load "cs-a" load EDGE?
+  * ;
+
+"A" load both-see 0 assert-eq
+"B" load both-see 0 assert-eq
+"C" load both-see 1 assert-eq
+"D" load both-see 1 assert-eq
+"E" load both-see 0 assert-eq
+
+: only-O1
+  "cs-a" store
+  "O1" load "cs-a" load EDGE?
+  "O2" load "cs-a" load EDGE? not
+  * ;
+
+: only-O2
+  "cs-a" store
+  "O1" load "cs-a" load EDGE? not
+  "O2" load "cs-a" load EDGE?
+  * ;
+
+"A" load only-O1 1 assert-eq
+"B" load only-O1 1 assert-eq
+"E" load only-O1 0 assert-eq
+
+"A" load only-O2 0 assert-eq
+"E" load only-O2 1 assert-eq
+
+\ Consensus expansion: O2 learns about A.
+"O2" load "A" load EDGE+
+"A" load both-see 1 assert-eq
+"O2" load OUT 4 assert-eq
+
+REPORT

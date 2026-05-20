@@ -1,0 +1,20 @@
+: obj-init 0 "obj_name" store 0 "obj_age" store 0 "obj_type" store ;
+: obj-new dup "obj_name" store "obj_type" store 0 "obj_age" store ;
+: obj-set-name "obj_name" store ;
+: obj-get-name "obj_name" load ;
+: obj-set-age "obj_age" store ;
+: obj-get-age "obj_age" load ;
+: obj-set-type "obj_type" store ;
+: obj-get-type "obj_type" load ;
+: obj-speak obj-get-name . " speaks!" . cr ;
+: obj-birthday obj-get-age 1+ obj-set-age ;
+: obj-dog-speak obj-get-name . " says Woof!" . cr ;
+: obj-cat-speak obj-get-name . " says Meow!" . cr ;
+: animal-create dup obj-new "animal" obj-set-type ;
+: dog-create dup obj-new "dog" obj-set-type ;
+: cat-create dup obj-new "cat" obj-set-type ;
+: method-call obj-get-type dup "animal" = if drop obj-speak else dup "dog" = if drop obj-dog-speak else dup "cat" = if drop obj-cat-speak else drop "Unknown method" . cr then then then ;
+: clone obj-get-name obj-get-age obj-get-type ;
+: describe "Object: " . obj-get-name . " Type: " . obj-get-type . " Age: " . obj-get-age . cr ;
+: obj-test "Testing objects..." . cr obj-init "Buddy" animal-create 3 obj-set-age method-call "Fluffy" cat-create 2 obj-set-age method-call obj-birthday describe ;
+"Object system module loaded" . cr 

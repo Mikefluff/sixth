@@ -1,0 +1,186 @@
+\ examples/22-observer-collapse.6th — substrate-resident observer
+\                                      collapses multiway into history.
+\
+\ Claim demonstrated:
+\   Two distinct rules are equally applicable at every step of substrate
+\   evolution.  Which one fires depends on the state of a substrate-
+\   resident observer node.  Different observers (differing only in
+\   EDGE+ scope) produce DIFFERENT histories from IDENTICAL initial
+\   substrate state.  Consciousness selects which branch of multiway
+\   possibility actualizes — and the consciousness is itself substrate.
+\
+\ Note on substrate self-consistency:
+\   The observer is a node like any other — it is itself subject to
+\   STEP-CA and its outgoing edges DO make it a participant in rule
+\   application.  We choose rules whose behaviour depends on OUT-edges
+\   (NSUM), so the observer's EDGE+ to a cell only contributes to its
+\   own NSUM (its view), not to that cell's PREV.
+
+use prelude
+use peano
+use graph
+use debug
+
+\ ============================================================
+\ Substrate: 5-cell chain c1→c2→c3→c4→c5
+\ ============================================================
+
+: build-chain
+  zero "c1" store
+  zero "c2" store
+  zero "c3" store
+  zero "c4" store
+  zero "c5" store
+  "c1" load "c2" load EDGE+
+  "c2" load "c3" load EDGE+
+  "c3" load "c4" load EDGE+
+  "c4" load "c5" load EDGE+ ;
+
+: init-features
+  "c1" load 1 NSET
+  "c2" load 2 NSET
+  "c3" load 3 NSET
+  "c4" load 4 NSET
+  "c5" load 5 NSET ;
+
+\ ============================================================
+\ Two applicable rules (the multiway branches)
+\ ============================================================
+\
+\ R1 (grow):   next(n) = NGET(n) + 1
+\ R2 (shift):  next(n) = NSUM(n)        (sum of OUT-neighbour features;
+\                                        for chain c_i this is c_{i+1})
+\
+\ Both rules use only OUT-direction reads, so an observer that EDGE+s
+\ TO a cell does not contaminate that cell's update.
+
+: rule-grow    dup NGET 1 + ;
+: rule-shift   NSUM ;
+
+\ ============================================================
+\ Observer dispatch:
+\   parity(NSUM(observer))  →  selects rule
+\
+\ NSUM of the observer = sum of features of its out-neighbours.
+\ If observer EDGE+ to {c_i}, that is just NGET(c_i).
+\ ============================================================
+
+: observer-step
+  "obs" load NSUM 2 mod 0 = if
+    ' rule-grow STEP-CA
+  else
+    ' rule-shift STEP-CA
+  then ;
+
+: run-six-steps
+  observer-step observer-step observer-step
+  observer-step observer-step observer-step ;
+
+\ ============================================================
+\ History 1: observer sees only {c1}
+\ ============================================================
+
+build-chain
+init-features
+zero "obs" store
+"obs" load "c1" load EDGE+
+
+"obs" load NSUM 1 assert-eq               \ NSUM(obs) = NGET(c1) = 1
+run-six-steps
+
+"c1" load NGET "h1-c1" store
+"c2" load NGET "h1-c2" store
+"c3" load NGET "h1-c3" store
+"c4" load NGET "h1-c4" store
+"c5" load NGET "h1-c5" store
+
+\ ============================================================
+\ History 2: observer sees only {c2}
+\ ============================================================
+
+RESET
+build-chain
+init-features
+zero "obs" store
+"obs" load "c2" load EDGE+
+
+"obs" load NSUM 2 assert-eq
+run-six-steps
+
+"c1" load NGET "h2-c1" store
+"c2" load NGET "h2-c2" store
+"c3" load NGET "h2-c3" store
+"c4" load NGET "h2-c4" store
+"c5" load NGET "h2-c5" store
+
+\ ============================================================
+\ History 3: observer sees only {c4}
+\ ============================================================
+
+RESET
+build-chain
+init-features
+zero "obs" store
+"obs" load "c4" load EDGE+
+
+"obs" load NSUM 4 assert-eq
+run-six-steps
+
+"c1" load NGET "h3-c1" store
+"c2" load NGET "h3-c2" store
+"c3" load NGET "h3-c3" store
+"c4" load NGET "h3-c4" store
+"c5" load NGET "h3-c5" store
+
+\ ============================================================
+\ Print the three histories
+\ ============================================================
+
+"h1-c1" load . "h1-c2" load . "h1-c3" load . "h1-c4" load . "h1-c5" load . cr
+"h2-c1" load . "h2-c2" load . "h2-c3" load . "h2-c4" load . "h2-c5" load . cr
+"h3-c1" load . "h3-c2" load . "h3-c3" load . "h3-c4" load . "h3-c5" load . cr
+
+\ ============================================================
+\ Assertion: identical initial substrate + identical rule set +
+\ identical step count, BUT three observers yield three histories
+\ that differ pairwise.
+\ ============================================================
+
+: any-cell-differs?
+  "ad-prefix" store                       \ "h1-" / "h2-" / "h3-"
+  "bd-prefix" store
+  0
+  \ Manual unrolled check — string concat would need a primitive we
+  \ don't have.  Just check each cell in turn.
+  "h1-c1" load "h2-c1" load = not  +
+  "h1-c2" load "h2-c2" load = not  +
+  "h1-c3" load "h2-c3" load = not  +
+  "h1-c4" load "h2-c4" load = not  +
+  "h1-c5" load "h2-c5" load = not  +
+  0 > ;
+
+\ H1 vs H2
+"h1-c1" load "h2-c1" load = not
+"h1-c2" load "h2-c2" load = not  +
+"h1-c3" load "h2-c3" load = not  +
+"h1-c4" load "h2-c4" load = not  +
+"h1-c5" load "h2-c5" load = not  +
+0 > ASSERT
+
+\ H1 vs H3
+"h1-c1" load "h3-c1" load = not
+"h1-c2" load "h3-c2" load = not  +
+"h1-c3" load "h3-c3" load = not  +
+"h1-c4" load "h3-c4" load = not  +
+"h1-c5" load "h3-c5" load = not  +
+0 > ASSERT
+
+\ H2 vs H3
+"h2-c1" load "h3-c1" load = not
+"h2-c2" load "h3-c2" load = not  +
+"h2-c3" load "h3-c3" load = not  +
+"h2-c4" load "h3-c4" load = not  +
+"h2-c5" load "h3-c5" load = not  +
+0 > ASSERT
+
+REPORT

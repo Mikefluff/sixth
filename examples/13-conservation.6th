@@ -1,0 +1,75 @@
+\ examples/13-conservation.6th — Conservation law from ring topology +
+\                                permutation rule (substrate Noether).
+\
+\ A rewrite that permutes states across a closed substrate exactly
+\ preserves the total state sum.  On the ring, shift-right preserves
+\ mass and cycles with period = ring length.  Neither topology nor rule
+\ alone suffices: conservation is a joint property of the pair.
+
+use prelude
+use peano
+use debug
+
+\ Ring c1→c2→c3→c4→c5→c1.
+zero "c1" store
+"c1" load succ "c2" store
+"c2" load succ "c3" store
+"c3" load succ "c4" store
+"c4" load succ "c5" store
+"c5" load "c1" load EDGE+
+
+NODES 5 assert-eq
+EDGES 5 assert-eq
+
+"c1" load 1 NSET
+"c2" load 0 NSET
+"c3" load 0 NSET
+"c4" load 0 NSET
+"c5" load 0 NSET
+
+: cell-sum
+  "c1" load NGET
+  "c2" load NGET +
+  "c3" load NGET +
+  "c4" load NGET +
+  "c5" load NGET + ;
+
+cell-sum 1 assert-eq
+
+: shift-right
+  PREV NGET ;
+
+' shift-right STEP-CA
+"c1" load NGET 0 assert-eq
+"c2" load NGET 1 assert-eq
+"c3" load NGET 0 assert-eq
+cell-sum 1 assert-eq
+
+' shift-right STEP-CA
+"c3" load NGET 1 assert-eq
+cell-sum 1 assert-eq
+
+' shift-right STEP-CA
+"c4" load NGET 1 assert-eq
+cell-sum 1 assert-eq
+
+' shift-right STEP-CA
+"c5" load NGET 1 assert-eq
+cell-sum 1 assert-eq
+
+\ Fifth shift returns to start: period = 5.
+' shift-right STEP-CA
+"c1" load NGET 1 assert-eq
+cell-sum 1 assert-eq
+
+\ Sum=2 init.
+"c2" load 1 NSET
+"c3" load 0 NSET  "c4" load 0 NSET  "c5" load 0 NSET
+cell-sum 2 assert-eq
+
+' shift-right STEP-CA
+"c2" load NGET 1 assert-eq
+"c3" load NGET 1 assert-eq
+cell-sum 2 assert-eq
+
+REPORT

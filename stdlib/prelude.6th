@@ -1,0 +1,33 @@
+\ stdlib/prelude.6th — base stack & boolean helpers.
+\ Auto-loaded by the interpreter unless --no-prelude.
+
+: 2dup over over ;
+: 2drop drop drop ;
+: nip swap drop ;
+: tuck swap over ;
+\ rot / -rot need a scratch area because pure dup/drop/swap/over cannot
+\ reach the third stack element.  Reserved memory keys: "rot-a/b/c".
+: rot
+  "rot-c" store "rot-b" store "rot-a" store
+  "rot-b" load "rot-c" load "rot-a" load ;
+
+: -rot
+  "rot-c" store "rot-b" store "rot-a" store
+  "rot-c" load "rot-a" load "rot-b" load ;
+
+: 1+ 1 + ;
+: 1- 1 - ;
+: 2+ 2 + ;
+: 2- 2 - ;
+: 2* 2 * ;
+: 2/ 2 / ;
+
+: not 0 = ;
+: true 1 ;
+: false 0 ;
+
+: negate 0 swap - ;
+: abs dup 0 < if negate then ;
+: square dup * ;
+: min 2dup > if swap then drop ;
+: max 2dup < if swap then drop ;

@@ -1,0 +1,24 @@
+: simple-array "array0" 0 store "array1" 0 store "array2" 0 store "array3" 0 store "array4" 0 store ;
+: array-set dup 0 = if drop "array0" store else dup 1 = if drop "array1" store else dup 2 = if drop "array2" store else dup 3 = if drop "array3" store else dup 4 = if drop "array4" store else drop drop then then then then then ;
+: array-get dup 0 = if drop "array0" load else dup 1 = if drop "array1" load else dup 2 = if drop "array2" load else dup 3 = if drop "array3" load else dup 4 = if drop "array4" load else drop 0 then then then then then ;
+: list-size "list_size" load ;
+: list-init 0 "list_size" store ;
+: list-push "list_size" load array-set "list_size" load 1+ "list_size" store ;
+: list-pop "list_size" load 1- dup "list_size" store array-get ;
+: list-get array-get ;
+: stack-init list-init ;
+: stack-push list-push ;
+: stack-pop list-pop ;
+: stack-size list-size ;
+: queue-init 0 "queue_front" store 0 "queue_rear" store ;
+: queue-enqueue "queue_rear" load array-set "queue_rear" load 1+ "queue_rear" store ;
+: queue-dequeue "queue_front" load array-get "queue_front" load 1+ "queue_front" store ;
+: queue-size "queue_rear" load "queue_front" load - ;
+: dict-init 0 "dict0_key" store 0 "dict0_val" store 0 "dict1_key" store 0 "dict1_val" store 0 "dict2_key" store 0 "dict2_val" store ;
+: dict-hash 3 mod ;
+: dict-set swap dup dict-hash dup 0 = if drop "dict0_key" store "dict0_val" store else dup 1 = if drop "dict1_key" store "dict1_val" store else drop "dict2_key" store "dict2_val" store then then ;
+: dict-get dup dict-hash dup 0 = if drop "dict0_key" load = if "dict0_val" load else 0 then else dup 1 = if drop "dict1_key" load = if "dict1_val" load else 0 then else drop "dict2_key" load = if "dict2_val" load else 0 then then then ;
+: string-store store ;
+: string-load load ;
+: data-test "Testing data..." . cr simple-array 42 2 array-set 2 array-get . cr list-init 10 list-push 20 list-push list-size . cr stack-init 5 stack-push stack-pop . cr ;
+"Data structures module loaded" . cr 

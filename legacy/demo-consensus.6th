@@ -1,0 +1,95 @@
+\ demo-consensus.6th — Inter-observer agreement as substrate set intersection.
+\
+\ Claim demonstrated:
+\   When two observers each have their own hyperedge set into substrate,
+\   the FACTS they both confirm = intersection of their views.  This
+\   "consensus subset" is the substrate-level analog of intersubjective
+\   reality: only patterns visible to multiple observers survive as
+\   shared truths.  Anything in just one observer's view is private.
+\
+\   Operations are purely topological: EDGE? checks "does observer
+\   point at atom?"; intersection = atoms where both predicates hold.
+
+: 2dup over over ;
+: nip swap drop ;
+: not 0 = ;
+: 1+ 1 + ;
+
+: zero MARK ;
+
+\ ─── 5 atoms + 2 observers ───
+zero "A" store
+zero "B" store
+zero "C" store
+zero "D" store
+zero "E" store
+zero "O1" store
+zero "O2" store
+
+\ O1 sees A, B, C, D
+"O1" load "A" load EDGE+
+"O1" load "B" load EDGE+
+"O1" load "C" load EDGE+
+"O1" load "D" load EDGE+
+
+\ O2 sees C, D, E
+"O2" load "C" load EDGE+
+"O2" load "D" load EDGE+
+"O2" load "E" load EDGE+
+
+NODES 7 = ASSERT
+EDGES 7 = ASSERT
+"O1" load OUT 4 = ASSERT
+"O2" load OUT 3 = ASSERT
+
+\ ─── consensus predicate: both observers see atom ───
+: both-see                                  \ ( atom -- bit )
+  "_a" store
+  "O1" load "_a" load EDGE?
+  "O2" load "_a" load EDGE?
+  * ;                                       \ AND via product
+
+\ Atoms A and B: only O1 sees them
+"A" load both-see 0 = ASSERT
+"B" load both-see 0 = ASSERT
+
+\ Atoms C and D: both observers see → CONSENSUS
+"C" load both-see 1 = ASSERT
+"D" load both-see 1 = ASSERT
+
+\ Atom E: only O2 sees it
+"E" load both-see 0 = ASSERT
+
+\ ─── divergence: facts known to one but not the other ───
+: only-O1                                   \ ( atom -- bit )
+  "_a" store
+  "O1" load "_a" load EDGE?
+  "O2" load "_a" load EDGE? not
+  * ;
+
+: only-O2
+  "_a" store
+  "O1" load "_a" load EDGE? not
+  "O2" load "_a" load EDGE?
+  * ;
+
+"A" load only-O1 1 = ASSERT
+"B" load only-O1 1 = ASSERT
+"E" load only-O1 0 = ASSERT
+
+"A" load only-O2 0 = ASSERT
+"E" load only-O2 1 = ASSERT
+
+\ ─── consensus expansion: O2 learns about A (new pointer added) ───
+"O2" load "A" load EDGE+
+"A" load both-see 1 = ASSERT                \ A now in shared reality
+"O2" load OUT 4 = ASSERT
+
+\ ─── interpretation ───
+\ Consensus = ∩ over observers of {atoms each points to}.
+\ Adding a pointer (observation) expands consensus monotonically when
+\ another observer already saw the atom — agreement is constructive.
+\ No "objective view" exists; reality is the intersection of views,
+\ updateable by adding pointers.
+
+REPORT

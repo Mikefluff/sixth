@@ -1,0 +1,67 @@
+\ demo-stable.6th — Stable pattern emerges as fixed point of a rewrite rule.
+\
+\ Claim demonstrated:
+\   Some substrate configurations are FIXED POINTS of a given rewrite
+\   rule: once reached, further application of the rule changes nothing.
+\   This is the substrate-level analogue of a stable particle: a pattern
+\   that persists across time.
+\
+\   Rule:  SELF-LOOP — ensure every node has an edge to itself.
+\   Fixed point: every node has a self-loop.  Reached in one STEP.
+
+: 2dup over over ;
+: nip swap drop ;
+: not 0 = ;
+
+: zero MARK ;
+: succ MARK 2dup EDGE+ nip ;
+
+\ Rule: if node n lacks self-loop (n→n), add it.  Else no-op.
+: self-loop-rule
+  dup dup EDGE? if
+    drop                       \ already self-looping, leave alone
+  else
+    dup dup EDGE+ drop         \ add edge n→n, consume node id
+  then ;
+
+\ ─── initial substrate: 3 isolated nodes ───
+zero zero zero
+drop drop drop                 \ clear stack, leaves 3 nodes 1,2,3
+EDGES 0 = ASSERT               \ no edges yet
+
+\ ─── step 1: apply rule ───
+STEP
+' self-loop-rule EACH
+EDGES 3 = ASSERT               \ each node got self-loop → 3 edges
+1 1 EDGE? ASSERT
+2 2 EDGE? ASSERT
+3 3 EDGE? ASSERT
+
+\ ─── step 2: apply same rule again → no change (fixed point) ───
+STEP
+' self-loop-rule EACH
+EDGES 3 = ASSERT               \ still 3, no new edges
+NODES 3 = ASSERT               \ still 3 nodes
+
+\ ─── step 3: confirm stability ───
+STEP
+' self-loop-rule EACH
+EDGES 3 = ASSERT
+NODES 3 = ASSERT
+
+\ ─── perturb: add a fresh node, rule reaches new fixed point ───
+zero drop                      \ node 4 created
+NODES 4 = ASSERT
+4 4 EDGE? not ASSERT           \ no self-loop yet
+
+STEP
+' self-loop-rule EACH
+EDGES 4 = ASSERT
+4 4 EDGE? ASSERT               \ self-loop added
+
+\ apply again, no change (back to fixed point)
+STEP
+' self-loop-rule EACH
+EDGES 4 = ASSERT
+
+REPORT

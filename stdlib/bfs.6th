@@ -1,0 +1,26 @@
+\ stdlib/bfs.6th — BFS-relaxation helpers over substrate edges.
+\
+\ Convention: -1 in node feature means "unreached".  bfs-step runs one
+\ STEP and relaxes every edge; iterate to fixed point.
+
+use prelude
+
+: eff-dist
+  NGET dup -1 = if drop 1000 then ;
+
+: relax-edge
+  "bfs-b" store
+  "bfs-a" store
+  "bfs-a" load eff-dist 1+ "bfs-cand" store
+  "bfs-b" load eff-dist "bfs-curr" store
+  "bfs-cand" load "bfs-curr" load < if
+    "bfs-b" load "bfs-cand" load NSET
+  then ;
+
+: set-inf -1 NSET ;
+
+: bfs-init
+  ' set-inf EACH
+  dup 0 NSET ;
+
+: bfs-step  STEP ' relax-edge EACH-EDGE ;

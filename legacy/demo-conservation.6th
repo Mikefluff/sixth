@@ -1,0 +1,103 @@
+\ demo-conservation.6th — Conservation law emerges from ring topology
+\                          + permutation-like rule.
+\
+\ Claim demonstrated:
+\   A rewrite that *permutes* cell states across a closed substrate
+\   topology exactly preserves the total state sum.  This is the
+\   substrate analogue of a conservation law: under shift-right on
+\   a ring, the "mass" (sum over node features) is invariant — and
+\   the location of the mass cycles with period equal to ring length.
+\
+\   Topology (ring) + rule (shift) together produce conservation.
+\   Neither alone suffices; conservation is a JOINT property of the
+\   substrate-rule pair.  This is the discrete Noether direction:
+\   symmetry (cyclic invariance under shift) ↔ conserved quantity.
+
+: 2dup over over ;
+: nip swap drop ;
+: not 0 = ;
+: 1+ 1 + ;
+
+: zero MARK ;
+: succ MARK 2dup EDGE+ nip ;
+
+\ Build ring of 5 cells: c1→c2→c3→c4→c5→c1
+zero "c1" store
+"c1" load succ "c2" store
+"c2" load succ "c3" store
+"c3" load succ "c4" store
+"c4" load succ "c5" store
+"c5" load "c1" load EDGE+         \ close the ring
+
+NODES 5 = ASSERT
+EDGES 5 = ASSERT
+
+\ Init: only c1 carries unit "mass"
+"c1" load 1 NSET
+"c2" load 0 NSET
+"c3" load 0 NSET
+"c4" load 0 NSET
+"c5" load 0 NSET
+
+\ Sum of cell values
+: cell-sum
+  "c1" load NGET
+  "c2" load NGET +
+  "c3" load NGET +
+  "c4" load NGET +
+  "c5" load NGET + ;
+
+cell-sum 1 = ASSERT               \ initial mass = 1
+
+\ Shift-right rule: my new state = state of my PREV neighbour (on ring)
+: shift-right
+  PREV NGET ;
+
+\ ─── one shift step ───
+' shift-right STEP-CA
+"c1" load NGET 0 = ASSERT
+"c2" load NGET 1 = ASSERT          \ mass moved to c2
+"c3" load NGET 0 = ASSERT
+cell-sum 1 = ASSERT                 \ mass conserved
+
+\ ─── second shift ───
+' shift-right STEP-CA
+"c3" load NGET 1 = ASSERT          \ now at c3
+cell-sum 1 = ASSERT
+
+\ ─── third shift ───
+' shift-right STEP-CA
+"c4" load NGET 1 = ASSERT
+cell-sum 1 = ASSERT
+
+\ ─── fourth shift ───
+' shift-right STEP-CA
+"c5" load NGET 1 = ASSERT
+cell-sum 1 = ASSERT
+
+\ ─── fifth shift: returns to start ───
+' shift-right STEP-CA
+"c1" load NGET 1 = ASSERT          \ back to origin → period = 5
+cell-sum 1 = ASSERT
+
+\ ─── higher mass: two cells live simultaneously ───
+"c2" load 1 NSET                    \ now c1 and c2 both alive
+"c3" load 0 NSET  "c4" load 0 NSET  "c5" load 0 NSET
+cell-sum 2 = ASSERT
+
+' shift-right STEP-CA
+"c2" load NGET 1 = ASSERT
+"c3" load NGET 1 = ASSERT
+cell-sum 2 = ASSERT                 \ still conserved at sum=2
+
+\ ─── interpretation ───
+\ The same shift rule that conserves mass on the ring would *not*
+\ conserve mass on an open chain — values would fall off the boundary
+\ (or be replaced by zero from out-of-substrate).  Conservation is
+\ a JOINT property of:
+\     topology  (closed ring → no leakage)
+\     rule      (permutation → no creation/annihilation)
+\ Neither alone gives conservation.  This is the substrate-level
+\ Noether correspondence: closed symmetry ↔ conserved current.
+
+REPORT

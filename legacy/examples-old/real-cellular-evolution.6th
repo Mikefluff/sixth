@@ -1,0 +1,252 @@
+: world-size 24 ;
+: population-size 20 ;
+: generations 30 ;
+: mutation-chance 20 ;
+
+: init-evolution
+  54321 "rng" store
+  10000 "world" store
+  20000 "next-world" store
+  30000 "genes" store
+  40000 "fitness" store ;
+
+: rng "rng" load 1103515245 * 12345 + dup "rng" store ;
+: random-mod rng swap mod ;
+
+: get-cell world-size * + "world" load + load ;
+: set-cell world-size * + "world" load + store ;
+: get-next world-size * + "next-world" load + load ;
+: set-next world-size * + "next-world" load + store ;
+
+: init-world
+  world-size 0 init-world-loop ;
+
+: init-world-loop
+  dup world-size < if
+    world-size 0 init-world-row
+    1+ init-world-loop
+  else drop then ;
+
+: init-world-row
+  over over < if
+    100 random-mod 40 < if 1 else 0 then
+    2 pick 2 pick set-cell
+    1+ init-world-row
+  else 2drop drop then ;
+
+: count-neighbors
+  0 "neighbors" store
+  
+  over 1- over 1- add-neighbor
+  over   over 1- add-neighbor  
+  over 1+ over 1- add-neighbor
+  over 1- over   add-neighbor
+  over 1+ over   add-neighbor
+  over 1- over 1+ add-neighbor
+  over   over 1+ add-neighbor
+  over 1+ over 1+ add-neighbor
+  
+  2drop "neighbors" load ;
+
+: add-neighbor
+  over 0 < if 2drop else
+  over world-size < if
+    dup 0 < if 2drop else
+    dup world-size < if
+      get-cell "neighbors" load + "neighbors" store
+    else 2drop then
+    then
+  else 2drop then
+  then ;
+
+: evolve-cell
+  "rule-gene" load "neighbors" load + load
+  "current" load if
+    dup 2 mod if
+      "neighbors" load 2 = if 1 else
+      "neighbors" load 3 = if 1 else 0 then then
+    else
+      "neighbors" load 3 = if 1 else 0 then
+    then
+  else
+    dup 4 mod 2 / if
+      "neighbors" load 3 = if 1 else 0 then
+    else
+      "neighbors" load 2 = if "neighbors" load 4 = * else 0 then
+    then
+  then ;
+
+: simulate-step
+  "individual" load 8 * "genes" load + "rule-gene" store
+  world-size 0 simulate-row ;
+
+: simulate-row
+  dup world-size < if
+    world-size 0 simulate-cell-row
+    1+ simulate-row
+  else drop then ;
+
+: simulate-cell-row
+  over over < if
+    over 2 pick get-cell "current" store
+    over 2 pick count-neighbors
+    evolve-cell
+    over 2 pick set-next
+    1+ simulate-cell-row
+  else 2drop drop then ;
+
+: copy-world
+  world-size 0 copy-row ;
+
+: copy-row
+  dup world-size < if
+    world-size 0 copy-cell-row
+    1+ copy-row
+  else drop then ;
+
+: copy-cell-row
+  over over < if
+    over 2 pick get-next
+    over 2 pick set-cell
+    1+ copy-cell-row
+  else 2drop drop then ;
+
+: evaluate-fitness
+  dup "individual" store
+  init-world
+  0 "total-fitness" store
+  
+  10 0 fitness-loop
+  
+  "total-fitness" load ;
+
+: fitness-loop
+  dup 10 < if
+    simulate-step
+    copy-world
+    count-alive "total-fitness" load + "total-fitness" store
+    1+ fitness-loop
+  else drop then ;
+
+: count-alive
+  0 "alive" store
+  world-size 0 count-row ;
+
+: count-row
+  dup world-size < if
+    world-size 0 count-cell
+    1+ count-row
+  else drop then ;
+
+: count-cell
+  over over < if
+    over 2 pick get-cell "alive" load + "alive" store
+    1+ count-cell
+  else 2drop drop then ;
+
+: init-population
+  population-size 0 init-pop-loop ;
+
+: init-pop-loop
+  dup population-size < if
+    8 0 init-genes
+    1+ init-pop-loop
+  else drop then ;
+
+: init-genes
+  dup 8 < if
+    256 random-mod
+    2 pick "genes" load + 8 * + over + store
+    1+ init-genes
+  else 2drop then ;
+
+: evolve-generation
+  evaluate-all
+  select-and-breed
+  mutate-population ;
+
+: evaluate-all
+  population-size 0 eval-loop ;
+
+: eval-loop
+  dup population-size < if
+    dup evaluate-fitness
+    dup "fitness" load + store
+    1+ eval-loop
+  else drop then ;
+
+: select-and-breed
+  population-size 2 / population-size 2 / breed-loop ;
+
+: breed-loop
+  over over < if
+    population-size 2 / random-mod "parent1" store
+    population-size 2 / random-mod "parent2" store
+    
+    8 0 crossover-loop
+    
+    1+ breed-loop
+  else 2drop then ;
+
+: crossover-loop
+  dup 8 < if
+    2 random-mod 0 = if
+      "parent1" load "genes" load + 8 * + over + load
+    else
+      "parent2" load "genes" load + 8 * + over + load
+    then
+    
+    population-size 2 / + "genes" load + 8 * + over + store
+    1+ crossover-loop
+  else 2drop then ;
+
+: mutate-population
+  population-size 2 / population-size mutate-loop ;
+
+: mutate-loop
+  over over < if
+    100 random-mod mutation-chance < if
+      dup mutate-individual
+    then
+    1+ mutate-loop
+  else 2drop then ;
+
+: mutate-individual
+  8 random-mod "gene-pos" store
+  256 random-mod
+  dup "genes" load + 8 * + "gene-pos" load + store ;
+
+: run-evolution
+  init-evolution
+  init-population
+  
+  generations 0 evolution-loop ;
+
+: evolution-loop
+  dup generations < if
+    evolve-generation
+    1+ evolution-loop
+  else drop then ;
+
+: test-evolution
+  run-evolution
+  0 evaluate-fitness 50 > ;
+
+: quick-evolution-demo
+  init-evolution
+  init-population
+  
+  5 0 quick-loop
+  
+  0 evaluate-fitness 20 > ;
+
+: quick-loop
+  dup 5 < if
+    evolve-generation
+    1+ quick-loop
+  else drop then ;
+
+: cellular-evolution-final
+  test-evolution
+  quick-evolution-demo
+  * ; 

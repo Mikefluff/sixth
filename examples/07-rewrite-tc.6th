@@ -1,0 +1,81 @@
+\ examples/07-rewrite-tc.6th — Transitive closure as fixed point of a
+\                              local 2-path rewrite rule.
+\
+\ Rule: for every 2-edge path x→y→z, ensure x→z.  Iterating to fixed
+\ point computes the directed-graph transitive closure.  EACH-2PATH
+\ snapshots all 2-paths first, so application is order-independent.
+
+use prelude
+use peano
+use debug
+
+: tc-rule
+  nip
+  2dup EDGE? if
+    2drop
+  else
+    EDGE+
+  then ;
+
+\ Demo 1 — chain a→b→c→d.
+zero "a" store
+zero "b" store
+zero "c" store
+zero "d" store
+"a" load "b" load EDGE+
+"b" load "c" load EDGE+
+"c" load "d" load EDGE+
+
+NODES 4 assert-eq
+EDGES 3 assert-eq
+
+STEP
+' tc-rule EACH-2PATH
+EDGES 5 assert-eq
+"a" load "c" load EDGE? ASSERT
+"b" load "d" load EDGE? ASSERT
+
+STEP
+' tc-rule EACH-2PATH
+EDGES 6 assert-eq
+"a" load "d" load EDGE? ASSERT
+
+STEP
+' tc-rule EACH-2PATH
+EDGES 6 assert-eq
+
+"a" load OUT 3 assert-eq
+"b" load OUT 2 assert-eq
+"c" load OUT 1 assert-eq
+"d" load OUT 0 assert-eq
+
+\ Demo 2 — 3-cycle x→y→z→x.
+RESET
+zero "x" store
+zero "y" store
+zero "z" store
+"x" load "y" load EDGE+
+"y" load "z" load EDGE+
+"z" load "x" load EDGE+
+NODES 3 assert-eq
+EDGES 3 assert-eq
+
+STEP
+' tc-rule EACH-2PATH
+EDGES 6 assert-eq
+"x" load "z" load EDGE? ASSERT
+"y" load "x" load EDGE? ASSERT
+"z" load "y" load EDGE? ASSERT
+
+STEP
+' tc-rule EACH-2PATH
+EDGES 9 assert-eq
+"x" load "x" load EDGE? ASSERT
+"y" load "y" load EDGE? ASSERT
+"z" load "z" load EDGE? ASSERT
+
+STEP
+' tc-rule EACH-2PATH
+EDGES 9 assert-eq
+
+REPORT

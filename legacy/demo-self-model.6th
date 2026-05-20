@@ -1,0 +1,97 @@
+\ demo-self-model.6th — Substrate contains its own description (Hofstadter loop).
+\
+\ Claim demonstrated:
+\   A substrate node M can have edge-structure that exactly mirrors
+\   another node O — making M a "model" of O.  When M also points
+\   to itself, M models itself.  When O points to M and M's structure
+\   mirrors O's, the substrate contains an O-shaped description of O
+\   — the recursive condition Hofstadter called a strange loop.
+\
+\   Two notions of self-reference are distinguished:
+\     1. Topological self-reference  — cycle of edges through the node
+\     2. Structural self-reference   — a node whose out-set replicates
+\                                      another node's out-set, closing
+\                                      a "describes" relation
+\
+\   Both are substrate-level primitives, no special "consciousness flag".
+
+: 2dup over over ;
+: nip swap drop ;
+: not 0 = ;
+: 1+ 1 + ;
+
+: zero MARK ;
+
+\ ─── topological self-reference: edge from N to N ───
+zero "n" store
+"n" load dup EDGE+
+"n" load "n" load EDGE? ASSERT
+"n" load OUT 1 = ASSERT
+"n" load IN  1 = ASSERT
+"n" load NEXT "n" load = ASSERT   \ walking forward stays at self
+
+\ ─── shared-out structural match: M mirrors O ───
+RESET
+zero "A" store
+zero "B" store
+zero "C" store
+zero "O" store
+zero "M" store
+
+\ O observes A, B, C
+"O" load "A" load EDGE+
+"O" load "B" load EDGE+
+"O" load "C" load EDGE+
+
+\ M mirrors O: same out-set
+"M" load "A" load EDGE+
+"M" load "B" load EDGE+
+"M" load "C" load EDGE+
+
+\ Structural equivalence: matched OUT counts AND matched out-targets
+"O" load OUT  "M" load OUT  = ASSERT
+"O" load "A" load EDGE?  "M" load "A" load EDGE?  = ASSERT
+"O" load "B" load EDGE?  "M" load "B" load EDGE?  = ASSERT
+"O" load "C" load EDGE?  "M" load "C" load EDGE?  = ASSERT
+\ M's edges = O's edges → M is a structural model of O
+
+\ ─── observer pointing at its model ───
+"O" load "M" load EDGE+        \ O knows about M
+"O" load OUT 4 = ASSERT
+"O" load "M" load EDGE? ASSERT
+
+\ Now substrate state: O has out-set {A,B,C,M}
+\ M has out-set {A,B,C}
+\ O → M → {A,B,C}    M describes O's atoms-it-knows but lacks M-self-ref
+\ Add M → M for full Quine-like structure
+"M" load dup EDGE+
+"M" load OUT 4 = ASSERT        \ M now also out-set {A,B,C,M}
+"M" load "M" load EDGE? ASSERT
+
+\ ─── strange loop verification ───
+\ Now O's and M's out-sets both equal {A,B,C,M}
+\ So M structurally describes O (mirror); M structurally describes M (self).
+\ Mutual modelling: O→M describes M; M→M describes M.
+"O" load OUT "M" load OUT = ASSERT
+"O" load "M" load EDGE?    "M" load "M" load EDGE?  = ASSERT
+"O" load "A" load EDGE?    "M" load "A" load EDGE?  = ASSERT
+
+\ ─── recursive walk: starting from O, NEXT eventually reaches loop ───
+\ Build memory-tracked walk: NEXT 3 times from O
+"O" load NEXT NEXT NEXT
+\ at this point we're somewhere in the substrate;  the key claim is
+\ that the substrate is not tree-like — it contains a cycle reachable
+\ from O.  Walking enough steps revisits something.
+
+\ Simpler structural test: closure of "out-set equality" relation is non-trivial
+"M" load "M" load EDGE? ASSERT          \ M describes itself
+"O" load "M" load EDGE? ASSERT          \ O describes M
+"M" load OUT 4 = ASSERT                 \ M has full self-replicating out-set
+
+\ ─── interpretation ───
+\ The substrate now contains M, a node whose edge pattern is a complete
+\ description of itself — Quine in pointer form.  O additionally points
+\ to M, embedding the self-describing structure inside an observer.
+\ No primitive "self" was assumed; only edges.
+
+REPORT

@@ -1,0 +1,105 @@
+\ demo-energy.6th — "Energy" emerges as edge-delta per rewrite step.
+\                    Dissipation = monotone convergence to fixed point.
+\
+\ Claim demonstrated:
+\   The substrate equivalent of thermodynamic equilibrium falls out of
+\   counting edges added per STEP under a given rule.  Define
+\        ΔE(t) := EDGES(t+1) - EDGES(t)
+\   This "energy production" is non-negative for monotone rules
+\   (only add, never remove) and STRICTLY DECREASES to zero as the
+\   substrate approaches a fixed point.  Once ΔE = 0, the system
+\   is at equilibrium — the substrate analogue of dissipation.
+\
+\   Two rules with different convergence rates demonstrated:
+\     1. SELF-LOOP rule on 5 nodes: settles in one step (ΔE: 5, 0)
+\     2. TC rule on chain: settles in three steps (ΔE: 2, 1, 0)
+
+: 2dup over over ;
+: nip swap drop ;
+: not 0 = ;
+: 1+ 1 + ;
+
+: zero MARK ;
+: succ MARK 2dup EDGE+ nip ;
+
+\ Measure: edges added by applying a word to all nodes.
+\ Stack pattern: word-name applied via EACH
+: delta-each-step
+  EDGES "_eb" store
+  EACH                          \ consumes word name on stack already
+  EDGES "_ea" store
+  "_ea" load "_eb" load - ;     \ ΔE on stack
+
+: delta-each2-step
+  EDGES "_eb" store
+  EACH-2PATH
+  EDGES "_ea" store
+  "_ea" load "_eb" load - ;
+
+\ Rule: self-loop if missing
+: self-loop-rule
+  dup dup EDGE? if drop else dup dup EDGE+ drop then ;
+
+\ TC rule: from 2-path (a,b,c) ensure edge a→c
+: tc-rule
+  nip 2dup EDGE? if 2drop else EDGE+ then ;
+
+\ ─── DEMO 1: self-loop rule on 5 isolated nodes ───
+zero zero zero zero zero
+drop drop drop drop drop
+EDGES 0 = ASSERT
+NODES 5 = ASSERT
+
+STEP
+' self-loop-rule delta-each-step "_d1" store
+"_d1" load 5 = ASSERT             \ first step adds 5 self-loops
+
+STEP
+' self-loop-rule delta-each-step "_d2" store
+"_d2" load 0 = ASSERT             \ at fixed point, ΔE = 0
+
+STEP
+' self-loop-rule delta-each-step "_d3" store
+"_d3" load 0 = ASSERT             \ remains 0 (equilibrium)
+
+\ Energy production strictly decreased to zero (dissipation)
+"_d1" load "_d2" load > ASSERT
+
+\ ─── DEMO 2: TC rule on 4-node chain ───
+RESET
+zero "a" store
+zero "b" store
+zero "c" store
+zero "d" store
+"a" load "b" load EDGE+
+"b" load "c" load EDGE+
+"c" load "d" load EDGE+
+EDGES 3 = ASSERT
+
+STEP
+' tc-rule delta-each2-step "_d1" store
+"_d1" load 2 = ASSERT             \ +2 edges (a→c, b→d)
+
+STEP
+' tc-rule delta-each2-step "_d2" store
+"_d2" load 1 = ASSERT             \ +1 edge (a→d)
+
+STEP
+' tc-rule delta-each2-step "_d3" store
+"_d3" load 0 = ASSERT             \ fixed point
+
+\ Monotone non-increasing energy production:
+"_d1" load "_d2" load > ASSERT
+"_d2" load "_d3" load > ASSERT
+
+\ Total edges produced = sum of ΔE = 2 + 1 + 0 = 3
+"_d1" load "_d2" load + "_d3" load + 3 = ASSERT
+
+\ ─── interpretation ───
+\ Without ever postulating energy, work or temperature, the substrate
+\ exhibits dissipation: edge-production rate falls monotonically to
+\ zero as the system approaches its fixed point.  This is the bare
+\ substrate analogue of thermodynamic equilibrium — purely from
+\ counting how the rewrite changes the graph.
+
+REPORT

@@ -1,0 +1,64 @@
+\ examples/10-self-model.6th — Substrate contains its own description.
+\
+\ A node M whose edge-structure mirrors another node O is a "model" of O.
+\ When M also points to itself, M models itself.  Two notions:
+\   1. Topological self-reference  — cycle of edges through the node.
+\   2. Structural self-reference   — out-set replicates another node's
+\                                    out-set, closing a "describes" loop.
+
+use prelude
+use peano
+use debug
+
+\ Topological self-reference: edge N→N.
+zero "n" store
+"n" load dup EDGE+
+"n" load "n" load EDGE? ASSERT
+"n" load OUT 1 assert-eq
+"n" load IN  1 assert-eq
+"n" load NEXT "n" load assert-eq
+
+\ Shared-out structural match: M mirrors O.
+RESET
+zero "A" store
+zero "B" store
+zero "C" store
+zero "O" store
+zero "M" store
+
+"O" load "A" load EDGE+
+"O" load "B" load EDGE+
+"O" load "C" load EDGE+
+
+"M" load "A" load EDGE+
+"M" load "B" load EDGE+
+"M" load "C" load EDGE+
+
+"O" load OUT  "M" load OUT  assert-eq
+"O" load "A" load EDGE?  "M" load "A" load EDGE?  assert-eq
+"O" load "B" load EDGE?  "M" load "B" load EDGE?  assert-eq
+"O" load "C" load EDGE?  "M" load "C" load EDGE?  assert-eq
+
+\ Observer points at its model.
+"O" load "M" load EDGE+
+"O" load OUT 4 assert-eq
+"O" load "M" load EDGE? ASSERT
+
+\ Add M→M for full Quine-like structure.
+"M" load dup EDGE+
+"M" load OUT 4 assert-eq
+"M" load "M" load EDGE? ASSERT
+
+\ Strange-loop verification: O and M out-sets both equal {A,B,C,M}.
+"O" load OUT "M" load OUT assert-eq
+"O" load "M" load EDGE?    "M" load "M" load EDGE?  assert-eq
+"O" load "A" load EDGE?    "M" load "A" load EDGE?  assert-eq
+
+"O" load NEXT NEXT NEXT
+drop
+
+"M" load "M" load EDGE? ASSERT
+"O" load "M" load EDGE? ASSERT
+"M" load OUT 4 assert-eq
+
+REPORT

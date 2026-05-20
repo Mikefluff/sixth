@@ -1,0 +1,97 @@
+: comprehensive-demo
+  5 square 25 =
+  12 18 gcd 6 =
+  7 fib 21 =
+  17 prime? true =
+  medical-diagnosis 1 =
+  expert-system zero >
+  * * * * * ;
+
+: calculation-demo
+  42 square
+  100 sqrt-approx
+  factorial-demo
+  gcd-demo ;
+
+: sqrt-approx
+  dup "target" store
+  dup 2 / "guess" store
+  sqrt-newton ;
+
+: sqrt-newton
+  "guess" load dup * "target" load - abs 1 < if
+    "guess" load
+  else
+    "guess" load "target" load "guess" load / + 2 /
+    "guess" store
+    sqrt-newton
+  then ;
+
+: factorial-demo
+  5 factorial 120 = ;
+
+: gcd-demo
+  48 18 gcd 6 = ;
+
+: ai-demo
+  neural-demo
+  expert-demo
+  genetic-demo ;
+
+: neural-demo
+  5 "input" store
+  3 "weight" store  
+  2 "bias" store
+  neural-forward ;
+
+: expert-demo
+  expert-system ;
+
+: genetic-demo
+  100 "population" store
+  50 "fitness" store
+  genetic-evolve
+  "population" load ;
+
+: pattern-demo
+  pattern1
+  pattern2
+  pattern3 ;
+
+: pattern1
+  fibonacci-sequence ;
+
+: pattern2
+  prime-sequence ;
+
+: pattern3
+  factorial-sequence ;
+
+: fibonacci-sequence
+  1 fib 1 =
+  2 fib 1 =
+  3 fib 2 =
+  4 fib 3 =
+  5 fib 5 =
+  * * * * ;
+
+: prime-sequence  
+  2 prime? true =
+  3 prime? true =
+  4 prime? false =
+  5 prime? true =
+  * * * ;
+
+: factorial-sequence
+  1 factorial 1 =
+  2 factorial 2 =
+  3 factorial 6 =
+  4 factorial 24 =
+  * * * ;
+
+: complete-test
+  comprehensive-demo
+  calculation-demo 100 >
+  ai-demo zero >
+  pattern-demo
+  * * * ; 

@@ -1,0 +1,83 @@
+\ demo-numbers.6th — Peano arithmetic emerges from pure {MARK, EDGE+, IN, PREV}.
+\
+\ Claim demonstrated:
+\   The natural numbers are not primitive. Given only the ability to
+\   MARK a fresh token and to POINT one token at another via EDGE+,
+\   together with reading edge-degree (IN) and traversing one step
+\   backward (PREV), the entire Peano arithmetic structure (zero,
+\   successor, addition, multiplication) emerges as graph topology.
+\
+\   No integers are ever stored as such. A "number" IS the length of
+\   a chain of nodes connected by edges. Arithmetic IS edge composition.
+
+\ stack helpers
+: 2dup over over ;
+: 2drop drop drop ;
+: nip swap drop ;
+: 1+ 1 + ;
+
+\ Peano in pure substrate:
+: zero MARK ;
+: succ MARK 2dup EDGE+ nip ;
+: zero? IN 0 = ;
+: peano-value dup zero? if drop 0 else PREV peano-value 1+ then ;
+: peano-add  dup zero? if drop else PREV peano-add succ then ;
+: peano-mul  dup zero? if 2drop zero else
+    PREV over swap peano-mul peano-add then ;
+
+\ ─── tests with assertions ───
+STEP
+zero peano-value 0 = ASSERT
+
+STEP
+zero succ peano-value 1 = ASSERT
+
+STEP
+zero succ succ peano-value 2 = ASSERT
+
+STEP
+zero succ succ succ peano-value 3 = ASSERT
+
+STEP
+zero succ peano-value
+zero succ succ peano-value
++
+3 = ASSERT
+
+\ build with substrate ops:
+STEP
+zero succ succ                    \ a = 2-chain
+zero succ succ succ              \ b = 3-chain
+peano-add peano-value 5 = ASSERT  \ 2+3 = 5
+
+STEP
+zero succ succ succ              \ a = 3
+zero succ                          \ b = 1
+peano-add peano-value 4 = ASSERT  \ 3+1 = 4
+
+STEP
+zero
+zero succ succ succ succ         \ b = 4
+peano-add peano-value 4 = ASSERT  \ 0+4 = 4
+
+STEP
+zero succ succ                    \ 2
+zero succ succ succ              \ 3
+peano-mul peano-value 6 = ASSERT  \ 2*3 = 6
+
+STEP
+zero succ succ succ              \ 3
+zero succ succ succ succ         \ 4
+peano-mul peano-value 12 = ASSERT \ 3*4 = 12
+
+STEP
+zero succ succ succ succ succ    \ 5
+zero                              \ 0
+peano-mul peano-value 0 = ASSERT  \ 5*0 = 0
+
+STEP
+zero succ                          \ 1
+zero succ succ succ succ succ    \ 5
+peano-mul peano-value 5 = ASSERT  \ 1*5 = 5
+
+REPORT

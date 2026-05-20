@@ -1,0 +1,89 @@
+\ demo-observers.6th — Relational physics: same substrate, observer-dependent facts.
+\
+\ Claim demonstrated:
+\   "What exists" and "what is connected to what" are not absolute.
+\   Each observer is a substrate node whose OUT edges enumerate the
+\   atoms it can observe.  Truth claims about the world are evaluated
+\   *within an observer's view* — and two observers with overlapping
+\   but different views can produce different, both-valid answers to
+\   the same question about the same atom.
+\
+\   This is the substrate analog of Rovelli's Relational QM: facts
+\   are observer-relative.  Here it falls out of pure edge topology.
+
+: 2dup over over ;
+: nip swap drop ;
+: not 0 = ;
+
+: zero MARK ;
+
+\ ─── substrate: 5 atoms in a chain a→b→c→d→e ───
+zero "a" store
+zero "b" store
+zero "c" store
+zero "d" store
+zero "e" store
+"a" load "b" load EDGE+
+"b" load "c" load EDGE+
+"c" load "d" load EDGE+
+"d" load "e" load EDGE+
+
+\ ─── two observers, partial overlapping views ───
+\ O1 sees atoms a, b, c
+\ O2 sees atoms     c, d, e
+zero "O1" store
+zero "O2" store
+"O1" load "a" load EDGE+
+"O1" load "b" load EDGE+
+"O1" load "c" load EDGE+
+"O2" load "c" load EDGE+
+"O2" load "d" load EDGE+
+"O2" load "e" load EDGE+
+
+\ Sanity: 7 nodes (5 atoms + 2 observers), 4 inter-atom edges + 3 + 3 pointers = 10
+NODES 7 = ASSERT
+EDGES 10 = ASSERT
+
+\ ─── relational predicate: "observer sees atom?" ───
+\ observer atom EDGE?  — already gives us this directly via the pointer
+"O1" load "a" load EDGE? ASSERT           \ O1 sees a
+"O1" load "e" load EDGE? not ASSERT       \ O1 does NOT see e
+"O2" load "a" load EDGE? not ASSERT       \ O2 does NOT see a
+"O2" load "e" load EDGE? ASSERT           \ O2 sees e
+
+\ Shared atom: both see c
+"O1" load "c" load EDGE? ASSERT
+"O2" load "c" load EDGE? ASSERT
+
+\ ─── observer-relative connectivity ───
+\ "What does atom X connect to, within observer's view?"
+\ Answer 0 if X's NEXT is not in observer's view.
+: o-next                                  \ ( observer atom -- next-or-0 )
+  NEXT                                    \ ( observer next )
+  2dup EDGE? if
+    nip                                   \ return next
+  else
+    2drop 0
+  then ;
+
+\ Disagreement on the same atom c:
+\   c→d in substrate.  d is in O2's view but not O1's.
+\   So O1 reports "c connects to nothing"; O2 reports "c connects to d".
+"O1" load "c" load o-next 0 = ASSERT
+"O2" load "c" load o-next "d" load = ASSERT
+
+\ Same question, same atom, two valid different answers.
+\ The fact "c is connected to d" is observer-relative.
+
+\ ─── both observers agree on what they both see ───
+\ Substrate edge b→c: O1 sees both b and c, so confirms.  O2 does not see b.
+"O1" load "b" load o-next "c" load = ASSERT
+"O2" load "b" load EDGE? not ASSERT      \ O2 has no opinion on b
+
+\ ─── total "world size" each observer measures ───
+"O1" load OUT 3 = ASSERT                 \ O1's world = 3 atoms
+"O2" load OUT 3 = ASSERT                 \ O2's world = 3 atoms
+\ Both observers say "the world has 3 things" — but they mean different
+\ 3 things.  Cardinality is observer-relative.
+
+REPORT

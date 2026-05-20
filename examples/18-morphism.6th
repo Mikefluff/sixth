@@ -1,0 +1,74 @@
+\ examples/18-morphism.6th — Structure-preserving substrate map.
+\
+\ Subgraphs S₁ and S₂ are isomorphic under φ if every edge a→b in S₁ has
+\ a corresponding edge φ(a)→φ(b) in S₂.  Encode φ as a node feature; iterate
+\ with EACH-EDGE to verify edge-preservation.  Substrate-level categorical
+\ morphism.
+
+use prelude
+use peano
+use debug
+
+\ Source chain a1→a2→a3.
+zero "a1" store
+"a1" load succ "a2" store
+"a2" load succ "a3" store
+
+\ Target chain b1→b2→b3.
+zero "b1" store
+"b1" load succ "b2" store
+"b2" load succ "b3" store
+
+NODES 6 assert-eq
+EDGES 4 assert-eq
+
+\ φ: a1↦b1, a2↦b2, a3↦b3.
+"a1" load "b1" load NSET
+"a2" load "b2" load NSET
+"a3" load "b3" load NSET
+
+"a1" load NGET "b1" load assert-eq
+"a2" load NGET "b2" load assert-eq
+"a3" load NGET "b3" load assert-eq
+
+"a1" load NGET "a2" load NGET EDGE? ASSERT
+"a2" load NGET "a3" load NGET EDGE? ASSERT
+
+: phi-of NGET ;
+: image-edge?
+  "mb" store "ma" store
+  "ma" load phi-of "mb" load phi-of EDGE? ;
+
+"a1" load "a2" load image-edge? ASSERT
+"a2" load "a3" load image-edge? ASSERT
+
+0 "violations" store
+: check-edge
+  "mb" store "ma" store
+  "ma" load NGET 0 = if else
+  "mb" load NGET 0 = if else
+    "ma" load phi-of "mb" load phi-of EDGE? not if
+      "violations" load 1+ "violations" store
+    then
+  then then ;
+
+' check-edge EACH-EDGE
+"violations" load 0 assert-eq
+
+\ Negative case: triangle target + wrong mapping → violations > 0.
+zero "t1" store
+zero "t2" store
+zero "t3" store
+"t1" load "t2" load EDGE+
+"t2" load "t3" load EDGE+
+"t3" load "t1" load EDGE+
+
+"a1" load "t1" load NSET
+"a2" load "t3" load NSET
+"a3" load "t2" load NSET
+
+0 "violations" store
+' check-edge EACH-EDGE
+"violations" load 0 > ASSERT
+
+REPORT

@@ -1,0 +1,53 @@
+\ examples/05-loop.6th — Self-reference as cyclic pointer topology.
+\
+\ Self-reference is the topological property of a substrate region in
+\ which following pointers from a node eventually returns to itself.
+\ Substrate: cycle 1→2→3→1.  Walking forward returns to start; the node
+\ "contains its own description" purely as edge structure (Hofstadter's
+\ strange loop encoded as topology).
+
+use prelude
+use peano
+use debug
+
+: walk-loop
+  NEXT
+  "loop-count" load 1+ "loop-count" store
+  dup "loop-start" load = if
+    drop "loop-count" load
+  else
+    walk-loop
+  then ;
+
+: walk-cycle-length
+  dup "loop-start" store
+  0 "loop-count" store
+  walk-loop ;
+
+\ 3-cycle 1→2→3→1.
+zero "a" store
+zero "b" store
+zero "c" store
+"a" load "b" load EDGE+
+"b" load "c" load EDGE+
+"c" load "a" load EDGE+
+
+NODES 3 assert-eq
+EDGES 3 assert-eq
+
+"a" load IN 1 assert-eq
+"a" load OUT 1 assert-eq
+"b" load IN 1 assert-eq
+"c" load OUT 1 assert-eq
+
+"a" load walk-cycle-length 3 assert-eq
+"b" load walk-cycle-length 3 assert-eq
+"c" load walk-cycle-length 3 assert-eq
+
+\ Degenerate self-reference: one node with self-loop.
+zero "x" store
+"x" load dup EDGE+
+"x" load "x" load EDGE? ASSERT
+"x" load walk-cycle-length 1 assert-eq
+
+REPORT

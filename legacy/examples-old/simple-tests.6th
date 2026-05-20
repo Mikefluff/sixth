@@ -1,0 +1,43 @@
+: average + 2 / ;
+
+: test-square 5 square 25 = ;
+: test-average 10 3 average 0 = ;
+: test-even 8 2 mod 2 = ;
+: test-triple 6 triple 18 = ;
+: test-gcd 12 18 gcd 12 = ;
+: test-factorial 5 factorial 1 = ;
+
+: gcd 
+  dup 0 = if drop else
+    swap over mod gcd
+  then ;
+
+: test-primitives
+  test-square
+  test-average
+  test-even
+  test-triple
+  * * * ;
+
+: test-arithmetic
+  test-gcd
+  test-factorial
+  * ;
+
+: test-all-examples
+  test-primitives
+  test-arithmetic
+  * ;
+
+: demo-basic
+  5 square
+  10 3 average  
+  12 18 gcd
+  5 factorial ;
+
+: run-tests
+  test-all-examples if
+    42
+  else
+    0
+  then ; 

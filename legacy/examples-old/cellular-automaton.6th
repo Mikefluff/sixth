@@ -1,0 +1,303 @@
+: grid-width 32 ;
+: grid-height 16 ;
+: population-size 20 ;
+: mutation-rate 10 ;
+
+: init-random 12345 "random-seed" store ;
+
+: next-random 
+  "random-seed" load 
+  dup 1103515245 * 12345 + 
+  dup "random-seed" store ;
+
+: random-range 
+  next-random swap mod ;
+
+: cell-addr 
+  grid-width * + "grid-base" load + ;
+
+: get-cell 
+  cell-addr load ;
+
+: set-cell 
+  cell-addr store ;
+
+: init-grid
+  1000 "grid-base" store  
+  grid-height 0 init-grid-loop ;
+
+: init-grid-loop 
+  dup grid-height < if
+    grid-width 0 init-row
+    1+ init-grid-loop
+  else 2drop then ;
+
+: init-row 
+  over over < if
+    100 random-range 30 < if 1 else 0 then
+    over 2 pick set-cell
+    1+ init-row
+  else 2drop drop then ;
+
+: get-rule 
+  "rules-base" load + load ;
+
+: set-rule 
+  "rules-base" load + store ;
+
+: init-rules
+  2000 "rules-base" store  
+  9 0 init-rules-loop ;  
+
+: init-rules-loop 
+  dup 9 >= if 2drop else
+    256 random-range over set-rule
+    1+ init-rules-loop
+  then ;
+
+: count-neighbors 
+  0 "neighbor-count" store
+  over 1- over 1- check-neighbor  
+  over   over 1- check-neighbor   
+  over 1+ over 1- check-neighbor  
+  over 1- over   check-neighbor  
+  over 1+ over   check-neighbor  
+  over 1- over 1+ check-neighbor  
+  over   over 1+ check-neighbor  
+  over 1+ over 1+ check-neighbor 
+  2drop "neighbor-count" load ;
+
+: check-neighbor 
+  dup 0 < if 2drop else
+  dup grid-height >= if 2drop else
+  over 0 < if 2drop else  
+  over grid-width >= if 2drop else
+    get-cell "neighbor-count" load + "neighbor-count" store
+  then then then then ;
+
+: apply-rules 
+  "current-rule-set" store
+  3000 "new-grid-base" store  
+  grid-height 0 apply-rules-loop ;
+
+: apply-rules-loop 
+  dup grid-height >= if 2drop else
+    grid-width 0 apply-rules-row
+    1+ apply-rules-loop  
+  then ;
+
+: apply-rules-row 
+  over over >= if 2drop drop else
+    over 2 pick get-cell "current-cell" store
+    over 2 pick count-neighbors "neighbors" store
+    
+    "neighbors" load "current-rule-set" load get-rule
+    "current-cell" load apply-evolution-rule
+    
+    over 2 pick new-cell-addr store
+    
+    1+ apply-rules-row
+  then ;
+
+: new-cell-addr 
+  grid-width * + "new-grid-base" load + ;
+
+: apply-evolution-rule 
+  swap if
+    dup 2 = if drop 1 else  
+    dup 3 = if drop 1 else  
+    drop 0 then then       
+  else
+    3 = if 1 else 0 then   
+  then ;
+
+: copy-new-grid
+  grid-height 0 copy-grid-loop ;
+
+: copy-grid-loop 
+  dup grid-height >= if 2drop else
+    grid-width 0 copy-grid-row
+    1+ copy-grid-loop
+  then ;
+
+: copy-grid-row 
+  over over >= if 2drop drop else
+    over 2 pick new-cell-addr load
+    over 2 pick set-cell
+    1+ copy-grid-row
+  then ;
+
+: calculate-fitness 
+  "current-rule-set" store
+  init-grid
+  10 0 fitness-simulation ;
+
+: fitness-simulation 
+  dup 10 >= if 2drop evaluate-final-state else
+    "current-rule-set" load apply-rules
+    copy-new-grid
+    1+ fitness-simulation
+  then ;
+
+: evaluate-final-state 
+  count-living-cells "living" store
+  count-patterns "patterns" store
+  
+  "living" load "patterns" load 2 * + ;
+
+: count-living-cells 
+  0 "living-count" store
+  grid-height 0 count-living-loop
+  "living-count" load ;
+
+: count-living-loop 
+  dup grid-height >= if 2drop else
+    grid-width 0 count-living-row
+    1+ count-living-loop
+  then ;
+
+: count-living-row 
+  over over >= if 2drop drop else
+    over 2 pick get-cell "living-count" load + "living-count" store
+    1+ count-living-row
+  then ;
+
+: count-patterns 
+  grid-width 2 - 1 count-patterns-loop ;
+
+: count-patterns-loop 
+  dup grid-width 2 - >= if 2drop 5 else  
+    1+ count-patterns-loop
+  then ;
+
+: init-population
+  4000 "population-base" store
+  5000 "fitness-base" store
+  population-size 0 init-pop-loop ;
+
+: init-pop-loop 
+  dup population-size >= if 2drop else
+    9 0 create-random-rules
+    1+ init-pop-loop
+  then ;
+
+: create-random-rules 
+  over 9 >= if 2drop drop else
+    256 random-range 
+    over "population-base" load + 9 * + store
+    1+ create-random-rules
+  then ;
+
+: evaluate-population
+  population-size 0 eval-pop-loop ;
+
+: eval-pop-loop 
+  dup population-size >= if 2drop else
+    dup get-individual-rules calculate-fitness
+    dup "fitness-base" load + store
+    1+ eval-pop-loop
+  then ;
+
+: get-individual-rules 
+  "population-base" load + 9 * ;
+
+: evolve-population
+  select-best-individuals
+  crossover-and-mutate ;
+
+: select-best-individuals
+  population-size 2 / 0 selection-loop ;
+
+: selection-loop 
+  dup population-size 2 / >= if 2drop else
+    dup find-best-individual
+    dup get-individual-rules
+    over population-size 2 / + get-individual-rules
+    copy-individual
+    1+ selection-loop
+  then ;
+
+: find-best-individual 
+  dup ;
+
+: copy-individual 
+  9 0 copy-rules-loop ;
+
+: copy-rules-loop 
+  over 9 >= if 2drop 2drop else
+    2dup + load over over + store
+    1+ copy-rules-loop
+  then ;
+
+: crossover-and-mutate
+  population-size 2 / population-size 2 / crossover-loop ;
+
+: crossover-loop 
+  dup over >= if 2drop else
+    dup mutation-rate random-range 0 = if
+      9 random-range 256 random-range
+      over get-individual-rules + store
+    then
+    1+ crossover-loop
+  then ;
+
+: print-grid
+  grid-height 0 print-grid-loop ;
+
+: print-grid-loop 
+  dup grid-height >= if 2drop else
+    grid-width 0 print-grid-row
+    1+ print-grid-loop
+  then ;
+
+: print-grid-row 
+  over over >= if 2drop drop else
+    over 2 pick get-cell if 42 else 32 then  
+    1+ print-grid-row
+  then ;
+
+: run-evolution 
+  init-random
+  init-rules  
+  init-population
+  evolution-loop ;
+
+: evolution-loop 
+  dup 0 = if drop else
+    evaluate-population
+    evolve-population
+    1- evolution-loop
+  then ;
+
+: demo-basic-automaton
+  init-random
+  init-grid
+  init-rules
+  5 0 basic-demo-loop ;
+
+: basic-demo-loop 
+  dup 5 >= if 2drop else
+    0 apply-rules  
+    copy-new-grid
+    1+ basic-demo-loop
+  then ;
+
+: demo-evolution
+  init-random
+  10 run-evolution ;
+
+: test-automaton
+  demo-basic-automaton
+  count-living-cells 0 > if 1 else 0 then ;
+
+: benchmark-evolution
+  init-random
+  5 run-evolution
+  1 ;  
+
+: cellular-demo
+  demo-basic-automaton
+  demo-evolution
+  test-automaton
+  benchmark-evolution
+  * * * ; 

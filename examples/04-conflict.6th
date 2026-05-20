@@ -1,0 +1,56 @@
+\ examples/04-conflict.6th — Resolution protocol determines emergent physics.
+\
+\ When two rules target the same precondition (leaf node), the *order* in
+\ which they apply is itself a physical choice — different orderings give
+\ different long-run substrates from the same initial state.
+
+use prelude
+use peano
+use debug
+
+\ Rule A — leaf spawns a new child.
+: rule-A
+  dup OUT 0 = if
+    MARK 2dup EDGE+ 2drop
+  else
+    drop
+  then ;
+
+\ Rule B — leaf gains a self-loop.
+: rule-B
+  dup OUT 0 = if
+    dup dup EDGE+ drop
+  else
+    drop
+  then ;
+
+\ Ordering 1: A then B.
+zero succ succ drop
+NODES 3 assert-eq
+EDGES 2 assert-eq
+
+STEP
+' rule-A EACH
+' rule-B EACH
+
+NODES 4 assert-eq
+EDGES 4 assert-eq
+3 4 EDGE? ASSERT
+4 4 EDGE? ASSERT
+
+\ Ordering 2: B then A.
+RESET
+zero succ succ drop
+NODES 3 assert-eq
+EDGES 2 assert-eq
+
+STEP
+' rule-B EACH
+' rule-A EACH
+
+NODES 3 assert-eq
+EDGES 3 assert-eq
+3 3 EDGE? ASSERT
+4 BORN -1 assert-eq
+
+REPORT

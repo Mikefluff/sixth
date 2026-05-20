@@ -1,0 +1,186 @@
+\ examples/27-reproduction.6th — substrate-native self-replication.
+\
+\ Claim demonstrated:
+\   An autopoietic cluster that reaches maturity (full vitality across
+\   limbs) fires a SUBSTRATE-NATIVE reproduction operation: MARK creates
+\   the new offspring's nodes; EDGE+ wires them into the same topology
+\   as the parent; NSET seeds offspring vitality.  Both parent and
+\   offspring continue evolving under the same autopoietic dynamics.
+\
+\   No new primitives; reproduction is a sequence of MARK+EDGE+ inside
+\   a Sixth word.  The trigger is a substrate-state check
+\   (parent germ's NGET + NSUM both above maturity thresholds).
+\
+\   Topology of one cluster:
+\       L1↔L2, L2↔L3, L3↔L1                (ring of limbs)
+\       G↔L1, G↔L2, G↔L3                   (germ bi-edged to each limb)
+\
+\   After successful reproduction the substrate contains two such
+\   clusters, mutually disjoint.  Each is independently autopoietic.
+
+use prelude
+use peano
+use graph
+use debug
+
+\ ============================================================
+\ Phase 0 — build parent cluster
+\ ============================================================
+
+zero "L1" store
+zero "L2" store
+zero "L3" store
+zero "G"  store
+
+"L1" load "L2" load bi-edge
+"L2" load "L3" load bi-edge
+"L3" load "L1" load bi-edge
+
+"G" load "L1" load bi-edge
+"G" load "L2" load bi-edge
+"G" load "L3" load bi-edge
+
+"L1" load 10 NSET   "L2" load 10 NSET   "L3" load 10 NSET
+"G"  load 10 NSET
+
+NODES 4 assert-eq
+"G" load OUT 3 assert-eq
+"G" load NSUM 30 assert-eq
+
+\ ============================================================
+\ Autopoietic dynamics
+\ ============================================================
+
+: phase-decay   NGET 3 -  dup 0 < if drop 0 then ;
+: phase-restore dup NSUM 5 >  if drop 10 else NGET then ;
+: cycle         ' phase-decay STEP-CA  ' phase-restore STEP-CA ;
+
+\ Verify parent stays stable for a couple of cycles before reproduction.
+cycle cycle
+"G"  load NGET 10 assert-eq
+"L1" load NGET 10 assert-eq
+"L2" load NGET 10 assert-eq
+"L3" load NGET 10 assert-eq
+
+\ ============================================================
+\ Substrate-native reproduction
+\ ============================================================
+\
+\ Maturity trigger:  NGET(germ) > 8  AND  NSUM(germ) > 25.
+\ Effect:  MARK 4 fresh nodes (3 limbs + 1 germ for offspring);
+\          EDGE+ them into the same bi-edge topology as parent;
+\          NSET them to full vitality;
+\          NSET parent germ to 0 ("spent" — cannot fire again until
+\          autopoiesis restores it).
+
+: mature?
+  "G" load NGET 8 >
+  "G" load NSUM 25 > * ;
+
+: build-offspring
+  MARK "oG"  store
+  MARK "oL1" store
+  MARK "oL2" store
+  MARK "oL3" store
+
+  \ Ring of limbs
+  "oL1" load "oL2" load bi-edge
+  "oL2" load "oL3" load bi-edge
+  "oL3" load "oL1" load bi-edge
+
+  \ Germ bi-edged to each limb
+  "oG" load "oL1" load bi-edge
+  "oG" load "oL2" load bi-edge
+  "oG" load "oL3" load bi-edge
+
+  \ Vitality
+  "oG"  load 10 NSET
+  "oL1" load 10 NSET
+  "oL2" load 10 NSET
+  "oL3" load 10 NSET ;
+
+: reproduce
+  build-offspring
+  "G" load 0 NSET ;     \ parent germ spent
+
+\ Sanity: parent IS mature.
+mature? ASSERT
+reproduce
+
+\ ============================================================
+\ Verify offspring topology mirrors parent
+\ ============================================================
+
+NODES 8 assert-eq
+
+"oG"  load OUT 3 assert-eq
+"oL1" load OUT 3 assert-eq             \ 2 ring + 1 germ
+"oL2" load OUT 3 assert-eq
+"oL3" load OUT 3 assert-eq
+
+"oG"  load "oL1" load EDGE? ASSERT
+"oG"  load "oL2" load EDGE? ASSERT
+"oG"  load "oL3" load EDGE? ASSERT
+"oL1" load "oL2" load EDGE? ASSERT
+"oL2" load "oL3" load EDGE? ASSERT
+"oL3" load "oL1" load EDGE? ASSERT
+
+\ Offspring at full vitality, parent germ spent.
+"oG"  load NGET 10 assert-eq
+"oL1" load NGET 10 assert-eq
+"G"   load NGET  0 assert-eq
+
+\ ============================================================
+\ Continue dynamics — parent germ recovers, both clusters persist
+\ ============================================================
+
+cycle cycle cycle
+
+"G"  load NGET 10 assert-eq            \ parent restored
+"L1" load NGET 10 assert-eq
+"oG" load NGET 10 assert-eq            \ offspring stable
+"oL1" load NGET 10 assert-eq
+
+\ Both clusters can now reproduce.  Parent fires its second offspring.
+
+: build-offspring-2
+  MARK "o2G"  store
+  MARK "o2L1" store
+  MARK "o2L2" store
+  MARK "o2L3" store
+
+  "o2L1" load "o2L2" load bi-edge
+  "o2L2" load "o2L3" load bi-edge
+  "o2L3" load "o2L1" load bi-edge
+
+  "o2G" load "o2L1" load bi-edge
+  "o2G" load "o2L2" load bi-edge
+  "o2G" load "o2L3" load bi-edge
+
+  "o2G"  load 10 NSET
+  "o2L1" load 10 NSET
+  "o2L2" load 10 NSET
+  "o2L3" load 10 NSET ;
+
+mature? ASSERT
+build-offspring-2
+"G" load 0 NSET
+
+NODES 12 assert-eq
+
+cycle cycle cycle
+
+"G"   load NGET 10 assert-eq           \ parent restored after 2nd repro
+"oG"  load NGET 10 assert-eq           \ first child stable
+"o2G" load NGET 10 assert-eq           \ second child stable
+
+\ Print final substrate inventory.
+cr
+"parent     :" .  "G"   load NGET . "L1" load NGET .
+                  "L2" load NGET . "L3" load NGET . cr
+"offspring 1:" .  "oG"  load NGET . "oL1" load NGET .
+                  "oL2" load NGET . "oL3" load NGET . cr
+"offspring 2:" .  "o2G" load NGET . "o2L1" load NGET .
+                  "o2L2" load NGET . "o2L3" load NGET . cr
+
+REPORT

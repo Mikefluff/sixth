@@ -1,0 +1,64 @@
+\ examples/06-observers.6th — Relational physics: observer-dependent facts.
+\
+\ Each observer is a substrate node whose OUT edges enumerate the atoms
+\ it can observe.  Truth claims are evaluated within an observer's view;
+\ two observers with overlapping but different views can give different,
+\ both-valid answers to the same question about the same atom.  This is
+\ the substrate analogue of Rovelli's Relational QM.
+
+use prelude
+use peano
+use debug
+
+\ 5-atom chain a→b→c→d→e.
+zero "a" store
+zero "b" store
+zero "c" store
+zero "d" store
+zero "e" store
+"a" load "b" load EDGE+
+"b" load "c" load EDGE+
+"c" load "d" load EDGE+
+"d" load "e" load EDGE+
+
+\ Two observers.  O1 sees a,b,c — O2 sees c,d,e.
+zero "O1" store
+zero "O2" store
+"O1" load "a" load EDGE+
+"O1" load "b" load EDGE+
+"O1" load "c" load EDGE+
+"O2" load "c" load EDGE+
+"O2" load "d" load EDGE+
+"O2" load "e" load EDGE+
+
+NODES 7 assert-eq
+EDGES 10 assert-eq
+
+"O1" load "a" load EDGE? ASSERT
+"O1" load "e" load EDGE? not ASSERT
+"O2" load "a" load EDGE? not ASSERT
+"O2" load "e" load EDGE? ASSERT
+
+"O1" load "c" load EDGE? ASSERT
+"O2" load "c" load EDGE? ASSERT
+
+\ Observer-relative NEXT — atom's substrate-NEXT filtered by observer's view.
+: o-next
+  NEXT
+  2dup EDGE? if
+    nip
+  else
+    2drop 0
+  then ;
+
+\ Disagreement: c→d in substrate; d is in O2's view but not O1's.
+"O1" load "c" load o-next 0 assert-eq
+"O2" load "c" load o-next "d" load assert-eq
+
+"O1" load "b" load o-next "c" load assert-eq
+"O2" load "b" load EDGE? not ASSERT
+
+"O1" load OUT 3 assert-eq
+"O2" load OUT 3 assert-eq
+
+REPORT

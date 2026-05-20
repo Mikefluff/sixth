@@ -1,0 +1,56 @@
+: gcd 
+  dup 0 = if drop else
+    swap over mod gcd
+  then ;
+
+: lcm 
+  2dup gcd 
+  dup rot rot / * ;
+
+: power 
+  dup 0 = if 2drop one else
+    one - swap dup swap power *
+  then ;
+
+: fib 
+  dup two < if drop one else
+    dup one - fib swap two - fib +
+  then ;
+
+: rot3 rot rot ;
+
+: 3dup dup 2dup ;
+
+: sort-two 
+  2dup > if swap then ;
+
+: sort-three 
+  2dup > if swap then drop
+  2dup > if swap then drop
+  2dup > if swap then ;
+
+: min3 min min ;
+
+: between? 
+  over over >= 2drop >= * ;
+
+: clamp 
+  over min max ;
+
+: sum-to-n 
+  dup one <= if else dup one - sum-to-n + then ;
+
+: count-digits 
+  dup ten < if drop one else ten / count-digits one + then ;
+
+: demo-level2
+  12 18 gcd
+  5 3 power  
+  8 fib
+  3 7 2 sort-three ;
+
+: test-level2
+  12 18 gcd 6 =
+  3 4 power 64 =
+  7 fib 21 =
+  10 5 15 min3 5 = ; 

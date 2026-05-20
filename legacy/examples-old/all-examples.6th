@@ -1,0 +1,93 @@
+: load-all-examples
+  "Loading Level 1: Primitives"
+  "Loading Level 2: Core functions" 
+  "Loading Level 3: Algorithms"
+  "Loading Level 4: AI examples"
+  "Loading Complete Demo"
+  "All examples loaded!" ;
+
+: run-all-tests
+  test-level1 if 
+    "Level 1 tests: PASS" 
+  else 
+    "Level 1 tests: FAIL" 
+  then
+  
+  test-level2 if 
+    "Level 2 tests: PASS" 
+  else 
+    "Level 2 tests: FAIL" 
+  then
+  
+  test-level3 if 
+    "Level 3 tests: PASS" 
+  else 
+    "Level 3 tests: FAIL" 
+  then
+  
+  test-ai if 
+    "AI tests: PASS" 
+  else 
+    "AI tests: FAIL" 
+  then
+  
+  complete-test if 
+    "Complete test: PASS" 
+  else 
+    "Complete test: FAIL" 
+  then ;
+
+: run-all-demos
+  demo-level1
+  demo-level2
+  demo-level3  
+  demo-ai
+  complete-test ;
+
+: benchmark-functions
+  benchmark-arithmetic
+  benchmark-factorial
+  benchmark-fibonacci
+  benchmark-prime ;
+
+: benchmark-arithmetic
+  1000 0 benchmark-arith-loop ;
+
+: benchmark-arith-loop
+  dup zero = if drop else
+    dup square drop
+    one - benchmark-arith-loop
+  then ;
+
+: benchmark-factorial
+  10 0 benchmark-fact-loop ;
+
+: benchmark-fact-loop
+  dup zero = if drop else
+    dup factorial drop
+    one - benchmark-fact-loop
+  then ;
+
+: benchmark-fibonacci  
+  20 0 benchmark-fib-loop ;
+
+: benchmark-fib-loop
+  dup zero = if drop else
+    dup fib drop
+    one - benchmark-fib-loop
+  then ;
+
+: benchmark-prime
+  100 0 benchmark-prime-loop ;
+
+: benchmark-prime-loop
+  dup zero = if drop else
+    dup prime? drop
+    one - benchmark-prime-loop
+  then ;
+
+: examples-demo
+  load-all-examples
+  run-all-tests
+  run-all-demos
+  benchmark-functions ; 

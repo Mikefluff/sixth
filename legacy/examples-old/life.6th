@@ -1,0 +1,20 @@
+: width 5 ;
+: height 5 ;
+
+: init-field 0 "generation" store ;
+
+: get-cell dup load ;
+: set-cell store ;
+
+: simple-demo
+  init-field
+  one one set-cell
+  one two set-cell
+  one three set-cell ;
+
+: show-status
+  "Generation complete" ;
+
+: life-demo
+  simple-demo
+  show-status ; 

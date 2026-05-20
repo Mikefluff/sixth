@@ -1,0 +1,78 @@
+\ demo-conflict.6th — Resolution protocol determines emergent physics.
+\
+\ Claim demonstrated:
+\   When two rewrite rules target the same precondition (here: "node is
+\   a leaf"), the *order* in which they are applied is itself a physical
+\   choice.  Different resolution protocols produce different long-run
+\   substrate configurations — i.e., different physics — from the same
+\   initial state and the same rule set.
+\
+\   Rule A:  every leaf gets a NEW child (SPROUT)
+\   Rule B:  every leaf gets a SELF-LOOP   (CLOSE)
+\
+\   These conflict because both check "OUT = 0".  Whichever runs first
+\   removes the precondition for the other on the same node.
+
+: 2dup over over ;
+: nip swap drop ;
+: not 0 = ;
+: zero MARK ;
+: succ MARK 2dup EDGE+ nip ;
+
+\ Rule A — leaf node spawns a new child
+: rule-A
+  dup OUT 0 = if
+    MARK 2dup EDGE+ drop drop
+  else
+    drop
+  then ;
+
+\ Rule B — leaf node gains a self-loop
+: rule-B
+  dup OUT 0 = if
+    dup dup EDGE+ drop
+  else
+    drop
+  then ;
+
+\ ─── ORDERING 1: apply A then B in the same step ───
+\ Initial: chain 1→2→3 (node 3 is the only leaf)
+zero succ succ drop
+NODES 3 = ASSERT
+EDGES 2 = ASSERT
+
+STEP
+' rule-A EACH       \ node 3 gets new child 4. 3 no longer leaf. 4 is leaf.
+' rule-B EACH       \ node 4 (only remaining leaf at start of B) gets self-loop.
+
+\ Outcome under A-then-B:
+\   nodes: 4   edges: 2 (orig) + 1 (3→4) + 1 (4→4) = 4
+NODES 4 = ASSERT
+EDGES 4 = ASSERT
+3 4 EDGE? ASSERT
+4 4 EDGE? ASSERT
+
+\ ─── RESET, re-run with ORDERING 2: B then A ───
+RESET
+zero succ succ drop
+NODES 3 = ASSERT
+EDGES 2 = ASSERT
+
+STEP
+' rule-B EACH       \ node 3 (leaf) gets self-loop. After: 3 has out=1 (self), no longer leaf.
+' rule-A EACH       \ no leaf remains. Rule A does nothing.
+
+\ Outcome under B-then-A:
+\   nodes: 3 (unchanged)   edges: 2 + 1 (3→3) = 3
+NODES 3 = ASSERT
+EDGES 3 = ASSERT
+3 3 EDGE? ASSERT
+\ no new node was spawned:
+4 BORN -1 = ASSERT       \ node 4 does not exist (born=-1 sentinel)
+
+\ ─── interpretation: same rules + same initial state → different outcomes ───
+\ A-then-B: 4 nodes, child sprouted before close-rule could fire
+\ B-then-A: 3 nodes, self-loop fired first, closed precondition for sprout
+\ Resolution-order IS substrate physics.
+
+REPORT

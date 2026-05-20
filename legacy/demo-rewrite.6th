@@ -1,0 +1,98 @@
+\ demo-rewrite.6th — Formal graph rewriting: transitive-closure rule
+\                    produces complete reachability as fixed point.
+\
+\ Claim demonstrated:
+\   A single declarative substrate rule
+\        for every 2-edge path x→y→z, ensure edge x→z
+\   iterated to fixed point computes the transitive closure of a
+\   directed graph.  Reachability is not assumed — it emerges from
+\   repeated application of a local rewrite over the edge set.
+\
+\   Uses EACH-2PATH: iterates over all 2-paths in snapshot, so rule
+\   is order-independent (atomic step semantics).
+
+: 2dup over over ;
+: nip swap drop ;
+: not 0 = ;
+
+: zero MARK ;
+
+\ TC rule: given 2-path (a,b,c), ensure a→c.
+: tc-rule                                  \ ( a b c -- )
+  nip                                      \ ( a c )   drop middle b
+  2dup EDGE? if
+    2drop                                  \ already there
+  else
+    EDGE+                                  \ add a→c
+  then ;
+
+\ ─── DEMO 1: chain a→b→c→d ───
+zero "a" store
+zero "b" store
+zero "c" store
+zero "d" store
+"a" load "b" load EDGE+
+"b" load "c" load EDGE+
+"c" load "d" load EDGE+
+
+NODES 4 = ASSERT
+EDGES 3 = ASSERT
+
+STEP
+' tc-rule EACH-2PATH
+\ 2-paths: a→b→c, b→c→d.  Add a→c, b→d.  Total 5.
+EDGES 5 = ASSERT
+"a" load "c" load EDGE? ASSERT
+"b" load "d" load EDGE? ASSERT
+
+STEP
+' tc-rule EACH-2PATH
+\ 2-paths now include a→b→d, a→c→d, b→c→d (existing).  Add a→d.
+EDGES 6 = ASSERT
+"a" load "d" load EDGE? ASSERT
+
+STEP
+' tc-rule EACH-2PATH
+\ fixed point: no new edges possible
+EDGES 6 = ASSERT
+
+"a" load OUT 3 = ASSERT
+"b" load OUT 2 = ASSERT
+"c" load OUT 1 = ASSERT
+"d" load OUT 0 = ASSERT
+
+\ ─── DEMO 2: 3-cycle x→y→z→x ───
+RESET
+zero "x" store
+zero "y" store
+zero "z" store
+"x" load "y" load EDGE+
+"y" load "z" load EDGE+
+"z" load "x" load EDGE+
+NODES 3 = ASSERT
+EDGES 3 = ASSERT
+
+STEP
+' tc-rule EACH-2PATH
+\ 2-paths (all from snapshot): x→y→z, y→z→x, z→x→y.
+\ Add: x→z, y→x, z→y.  Total 6.
+EDGES 6 = ASSERT
+"x" load "z" load EDGE? ASSERT
+"y" load "x" load EDGE? ASSERT
+"z" load "y" load EDGE? ASSERT
+
+STEP
+' tc-rule EACH-2PATH
+\ Now 2-paths include x→y→x, x→z→x, etc → self-loops emerge.
+\ All 3 self-loops added.  Total 9 = K3 with self-loops.
+EDGES 9 = ASSERT
+"x" load "x" load EDGE? ASSERT
+"y" load "y" load EDGE? ASSERT
+"z" load "z" load EDGE? ASSERT
+
+STEP
+' tc-rule EACH-2PATH
+\ fixed point
+EDGES 9 = ASSERT
+
+REPORT

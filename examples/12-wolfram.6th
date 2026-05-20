@@ -1,0 +1,57 @@
+\ examples/12-wolfram.6th — Wolfram-style hypergraph rewriting on substrate.
+\
+\ Pattern     {{x,y},{y,z}}            (a 2-path)
+\ Replacement {{x,z},{z,w},{y,w}}      where w is fresh
+\ Expressible directly via existing primitives: EACH-2PATH binds (x,y,z),
+\ MARK supplies w, EDGE+ commits.  Wolfram's framework is a special case
+\ of our k-path iterator.
+
+use prelude
+use peano
+use debug
+
+\ Non-destructive additive form of the rule.
+: wolfram-rule
+  "wz" store
+  "wy" store
+  "wx" store
+  MARK "ww" store
+  "wx" load "wz" load EDGE+
+  "wz" load "ww" load EDGE+
+  "wy" load "ww" load EDGE+ ;
+
+\ Initial substrate: 2-edge chain a→b→c.
+zero "a" store
+zero "b" store
+zero "c" store
+"a" load "b" load EDGE+
+"b" load "c" load EDGE+
+
+NODES 3 assert-eq
+EDGES 2 assert-eq
+
+\ Step 1: a single 2-path (a,b,c) matches.
+STEP
+' wolfram-rule EACH-2PATH
+
+NODES 4 assert-eq
+EDGES 5 assert-eq
+"a" load "c" load EDGE? ASSERT
+"c" load "ww" load EDGE? ASSERT
+"b" load "ww" load EDGE? ASSERT
+
+"ww" load 4 assert-eq
+
+\ Step 2: four 2-paths now match.  After dedup: +4 nodes, +9 edges.
+STEP
+' wolfram-rule EACH-2PATH
+
+NODES 8 assert-eq
+EDGES 14 assert-eq
+
+5 IN 0 > ASSERT
+6 IN 0 > ASSERT
+7 IN 0 > ASSERT
+8 IN 0 > ASSERT
+
+REPORT

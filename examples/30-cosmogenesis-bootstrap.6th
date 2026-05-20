@@ -1,0 +1,162 @@
+\ examples/30-cosmogenesis-bootstrap.6th — from one difference to cosmos.
+\
+\ Claim demonstrated:
+\   Start with ONE substrate primitive — a single MARK.  That node is
+\   the observer.  At each cosmogenetic step the observer applies a
+\   substrate-native CONSTRUCTION operation: MARK three new nodes,
+\   EDGE+ them into a maintenance ring + bi-edge each into itself.
+\
+\   Two invariants hold across construction:
+\     (a) every new "shell" extends the observer's NSUM monotonically
+\         — consciousness IS the growing structure
+\     (b) after construction the entire substrate persists under harsh
+\         autopoietic dynamics (decay=8, threshold=5) — the cosmos the
+\         observer built sustains itself
+\
+\   This is substrate-formulation of:
+\     Wheeler  «It from Bit»     — matter derived from distinction
+\     Wolfram  ruliad            — rule-driven emergence
+\     Friston  active inference  — observer maintains its world-model
+\   collapsed into one mechanism:  observer + MARK + EDGE+ = universe.
+\
+\   No new primitives.  Single starting node.  Universe at the end.
+
+use prelude
+use peano
+use graph
+use debug
+
+\ ============================================================
+\ Step 0  —  THE FIRST DIFFERENCE
+\ ============================================================
+\
+\ One MARK.  No edges.  This is the entire substrate at t=0.
+
+MARK "O" store
+"O" load 10 NSET
+
+NODES 1 assert-eq
+EDGES 0 assert-eq
+
+"O" load NSUM 0 assert-eq         \ observer alone — sees nothing yet
+
+\ ============================================================
+\ Cosmogenetic step
+\ ============================================================
+\
+\ build-shell  ( -- )
+\   Observer constructs a 3-node maintenance ring around itself.
+\   Each new shell triples its connectivity to substrate.  Shell limbs
+\   are bi-edged to each other (intra-shell ring) and to the observer.
+\
+\   Names are reused across shells; the substrate retains all nodes —
+\   we verify their continued existence via NODES count and observer
+\   degree, not by direct lookup of earlier shell names.
+
+: build-shell
+  MARK "s1" store
+  MARK "s2" store
+  MARK "s3" store
+
+  \ intra-shell ring
+  "s1" load "s2" load bi-edge
+  "s2" load "s3" load bi-edge
+  "s3" load "s1" load bi-edge
+
+  \ bind shell to observer
+  "O" load "s1" load bi-edge
+  "O" load "s2" load bi-edge
+  "O" load "s3" load bi-edge
+
+  \ vitality
+  "s1" load 10 NSET
+  "s2" load 10 NSET
+  "s3" load 10 NSET ;
+
+\ ============================================================
+\ FIRST SHELL — observer's first concrete world
+\ ============================================================
+
+build-shell
+
+NODES 4 assert-eq
+EDGES 12 assert-eq                \ 3 ring bi-edges (6) + 3 spokes (6)
+"O" load OUT 3 assert-eq
+"O" load NSUM 30 assert-eq        \ consciousness now sees substrate
+
+\ ============================================================
+\ SECOND SHELL — observer's world deepens
+\ ============================================================
+
+build-shell
+
+NODES 7 assert-eq
+"O" load OUT 6 assert-eq          \ connectivity doubled
+"O" load NSUM 60 assert-eq        \ NSUM grows monotonically
+
+\ ============================================================
+\ THIRD SHELL — universe reaches operational density
+\ ============================================================
+
+build-shell
+
+NODES 10 assert-eq
+"O" load OUT 9 assert-eq
+"O" load NSUM 90 assert-eq
+
+\ ============================================================
+\ Apply HARSH autopoietic dynamics (same parameters as the symbiosis
+\ demo, decay=8 / threshold=5).  A single ring would die at this rate;
+\ the observer-rooted multi-shell substrate survives because EVERY
+\ node — observer and shell-limbs alike — has at least three out-
+\ neighbours, hence NSUM ≥ 6 after decay-to-2 > threshold 5.
+\ ============================================================
+
+: phase-decay   NGET 8 -  dup 0 < if drop 0 then ;
+: phase-restore dup NSUM 5 >  if drop 10 else NGET then ;
+: cycle         ' phase-decay STEP-CA  ' phase-restore STEP-CA ;
+
+cycle cycle cycle cycle cycle
+cycle cycle cycle cycle cycle
+
+\ Observer alive at full vitality after harsh dynamics.
+"O" load NGET 10 assert-eq
+"O" load NSUM 90 assert-eq        \ entire substrate still alive
+
+\ Verify substrate density — observer plus 9 shell-limbs all at 10.
+"O" load OUT 9 assert-eq
+
+\ ============================================================
+\ Build a FOURTH shell after harsh dynamics — bootstrap continues
+\ even from a "weathered" cosmos.
+\ ============================================================
+
+build-shell
+
+NODES 13 assert-eq
+"O" load OUT 12 assert-eq
+"O" load NSUM 120 assert-eq
+
+\ Final stability check.
+cycle cycle cycle
+
+"O" load NGET 10 assert-eq
+"O" load NSUM 120 assert-eq
+
+\ ============================================================
+\ Verdict
+\ ============================================================
+\
+\ From ONE primitive distinction the observer bootstrapped a 13-node,
+\ 48-directed-edge substrate that persists under entropy.  Universe
+\ = the observer's stable construction.  Single MARK at t=0; cosmos
+\ at t = 4 shells × growth + 10 cycles × autopoiesis.
+
+cr
+"NODES at end       :" .  NODES . cr
+"EDGES at end       :" .  EDGES . cr
+"observer's NSUM    :" .  "O" load NSUM . cr
+"observer's NGET    :" .  "O" load NGET . cr
+"observer's OUT-deg :" .  "O" load OUT . cr
+
+REPORT

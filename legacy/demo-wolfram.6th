@@ -1,0 +1,92 @@
+\ demo-wolfram.6th — Wolfram-style hypergraph rewriting on substrate.
+\
+\ Claim demonstrated:
+\   Wolfram's elementary hypergraph rewrite
+\        pattern:      {{x,y}, {y,z}}     (a 2-path)
+\        replacement:  {{x,z}, {z,w}, {y,w}}    where w is fresh
+\   is expressible directly using existing substrate primitives:
+\        EACH-2PATH binds the pattern variables (x,y,z),
+\        MARK supplies the fresh variable w,
+\        EDGE+ commits the replacement edges.
+\   No new primitive is required.  Wolfram-style declarative rewriting
+\   is a special case of our substrate iterator over k-paths.
+\
+\   This rule grows the substrate while preserving the original edges,
+\   producing controlled exponential structure expansion.
+
+: 2dup over over ;
+: nip swap drop ;
+: not 0 = ;
+: 1+ 1 + ;
+
+: zero MARK ;
+: succ MARK 2dup EDGE+ nip ;
+
+\ Wolfram's elementary rule — non-destructive, additive form:
+\   ∀ 2-path (x → y → z) in snapshot:
+\       add edges  x→z,  z→w,  y→w   with w := MARK (fresh)
+: wolfram-rule
+  "_z" store
+  "_y" store
+  "_x" store
+  MARK "_w" store
+  "_x" load "_z" load EDGE+
+  "_z" load "_w" load EDGE+
+  "_y" load "_w" load EDGE+ ;
+
+\ ─── initial substrate: 2-edge chain a→b→c ───
+zero "a" store
+zero "b" store
+zero "c" store
+"a" load "b" load EDGE+
+"b" load "c" load EDGE+
+
+NODES 3 = ASSERT
+EDGES 2 = ASSERT
+
+\ ─── step 1: apply Wolfram rule to single 2-path ───
+STEP
+' wolfram-rule EACH-2PATH
+
+\ Exactly one 2-path matched: (a,b,c).
+\ Created: w=node 4.  Added: a→c, c→w, b→w.
+NODES 4 = ASSERT
+EDGES 5 = ASSERT
+"a" load "c" load EDGE? ASSERT
+"c" load "_w" load EDGE? ASSERT
+"b" load "_w" load EDGE? ASSERT
+
+\ Verify fresh node identity
+"_w" load 4 = ASSERT
+
+\ ─── step 2: more 2-paths now exist ───
+\ After step 1 the snapshot contains four 2-paths:
+\   (a,b,c)  original
+\   (a,b,w)  via a→b and b→w
+\   (a,c,w)  via a→c and c→w
+\   (b,c,w)  via b→c and c→w
+\ Each match adds a fresh w-node and three edges, but EDGE+ deduplicates,
+\ so duplicate target edges are absorbed.  Result: 4 new nodes, 9 new
+\ edges (after deduplication).  Total: nodes=8, edges=14.
+STEP
+' wolfram-rule EACH-2PATH
+
+NODES 8 = ASSERT
+EDGES 14 = ASSERT
+
+\ Each of the four w-clones (nodes 5..8) is a fresh sprout, no other
+\ node points to it except via this step's additions.
+5 IN 0 > ASSERT
+6 IN 0 > ASSERT
+7 IN 0 > ASSERT
+8 IN 0 > ASSERT
+
+\ ─── interpretation ───
+\ A single declarative pattern→replacement specification, expressed
+\ purely via existing substrate primitives, drives controlled
+\ exponential growth of the hypergraph.  This is Wolfram's
+\ universal-graph-rewriting framework instantiated in Sixth without
+\ any new pattern-matching primitive — EACH-2PATH already provides
+\ the variable binding machinery.
+
+REPORT

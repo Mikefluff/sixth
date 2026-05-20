@@ -1,0 +1,155 @@
+\ examples/25-substrate-genesis.6th — substrate-native abiogenesis.
+\
+\ Claim demonstrated:
+\   Place six DISTINCT topological patterns side-by-side in one
+\   substrate.  Apply the SAME autopoietic dynamics (decay + threshold-
+\   restoration) used in demos 23'-24' to all of them.  After K cycles,
+\   measure which patterns persist.
+\
+\   Result: the dividing line is purely topological.  Patterns whose
+\   topology supports mutual restoration through OUT-edges survive.
+\   Patterns that lack any in-loop restoration cascade die from their
+\   "edges" — endpoints first, then the rest.  "Life" is structurally
+\   necessary in some topologies and structurally impossible in others.
+\
+\   Six patterns:
+\     A  triangle ring (bi-edges)        →  survives
+\     B  3-node one-way chain            →  dies (no return path)
+\     C  self-loop                        →  survives (NSUM = self)
+\     D  isolated node                    →  dies (NSUM = 0)
+\     E  2-node bi-edge                   →  survives (mutual)
+\     F  3-arm star, centre→leaves        →  dies (leaves are sinks)
+\
+\   Substrate-native abiogenesis: alive/dead is a property of topology
+\   under the chosen dynamics, not an extra fact you add.
+
+use prelude
+use peano
+use graph
+use debug
+
+\ ============================================================
+\ Pattern A — 3-node bi-directional ring (triangle K3 with bi-edges)
+\ ============================================================
+
+zero "a1" store
+zero "a2" store
+zero "a3" store
+"a1" load "a2" load bi-edge
+"a2" load "a3" load bi-edge
+"a3" load "a1" load bi-edge
+
+\ ============================================================
+\ Pattern B — 3-node unidirectional chain  b1 → b2 → b3
+\ ============================================================
+
+zero "b1" store
+zero "b2" store
+zero "b3" store
+"b1" load "b2" load EDGE+
+"b2" load "b3" load EDGE+
+
+\ ============================================================
+\ Pattern C — single node with self-loop
+\ ============================================================
+
+zero "c1" store
+"c1" load "c1" load EDGE+
+
+\ ============================================================
+\ Pattern D — isolated node, no edges
+\ ============================================================
+
+zero "d1" store
+
+\ ============================================================
+\ Pattern E — two-node bi-edge
+\ ============================================================
+
+zero "e1" store
+zero "e2" store
+"e1" load "e2" load bi-edge
+
+\ ============================================================
+\ Pattern F — three-arm star, centre points OUT to leaves only
+\ ============================================================
+
+zero "f1" store           \ centre
+zero "f2" store
+zero "f3" store
+zero "f4" store
+"f1" load "f2" load EDGE+
+"f1" load "f3" load EDGE+
+"f1" load "f4" load EDGE+
+
+\ ============================================================
+\ Initialise every node at full vitality
+\ ============================================================
+
+"a1" load 10 NSET   "a2" load 10 NSET   "a3" load 10 NSET
+"b1" load 10 NSET   "b2" load 10 NSET   "b3" load 10 NSET
+"c1" load 10 NSET
+"d1" load 10 NSET
+"e1" load 10 NSET   "e2" load 10 NSET
+"f1" load 10 NSET   "f2" load 10 NSET   "f3" load 10 NSET   "f4" load 10 NSET
+
+NODES 14 assert-eq
+\ A 3 bi-edges = 6 directed; B 2 one-way; C 1 self-loop;
+\ D 0; E 1 bi-edge = 2 directed; F 3 one-way  ⇒  6+2+1+0+2+3 = 14
+EDGES 14 assert-eq
+
+\ ============================================================
+\ Autopoietic dynamics (decay + threshold restoration)
+\ ============================================================
+
+: phase-decay   NGET 3 -  dup 0 < if drop 0 then ;
+: phase-restore dup NSUM 5 >  if drop 10 else NGET then ;
+: cycle         ' phase-decay STEP-CA  ' phase-restore STEP-CA ;
+: 5-cycles      cycle cycle cycle cycle cycle ;
+: 20-cycles     5-cycles 5-cycles 5-cycles 5-cycles ;
+
+20-cycles
+
+\ ============================================================
+\ Survival audit — substrate-native abiogenesis classification
+\ ============================================================
+
+\ Pattern A — ring survives entirely
+"a1" load NGET 10 assert-eq
+"a2" load NGET 10 assert-eq
+"a3" load NGET 10 assert-eq
+
+\ Pattern B — chain has died (cascading from tail)
+"b1" load NGET 0 assert-eq
+"b2" load NGET 0 assert-eq
+"b3" load NGET 0 assert-eq
+
+\ Pattern C — self-loop survives
+"c1" load NGET 10 assert-eq
+
+\ Pattern D — isolated node has died
+"d1" load NGET 0 assert-eq
+
+\ Pattern E — bi-edge pair survives
+"e1" load NGET 10 assert-eq
+"e2" load NGET 10 assert-eq
+
+\ Pattern F — star has died (leaves first, then centre)
+"f1" load NGET 0 assert-eq
+"f2" load NGET 0 assert-eq
+"f3" load NGET 0 assert-eq
+"f4" load NGET 0 assert-eq
+
+\ ============================================================
+\ Print the verdict for the reader
+\ ============================================================
+
+cr
+"A ring     :" .  "a1" load NGET . "a2" load NGET . "a3" load NGET . cr
+"B chain    :" .  "b1" load NGET . "b2" load NGET . "b3" load NGET . cr
+"C self-loop:" .  "c1" load NGET . cr
+"D isolated :" .  "d1" load NGET . cr
+"E bi-edge  :" .  "e1" load NGET . "e2" load NGET . cr
+"F star     :" .  "f1" load NGET . "f2" load NGET . "f3" load NGET . "f4" load NGET . cr
+
+REPORT

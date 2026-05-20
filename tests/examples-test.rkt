@@ -1,0 +1,87 @@
+#lang racket/base
+
+;; tests/examples-test.rkt — regression gate.
+;;
+;; Runs each of the 20 migrated emergence demos and asserts the cumulative
+;; ✓ pass count is unchanged.  Per the refactor plan: "all 320 assertions
+;; must still pass."  Counting ✓ marks printed during the run, the
+;; expected total is 352 (engine prints ✓ for every successful ASSERT,
+;; including post-RESET ones the REPORT line does not cumulate).
+
+(require rackunit
+         racket/file
+         racket/port
+         racket/system
+         racket/path
+         racket/string)
+
+(define examples-root
+  (simplify-path
+   (build-path (path-only (or (syntax-source #'here)
+                              (current-load-relative-directory)))
+               'up "examples")))
+
+(define expected
+  '(("01-numbers.6th"                  11)
+    ("02-time.6th"                     13)
+    ("03-stable.6th"                   14)
+    ("04-conflict.6th"                 12)
+    ("05-loop.6th"                     11)
+    ("06-observers.6th"                14)
+    ("07-rewrite-tc.6th"               23)
+    ("08-distance-1d.6th"              16)
+    ("09-ca-rule90.6th"                25)
+    ("10-self-model.6th"               18)
+    ("11-energy.6th"                   13)
+    ("12-wolfram.6th"                  14)
+    ("13-conservation.6th"             19)
+    ("14-grid-2d.6th"                  20)
+    ("15-glider-1d.6th"                22)
+    ("16-rule110.6th"                  22)
+    ("17-consensus.6th"                16)
+    ("18-morphism.6th"                 11)
+    ("19-conway-blinker.6th"           25)
+    ("20-conway-glider.6th"            33)
+    ;; Phase J' — substrate-native autopoiesis
+    ("21-autopoietic-ring.6th"         29)
+    ("22-observer-collapse.6th"         6)
+    ("23-self-maintaining-observer.6th" 12)
+    ("24-growing-observer.6th"         18)
+    ("25-substrate-genesis.6th"        16)
+    ;; Phase K — conscious evolution toward cosmogenesis
+    ("26-symbiosis.6th"                18)
+    ("27-reproduction.6th"             31)
+    ("28-conscious-mutation.6th"       18)
+    ("29-goal-directed-observer.6th"   21)
+    ("30-cosmogenesis-bootstrap.6th"   21)
+    ;; Phase L — observer-driven cosmogenesis (substrate-monist)
+    ("31-observer-driven-cosmogenesis.6th" 17)))
+
+(define (run-demo file)
+  (define out
+    (with-output-to-string
+      (lambda ()
+        (system* (find-executable-path "racket")
+                 "-l" "sixth/cli" "--" "run"
+                 (path->string (build-path examples-root file))))))
+  (define lines (string-split out "\n"))
+  (define passes (length (filter (lambda (l) (regexp-match? #px"^✓" l)) lines)))
+  (define fails  (length (filter (lambda (l) (regexp-match? #px"^✗" l)) lines)))
+  (values passes fails))
+
+(define total-pass
+  (for/sum ([row (in-list expected)])
+    (define-values (passes fails) (run-demo (car row)))
+    (test-case (string-append "demo " (car row))
+      (check-equal? fails 0   (format "~a had ~a failed asserts" (car row) fails))
+      (check-equal? passes (cadr row)
+                    (format "~a expected ~a passes, got ~a"
+                            (car row) (cadr row) passes)))
+    passes))
+
+(test-case "cumulative regression gate"
+  (check-equal? total-pass 559
+                (format "cumulative ✓ count: ~a (expected 559)" total-pass)))
+
+(displayln (format "examples regression: ~a / 559 ✓ across ~a demos"
+                   total-pass (length expected)))

@@ -1,0 +1,56 @@
+\ examples/02-time.6th — Time as the discrete index of substrate rewrites.
+\
+\ Claim demonstrated:
+\   Time is not primitive; STEP increments a global counter and every MARK
+\   records its BORN step.  A rewrite rule (SPROUT: every leaf gets one
+\   child) applied at successive STEPs produces a causal history in which
+\   each new node is unambiguously stamped by the step that created it.
+
+use prelude
+use peano
+use debug
+
+\ SPROUT rule: every leaf node (out-degree 0) gets one new child.
+: sprout
+  dup OUT 0 = if
+    MARK 2dup EDGE+ 2drop
+  else
+    drop
+  then ;
+
+\ Initial substrate: chain 1→2→3 at step 0.
+zero
+succ
+succ
+drop
+
+1 BORN 0 assert-eq
+2 BORN 0 assert-eq
+3 BORN 0 assert-eq
+
+\ Step 1: leaf is node 3, so node 4 born at step 1.
+STEP
+' sprout EACH
+NODES 4 assert-eq
+4 BORN 1 assert-eq
+
+\ Step 2.
+STEP
+' sprout EACH
+NODES 5 assert-eq
+5 BORN 2 assert-eq
+
+\ Step 3.
+STEP
+' sprout EACH
+NODES 6 assert-eq
+6 BORN 3 assert-eq
+
+\ Causal chain.
+4 PREV 3 assert-eq
+5 PREV 4 assert-eq
+6 PREV 5 assert-eq
+
+NOW 3 assert-eq
+
+REPORT

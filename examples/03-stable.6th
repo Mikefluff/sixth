@@ -1,0 +1,56 @@
+\ examples/03-stable.6th — Stable pattern as fixed point of a rewrite rule.
+\
+\ Some substrate configurations are fixed points of a given rule: once
+\ reached, further application changes nothing.  Substrate-level analogue
+\ of a stable particle.  Rule SELF-LOOP-RULE: ensure every node has a
+\ self-edge.
+
+use prelude
+use peano
+use debug
+
+: self-loop-rule
+  dup dup EDGE? if
+    drop
+  else
+    dup dup EDGE+ drop
+  then ;
+
+\ Three isolated nodes.
+zero zero zero
+drop drop drop
+EDGES 0 assert-eq
+
+STEP
+' self-loop-rule EACH
+EDGES 3 assert-eq
+1 1 EDGE? ASSERT
+2 2 EDGE? ASSERT
+3 3 EDGE? ASSERT
+
+\ Fixed point — second application changes nothing.
+STEP
+' self-loop-rule EACH
+EDGES 3 assert-eq
+NODES 3 assert-eq
+
+STEP
+' self-loop-rule EACH
+EDGES 3 assert-eq
+NODES 3 assert-eq
+
+\ Perturb: add a node, rule reaches a new fixed point.
+zero drop
+NODES 4 assert-eq
+4 4 EDGE? not ASSERT
+
+STEP
+' self-loop-rule EACH
+EDGES 4 assert-eq
+4 4 EDGE? ASSERT
+
+STEP
+' self-loop-rule EACH
+EDGES 4 assert-eq
+
+REPORT

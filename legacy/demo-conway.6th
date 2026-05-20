@@ -1,0 +1,136 @@
+\ demo-conway.6th — Conway's Game of Life: blinker oscillation on substrate grid.
+\
+\ Claim demonstrated:
+\   Conway's Game of Life — Turing-complete 2D CA — is expressible
+\   directly on the substrate using a 5×5 grid with Moore (8-neighbour)
+\   connectivity.  Same STEP-CA primitive that drove Rule 90 and
+\   Rule 110 drives Conway with no modification.
+\
+\   Conway rule:
+\     live cell stays alive iff neighbours ∈ {2, 3}
+\     dead cell becomes alive iff neighbours = 3
+\
+\   Verified pattern: BLINKER — three live cells in a vertical column
+\   oscillate to horizontal then back, period 2.
+\
+\   Substrate primitives used:  NSUM (count live neighbours via OUT-edges).
+
+: 2dup over over ;
+: nip swap drop ;
+: not 0 = ;
+: 1+ 1 + ;
+
+: bi-edge 2dup EDGE+ swap EDGE+ ;
+
+\ Conway rule via STEP-CA
+\ next = (NSUM == 3) ? 1 : ((NSUM == 2 AND state == 1) ? 1 : 0)
+: conway
+  dup NSUM "_sum" store
+  NGET "_st" store
+  "_sum" load 3 = if 1 else
+    "_sum" load 2 = "_st" load 1 = * if 1 else 0 then
+  then ;
+
+\ ─── build 5×5 grid (25 nodes, ids 1..25 in row-major order) ───
+\ Cells: (i,j) → node id (i-1)*5 + j
+\ Layout: row 1 = ids 1..5, row 2 = 6..10, ..., row 5 = 21..25
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+drop drop drop drop drop drop drop drop drop drop
+drop drop drop drop drop drop drop drop drop drop
+drop drop drop drop drop
+
+NODES 25 = ASSERT
+
+\ Horizontal edges within each row
+1 2 bi-edge   2 3 bi-edge   3 4 bi-edge   4 5 bi-edge
+6 7 bi-edge   7 8 bi-edge   8 9 bi-edge   9 10 bi-edge
+11 12 bi-edge   12 13 bi-edge   13 14 bi-edge   14 15 bi-edge
+16 17 bi-edge   17 18 bi-edge   18 19 bi-edge   19 20 bi-edge
+21 22 bi-edge   22 23 bi-edge   23 24 bi-edge   24 25 bi-edge
+
+\ Vertical edges within each column
+1 6 bi-edge   6 11 bi-edge   11 16 bi-edge   16 21 bi-edge
+2 7 bi-edge   7 12 bi-edge   12 17 bi-edge   17 22 bi-edge
+3 8 bi-edge   8 13 bi-edge   13 18 bi-edge   18 23 bi-edge
+4 9 bi-edge   9 14 bi-edge   14 19 bi-edge   19 24 bi-edge
+5 10 bi-edge   10 15 bi-edge   15 20 bi-edge   20 25 bi-edge
+
+\ Diagonal NW-SE
+1 7 bi-edge   2 8 bi-edge   3 9 bi-edge   4 10 bi-edge
+6 12 bi-edge   7 13 bi-edge   8 14 bi-edge   9 15 bi-edge
+11 17 bi-edge   12 18 bi-edge   13 19 bi-edge   14 20 bi-edge
+16 22 bi-edge   17 23 bi-edge   18 24 bi-edge   19 25 bi-edge
+
+\ Diagonal NE-SW
+2 6 bi-edge   3 7 bi-edge   4 8 bi-edge   5 9 bi-edge
+7 11 bi-edge   8 12 bi-edge   9 13 bi-edge   10 14 bi-edge
+12 16 bi-edge   13 17 bi-edge   14 18 bi-edge   15 19 bi-edge
+17 21 bi-edge   18 22 bi-edge   19 23 bi-edge   20 24 bi-edge
+
+\ Total: 20 horizontal + 20 vertical + 16 NW-SE + 16 NE-SW = 72 bi-edge pairs
+EDGES 144 = ASSERT
+
+\ ─── BLINKER: three live cells in column 3 at rows 2,3,4 ───
+\ Node ids: (2-1)*5+3=8,  (3-1)*5+3=13,  (4-1)*5+3=18
+\ Initialise all dead, then 3 alive
+: clear-all
+  1 0 NSET   2 0 NSET   3 0 NSET   4 0 NSET   5 0 NSET
+  6 0 NSET   7 0 NSET   8 0 NSET   9 0 NSET  10 0 NSET
+  11 0 NSET  12 0 NSET  13 0 NSET  14 0 NSET  15 0 NSET
+  16 0 NSET  17 0 NSET  18 0 NSET  19 0 NSET  20 0 NSET
+  21 0 NSET  22 0 NSET  23 0 NSET  24 0 NSET  25 0 NSET ;
+
+clear-all
+8 1 NSET    13 1 NSET    18 1 NSET     \ vertical blinker
+
+\ Sanity: only these 3 are alive
+8 NGET 1 = ASSERT
+13 NGET 1 = ASSERT
+18 NGET 1 = ASSERT
+9 NGET 0 = ASSERT
+12 NGET 0 = ASSERT
+
+\ Neighbours of cell 13 (centre): should sum to 2 (live: 8 and 18)
+13 NSUM 2 = ASSERT
+\ Neighbours of cell 12 (left of centre): 8, 13, 18 are diagonal/adjacent
+\   neighbours of 12 are 6,7,8,11,13,16,17,18 → live ones are 8,13,18 = sum 3
+12 NSUM 3 = ASSERT
+14 NSUM 3 = ASSERT                          \ symmetric (right side)
+
+\ ─── step 1: oscillate vertical → horizontal ───
+' conway STEP-CA
+\ Vertical cells (except centre) die; cells 12 and 14 are born; centre stays
+8 NGET 0 = ASSERT
+18 NGET 0 = ASSERT
+13 NGET 1 = ASSERT
+12 NGET 1 = ASSERT
+14 NGET 1 = ASSERT
+
+\ ─── step 2: oscillate back to vertical ───
+' conway STEP-CA
+12 NGET 0 = ASSERT
+14 NGET 0 = ASSERT
+13 NGET 1 = ASSERT
+8 NGET 1 = ASSERT
+18 NGET 1 = ASSERT
+
+\ ─── step 3: horizontal again (period confirmed) ───
+' conway STEP-CA
+12 NGET 1 = ASSERT
+14 NGET 1 = ASSERT
+13 NGET 1 = ASSERT
+8 NGET 0 = ASSERT
+18 NGET 0 = ASSERT
+
+\ ─── interpretation ───
+\ Same substrate (graph + features + STEP-CA) runs Conway just as it
+\ ran Rule 90, Rule 110, and the Rule 184 glider.  All it took to lift
+\ the substrate from 1D to 2D dynamics was a different connectivity
+\ (Moore neighbourhood) and a richer local rule.  Substrate is the
+\ general medium; CA is just one usage pattern.
+
+REPORT

@@ -1,0 +1,107 @@
+\ demo-morphism.6th — Structure-preserving map between substrate subgraphs.
+\
+\ Claim demonstrated:
+\   Two substrate subgraphs S₁ and S₂ are *isomorphic* under a node
+\   mapping φ if for every edge a→b in S₁ there is a corresponding
+\   edge φ(a)→φ(b) in S₂.  This is the substrate-level analog of
+\   category-theoretic morphism: structure is preserved across the map.
+\
+\   We encode φ as a feature on each source-side node: NSET source target.
+\   Verification iterates the source edge set and checks the image edge.
+\
+\   Two examples:
+\     1. Chain → Chain (trivial isomorphism)
+\     2. Chain → Triangle (NOT an isomorphism: shows verification works)
+
+: 2dup over over ;
+: nip swap drop ;
+: not 0 = ;
+: 1+ 1 + ;
+
+: zero MARK ;
+: succ MARK 2dup EDGE+ nip ;
+
+\ Build source chain a→b→c (nodes 1,2,3)
+zero "a1" store
+"a1" load succ "a2" store
+"a2" load succ "a3" store
+
+\ Build target chain x→y→z (nodes 4,5,6)
+zero "b1" store
+"b1" load succ "b2" store
+"b2" load succ "b3" store
+
+NODES 6 = ASSERT
+EDGES 4 = ASSERT
+
+\ ─── morphism φ: a1↦b1, a2↦b2, a3↦b3 (stored in node features) ───
+"a1" load "b1" load NSET
+"a2" load "b2" load NSET
+"a3" load "b3" load NSET
+
+\ Check φ stored correctly
+"a1" load NGET "b1" load = ASSERT
+"a2" load NGET "b2" load = ASSERT
+"a3" load NGET "b3" load = ASSERT
+
+\ ─── verification: for every source edge, check image edge exists ───
+\ Source edges: (a1,a2) (a2,a3)
+\ Image edges:  (φ(a1),φ(a2)) = (b1,b2);  (φ(a2),φ(a3)) = (b2,b3)
+"a1" load NGET "a2" load NGET EDGE? ASSERT
+"a2" load NGET "a3" load NGET EDGE? ASSERT
+
+\ Track verification via accumulator
+: phi-of NGET ;
+: image-edge?
+  "_b" store "_a" store
+  "_a" load phi-of "_b" load phi-of EDGE? ;
+
+"a1" load "a2" load image-edge? ASSERT
+"a2" load "a3" load image-edge? ASSERT
+
+\ Iterate via EACH-EDGE for full automated check
+0 "_violations" store
+: check-edge
+  "_b" store "_a" store
+  "_a" load NGET 0 = if else                 \ skip nodes without phi
+  "_b" load NGET 0 = if else
+    "_a" load phi-of "_b" load phi-of EDGE? not if
+      "_violations" load 1+ "_violations" store
+    then
+  then then ;
+
+' check-edge EACH-EDGE
+"_violations" load 0 = ASSERT                \ chain → chain: 0 violations
+
+\ ─── NEGATIVE case: triangle target, chain source ───
+\ Build triangle (nodes 7,8,9) — add to existing substrate
+zero "t1" store
+zero "t2" store
+zero "t3" store
+"t1" load "t2" load EDGE+
+"t2" load "t3" load EDGE+
+"t3" load "t1" load EDGE+                    \ closes triangle
+
+\ Wrong morphism: chain a1→a2→a3 maps to t1→t2→t1
+\ This fails because a3↦t1 but edge a2→a3 ⇒ requires t2→t1 ... wait t2→t3 exists
+\ Let me make it clearly broken: a1↦t1, a2↦t3, a3↦t2
+\ Then (a1,a2)⇒(t1,t3): no edge t1→t3 → violation
+\ Reset feature map for source
+"a1" load "t1" load NSET
+"a2" load "t3" load NSET
+"a3" load "t2" load NSET
+
+\ Re-verify
+0 "_violations" store
+' check-edge EACH-EDGE
+"_violations" load 0 > ASSERT                \ now violations exist
+
+\ ─── interpretation ───
+\ Substrate morphism = node-feature map + edge-preservation check.
+\ Isomorphism is verifiable via EACH-EDGE iteration: PASS if all
+\ source edges have image edges; FAIL otherwise.  This is the
+\ minimal substrate basis for categorical structure — composing
+\ morphisms or finding automorphisms only requires more iteration
+\ on top of these primitives.
+
+REPORT

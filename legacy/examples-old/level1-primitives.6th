@@ -1,0 +1,37 @@
+: double dup + ;
+
+: square dup * ;
+
+: zero? 0 = ;
+
+: sign 
+  dup 0 = if drop 0 else
+    0 > if 1 else 0 1 - then
+  then ;
+
+: sum-squares 
+  dup * swap dup * + ;
+
+: average + 2 / ;
+
+: last-digit 10 mod ;
+
+: even? 2 mod 0 = ;
+
+: triple dup dup + + ;
+
+: swap3 rot swap rot ;
+
+: rot-back rot rot ;
+
+: demo-level1
+  5 square
+  10 3 average
+  17 even?
+  8 triple ;
+
+: test-level1
+  5 square 25 =
+  10 3 average 6 =
+  8 even? 0 =
+  6 triple 18 = ; 

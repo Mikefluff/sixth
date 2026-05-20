@@ -1,0 +1,112 @@
+\ examples/31-observer-driven-cosmogenesis.6th — substrate-internally
+\                                                 driven cosmogenesis.
+\
+\ Claim demonstrated:
+\   In demo 30, build-shell is invoked unconditionally by the host;
+\   the observer is passive substrate infrastructure.  In demo 31 the
+\   observer ITSELF drives the construction: each cycle reads NSUM(O)
+\   and gen-loop fires build-shell only when the observer's
+\   substrate-state is below its own threshold.  Construction halts
+\   when the observer's NSUM crosses the target it set for itself.
+\
+\   First operation: observer establishes self-reference (EDGE+ O O).
+\   This makes the observer satisfy the substrate-monist Phi_PA
+\   self-reference factor strictly (O in scope(O), via the self-loop).
+\
+\   This is the substrate-monist realisation of "consciousness creates
+\   substrate": the substrate the observer constructs IS the substrate
+\   the observer's own internal criterion requires.
+
+use prelude
+use peano
+use graph
+use debug
+
+\ Step 0 — THE FIRST DIFFERENCE
+MARK "O" store
+"O" load 10 NSET
+
+NODES 1 assert-eq
+EDGES 0 assert-eq
+"O" load NSUM 0 assert-eq
+
+\ Step 1 — SELF-REFERENCE: observer points at itself.
+"O" load "O" load EDGE+
+
+NODES 1 assert-eq
+EDGES 1 assert-eq
+"O" load NSUM 10 assert-eq
+"O" load "O" load EDGE? ASSERT
+
+\ Observer's substrate-internal target and safety brake.
+90 "target-min"  store
+20 "max-shells"  store
+0  "shell-count" store
+
+\ Construction operation (substrate-native: MARK + EDGE+ + NSET).
+: build-shell
+  MARK "s1" store
+  MARK "s2" store
+  MARK "s3" store
+  "s1" load "s2" load bi-edge
+  "s2" load "s3" load bi-edge
+  "s3" load "s1" load bi-edge
+  "O"  load "s1" load bi-edge
+  "O"  load "s2" load bi-edge
+  "O"  load "s3" load bi-edge
+  "s1" load 10 NSET
+  "s2" load 10 NSET
+  "s3" load 10 NSET
+  "shell-count" load 1 + "shell-count" store ;
+
+\ Autopoiesis dynamics.
+: phase-decay   NGET 8 - dup 0 < if drop 0 then ;
+: phase-restore dup NSUM 5 > if drop 10 else NGET then ;
+: cycle         ' phase-decay STEP-CA  ' phase-restore STEP-CA ;
+
+\ Substrate-internal decision predicate.
+: observer-needs-more?
+  "O" load NGET 0 >
+  "O" load NSUM "target-min" load <  *
+  "shell-count" load "max-shells" load <  * ;
+
+\ Tail-recursive cosmogenesis loop (uses VM TCO).
+: gen-loop
+  cycle
+  observer-needs-more? if
+    build-shell
+    gen-loop
+  then ;
+
+gen-loop
+
+\ Outcome verification.
+"O" load NSUM "target-min" load <  not  ASSERT
+"O" load NGET 10 assert-eq
+
+"shell-count" load 0 > ASSERT
+"shell-count" load "max-shells" load < ASSERT
+
+NODES   "shell-count" load 3 *  1 +  assert-eq
+
+"O" load OUT  "shell-count" load 3 *  1 +  assert-eq
+"O" load IN   "shell-count" load 3 *  1 +  assert-eq
+
+"O" load "O" load EDGE? ASSERT
+
+\ Persistence test.
+cycle cycle cycle cycle cycle
+
+"O" load NGET 10 assert-eq
+"O" load NSUM "target-min" load <  not  ASSERT
+
+cr
+"shell-count :" . "shell-count" load . cr
+"NODES       :" . NODES . cr
+"EDGES       :" . EDGES . cr
+"NSUM(O)     :" . "O" load NSUM . cr
+"NGET(O)     :" . "O" load NGET . cr
+"OUT(O)      :" . "O" load OUT . cr
+"target-min  :" . "target-min" load . cr
+
+REPORT

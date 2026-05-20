@@ -1,0 +1,116 @@
+\ demo-glider.6th — Propagating particle (Wolfram Rule 184 single-car glider).
+\
+\ Claim demonstrated:
+\   A pattern that is structurally stable AND translates through
+\   substrate under iterated rewrite is the substrate analogue of a
+\   moving particle.  Wolfram's Rule 184 ("traffic rule") supports
+\   a clean single-cell glider:
+\        next(n) = (L AND NOT C) OR (C AND R)
+\   meaning "a car moves right when its right neighbour is empty".
+\
+\   On a chain of cells, a single live cell ("car") at position k
+\   becomes a live cell at position k+1 each step — maintaining its
+\   identity ("one car exists") while changing its spatial location.
+\   This is the substrate version of momentum: a configuration that
+\   persists in identity while displacing in space.
+
+: 2dup over over ;
+: nip swap drop ;
+: not 0 = ;
+: 1+ 1 + ;
+
+: zero MARK ;
+: succ MARK 2dup EDGE+ nip ;
+
+\ Rule 184: next = (L AND NOT C) OR (C AND R)
+: rule184
+  dup PREV NGET "_L" store
+  dup NGET "_C" store
+  NEXT NGET "_R" store
+  "_L" load "_C" load not * "_C" load "_R" load * + 0 > if 1 else 0 then ;
+
+\ Build chain of 7 cells
+zero "c1" store
+"c1" load succ "c2" store
+"c2" load succ "c3" store
+"c3" load succ "c4" store
+"c4" load succ "c5" store
+"c5" load succ "c6" store
+"c6" load succ "c7" store
+
+NODES 7 = ASSERT
+EDGES 6 = ASSERT
+
+\ Init: single car at position 3, others empty
+"c1" load 0 NSET  "c2" load 0 NSET  "c3" load 1 NSET
+"c4" load 0 NSET  "c5" load 0 NSET  "c6" load 0 NSET  "c7" load 0 NSET
+
+\ Count live cells (total mass)
+: live-count
+  "c1" load NGET    "c2" load NGET +    "c3" load NGET +
+  "c4" load NGET +  "c5" load NGET +    "c6" load NGET +
+  "c7" load NGET + ;
+
+live-count 1 = ASSERT                  \ one car
+
+\ ─── step 1: car at c3 → c4 ───
+' rule184 STEP-CA
+"c3" load NGET 0 = ASSERT
+"c4" load NGET 1 = ASSERT
+live-count 1 = ASSERT                  \ identity preserved
+
+\ ─── step 2: c4 → c5 ───
+' rule184 STEP-CA
+"c4" load NGET 0 = ASSERT
+"c5" load NGET 1 = ASSERT
+live-count 1 = ASSERT
+
+\ ─── step 3: c5 → c6 ───
+' rule184 STEP-CA
+"c5" load NGET 0 = ASSERT
+"c6" load NGET 1 = ASSERT
+live-count 1 = ASSERT
+
+\ ─── step 4: c6 → c7 (last position before boundary) ───
+' rule184 STEP-CA
+"c6" load NGET 0 = ASSERT
+"c7" load NGET 1 = ASSERT
+live-count 1 = ASSERT
+
+\ ─── step 5: car at boundary — has no right neighbour, stays put ───
+\ NEXT(c7) = 0 (no out-edge), NGET(0) = 0 → R=0
+\ rule: (L AND NOT C) OR (C AND R) = (0 AND 0) OR (1 AND 0) = 0
+\ Wait — actually at c7: C=1, L=0 (c6 is empty after step 4), R=0
+\ next = (0)·(0) + (1)·(0) = 0.  Car evaporates at the wall.
+\ But also need to check that NO new car appears spuriously elsewhere.
+' rule184 STEP-CA
+live-count 0 = ASSERT                  \ open boundary lost the car
+
+\ The glider propagated 4 cells before falling off the right edge.
+\ Total mass conservation holds INSIDE the substrate during transit;
+\ boundary breaks it (just as in shift demo).
+
+\ ─── two-car interaction ───
+\ Reset: cars at c2 and c5, separated by gap
+"c1" load 0 NSET  "c2" load 1 NSET  "c3" load 0 NSET
+"c4" load 0 NSET  "c5" load 1 NSET  "c6" load 0 NSET  "c7" load 0 NSET
+live-count 2 = ASSERT
+
+\ Step: both should move right since both have empty right neighbours
+' rule184 STEP-CA
+"c2" load NGET 0 = ASSERT
+"c3" load NGET 1 = ASSERT              \ first car at c3
+"c5" load NGET 0 = ASSERT
+"c6" load NGET 1 = ASSERT              \ second car at c6
+live-count 2 = ASSERT
+
+\ ─── interpretation ───
+\ Rule 184 demonstrates a substrate-level analogue of moving matter:
+\   * persistence:  the single live cell maintains its singularity
+\   * propagation:  position advances by one cell per step
+\   * locality:     update depends only on immediate neighbours
+\   * non-interaction (in dilute regime): multiple cars move
+\                                          independently until blocked
+\ All three properties fall out of one binary rule on the substrate.
+
+REPORT

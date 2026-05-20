@@ -1,0 +1,161 @@
+\ demo-glider-2d.6th — 2D propagating particle (Conway GoL glider).
+\
+\ Claim demonstrated:
+\   The classic 5-cell Conway glider is the canonical 2D substrate
+\   particle: a configuration that maintains its 5-cell shape across
+\   substrate iterations while displacing diagonally.  After 4 steps
+\   under the standard Conway rule, the glider has translated by
+\   (+1,+1) — full period in 5×5 substrate cell grid.
+\
+\   Same substrate (sixth-substrate.scm), same STEP-CA primitive,
+\   same Conway rule as demo-conway.6th — only the initial
+\   configuration differs.  Topology + rule + initial state ⇒
+\   propagating matter.
+
+: 2dup over over ;
+: nip swap drop ;
+: not 0 = ;
+
+: bi-edge 2dup EDGE+ swap EDGE+ ;
+
+: conway
+  dup NSUM "_sum" store
+  NGET "_st" store
+  "_sum" load 3 = if 1 else
+    "_sum" load 2 = "_st" load 1 = * if 1 else 0 then
+  then ;
+
+\ ─── build 5×5 grid with Moore (8-neighbour) connectivity ───
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+drop drop drop drop drop drop drop drop drop drop
+drop drop drop drop drop drop drop drop drop drop
+drop drop drop drop drop
+
+1 2 bi-edge   2 3 bi-edge   3 4 bi-edge   4 5 bi-edge
+6 7 bi-edge   7 8 bi-edge   8 9 bi-edge   9 10 bi-edge
+11 12 bi-edge   12 13 bi-edge   13 14 bi-edge   14 15 bi-edge
+16 17 bi-edge   17 18 bi-edge   18 19 bi-edge   19 20 bi-edge
+21 22 bi-edge   22 23 bi-edge   23 24 bi-edge   24 25 bi-edge
+1 6 bi-edge   6 11 bi-edge   11 16 bi-edge   16 21 bi-edge
+2 7 bi-edge   7 12 bi-edge   12 17 bi-edge   17 22 bi-edge
+3 8 bi-edge   8 13 bi-edge   13 18 bi-edge   18 23 bi-edge
+4 9 bi-edge   9 14 bi-edge   14 19 bi-edge   19 24 bi-edge
+5 10 bi-edge   10 15 bi-edge   15 20 bi-edge   20 25 bi-edge
+1 7 bi-edge   2 8 bi-edge   3 9 bi-edge   4 10 bi-edge
+6 12 bi-edge   7 13 bi-edge   8 14 bi-edge   9 15 bi-edge
+11 17 bi-edge   12 18 bi-edge   13 19 bi-edge   14 20 bi-edge
+16 22 bi-edge   17 23 bi-edge   18 24 bi-edge   19 25 bi-edge
+2 6 bi-edge   3 7 bi-edge   4 8 bi-edge   5 9 bi-edge
+7 11 bi-edge   8 12 bi-edge   9 13 bi-edge   10 14 bi-edge
+12 16 bi-edge   13 17 bi-edge   14 18 bi-edge   15 19 bi-edge
+17 21 bi-edge   18 22 bi-edge   19 23 bi-edge   20 24 bi-edge
+
+NODES 25 = ASSERT
+EDGES 144 = ASSERT
+
+\ Clear all cells
+: clear-all
+  1 0 NSET   2 0 NSET   3 0 NSET   4 0 NSET   5 0 NSET
+  6 0 NSET   7 0 NSET   8 0 NSET   9 0 NSET  10 0 NSET
+  11 0 NSET  12 0 NSET  13 0 NSET  14 0 NSET  15 0 NSET
+  16 0 NSET  17 0 NSET  18 0 NSET  19 0 NSET  20 0 NSET
+  21 0 NSET  22 0 NSET  23 0 NSET  24 0 NSET  25 0 NSET ;
+
+\ Sum all live cells
+: live-count
+  1 NGET   2 NGET +   3 NGET +   4 NGET +   5 NGET +
+  6 NGET +   7 NGET +   8 NGET +   9 NGET +  10 NGET +
+  11 NGET +  12 NGET +  13 NGET +  14 NGET +  15 NGET +
+  16 NGET +  17 NGET +  18 NGET +  19 NGET +  20 NGET +
+  21 NGET +  22 NGET +  23 NGET +  24 NGET +  25 NGET + ;
+
+\ ─── initial glider configuration ───
+\ Row layout (cell ids = (i-1)*5+j):
+\   . X . . .       (1,2) = 2
+\   . . X . .       (2,3) = 8
+\   X X X . .       (3,1)=11  (3,2)=12  (3,3)=13
+\ All 5 live cells:
+clear-all
+2 1 NSET   8 1 NSET   11 1 NSET   12 1 NSET   13 1 NSET
+
+live-count 5 = ASSERT                        \ glider has 5 cells
+
+\ ─── step 1: glider rearranges ───
+\ Expected after step 1 (standard Conway):
+\   . . . . .       row 1
+\   X . X . .       (2,1)=6  (2,3)=8
+\   . X X . .       (3,2)=12 (3,3)=13
+\   . X . . .       (4,2)=17
+\   . . . . .
+' conway STEP-CA
+6 NGET 1 = ASSERT
+8 NGET 1 = ASSERT
+12 NGET 1 = ASSERT
+13 NGET 1 = ASSERT
+17 NGET 1 = ASSERT
+2 NGET 0 = ASSERT
+11 NGET 0 = ASSERT
+live-count 5 = ASSERT
+
+\ ─── step 2 ───
+\ Expected:
+\   . . . . .
+\   . . X . .       (2,3)=8
+\   X . X . .       (3,1)=11  (3,3)=13
+\   . X X . .       (4,2)=17  (4,3)=18
+\   . . . . .
+' conway STEP-CA
+8 NGET 1 = ASSERT
+11 NGET 1 = ASSERT
+13 NGET 1 = ASSERT
+17 NGET 1 = ASSERT
+18 NGET 1 = ASSERT
+6 NGET 0 = ASSERT
+12 NGET 0 = ASSERT
+live-count 5 = ASSERT
+
+\ ─── step 3 ───
+\ Expected:
+\   . . . . .
+\   . X . . .       (2,2)=7
+\   . . X X .       (3,3)=13 (3,4)=14
+\   . X X . .       (4,2)=17 (4,3)=18
+\   . . . . .
+' conway STEP-CA
+7 NGET 1 = ASSERT
+13 NGET 1 = ASSERT
+14 NGET 1 = ASSERT
+17 NGET 1 = ASSERT
+18 NGET 1 = ASSERT
+live-count 5 = ASSERT
+
+\ ─── step 4: glider has translated by (+1,+1) ───
+\ Expected:
+\   . . . . .
+\   . . X . .       (2,3)=8
+\   . . . X .       (3,4)=14
+\   . X X X .       (4,2)=17 (4,3)=18 (4,4)=19
+\   . . . . .
+' conway STEP-CA
+8 NGET 1 = ASSERT
+14 NGET 1 = ASSERT
+17 NGET 1 = ASSERT
+18 NGET 1 = ASSERT
+19 NGET 1 = ASSERT
+7 NGET 0 = ASSERT
+13 NGET 0 = ASSERT
+live-count 5 = ASSERT
+
+\ ─── interpretation ───
+\ Initial glider:  cells {2, 8, 11, 12, 13}  (rows 1-3, cols 1-3)
+\ After 4 steps:   cells {8, 14, 17, 18, 19}  (rows 2-4, cols 2-4)
+\ Same 5-cell topology, translated by (+1,+1) — diagonal motion at
+\ velocity (1/4, 1/4) cells per step.  Identity preserved across
+\ time even though every cell's individual state flips multiple times.
+\ This is substrate-level "matter": persistent pattern with momentum.
+
+REPORT

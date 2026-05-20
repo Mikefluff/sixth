@@ -1,0 +1,70 @@
+\ demo-loop.6th — Self-reference emerges as cyclic pointer structure.
+\
+\ Claim demonstrated:
+\   Self-reference is not primitive — it is the topological property of
+\   a substrate region in which following pointers from a node eventually
+\   returns to that same node.  When the cycle passes through the node
+\   itself, the node *contains its own description* (Hofstadter's
+\   "strange loop") encoded purely as edge structure.
+\
+\   Substrate: cycle 1→2→3→1.  Each node is, in the substrate sense,
+\   self-referential — walking forward returns to start.
+
+: 2dup over over ;
+: nip swap drop ;
+: not 0 = ;
+: 1+ 1 + ;
+
+: zero MARK ;
+: succ MARK 2dup EDGE+ nip ;
+
+\ Walk forward repeatedly, count steps until we return to start.
+\ Uses memory slots "_start" and "_count" as scratch.
+: walk-loop
+  NEXT                                  \ ( current -- next )
+  "_count" load 1+ "_count" store
+  dup "_start" load = if
+    drop "_count" load                  \ return count
+  else
+    walk-loop
+  then ;
+
+: walk-cycle-length
+  dup "_start" store                    \ remember start
+  0 "_count" store
+  walk-loop ;
+
+\ ─── build a 3-cycle 1→2→3→1 ───
+zero "a" store                          \ node 1
+zero "b" store                          \ node 2
+zero "c" store                          \ node 3
+"a" load "b" load EDGE+                 \ 1→2
+"b" load "c" load EDGE+                 \ 2→3
+"c" load "a" load EDGE+                 \ 3→1 (closes the loop)
+
+NODES 3 = ASSERT
+EDGES 3 = ASSERT
+
+\ Each node has IN=1 and OUT=1 (perfectly balanced cycle)
+"a" load IN 1 = ASSERT
+"a" load OUT 1 = ASSERT
+"b" load IN 1 = ASSERT
+"c" load OUT 1 = ASSERT
+
+\ ─── core test: walking forward from each node returns to itself ───
+"a" load walk-cycle-length 3 = ASSERT
+"b" load walk-cycle-length 3 = ASSERT
+"c" load walk-cycle-length 3 = ASSERT
+
+\ ─── degenerate self-reference: single node with self-loop ───
+zero "x" store
+"x" load dup EDGE+                      \ edge x→x
+"x" load "x" load EDGE? ASSERT          \ direct self-edge present
+"x" load walk-cycle-length 1 = ASSERT   \ cycle length 1 = pure self-loop
+
+\ ─── self-reference is structural, not nominal ───
+\ The substrate has no concept "this is myself" — only edges.
+\ Yet from any node in a cycle, following NEXT enough times reaches
+\ that same node.  Self-reference IS this graph topology.
+
+REPORT

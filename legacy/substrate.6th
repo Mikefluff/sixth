@@ -1,0 +1,52 @@
+\ substrate.6th — base conventions for substrate ops on top of sixth-substrate.scm
+\ Loads core stack helpers + substrate idioms.
+
+\ Stack helpers (minimal, no dependency on core.6th)
+: 2dup over over ;
+: 2drop drop drop ;
+: nip swap drop ;
+: tuck swap over ;
+: 1+ 1 + ;
+: 1- 1 - ;
+: not 0 = ;
+
+\ Peano successor: given node n, create new node m with edge n→m, leave m on stack
+: succ        \ ( n -- m )    edge n→m, return m
+  MARK        \ ( n m )
+  2dup        \ ( n m n m )
+  EDGE+       \ ( n m )      edge created src=n dst=m
+  nip ;       \ ( m )
+
+\ Zero: fresh marked node with no predecessors
+: zero        \ ( -- 0n )
+  MARK ;
+
+\ Is this node a Peano-zero (no in-edges) ?
+: zero?       \ ( n -- bit )
+  IN 0 = ;
+
+\ Predecessor of n (walks one edge backward)
+: pred        \ ( n -- prev )
+  PREV ;
+
+\ Chain length: walk PREV until zero
+: peano-value \ ( n -- v )
+  dup zero? if drop 0 else PREV peano-value 1+ then ;
+
+\ Peano addition:  a b -- a+b
+\ a + 0 = a
+\ a + succ(c) = succ(a + c)
+: peano-add   \ ( a b -- a+b )
+  dup zero? if drop else PREV peano-add succ then ;
+
+\ Peano multiplication:  a b -- a*b
+\ a * 0 = 0
+\ a * succ(c) = a + a*c
+: peano-mul   \ ( a b -- a*b )
+  dup zero? if 2drop zero else
+    PREV          \ ( a c )    c = b-1
+    over          \ ( a c a )
+    swap          \ ( a a c )
+    peano-mul     \ ( a a*c )
+    peano-add     \ ( a+a*c = a*b )
+  then ;

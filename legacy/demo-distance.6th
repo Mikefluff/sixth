@@ -1,0 +1,121 @@
+\ demo-distance.6th — Spatial distance emerges from graph topology
+\                      via iterative BFS-style edge relaxation.
+\
+\ Claim demonstrated:
+\   No node "knows" its position.  No coordinates exist.  Yet a metric
+\   d(a,b) — shortest number of edge-traversals from a to b — emerges
+\   from one local rewrite:
+\        for every edge a→b, if d(a)+1 < d(b)  then  set d(b) := d(a)+1
+\   iterated to fixed point.  Source node initialized to 0; all others
+\   to "infinity" sentinel.
+\
+\   The resulting feature value at each node IS its distance from source.
+\   Space is not assumed — it is a fixed point of relaxation.
+
+: 2dup over over ;
+: nip swap drop ;
+: not 0 = ;
+: 1+ 1 + ;
+
+: zero MARK ;
+
+\ Treat -1 as "infinity" sentinel for unreached nodes.
+\ "Effective" distance: -1 → big, else the value.
+: eff-dist                                  \ ( n -- d )
+  NGET dup -1 = if drop 1000 then ;
+
+\ Relax rule applied via EACH-EDGE.
+\ Stack: ( a b )
+: relax-edge
+  "_b" store                                \ pop b
+  "_a" store                                \ pop a
+  "_a" load eff-dist 1+ "_cand" store       \ candidate dist for b
+  "_b" load eff-dist "_curr" store
+  "_cand" load "_curr" load < if
+    "_b" load "_cand" load NSET
+  then ;
+
+\ Initialise: every node dist = -1, then source := 0
+: set-inf -1 NSET ;
+: bfs-init
+  ' set-inf EACH                            \ unreached
+  dup 0 NSET ;                              \ ( source -- source ), set dist = 0
+
+\ Run relaxation until fixed point (bounded iterations for safety)
+: bfs-step  STEP ' relax-edge EACH-EDGE ;
+
+\ ─── Setup: directed chain a→b→c→d→e (5 nodes) ───
+zero "a" store
+zero "b" store
+zero "c" store
+zero "d" store
+zero "e" store
+"a" load "b" load EDGE+
+"b" load "c" load EDGE+
+"c" load "d" load EDGE+
+"d" load "e" load EDGE+
+
+NODES 5 = ASSERT
+EDGES 4 = ASSERT
+
+\ Init from source = a
+"a" load bfs-init drop
+
+\ Initial: only a has finite distance
+"a" load NGET 0 = ASSERT
+"b" load NGET -1 = ASSERT
+"e" load NGET -1 = ASSERT
+
+\ Iteratively relax — 4 passes suffice for 4-edge chain
+bfs-step
+"b" load NGET 1 = ASSERT
+bfs-step
+"c" load NGET 2 = ASSERT
+bfs-step
+"d" load NGET 3 = ASSERT
+bfs-step
+"e" load NGET 4 = ASSERT
+
+\ Fixed point: extra pass changes nothing
+bfs-step
+"e" load NGET 4 = ASSERT
+"a" load NGET 0 = ASSERT
+
+\ ─── Triangle inequality on a diamond (a→b, a→c, b→d, c→d) ───
+RESET
+zero "a" store
+zero "b" store
+zero "c" store
+zero "d" store
+"a" load "b" load EDGE+
+"a" load "c" load EDGE+
+"b" load "d" load EDGE+
+"c" load "d" load EDGE+
+
+"a" load bfs-init drop
+bfs-step
+bfs-step
+bfs-step
+
+"a" load NGET 0 = ASSERT
+"b" load NGET 1 = ASSERT
+"c" load NGET 1 = ASSERT
+"d" load NGET 2 = ASSERT                    \ shortest, not 2+ via either path
+
+\ Triangle inequality: d(a,d) ≤ d(a,b) + d(b,d)
+\ d(a,d)=2, d(a,b)=1, d(b,d)=1 (compute by re-running from b)
+RESET
+zero "a" store
+zero "b" store
+zero "c" store
+zero "d" store
+"a" load "b" load EDGE+
+"a" load "c" load EDGE+
+"b" load "d" load EDGE+
+"c" load "d" load EDGE+
+
+"b" load bfs-init drop
+bfs-step bfs-step
+"d" load NGET 1 = ASSERT                    \ d(b,d) = 1
+
+REPORT

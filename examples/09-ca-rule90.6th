@@ -1,0 +1,73 @@
+\ examples/09-ca-rule90.6th — Sierpinski-like fractal from Wolfram Rule 90.
+\
+\ Cellular-automaton dynamics fall out of substrate primitives directly:
+\ cells = nodes in a chain, state = NSET/NGET feature, neighbour =
+\ PREV/NEXT, tick = STEP-CA (parallel update from current snapshot).
+\ Rule 90: next(n) = state(left) XOR state(right).  One live cell seeds
+\ a fractal that doubles each tick.
+
+use prelude
+use peano
+use debug
+
+: build-chain
+  zero "c1" store
+  "c1" load succ "c2" store
+  "c2" load succ "c3" store
+  "c3" load succ "c4" store
+  "c4" load succ "c5" store
+  "c5" load succ "c6" store
+  "c6" load succ "c7" store
+  "c7" load succ "c8" store
+  "c8" load succ "c9" store
+  "c9" load succ "c10" store
+  "c10" load succ "c11" store ;
+
+: init-cells
+  "c1" load 0 NSET   "c2" load 0 NSET   "c3" load 0 NSET
+  "c4" load 0 NSET   "c5" load 0 NSET   "c6" load 1 NSET
+  "c7" load 0 NSET   "c8" load 0 NSET   "c9" load 0 NSET
+  "c10" load 0 NSET  "c11" load 0 NSET ;
+
+\ Rule 90: next(n) = L XOR R, where L=NGET(PREV n), R=NGET(NEXT n).
+: rule90
+  dup PREV NGET swap NEXT NGET + 1 = if 1 else 0 then ;
+
+build-chain
+init-cells
+
+"c1" load NGET 0 assert-eq
+"c5" load NGET 0 assert-eq
+"c6" load NGET 1 assert-eq
+"c7" load NGET 0 assert-eq
+
+' rule90 STEP-CA
+"c5" load NGET 1 assert-eq
+"c6" load NGET 0 assert-eq
+"c7" load NGET 1 assert-eq
+"c4" load NGET 0 assert-eq
+"c8" load NGET 0 assert-eq
+
+' rule90 STEP-CA
+"c4" load NGET 1 assert-eq
+"c5" load NGET 0 assert-eq
+"c6" load NGET 0 assert-eq
+"c7" load NGET 0 assert-eq
+"c8" load NGET 1 assert-eq
+
+' rule90 STEP-CA
+"c3" load NGET 1 assert-eq
+"c4" load NGET 0 assert-eq
+"c5" load NGET 1 assert-eq
+"c6" load NGET 0 assert-eq
+"c7" load NGET 1 assert-eq
+"c8" load NGET 0 assert-eq
+"c9" load NGET 1 assert-eq
+
+' rule90 STEP-CA
+"c2" load NGET 1 assert-eq
+"c3" load NGET 0 assert-eq
+"c5" load NGET 0 assert-eq
+"c10" load NGET 1 assert-eq
+
+REPORT

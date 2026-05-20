@@ -1,0 +1,139 @@
+\ examples/24-growing-observer.6th — substrate-native developmental growth.
+\
+\ Claim demonstrated:
+\   A self-maintaining observer (demo 23') encounters new candidate nodes
+\   in its substrate.  For each candidate, it applies a SUBSTRATE-NATIVE
+\   compatibility check:
+\
+\       NGET(candidate) > vitality-threshold  →  incorporate (bi-edge)
+\       else                                  →  reject (no edge)
+\
+\   Incorporation = bi-edge to observer, joining candidate to the
+\   observer's autopoietic loop.  After incorporation, the candidate
+\   participates in mutual restoration; before, it cannot.
+\
+\   Run continuous decay+restore cycles AFTER incorporation.  The
+\   observer's identity grows coherently:
+\     - all incorporated compatible candidates persist alongside the
+\       original limbs at full vitality
+\     - rejected candidates (drains) stay dead — observer's identity
+\       is not contaminated by what it did not absorb
+\
+\   This is substrate-native development: observer expands its scope
+\   without losing self-maintenance.
+
+use prelude
+use peano
+use graph
+use debug
+
+\ ============================================================
+\ Initial observer cluster (same shape as demo 23' reflexive)
+\ ============================================================
+
+zero "l1" store
+zero "l2" store
+zero "l3" store
+zero "O"  store
+
+"O" load "l1" load bi-edge
+"O" load "l2" load bi-edge
+"O" load "l3" load bi-edge
+
+"O"  load 10 NSET
+"l1" load 10 NSET
+"l2" load 10 NSET
+"l3" load 10 NSET
+
+\ ============================================================
+\ Candidate pool — six new nodes with mixed vitalities
+\ ============================================================
+
+zero "c1" store     "c1" load 10 NSET     \ compatible
+zero "c2" store     "c2" load  8 NSET     \ compatible
+zero "c3" store     "c3" load  0 NSET     \ drain
+zero "c4" store     "c4" load  7 NSET     \ compatible
+zero "c5" store     "c5" load  1 NSET     \ subthreshold (rejected)
+zero "c6" store     "c6" load 10 NSET     \ compatible
+
+\ ============================================================
+\ Substrate-native compatibility check + conditional incorporation
+\ ============================================================
+\
+\ try-incorporate ( name-key -- )
+\   Reads NGET of the named candidate.  If above the observer's
+\   acceptance threshold, bi-edges the candidate into the observer.
+\   Otherwise, leaves the candidate untouched.
+
+5 "vitality-threshold" store
+
+: try-incorporate
+  "candidate-name" store
+  "candidate-name" load load NGET
+  "vitality-threshold" load > if
+    "O" load "candidate-name" load load bi-edge
+  then ;
+
+"c1" try-incorporate
+"c2" try-incorporate
+"c3" try-incorporate
+"c4" try-incorporate
+"c5" try-incorporate
+"c6" try-incorporate
+
+\ Verify the observer's expanded scope.
+"O" load OUT 7 assert-eq        \ 3 original limbs + 4 compatible
+"O" load IN  7 assert-eq        \ bi-edges → same count both directions
+
+\ Edges check: incorporated candidates have bi-edge with O.
+"O" load "c1" load EDGE? ASSERT
+"O" load "c2" load EDGE? ASSERT
+"O" load "c4" load EDGE? ASSERT
+"O" load "c6" load EDGE? ASSERT
+
+\ Edges check: rejected candidates do NOT have an edge with O.
+"O" load "c3" load EDGE? not ASSERT
+"O" load "c5" load EDGE? not ASSERT
+
+\ ============================================================
+\ Run autopoiesis dynamics (same rule as demo 23')
+\ ============================================================
+
+: phase-decay   NGET 3 -  dup 0 < if drop 0 then ;
+: phase-restore dup NSUM 5 >  if drop 10 else NGET then ;
+
+: cycle        ' phase-decay STEP-CA  ' phase-restore STEP-CA ;
+: 10-cycles    cycle cycle cycle cycle cycle  cycle cycle cycle cycle cycle ;
+
+10-cycles
+
+\ ============================================================
+\ Outcome — substrate-native developmental success
+\ ============================================================
+\
+\ The grown observer (O + 3 limbs + 4 incorporated candidates) all
+\ persist at full vitality.  Rejected candidates stay dead — they
+\ were never absorbed and never participated in mutual restoration.
+
+\ Observer + original limbs alive.
+"O"  load NGET 10 assert-eq
+"l1" load NGET 10 assert-eq
+"l2" load NGET 10 assert-eq
+"l3" load NGET 10 assert-eq
+
+\ Incorporated candidates alive.
+"c1" load NGET 10 assert-eq
+"c2" load NGET 10 assert-eq
+"c4" load NGET 10 assert-eq
+"c6" load NGET 10 assert-eq
+
+\ Rejected candidates stay at their (decayed-to-zero) state.
+"c3" load NGET 0 assert-eq
+"c5" load NGET 0 assert-eq
+
+\ Print final coherent identity.
+"O" load NGET . "l1" load NGET . "l2" load NGET . "l3" load NGET .
+"c1" load NGET . "c2" load NGET . "c4" load NGET . "c6" load NGET .  cr
+"c3" load NGET . "c5" load NGET . cr
+
+REPORT

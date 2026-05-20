@@ -1,0 +1,66 @@
+\ demo-time.6th — Time emerges as STEP-ordered REWRITE causality.
+\
+\ Claim demonstrated:
+\   Time is not primitive — it is the discrete index of substrate rewrites.
+\   STEP increments a global counter; every MARK records its BORN step.
+\   A rewrite rule (here: SPROUT — every leaf node gets one new child)
+\   applied at successive STEPs produces a causal history in which each
+\   new node is unambiguously stamped by the step that created it.
+\   Causality = "node m exists because at STEP s rule was applied to its parent".
+
+: 2dup over over ;
+: nip swap drop ;
+: 1+ 1 + ;
+
+: zero MARK ;
+: succ MARK 2dup EDGE+ nip ;
+
+\ SPROUT rule: every leaf node (out-degree 0) gets one new child.
+\ Non-leaves are left alone.  Acts on the node id pushed by EACH.
+: sprout
+  dup OUT 0 = if
+    MARK 2dup EDGE+ drop drop
+  else
+    drop
+  then ;
+
+\ ─── initial substrate: chain 1→2→3 (all born at step 0) ───
+zero                   \ node 1
+succ                   \ node 2, edge 1→2
+succ                   \ node 3, edge 2→3
+drop                   \ clear stack
+
+\ All three should report BORN = 0
+1 BORN 0 = ASSERT
+2 BORN 0 = ASSERT
+3 BORN 0 = ASSERT
+
+\ ─── step 1: apply sprout to all existing nodes ───
+STEP
+' sprout EACH
+
+\ Only node 3 was a leaf → node 4 created at step 1
+NODES 4 = ASSERT
+4 BORN 1 = ASSERT
+
+\ ─── step 2 ───
+STEP
+' sprout EACH
+NODES 5 = ASSERT
+5 BORN 2 = ASSERT
+
+\ ─── step 3 ───
+STEP
+' sprout EACH
+NODES 6 = ASSERT
+6 BORN 3 = ASSERT
+
+\ Causal chain: 4←3 (parent edge), 5←4, 6←5
+4 PREV 3 = ASSERT
+5 PREV 4 = ASSERT
+6 PREV 5 = ASSERT
+
+\ NOW counter advanced by exactly 3 STEPs
+NOW 3 = ASSERT
+
+REPORT

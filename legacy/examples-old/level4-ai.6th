@@ -1,0 +1,77 @@
+: medical-diagnosis 
+  one "fever" store
+  one "cough" store
+  zero "headache" store
+  
+  "fever" load "cough" load * "flu" store
+  "headache" load "migraine" store
+  
+  "flu" load
+  "migraine" load ;
+
+: rule-engine
+  "fever" load "cough" load * if
+    one "diagnosis_flu" store
+  else
+    zero "diagnosis_flu" store
+  then
+  
+  "headache" load "nausea" load * if
+    one "diagnosis_migraine" store
+  else  
+    zero "diagnosis_migraine" store
+  then ;
+
+: genetic-step
+  "population" load "fitness" load +
+  dup hundred > if hundred - then
+  "population" store ;
+
+: genetic-evolve
+  ten zero genetic-evolve-loop ;
+
+: genetic-evolve-loop
+  dup zero = if drop else
+    genetic-step
+    one - genetic-evolve-loop
+  then ;
+
+: neural-weight
+  "input" load "weight" load *
+  "bias" load + ;
+
+: neural-activate
+  dup zero > if one else zero then ;
+
+: neural-forward
+  neural-weight neural-activate ;
+
+: fuzzy-and
+  min ;
+
+: fuzzy-or  
+  max ;
+
+: fuzzy-not
+  hundred swap - ;
+
+: expert-system
+  one "symptom1" store
+  one "symptom2" store
+  zero "symptom3" store
+  
+  "symptom1" load "symptom2" load fuzzy-and "rule1" store
+  "symptom3" load fuzzy-not "rule2" store
+  
+  "rule1" load "rule2" load fuzzy-or ;
+
+: demo-ai
+  medical-diagnosis
+  50 "population" store
+  30 "fitness" store
+  genetic-evolve
+  expert-system ;
+
+: test-ai
+  medical-diagnosis 1 =
+  expert-system zero > ; 

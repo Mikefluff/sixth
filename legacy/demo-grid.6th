@@ -1,0 +1,111 @@
+\ demo-grid.6th — 2D Manhattan distance emerges from grid connectivity.
+\
+\ Claim demonstrated:
+\   Dimensionality is not primitive — it is a property of the
+\   substrate's connectivity pattern.  Build a 3×3 grid topology
+\   (9 nodes each linked bidirectionally to its grid neighbours)
+\   and apply the same BFS-relaxation rule from demo-distance.
+\   The fixed-point feature values on each node correspond exactly
+\   to the Manhattan metric d((i₁,j₁),(i₂,j₂)) = |Δi|+|Δj|.
+\
+\   No coordinates are stored anywhere.  The "2D-ness" of the space
+\   lives entirely in which nodes are connected to which.  Same rule
+\   on 1D chain gave linear distance; same rule on grid gives Manhattan.
+\   Geometry IS topology.
+
+: 2dup over over ;
+: nip swap drop ;
+: not 0 = ;
+: 1+ 1 + ;
+
+: zero MARK ;
+
+\ Bidirectional connection helper
+: bi-edge  2dup EDGE+ swap EDGE+ ;     \ ( a b -- )
+
+\ Effective distance: -1 = infinity sentinel
+: eff-dist  NGET dup -1 = if drop 1000 then ;
+
+\ BFS relax rule
+: relax-edge
+  "_b" store
+  "_a" store
+  "_a" load eff-dist 1+ "_cand" store
+  "_b" load eff-dist "_curr" store
+  "_cand" load "_curr" load < if
+    "_b" load "_cand" load NSET
+  then ;
+
+\ Init: set source dist=0, all other = -1
+: set-inf -1 NSET ;
+: bfs-init
+  ' set-inf EACH
+  dup 0 NSET ;
+
+: bfs-step  STEP ' relax-edge EACH-EDGE ;
+
+\ ─── build 3×3 grid ───
+zero "c11" store   zero "c12" store   zero "c13" store
+zero "c21" store   zero "c22" store   zero "c23" store
+zero "c31" store   zero "c32" store   zero "c33" store
+
+\ Horizontal bidirectional edges within each row
+"c11" load "c12" load bi-edge
+"c12" load "c13" load bi-edge
+"c21" load "c22" load bi-edge
+"c22" load "c23" load bi-edge
+"c31" load "c32" load bi-edge
+"c32" load "c33" load bi-edge
+
+\ Vertical bidirectional edges within each column
+"c11" load "c21" load bi-edge
+"c21" load "c31" load bi-edge
+"c12" load "c22" load bi-edge
+"c22" load "c32" load bi-edge
+"c13" load "c23" load bi-edge
+"c23" load "c33" load bi-edge
+
+NODES 9 = ASSERT
+EDGES 24 = ASSERT          \ 12 undirected pairs = 24 directed
+
+\ ─── BFS from corner (1,1) ───
+"c11" load bfs-init drop
+
+bfs-step
+bfs-step
+bfs-step
+bfs-step
+bfs-step       \ 4 hops max for 3×3 grid; one extra for safety
+
+\ ─── verify Manhattan distances ───
+"c11" load NGET 0 = ASSERT          \ d((1,1),(1,1)) = 0
+"c12" load NGET 1 = ASSERT          \ |0|+|1| = 1
+"c13" load NGET 2 = ASSERT          \ |0|+|2| = 2
+"c21" load NGET 1 = ASSERT          \ |1|+|0| = 1
+"c22" load NGET 2 = ASSERT          \ |1|+|1| = 2
+"c23" load NGET 3 = ASSERT          \ |1|+|2| = 3
+"c31" load NGET 2 = ASSERT          \ |2|+|0| = 2
+"c32" load NGET 3 = ASSERT          \ |2|+|1| = 3
+"c33" load NGET 4 = ASSERT          \ |2|+|2| = 4
+
+\ ─── BFS from centre (2,2) ───
+"c22" load bfs-init drop
+bfs-step bfs-step bfs-step
+
+"c22" load NGET 0 = ASSERT
+"c11" load NGET 2 = ASSERT          \ |1|+|1| = 2 (corner)
+"c13" load NGET 2 = ASSERT
+"c31" load NGET 2 = ASSERT
+"c33" load NGET 2 = ASSERT
+"c12" load NGET 1 = ASSERT          \ edge cells
+"c21" load NGET 1 = ASSERT
+"c23" load NGET 1 = ASSERT
+"c32" load NGET 1 = ASSERT
+
+\ ─── interpretation ───
+\ The same relaxation rule that gave linear distance on a chain now
+\ produces Manhattan distance on a grid.  Switching topology
+\ (1D chain → 2D lattice) changed nothing in the rule, yet a
+\ qualitatively different geometry emerged.  Space is connectivity.
+
+REPORT

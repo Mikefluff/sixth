@@ -1,0 +1,170 @@
+\ examples/23-self-maintaining-observer.6th — self-maintenance as the
+\                                              substrate definition of "alive".
+\
+\ Claim demonstrated:
+\   Two observer-nodes are placed in the same substrate.  Both have
+\   identical "limbs" (memory-nodes) at identical initial vitality.
+\   Both are subject to the same decay process.  They differ ONLY in
+\   topology of self-reference:
+\
+\     O_reflex     : limbs ↔ O   (bidirectional edges — limbs see O,
+\                                  O sees limbs.  The observer is IN
+\                                  its own scope of restoration.)
+\     O_nonreflex  : limbs ← O   (unidirectional — O sees limbs, but
+\                                  limbs do not see O.  No return
+\                                  path; observer is NOT in its own
+\                                  scope.)
+\
+\   Under continuous decay + threshold-restoration, O_reflex persists
+\   indefinitely with limbs intact; O_nonreflex's limbs lose their
+\   restoration source and decay; eventually O_nonreflex itself loses
+\   its restoration source (its decayed limbs no longer reach the
+\   threshold) and dies.
+\
+\   This is the substrate-native definition of "alive":  a pattern
+\   that includes the conditions of its own continued restoration
+\   in its own scope.  Maturana/Varela autopoiesis, expressed in 38
+\   primitives.
+
+use prelude
+use peano
+use graph
+use debug
+
+\ ============================================================
+\ Substrate setup
+\ ============================================================
+\
+\ Reflexive observer cluster (nodes 1-4):
+\   r1, r2, r3 are limbs; rO is the observer
+\   edges: r_i  ↔  rO   (bidirectional)
+\
+\ Non-reflexive observer cluster (nodes 5-8):
+\   n1, n2, n3 are limbs; nO is the observer
+\   edges: nO → n_i  only  (one-directional)
+
+zero "r1" store
+zero "r2" store
+zero "r3" store
+zero "rO" store
+
+\ Bidirectional — observer is in the in-scope of its limbs
+"rO" load "r1" load bi-edge
+"rO" load "r2" load bi-edge
+"rO" load "r3" load bi-edge
+
+zero "n1" store
+zero "n2" store
+zero "n3" store
+zero "nO" store
+
+\ One-directional — observer sees limbs, but limbs do NOT see observer
+"nO" load "n1" load EDGE+
+"nO" load "n2" load EDGE+
+"nO" load "n3" load EDGE+
+
+\ Init vitality: every node alive at 10.
+"r1" load 10 NSET   "r2" load 10 NSET   "r3" load 10 NSET   "rO" load 10 NSET
+"n1" load 10 NSET   "n2" load 10 NSET   "n3" load 10 NSET   "nO" load 10 NSET
+
+NODES 8 assert-eq
+EDGES 9 assert-eq         \ 3 bi-edges (6 directed) + 3 one-way = 9
+
+\ ============================================================
+\ Dynamics
+\ ============================================================
+\
+\ Each "cycle" = two STEP-CAs in sequence:
+\   phase-decay   : every node loses 3 vitality (floor 0)
+\   phase-restore : if NSUM > 5, restore to 10; otherwise keep
+\
+\ The restore-rule reads OUT-neighbour features (NSUM).  A node with
+\ enough alive out-neighbours gets reset to full vitality.  A node
+\ with no out-edges, or with all-dead out-neighbours, cannot recover.
+
+: phase-decay   NGET 3 -  dup 0 < if drop 0 then ;
+
+: phase-restore
+  dup NSUM 5 >
+  if drop 10 else NGET then ;
+
+: cycle
+  ' phase-decay   STEP-CA
+  ' phase-restore STEP-CA ;
+
+\ ============================================================
+\ Run 20 cycles
+\ ============================================================
+
+: 5-cycles    cycle cycle cycle cycle cycle ;
+: 20-cycles   5-cycles 5-cycles 5-cycles 5-cycles ;
+
+20-cycles
+
+\ ============================================================
+\ Snapshot final state
+\ ============================================================
+
+"r1" load NGET . "r2" load NGET . "r3" load NGET . "rO" load NGET . cr
+"n1" load NGET . "n2" load NGET . "n3" load NGET . "nO" load NGET . cr
+
+\ ============================================================
+\ Assertions — substrate-native definition of "alive":
+\ ============================================================
+\
+\ Reflexive observer + limbs survive at full vitality (10 each).
+"r1" load NGET 10 assert-eq
+"r2" load NGET 10 assert-eq
+"r3" load NGET 10 assert-eq
+"rO" load NGET 10 assert-eq
+
+\ Non-reflexive observer is dead, and so are all its limbs.
+"n1" load NGET 0 assert-eq
+"n2" load NGET 0 assert-eq
+"n3" load NGET 0 assert-eq
+"nO" load NGET 0 assert-eq
+
+\ ============================================================
+\ Quantitative lifespan: re-run nonreflexive in isolation,
+\ count cycles to death.  Must die strictly faster than the reflexive
+\ one (which never dies under this rule).
+\ ============================================================
+
+RESET
+
+zero "x1" store
+zero "x2" store
+zero "x3" store
+zero "xO" store
+"xO" load "x1" load EDGE+
+"xO" load "x2" load EDGE+
+"xO" load "x3" load EDGE+
+"x1" load 10 NSET   "x2" load 10 NSET   "x3" load 10 NSET   "xO" load 10 NSET
+
+\ Tail-recursive lifespan probe: increment a counter until xO is dead.
+: dead?
+  "x1" load NGET 0 =
+  "x2" load NGET 0 = +
+  "x3" load NGET 0 = +
+  "xO" load NGET 0 = +
+  4 = ;
+
+: tick
+  cycle
+  "lifespan" load 1 + "lifespan" store
+  dead? if
+    \ done
+  else
+    "lifespan" load 50 < if tick then
+  then ;
+
+0 "lifespan" store
+tick
+
+\ Lifespan should be small (single-digit cycles) for a non-reflexive
+\ observer under decay=3, threshold=5.
+"lifespan" load .  cr
+"lifespan" load 20 < ASSERT
+"lifespan" load 1 > ASSERT
+
+REPORT

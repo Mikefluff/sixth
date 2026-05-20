@@ -1,0 +1,66 @@
+\ examples/14-grid-2d.6th — Manhattan distance from 3×3 grid topology.
+\
+\ Dimensionality is a property of substrate connectivity.  Build a 3×3
+\ bidirectional grid and run the same BFS-relaxation as the 1D chain
+\ demo: fixed-point feature on each node is the Manhattan metric.
+\ No coordinates anywhere — geometry IS topology.
+
+use prelude
+use peano
+use graph
+use bfs
+use debug
+
+\ 3×3 grid.
+zero "c11" store   zero "c12" store   zero "c13" store
+zero "c21" store   zero "c22" store   zero "c23" store
+zero "c31" store   zero "c32" store   zero "c33" store
+
+\ Horizontal bidirectional edges.
+"c11" load "c12" load bi-edge
+"c12" load "c13" load bi-edge
+"c21" load "c22" load bi-edge
+"c22" load "c23" load bi-edge
+"c31" load "c32" load bi-edge
+"c32" load "c33" load bi-edge
+
+\ Vertical bidirectional edges.
+"c11" load "c21" load bi-edge
+"c21" load "c31" load bi-edge
+"c12" load "c22" load bi-edge
+"c22" load "c32" load bi-edge
+"c13" load "c23" load bi-edge
+"c23" load "c33" load bi-edge
+
+NODES 9 assert-eq
+EDGES 24 assert-eq
+
+\ BFS from corner (1,1).
+"c11" load bfs-init drop
+bfs-step  bfs-step  bfs-step  bfs-step  bfs-step
+
+"c11" load NGET 0 assert-eq
+"c12" load NGET 1 assert-eq
+"c13" load NGET 2 assert-eq
+"c21" load NGET 1 assert-eq
+"c22" load NGET 2 assert-eq
+"c23" load NGET 3 assert-eq
+"c31" load NGET 2 assert-eq
+"c32" load NGET 3 assert-eq
+"c33" load NGET 4 assert-eq
+
+\ BFS from centre.
+"c22" load bfs-init drop
+bfs-step bfs-step bfs-step
+
+"c22" load NGET 0 assert-eq
+"c11" load NGET 2 assert-eq
+"c13" load NGET 2 assert-eq
+"c31" load NGET 2 assert-eq
+"c33" load NGET 2 assert-eq
+"c12" load NGET 1 assert-eq
+"c21" load NGET 1 assert-eq
+"c23" load NGET 1 assert-eq
+"c32" load NGET 1 assert-eq
+
+REPORT

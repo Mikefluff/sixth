@@ -1,0 +1,132 @@
+\ examples/26-symbiosis.6th — substrate-level endosymbiosis.
+\
+\ Claim demonstrated:
+\   Two autopoietic patterns, each of which DIES under a sufficiently
+\   harsh decay, can be fused via cross-bridges into a single richer
+\   topology that SURVIVES the same decay.  The combined entity is
+\   strictly more than the sum of its parts — at substrate level,
+\   cooperation is a topological property.
+\
+\   Same dynamics as autopoiesis demos (decay + threshold-restore).
+\   Only the topology differs.
+\
+\   Three clusters side-by-side in one substrate:
+\     A  3-node ring, alone                   — dies (NSUM too small)
+\     B  3-node ring, alone                   — dies (same reason)
+\     S  6-node symbiotic union: two rings   — survives (NSUM enough)
+\        joined by 3 cross-bridges
+\
+\   Decay = 8, threshold = 5, init = 10.
+\
+\   Per-node NSUM after decay-to-2:
+\     - alone-ring node has 2 out-neighbours → NSUM = 2·2 = 4 < 5  → die
+\     - symbiotic   node has 3 out-neighbours → NSUM = 3·2 = 6 > 5  → live
+
+use prelude
+use peano
+use graph
+use debug
+
+\ ============================================================
+\ Cluster A — 3-node ring (alone)
+\ ============================================================
+
+zero "a1" store
+zero "a2" store
+zero "a3" store
+"a1" load "a2" load bi-edge
+"a2" load "a3" load bi-edge
+"a3" load "a1" load bi-edge
+
+\ ============================================================
+\ Cluster B — 3-node ring (alone, separate from A and S)
+\ ============================================================
+
+zero "b1" store
+zero "b2" store
+zero "b3" store
+"b1" load "b2" load bi-edge
+"b2" load "b3" load bi-edge
+"b3" load "b1" load bi-edge
+
+\ ============================================================
+\ Cluster S — two 3-node rings + 3 cross-bridges = symbiosis
+\ ============================================================
+
+zero "s1" store     zero "s2" store     zero "s3" store
+zero "s4" store     zero "s5" store     zero "s6" store
+
+\ Ring 1
+"s1" load "s2" load bi-edge
+"s2" load "s3" load bi-edge
+"s3" load "s1" load bi-edge
+
+\ Ring 2
+"s4" load "s5" load bi-edge
+"s5" load "s6" load bi-edge
+"s6" load "s4" load bi-edge
+
+\ Cross-bridges — every node gains one out-of-ring neighbour
+"s1" load "s4" load bi-edge
+"s2" load "s5" load bi-edge
+"s3" load "s6" load bi-edge
+
+\ ============================================================
+\ Initialise every node at full vitality 10
+\ ============================================================
+
+"a1" load 10 NSET   "a2" load 10 NSET   "a3" load 10 NSET
+"b1" load 10 NSET   "b2" load 10 NSET   "b3" load 10 NSET
+"s1" load 10 NSET   "s2" load 10 NSET   "s3" load 10 NSET
+"s4" load 10 NSET   "s5" load 10 NSET   "s6" load 10 NSET
+
+NODES 12 assert-eq
+
+\ Per-node OUT-degrees should match the design.
+"a1" load OUT 2 assert-eq        \ ring-only
+"s1" load OUT 3 assert-eq        \ ring + cross-bridge
+"s4" load OUT 3 assert-eq
+
+\ Sanity NSUMs
+"a1" load NSUM 20 assert-eq      \ 2 neighbours × 10
+"s1" load NSUM 30 assert-eq      \ 3 neighbours × 10
+
+\ ============================================================
+\ Harsh autopoietic dynamics
+\ ============================================================
+
+: phase-decay   NGET 8 -  dup 0 < if drop 0 then ;
+: phase-restore dup NSUM 5 >  if drop 10 else NGET then ;
+: cycle         ' phase-decay STEP-CA  ' phase-restore STEP-CA ;
+: 5-cycles      cycle cycle cycle cycle cycle ;
+: 10-cycles     5-cycles 5-cycles ;
+
+10-cycles
+
+\ ============================================================
+\ Outcome: alone-rings dead; symbiotic union alive
+\ ============================================================
+
+"a1" load NGET 0 assert-eq
+"a2" load NGET 0 assert-eq
+"a3" load NGET 0 assert-eq
+
+"b1" load NGET 0 assert-eq
+"b2" load NGET 0 assert-eq
+"b3" load NGET 0 assert-eq
+
+"s1" load NGET 10 assert-eq
+"s2" load NGET 10 assert-eq
+"s3" load NGET 10 assert-eq
+"s4" load NGET 10 assert-eq
+"s5" load NGET 10 assert-eq
+"s6" load NGET 10 assert-eq
+
+\ Print the verdict.
+cr
+"A alone-ring : " . "a1" load NGET . "a2" load NGET . "a3" load NGET . cr
+"B alone-ring : " . "b1" load NGET . "b2" load NGET . "b3" load NGET . cr
+"S symbiotic  : " . "s1" load NGET . "s2" load NGET . "s3" load NGET .
+                    "s4" load NGET . "s5" load NGET . "s6" load NGET . cr
+
+REPORT

@@ -1,0 +1,28 @@
+\ stdlib/peano.6th — Peano arithmetic via MARK chains.
+
+use prelude
+
+: zero MARK ;
+: succ MARK 2dup EDGE+ nip ;
+: zero? IN 0 = ;
+
+: peano-value
+  dup zero? if
+    drop 0
+  else
+    PREV peano-value 1+
+  then ;
+
+: peano-add
+  dup zero? if
+    drop
+  else
+    PREV peano-add succ
+  then ;
+
+: peano-mul
+  dup zero? if
+    2drop zero
+  else
+    PREV over swap peano-mul peano-add
+  then ;

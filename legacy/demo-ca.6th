@@ -1,0 +1,100 @@
+\ demo-ca.6th — Complex pattern emerges from minimal CA rule on substrate.
+\
+\ Claim demonstrated:
+\   Cellular-automaton dynamics fall out of the substrate primitives
+\   directly.  Cells = nodes in a chain; cell state = NSET/NGET feature;
+\   "neighbor" = PREV/NEXT edge-traversal; "tick" = STEP-CA which applies
+\   a rule in parallel (all next states computed from current snapshot).
+\
+\   Rule 90 (Wolfram):  next(n) = state(left) XOR state(right)
+\   Starting from a single live cell, this generates a Sierpinski-like
+\   pattern — fractal structure from one-bit local logic.
+
+: 2dup over over ;
+: nip swap drop ;
+: not 0 = ;
+: 1+ 1 + ;
+
+: zero MARK ;
+: succ MARK 2dup EDGE+ nip ;
+
+\ Build chain of 11 cells, store id in slots c1..c11
+: build-chain
+  zero "c1" store
+  "c1" load succ "c2" store
+  "c2" load succ "c3" store
+  "c3" load succ "c4" store
+  "c4" load succ "c5" store
+  "c5" load succ "c6" store
+  "c6" load succ "c7" store
+  "c7" load succ "c8" store
+  "c8" load succ "c9" store
+  "c9" load succ "c10" store
+  "c10" load succ "c11" store ;
+
+\ Initialise: all cells 0, then c6 = 1 (single live cell, centred)
+: init-cells
+  "c1" load 0 NSET   "c2" load 0 NSET   "c3" load 0 NSET
+  "c4" load 0 NSET   "c5" load 0 NSET   "c6" load 1 NSET
+  "c7" load 0 NSET   "c8" load 0 NSET   "c9" load 0 NSET
+  "c10" load 0 NSET  "c11" load 0 NSET ;
+
+\ Rule 90:  next(n) = L XOR R  where L = state(PREV(n)), R = state(NEXT(n))
+\ XOR for binary: (L+R) mod 2  ≡  (L+R = 1)
+: rule90
+  dup PREV NGET swap NEXT NGET + 1 = if 1 else 0 then ;
+
+build-chain
+init-cells
+
+\ Sanity: just c6 is alive
+"c1" load NGET 0 = ASSERT
+"c5" load NGET 0 = ASSERT
+"c6" load NGET 1 = ASSERT
+"c7" load NGET 0 = ASSERT
+
+\ ─── step 1: Rule 90 ───
+' rule90 STEP-CA
+\ Now c5 and c7 should be alive (c6's neighbours via XOR), c6 dead
+"c5" load NGET 1 = ASSERT
+"c6" load NGET 0 = ASSERT
+"c7" load NGET 1 = ASSERT
+"c4" load NGET 0 = ASSERT
+"c8" load NGET 0 = ASSERT
+
+\ ─── step 2 ───
+' rule90 STEP-CA
+\ Expected: c4=1, c5=0, c6=0 (XOR of c5+c7 both alive = 0), c7=0, c8=1
+"c4" load NGET 1 = ASSERT
+"c5" load NGET 0 = ASSERT
+"c6" load NGET 0 = ASSERT
+"c7" load NGET 0 = ASSERT
+"c8" load NGET 1 = ASSERT
+
+\ ─── step 3 ───
+' rule90 STEP-CA
+\ Expected: c3=1, c4=0, c5=1, c6=0, c7=1, c8=0, c9=1 (Sierpinski expansion)
+"c3" load NGET 1 = ASSERT
+"c4" load NGET 0 = ASSERT
+"c5" load NGET 1 = ASSERT
+"c6" load NGET 0 = ASSERT
+"c7" load NGET 1 = ASSERT
+"c8" load NGET 0 = ASSERT
+"c9" load NGET 1 = ASSERT
+
+\ ─── step 4 ───
+' rule90 STEP-CA
+\ Expected: c2=1, c3=0, c4=0, c5=0, c6=0, c7=0, c8=0, c9=0, c10=1
+\ (XOR rule, neighbours both alive cancel)
+"c2" load NGET 1 = ASSERT
+"c3" load NGET 0 = ASSERT
+"c5" load NGET 0 = ASSERT
+"c10" load NGET 1 = ASSERT
+
+\ ─── interpretation ───
+\ One bit of initial structure (single live cell) + one binary local rule
+\ (XOR of immediate neighbours) generates a fractal pattern that grows
+\ each step.  Complex structure is NOT primitive — it's a fixed unfolding
+\ of trivial logic over substrate.
+
+REPORT

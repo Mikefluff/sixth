@@ -1,0 +1,5 @@
+\ stdlib/graph.6th — graph constructors.
+
+use prelude
+
+: bi-edge 2dup EDGE+ swap EDGE+ ;

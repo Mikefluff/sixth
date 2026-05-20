@@ -1,0 +1,75 @@
+: prime? 
+  dup two < if drop false else
+  dup two = if drop true else  
+  dup even? if drop false else
+    dup "number" store
+    three "divisor" store
+    prime-check
+  then then then ;
+
+: prime-check
+  "divisor" load dup * "number" load > if
+    drop true
+  else
+    "number" load "divisor" load mod zero? if
+      drop false
+    else
+      "divisor" load two + "divisor" store
+      prime-check
+    then
+  then ;
+
+: factorize 
+  dup prime? if else
+  dup two mod zero? if 
+    two swap two / factorize
+  else
+    dup factorize-odd
+  then then ;
+
+: factorize-odd
+  three "factor" store
+  dup "number" store
+  factorize-odd-loop ;
+
+: factorize-odd-loop
+  "number" load "factor" load mod zero? if
+    "factor" load "number" load "factor" load /
+    factorize
+  else
+    "factor" load two + "factor" store
+    "factor" load dup * "number" load > if
+      "number" load
+    else
+      factorize-odd-loop
+    then
+  then ;
+
+: reverse-number 
+  zero swap 
+  dup zero > if 
+    ten mod swap ten / reverse-number ten * + 
+  else 
+    drop 
+  then ;
+
+: hanoi 
+  "disks" store "from" store "to" store "aux" store
+  "disks" load one = if
+    "from" load "to" load
+  else
+    "disks" load one - "from" load "aux" load "to" load hanoi
+    "from" load "to" load  
+    "disks" load one - "aux" load "to" load "from" load hanoi
+  then ;
+
+: demo-level3
+  17 prime?
+  15 prime?
+  123 reverse-number
+  3 1 2 3 hanoi ;
+
+: test-level3
+  17 prime? true =
+  15 prime? false =
+  123 reverse-number 321 = ; 

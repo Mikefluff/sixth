@@ -1,0 +1,63 @@
+\ demo-all.6th — run every emergence proof in sequence; cumulative report.
+
+RESET
+loadfile demo-numbers.6th
+
+RESET
+loadfile demo-time.6th
+
+RESET
+loadfile demo-stable.6th
+
+RESET
+loadfile demo-conflict.6th
+
+RESET
+loadfile demo-loop.6th
+
+RESET
+loadfile demo-observers.6th
+
+RESET
+loadfile demo-rewrite.6th
+
+RESET
+loadfile demo-distance.6th
+
+RESET
+loadfile demo-ca.6th
+
+RESET
+loadfile demo-self-model.6th
+
+RESET
+loadfile demo-energy.6th
+
+RESET
+loadfile demo-wolfram.6th
+
+RESET
+loadfile demo-conservation.6th
+
+RESET
+loadfile demo-grid.6th
+
+RESET
+loadfile demo-glider.6th
+
+RESET
+loadfile demo-rule110.6th
+
+RESET
+loadfile demo-consensus.6th
+
+RESET
+loadfile demo-morphism.6th
+
+RESET
+loadfile demo-conway.6th
+
+RESET
+loadfile demo-glider-2d.6th
+
+REPORT

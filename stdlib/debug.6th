@@ -1,0 +1,4 @@
+\ stdlib/debug.6th — assertions and tracing helpers.
+
+\ assert-eq ( a b -- )  — fail if a ≠ b
+: assert-eq = ASSERT ;

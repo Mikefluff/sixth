@@ -1,0 +1,220 @@
+\ examples/28-conscious-mutation.6th — Lamarck-style conscious selection,
+\                                       NOT blind Darwin.
+\
+\ Claim demonstrated:
+\   Reproduction produces three TOPOLOGICAL VARIANTS.  An OBSERVER node
+\   then applies a substrate-native acceptance test to each variant
+\   (count of bi-edges out of the variant's germ).  Variants that meet
+\   the observer's criterion are kept; ones that fail are ACTIVELY
+\   DISCONNECTED by the observer (EDGE- removes their edges).
+\
+\   The distinction from Darwin:
+\     - Variant 2 (single bi-edge germ) WOULD survive autopoiesis
+\       if left alone (a 2-node bi-edge is self-maintaining; see
+\       demo 25').  Yet the observer rejects it because it does not
+\       match the observer's intended template.  This is Lamarck:
+\       conscious selection by an observer's PROJECT, not by passive
+\       differential mortality.
+\
+\   Three variants:
+\     V1  germ + 3 bi-edges, limbs form a ring        — KEEP (3+ bi-edges)
+\     V2  germ + 1 bi-edge, single limb                — REJECT (<3 bi-edges)
+\     V3  germ + 3 bi-edges, limbs ring + cross-edges — KEEP (3+ bi-edges)
+
+use prelude
+use peano
+use graph
+use debug
+
+\ ============================================================
+\ Parent (for reference; observer's template)
+\ ============================================================
+
+zero "PL1" store
+zero "PL2" store
+zero "PL3" store
+zero "PG"  store
+
+"PL1" load "PL2" load bi-edge
+"PL2" load "PL3" load bi-edge
+"PL3" load "PL1" load bi-edge
+"PG" load "PL1" load bi-edge
+"PG" load "PL2" load bi-edge
+"PG" load "PL3" load bi-edge
+
+"PG"  load 10 NSET
+"PL1" load 10 NSET
+"PL2" load 10 NSET
+"PL3" load 10 NSET
+
+\ ============================================================
+\ V1 — canonical variant (germ has 3 bi-edges, limbs form a ring)
+\ ============================================================
+
+zero "v1G" store
+zero "v1L1" store
+zero "v1L2" store
+zero "v1L3" store
+
+"v1L1" load "v1L2" load bi-edge
+"v1L2" load "v1L3" load bi-edge
+"v1L3" load "v1L1" load bi-edge
+"v1G" load "v1L1" load bi-edge
+"v1G" load "v1L2" load bi-edge
+"v1G" load "v1L3" load bi-edge
+
+"v1G"  load 10 NSET    "v1L1" load 10 NSET
+"v1L2" load 10 NSET    "v1L3" load 10 NSET
+
+\ ============================================================
+\ V2 — weak variant (germ has ONLY 1 bi-edge to one limb)
+\ ============================================================
+
+zero "v2G" store
+zero "v2L" store
+"v2G" load "v2L" load bi-edge
+
+"v2G" load 10 NSET   "v2L" load 10 NSET
+
+\ ============================================================
+\ V3 — enhanced variant (germ + 3 bi-edges, limbs ring + 1 extra cross)
+\ ============================================================
+
+zero "v3G"  store
+zero "v3L1" store
+zero "v3L2" store
+zero "v3L3" store
+
+"v3L1" load "v3L2" load bi-edge
+"v3L2" load "v3L3" load bi-edge
+"v3L3" load "v3L1" load bi-edge
+"v3G" load "v3L1" load bi-edge
+"v3G" load "v3L2" load bi-edge
+"v3G" load "v3L3" load bi-edge
+\ The "enhanced" trait: extra cross between L1 and L3 (already in ring)
+\ — substitute with a self-loop on the germ (still maintaining its 3
+\ bi-edge count to limbs).
+"v3G" load "v3G" load EDGE+
+
+"v3G"  load 10 NSET    "v3L1" load 10 NSET
+"v3L2" load 10 NSET    "v3L3" load 10 NSET
+
+NODES 14 assert-eq
+
+\ ============================================================
+\ Substrate-native bi-edge counter (observer's acceptance test)
+\ ============================================================
+\
+\ count-bi-edges-from ( n -- k )
+\   Counts how many of n's OUT-neighbours have a reciprocal edge back
+\   to n.  Pure substrate primitives: walks via EACH-EDGE filtered.
+
+0 "bi-count" store
+0 "from-node" store
+
+: tally-bi
+  "ad-dst" store
+  "ad-src" store
+  "ad-src" load "from-node" load = if
+    "ad-dst" load "ad-src" load EDGE? if
+      "bi-count" load 1 + "bi-count" store
+    then
+  then ;
+
+: count-bi-edges-from
+  "from-node" store
+  0 "bi-count" store
+  ' tally-bi EACH-EDGE
+  "bi-count" load ;
+
+"v1G" load count-bi-edges-from 3 assert-eq
+"v2G" load count-bi-edges-from 1 assert-eq
+"v3G" load count-bi-edges-from 4 assert-eq    \ 3 to limbs + 1 self-loop
+
+\ ============================================================
+\ Observer's conscious selection: minimum bi-edge degree = 3
+\ ============================================================
+\
+\ For each variant germ, if its bi-edge count is below the observer's
+\ minimum, the observer ACTIVELY disconnects the variant (EDGE- every
+\ edge involving it and its limbs).
+
+3 "observer-min-bi-edges" store
+
+: reject-edge
+  "rd-dst" store
+  "rd-src" store
+  "rd-src" load "reject-id" load = if
+    "rd-src" load "rd-dst" load EDGE-
+  then
+  "rd-dst" load "reject-id" load = if
+    "rd-src" load "rd-dst" load EDGE-
+  then ;
+
+: observer-reject
+  "reject-id" store
+  ' reject-edge EACH-EDGE ;
+
+\ Apply observer's test
+: maybe-reject
+  "candidate" store
+  "candidate" load load count-bi-edges-from
+  "observer-min-bi-edges" load < if
+    "candidate" load load observer-reject
+  then ;
+
+"v1G" maybe-reject
+"v2G" maybe-reject
+"v3G" maybe-reject
+
+\ v2G should be disconnected; check IN=0 OUT=0.
+"v2G" load OUT 0 assert-eq
+"v2G" load IN  0 assert-eq
+"v2L" load OUT 0 assert-eq
+"v2L" load IN  0 assert-eq
+
+\ v1G and v3G keep their topology.
+"v1G" load OUT 3 assert-eq
+"v3G" load OUT 4 assert-eq
+
+\ ============================================================
+\ Autopoietic dynamics after conscious selection
+\ ============================================================
+
+: phase-decay   NGET 3 -  dup 0 < if drop 0 then ;
+: phase-restore dup NSUM 5 >  if drop 10 else NGET then ;
+: cycle         ' phase-decay STEP-CA  ' phase-restore STEP-CA ;
+: 10-cycles     cycle cycle cycle cycle cycle  cycle cycle cycle cycle cycle ;
+
+10-cycles
+
+\ ============================================================
+\ Outcome:
+\   - Parent cluster persists at full vitality
+\   - V1 (kept) persists
+\   - V3 (kept) persists
+\   - V2 (rejected by observer) dies — it WOULD have survived autopoiesis
+\     on its own but the observer chose not to keep it
+\ ============================================================
+
+"PG"  load NGET 10 assert-eq
+"PL1" load NGET 10 assert-eq
+
+"v1G"  load NGET 10 assert-eq
+"v1L1" load NGET 10 assert-eq
+
+"v3G"  load NGET 10 assert-eq
+"v3L1" load NGET 10 assert-eq
+
+\ V2 has no edges → no NSUM contribution → decays to 0.
+"v2G" load NGET 0 assert-eq
+"v2L" load NGET 0 assert-eq
+
+\ Print verdict.
+cr
+"parent : " . "PG" load NGET . cr
+"V1 kept: " . "v1G" load NGET . cr
+"V2 rejected by observer (would-survive-Darwin): " . "v2G" load NGET . cr
+"V3 kept: " . "v3G" load NGET . cr
+
+REPORT

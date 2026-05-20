@@ -1,0 +1,146 @@
+\ examples/21-autopoietic-ring.6th — minimal autopoietic pattern.
+\
+\ Claim demonstrated:
+\   A ring of cells equipped with a purely-local maintenance rule
+\   restores itself after single-cell deletions.  The pattern carries
+\   the conditions for its own restoration in its topology + rule:
+\   no supervisor, no learning, no global signal.  Substrate-level
+\   minimum of autopoiesis.
+\
+\   Maintenance rule (applied via STEP-CA):
+\       next_state(n) = 1  iff   state(n) = 1   OR  NSUM(n) > 0
+\   "live if I'm already live, or any neighbour is live."
+\
+\   This is the substrate definition of "alive": pattern + rule whose
+\   joint behaviour restores the pattern under perturbation.  An
+\   all-dead substrate has no recovery — death is real.
+
+use prelude
+use peano
+use graph
+use debug
+
+\ ============================================================
+\ 4-node ring c1↔c2↔c3↔c4↔c1
+\ ============================================================
+
+zero "c1" store
+zero "c2" store
+zero "c3" store
+zero "c4" store
+
+"c1" load "c2" load bi-edge
+"c2" load "c3" load bi-edge
+"c3" load "c4" load bi-edge
+"c4" load "c1" load bi-edge
+
+\ All-alive initial state.
+"c1" load 1 NSET
+"c2" load 1 NSET
+"c3" load 1 NSET
+"c4" load 1 NSET
+
+NODES 4 assert-eq
+EDGES 8 assert-eq
+
+"c1" load NGET 1 assert-eq
+"c2" load NGET 1 assert-eq
+"c3" load NGET 1 assert-eq
+"c4" load NGET 1 assert-eq
+
+\ ============================================================
+\ Maintenance rule
+\ ============================================================
+\
+\ Stack contract for STEP-CA rule: ( node -- next-state )
+\
+\   next = 1 if state OR (NSUM > 0); else 0
+\
+\ Implementation reads node's own NGET (current state) and NSUM
+\ (sum of out-neighbour states).  Both are pure substrate primitives.
+
+: maintenance
+  dup NGET                  \ ( n state )
+  swap NSUM 0 >             \ ( state nbr-alive? )
+  + 0 >                     \ ( alive? )
+  if 1 else 0 then ;
+
+\ ============================================================
+\ Single-cell deletion + recovery
+\ ============================================================
+
+"c2" load 0 NSET
+"c2" load NGET 0 assert-eq
+
+' maintenance STEP-CA
+"c2" load NGET 1 assert-eq        \ restored by c1 / c3 NSUM
+"c1" load NGET 1 assert-eq
+"c3" load NGET 1 assert-eq
+"c4" load NGET 1 assert-eq
+
+\ Repeat with different cells.
+"c3" load 0 NSET
+' maintenance STEP-CA
+"c3" load NGET 1 assert-eq
+
+"c4" load 0 NSET
+' maintenance STEP-CA
+"c4" load NGET 1 assert-eq
+
+"c1" load 0 NSET
+' maintenance STEP-CA
+"c1" load NGET 1 assert-eq
+
+\ ============================================================
+\ Two adjacent cells deleted simultaneously
+\ ============================================================
+
+"c1" load 0 NSET
+"c2" load 0 NSET
+' maintenance STEP-CA
+"c1" load NGET 1 assert-eq        \ c4 was alive — c1 restored
+"c2" load NGET 1 assert-eq        \ c3 was alive — c2 restored
+
+\ ============================================================
+\ Three adjacent cells deleted — slower recovery
+\ ============================================================
+
+"c1" load 0 NSET
+"c2" load 0 NSET
+"c3" load 0 NSET
+\ only c4 alive.  After one STEP-CA: c1 and c3 restored (c4 neighbour);
+\ c2 still dead (its neighbours c1 and c3 were dead at snapshot).
+' maintenance STEP-CA
+"c1" load NGET 1 assert-eq
+"c3" load NGET 1 assert-eq
+"c2" load NGET 0 assert-eq
+
+\ Next STEP-CA recovers c2.
+' maintenance STEP-CA
+"c2" load NGET 1 assert-eq
+"c1" load NGET 1 assert-eq
+"c3" load NGET 1 assert-eq
+"c4" load NGET 1 assert-eq
+
+\ ============================================================
+\ Total annihilation — no recovery (death is real)
+\ ============================================================
+
+"c1" load 0 NSET
+"c2" load 0 NSET
+"c3" load 0 NSET
+"c4" load 0 NSET
+' maintenance STEP-CA
+"c1" load NGET 0 assert-eq
+"c2" load NGET 0 assert-eq
+"c3" load NGET 0 assert-eq
+"c4" load NGET 0 assert-eq
+
+\ Iterating maintenance further does nothing — pattern is gone.
+' maintenance STEP-CA
+' maintenance STEP-CA
+' maintenance STEP-CA
+"c1" load NGET 0 assert-eq
+"c4" load NGET 0 assert-eq
+
+REPORT

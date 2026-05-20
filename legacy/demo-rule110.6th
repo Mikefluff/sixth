@@ -1,0 +1,129 @@
+\ demo-rule110.6th — Turing-complete dynamics from minimal substrate.
+\
+\ Claim demonstrated:
+\   Wolfram's Rule 110 is universal (Cook 2004) — Turing-complete from
+\   a single 8-entry binary lookup table on three neighbouring cells.
+\   The same STEP-CA primitive that ran Rule 90 runs Rule 110 unchanged:
+\   substrate + parallel rewrite + cell features = universal computation.
+\
+\   Rule 110 lookup:
+\     (L,C,R):  000→0  001→1  010→1  011→1  100→0  101→1  110→1  111→0
+\   Single live cell evolves into a left-spreading complex structure.
+\   Triangular features visible after a few steps.
+
+: 2dup over over ;
+: nip swap drop ;
+: not 0 = ;
+: 1+ 1 + ;
+
+: zero MARK ;
+: succ MARK 2dup EDGE+ nip ;
+
+\ Rule 110 implementation
+\ Compute index = L*4 + C*2 + R, then lookup
+: rule110
+  dup PREV NGET "_L" store
+  dup NGET "_C" store
+  NEXT NGET "_R" store
+  "_L" load 4 * "_C" load 2 * + "_R" load +
+  \ pattern index on stack
+  dup 0 = if drop 0 else
+    dup 1 = if drop 1 else
+      dup 2 = if drop 1 else
+        dup 3 = if drop 1 else
+          dup 4 = if drop 0 else
+            dup 5 = if drop 1 else
+              dup 6 = if drop 1 else
+                drop 0
+              then
+            then
+          then
+        then
+      then
+    then
+  then ;
+
+\ Build chain of 11 cells
+zero "c1" store
+"c1" load succ "c2" store
+"c2" load succ "c3" store
+"c3" load succ "c4" store
+"c4" load succ "c5" store
+"c5" load succ "c6" store
+"c6" load succ "c7" store
+"c7" load succ "c8" store
+"c8" load succ "c9" store
+"c9" load succ "c10" store
+"c10" load succ "c11" store
+
+NODES 11 = ASSERT
+EDGES 10 = ASSERT
+
+\ Init: cell 6 alive, others dead
+"c1" load 0 NSET   "c2" load 0 NSET   "c3" load 0 NSET
+"c4" load 0 NSET   "c5" load 0 NSET   "c6" load 1 NSET
+"c7" load 0 NSET   "c8" load 0 NSET   "c9" load 0 NSET
+"c10" load 0 NSET  "c11" load 0 NSET
+
+\ ─── step 1: pattern spreads leftward ───
+\ Expected: c5 alive (was 0,0,1 → 1), c6 stays alive (0,1,0 → 1), c7 dies (1,0,0 → 0)
+' rule110 STEP-CA
+"c5" load NGET 1 = ASSERT
+"c6" load NGET 1 = ASSERT
+"c7" load NGET 0 = ASSERT
+"c4" load NGET 0 = ASSERT
+
+\ ─── step 2: pattern continues spreading left ───
+\ State 1: 0 0 0 0 1 1 0 0 0 0 0
+\ For each cell apply rule:
+\   c3: L=0,C=0,R=0 → 0
+\   c4: L=0,C=0,R=1 → 1
+\   c5: L=0,C=1,R=1 → 1
+\   c6: L=1,C=1,R=0 → 1
+\   c7: L=1,C=0,R=0 → 0
+' rule110 STEP-CA
+"c4" load NGET 1 = ASSERT
+"c5" load NGET 1 = ASSERT
+"c6" load NGET 1 = ASSERT
+"c7" load NGET 0 = ASSERT
+"c3" load NGET 0 = ASSERT
+
+\ ─── step 3: more complex pattern ───
+\ State 2: 0 0 0 1 1 1 0 0 0 0 0
+\   c2: L=0,C=0,R=0 → 0
+\   c3: L=0,C=0,R=1 → 1
+\   c4: L=0,C=1,R=1 → 1
+\   c5: L=1,C=1,R=1 → 0
+\   c6: L=1,C=1,R=0 → 1
+\   c7: L=1,C=0,R=0 → 0
+' rule110 STEP-CA
+"c3" load NGET 1 = ASSERT
+"c4" load NGET 1 = ASSERT
+"c5" load NGET 0 = ASSERT
+"c6" load NGET 1 = ASSERT
+"c7" load NGET 0 = ASSERT
+
+\ ─── step 4: triangular features ───
+\ State 3: 0 0 1 1 0 1 0 0 0 0 0
+\   c2: L=0,C=0,R=1 → 1
+\   c3: L=0,C=1,R=1 → 1
+\   c4: L=1,C=1,R=0 → 1
+\   c5: L=1,C=0,R=1 → 1
+\   c6: L=0,C=1,R=0 → 1
+\   c7: L=1,C=0,R=0 → 0
+' rule110 STEP-CA
+"c2" load NGET 1 = ASSERT
+"c3" load NGET 1 = ASSERT
+"c4" load NGET 1 = ASSERT
+"c5" load NGET 1 = ASSERT
+"c6" load NGET 1 = ASSERT
+"c7" load NGET 0 = ASSERT
+
+\ ─── interpretation ───
+\ A single 8-entry lookup table — Rule 110 — is Turing-complete (Cook 2004).
+\ Our substrate runs it without modification: the same primitives that
+\ supported Peano arithmetic, BFS distance, conservation laws, and glider
+\ propagation also support universal computation.  The substrate is
+\ general-purpose: physics-like AND computation-complete.
+
+REPORT
