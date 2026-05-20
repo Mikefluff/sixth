@@ -20,13 +20,14 @@ The 38 primitives factor into three ontological moves:
 
 Everything else — Peano arithmetic, causal time, fixed-point stability,
 1D/2D distance, Rule 110, Conway's Game of Life, Maturana–Varela
-autopoiesis, conscious evolution, and a substrate-resident observer that
-bootstraps its own 13-node 49-edge cosmos — is derived in 31 demos
-totaling 559 assertions.
+autopoiesis, conscious evolution, a substrate-resident observer that
+bootstraps its own 13-node 49-edge cosmos, and the substrate's own
+self-measurement via the substrate-monist `Φ_PA` scalar — is derived
+in 32 demos totaling 571 assertions.
 
-## Pilots A–D
+## Pilots A–E
 
-The substrate-native pilots are four levels of ascent above the
+The substrate-native pilots are five levels of ascent above the
 foundational demos (`01-numbers` … `20-conway-glider`, 352 ✓):
 
 | Pilot | Demos | Asserts | What |
@@ -35,8 +36,9 @@ foundational demos (`01-numbers` … `20-conway-glider`, 352 ✓):
 | **B** Conscious evolution | 26–29 | 88 | Symbiosis, reproduction with mutation, observer-driven selection (Lamarck-style, not blind Darwin), goal-directed observer behaviour. |
 | **C** Cosmogenesis bootstrap | 30 | 21 | 13-node, 48-edge substrate constructed by a substrate-resident observer from one `MARK` at `t=0`; persists under harsh autopoietic decay (d=8, τ=5). |
 | **D** Substrate-internally-driven cosmogenesis | 31 | 17 | Observer establishes its own self-loop at `t=0+` (the substrate-monist bootstrap distinction), then drives further construction via a substrate-readable halting predicate `NSUM(O) ≥ target-min` — no host counter, no programmer-chosen shell count. Closes the substrate-monism gap of Pilot C. |
+| **E** Substrate-internal `Φ_PA` measurement | 32 | 12 | `stdlib/phi.6th` defines `phi-pa = OUT(O) · [O EDGE? O] · L_max` from three primitives alone. Demo 32 verifies the worked values 0 / 50000 / 130000 across non-reflexive / reflexive / demo-31-shape observers. The substrate measures itself; consciousness's structural form is substrate-readable by the same 38 primitives that build it. |
 
-Cumulative: 559 ✓ / 0 ✗ across 31 demos.
+Cumulative: 571 ✓ / 0 ✗ across 32 demos.
 
 ## Quickstart
 
@@ -45,11 +47,11 @@ Cumulative: 559 ✓ / 0 ✗ across 31 demos.
 raco pkg install --link .
 
 # run a single demo
-racket -l sixth/cli -- run examples/31-observer-driven-cosmogenesis.6th
+racket -l sixth/cli -- run examples/32-phi-pa-measurement.6th
 
-# run all 31 demos against the rackunit regression gate
+# run all 32 demos against the rackunit regression gate
 raco test tests/examples-test.rkt
-# → examples regression: 559 / 559 ✓ across 31 demos
+# → examples regression: 571 / 571 ✓ across 32 demos
 
 # REPL
 racket -l sixth/cli -- repl
@@ -71,12 +73,13 @@ sixth/        engine — lexer, parser, compiler, VM,
               38 primitives (15 base + 23 substrate), module loader,
               REPL, CLI, #lang sixth reader, PyTorch FFI bridges
 stdlib/       Sixth-language standard library (prelude, peano, graph,
-              grid, ca, bfs, debug) — all helpers above the 38
+              grid, ca, bfs, debug, phi) — all helpers above the 38
               primitives live here, none of them are themselves
-              primitives
-examples/     31 emergence demonstrations (01–31)
+              primitives. phi.6th defines the substrate-monist
+              Φ_PA measure used by Pilot E.
+examples/     32 emergence demonstrations (01–32)
 tests/        rackunit suites — lexer, parser, VM, substrate, loader,
-              examples-test.rkt (regression gate at 559 ✓)
+              examples-test.rkt (regression gate at 571 ✓)
 docs/         Scribble manual — language reference, substrate
               foundations, stdlib word index, architecture notes,
               migration guide
