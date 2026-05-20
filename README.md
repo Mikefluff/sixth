@@ -74,12 +74,12 @@ raco pkg install --link .
 # the sacred hello world — Spencer-Brown's first mark
 racket -l sixth/cli -- run examples/00-first-distinction.6th
 
-# any of the 37 demos
+# any of the 38 demos
 racket -l sixth/cli -- run examples/35-phi-pa-split-brain-toy.6th
 
-# run all 37 demos against the rackunit regression gate
+# run all 38 demos against the rackunit regression gate
 raco test tests/examples-test.rkt
-# → examples regression: 628 / 628 ✓ across 37 demos
+# → examples regression: 634 / 634 ✓ across 38 demos
 
 # REPL
 racket -l sixth/cli -- repl

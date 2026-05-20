@@ -1,0 +1,100 @@
+\ examples/38-trace-pilot-c.6th
+\ Visual-trace pilot — Pilot C cosmogenesis bootstrap.
+\
+\ Replays demo 30 (Pilot C cosmogenesis) with a DOT snapshot
+\ emitted after each substrate-genesis event:
+\
+\   t=0         the void + one MARK (observer alone)
+\   t=1..3      shells 1, 2, 3 built unconditionally
+\   t=3-decayed substrate AFTER 10 harsh autopoiesis cycles
+\               (decay=8, threshold=5)
+\   t=4         shell 4 built after the substrate survived decay
+\
+\ Six snapshots demonstrate that Pilot~C's substrate not only
+\ grows under construction but persists through harsh autopoiesis,
+\ and that further construction is possible on a "weathered" cosmos.
+\
+\ Render with: make trace-pilot-c
+
+use prelude
+use graph
+use phi
+use dot
+use debug
+
+: snap-with ( label-num -- )
+  "=== SNAPSHOT shell-count=" .
+  .
+  "nodes=" . NODES .
+  "edges=" . EDGES .
+  "===" . cr
+  dot-snapshot ;
+
+\ ============================================================
+\ t=0 — the void plus first distinction
+\ ============================================================
+
+MARK "O" store
+"O" load 10 NSET
+
+0 snap-with
+
+\ ============================================================
+\ Cosmogenetic step
+\ ============================================================
+
+: build-shell
+  MARK "s1" store
+  MARK "s2" store
+  MARK "s3" store
+  "s1" load "s2" load bi-edge
+  "s2" load "s3" load bi-edge
+  "s3" load "s1" load bi-edge
+  "O"  load "s1" load bi-edge
+  "O"  load "s2" load bi-edge
+  "O"  load "s3" load bi-edge
+  "s1" load 10 NSET
+  "s2" load 10 NSET
+  "s3" load 10 NSET ;
+
+build-shell  1 snap-with
+build-shell  2 snap-with
+build-shell  3 snap-with
+
+\ ============================================================
+\ Apply harsh autopoietic dynamics — substrate must survive.
+\ ============================================================
+
+: phase-decay   NGET 8 - dup 0 < if drop 0 then ;
+: phase-restore dup NSUM 5 > if drop 10 else NGET then ;
+: cycle         ' phase-decay STEP-CA  ' phase-restore STEP-CA ;
+
+cycle cycle cycle cycle cycle
+cycle cycle cycle cycle cycle
+
+3 snap-with
+
+\ Verify substrate alive after decay
+"O" load NGET 10 assert-eq
+"O" load OUT  9 assert-eq
+
+\ ============================================================
+\ Build fourth shell on the weathered substrate
+\ ============================================================
+
+build-shell
+
+4 snap-with
+
+\ Final invariants
+NODES 13 assert-eq
+EDGES 48 assert-eq          \ no self-loop — Pilot C has no bootstrap distinction
+"O" load OUT 12 assert-eq
+"O" load NGET 10 assert-eq
+
+cr
+"=== Pilot C evolution traced ===" . cr
+"6 substrate snapshots emitted (0, 1, 2, 3, 3-decayed, 4)." . cr
+"Pipe to: python3 code/render_trace.py --out figures/pilot_c_trace.png" . cr
+
+REPORT

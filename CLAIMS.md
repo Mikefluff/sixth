@@ -8,21 +8,29 @@ three-tier map. The goal is honest scope: a referee reading the v9.0
 preprint or the released code should never have to guess which tier
 a given sentence belongs to.
 
-## Tier 1 — Proved by the tests (rackunit regression)
+**Single-command verification of Tier 1**: run `make verify`. The
+output prints `artifact status:  reproducible` if every Tier-1
+statement below holds against the released code; otherwise it prints
+`BROKEN` and exits non-zero. Tier 1 is therefore inspectable in one
+shell invocation without trust in this document.
+
+## Tier 1 — Proven by tests
 
 Statements in this tier are mechanically verified on every CI run by
-`raco test tests/examples-test.rkt`. Failure of any one of them is an
-immediate falsification trigger F0 of the v9.0 preprint.
+`raco test tests/examples-test.rkt` and the `make verify` summary
+target. Failure of any one of them is an immediate falsification
+trigger F0 of the v9.0 preprint.
 
 1. **The substrate exists as a 38-primitive language.** The Sixth
    engine compiles, the 38 primitives are exposed by
    `sixth/primitives/*.rkt`, the module loader resolves the stdlib,
    and a `#lang sixth` reader is registered.
 
-2. **All 37 demonstrations pass deterministically.** `examples-test.rkt`
-   asserts cumulative `pass=628 fail=0` across 37 demos covering
-   foundations (01–20), Pilots A–F (21–36), and the sacred hello
-   world (00).
+2. **All 40 demonstrations pass deterministically.** `examples-test.rkt`
+   asserts cumulative `pass=646 fail=0` across 40 demos covering
+   the sacred hello world (00), foundations (01–20), Pilots A–F
+   (21–36), and three visual-trace pilots (37 Pilot D, 38 Pilot C,
+   39 split-brain).
 
 3. **The Φ_PA stdlib word reproduces Definition def:phi-pa.** Demo 32
    asserts `phi-pa` on three canonical observers (non-reflexive
@@ -46,7 +54,7 @@ immediate falsification trigger F0 of the v9.0 preprint.
 These are properties of the released code. They do not depend on any
 metaphysical position.
 
-## Tier 2 — Demonstrated by construction (not corroborated on real data)
+## Tier 2 — Demonstrated by examples
 
 Statements in this tier are exhibited on synthetic or toy substrates
 inside the released artifact. They show that an encoding pipeline
@@ -89,7 +97,7 @@ Tier 2 buys: the substrate-encoding maps are not vapor — the released
 code instantiates each one structurally. Tier 2 does NOT buy:
 empirical corroboration on real systems.
 
-## Tier 3 — Philosophical conjecture under empirical falsifier
+## Tier 3 — Philosophical / research hypotheses
 
 Statements in this tier are not theorems and not yet empirically
 adjudicated. They are working hypotheses that the substrate makes

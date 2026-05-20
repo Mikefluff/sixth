@@ -1,0 +1,94 @@
+\ examples/39-trace-split-brain.6th
+\ Visual-trace pilot — Pilot F.3 split-brain (PSH4).
+\
+\ Builds the intact two-hemisphere brain of demo 35, snapshots it,
+\ then performs an in-place callosotomy via EDGE- and snapshots
+\ the result.  The same substrate is shown before and after the
+\ cut — visually demonstrating that the corpus-callosum severance
+\ is a substrate-readable operation, not a metaphor.
+\
+\ Two snapshots:
+\   t=0 intact      L1-R1 and L2-R2 corpus-callosum bi-edges present
+\   t=1 split       same connectivity, corpus callosum SEVERED
+\
+\ The per-snapshot label includes phi-pa and phi-integ so the
+\ rendered figure can be read alongside the values that show the
+\ basic measure indifferent (50000=50000) while the integration-
+\ weighted measure halves (400000 → 200000).
+\
+\ Render with: make trace-split-brain
+
+use prelude
+use graph
+use phi
+use dot
+use debug
+
+: snap-with ( label-num -- )
+  "=== SNAPSHOT case=" .
+  .
+  "nodes=" . NODES .
+  "edges=" . EDGES .
+  "===" . cr
+  dot-snapshot ;
+
+\ ============================================================
+\ Build intact brain (matches demo 35 case 1)
+\ ============================================================
+
+MARK "O" store
+MARK "L1" store  MARK "L2" store
+MARK "R1" store  MARK "R2" store
+
+"O" load "O" load EDGE+
+"O" load "L1" load EDGE+
+"O" load "L2" load EDGE+
+"O" load "R1" load EDGE+
+"O" load "R2" load EDGE+
+
+"L1" load "L2" load bi-edge
+"R1" load "R2" load bi-edge
+"L1" load "R1" load bi-edge        \ corpus callosum L-R top
+"L2" load "R2" load bi-edge        \ corpus callosum L-R bottom
+
+"L1" load "L1" load OUT NSET
+"L2" load "L2" load OUT NSET
+"R1" load "R1" load OUT NSET
+"R2" load "R2" load OUT NSET
+
+\ Intact baseline asserts.
+"O" load OUT 5 assert-eq
+"O" load phi-pa 50000 assert-eq
+"O" load phi-integ 400000 assert-eq
+
+0 snap-with                          \ intact snapshot
+
+\ ============================================================
+\ Callosotomy — sever corpus callosum bi-edges in place.
+\ ============================================================
+
+"L1" load "R1" load EDGE-
+"R1" load "L1" load EDGE-
+"L2" load "R2" load EDGE-
+"R2" load "L2" load EDGE-
+
+\ Re-load NGET = OUT of border nodes after cut.
+"L1" load "L1" load OUT NSET
+"L2" load "L2" load OUT NSET
+"R1" load "R1" load OUT NSET
+"R2" load "R2" load OUT NSET
+
+\ Split asserts.
+"O" load OUT 5 assert-eq             \ scope unchanged (matched baseline)
+"O" load phi-pa 50000 assert-eq      \ INDIFFERENT — basic Phi blind
+"O" load phi-integ 200000 assert-eq  \ HALVES — integration captured
+
+1 snap-with                          \ split-brain snapshot
+
+cr
+"=== Pilot F.3 split-brain visual trace ===" . cr
+"2 substrate snapshots — intact and post-callosotomy." . cr
+"phi-pa is invariant under the cut; phi-integ halves." . cr
+"Pipe to: python3 code/render_trace.py --out figures/split_brain_trace.png" . cr
+
+REPORT
