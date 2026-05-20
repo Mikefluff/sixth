@@ -185,27 +185,36 @@ _HIDDEN_KEYS = (set(_PRIMARY_KEYS) | set(_DELTA_KEYS) | set(_HEADER_KEYS)
 
 
 def _panel_title(meta: dict[str, str], idx: int) -> str:
-    """Compact per-panel title: step | event | n/e | Δn/Δe.
-    Heavy metadata (rule, seed, full edge list) lives in the figure
-    suptitle and the JSONL trace respectively."""
+    """Two-line per-panel title.
+    Line 1: step + event       (frame identity)
+    Line 2: n/e + Δn/Δe/Δlive  (size + per-step deltas)
+    Heavy metadata (rule, seed) lives in the figure suptitle.
+    Anything left over (nsum, nget, …) lands on a third line."""
     if not meta:
         return f"snapshot {idx}"
     lead = next(
         (f"{k}={meta[k]}" for k in _PRIMARY_KEYS if k in meta),
         f"#{idx}",
     )
-    pieces = [lead]
+    line1 = [lead]
     if "event" in meta:
-        pieces.append(meta["event"])
+        line1.append(meta["event"])
+
+    line2 = []
     if "nodes" in meta and "edges" in meta:
-        pieces.append(f"n={meta['nodes']} e={meta['edges']}")
+        line2.append(f"n={meta['nodes']} e={meta['edges']}")
     deltas = [f"{k}={meta[k]}" for k in _DELTA_KEYS if k in meta]
     if deltas:
-        pieces.append(" ".join(deltas))
+        line2.append(" ".join(deltas))
+
     extras = [f"{k}={v}" for k, v in meta.items() if k not in _HIDDEN_KEYS]
+
+    lines = ["  ·  ".join(line1)]
+    if line2:
+        lines.append("  ·  ".join(line2))
     if extras:
-        pieces.append(" ".join(extras))
-    return "  ".join(pieces)
+        lines.append(" ".join(extras))
+    return "\n".join(lines)
 
 
 def _figure_suptitle(snaps, fallback: str | None) -> str:
