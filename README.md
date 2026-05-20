@@ -23,17 +23,26 @@ Everything else — Peano arithmetic, causal time, fixed-point stability,
 autopoiesis, conscious evolution, a substrate-resident observer that
 bootstraps its own 13-node 49-edge cosmos, the substrate's own
 self-measurement via three candidate substrate-readable observability
-measures, and toy substrates instantiating the transformer / brain /
-split-brain / ant-colony encoding maps of the v9.0 preprint — is
-derived in 37 demos totaling 628 assertions.
+measures, toy substrates instantiating the transformer / brain /
+split-brain / ant-colony encoding maps of the v9.0 preprint, and a
+visual-trace pilot that renders Pilot D evolution as a multi-panel
+figure — is derived in 38 demos totaling 634 assertions.
 
 **What the substrate is and is not.** Sixth is a minimal executable
 substrate on which hypotheses about difference, pointers, self-
 reference, autopoiesis, and observation can be checked. It is NOT a
-claim to have solved consciousness. See [CLAIMS.md](./CLAIMS.md) for
-the explicit three-tier taxonomy separating what the tests prove,
-what the demos demonstrate on synthetic data, and what remains a
-philosophical conjecture under the v9.0 preprint's F5 falsifier.
+claim to have solved consciousness. Two parallel documents lay out
+the separation:
+
+- [CLAIMS.md](./CLAIMS.md) — three-tier taxonomy: what the tests
+  prove (Tier 1), what the demos demonstrate on synthetic data
+  (Tier 2), what remains a philosophical conjecture under the v9.0
+  preprint's F5 falsifier (Tier 3).
+- [LANGUAGE.md](./LANGUAGE.md) — Sixth as a stand-alone Forth-like
+  programming language, evaluable independently of any consciousness
+  or cosmology claim. "Read it if you want to know what Sixth IS
+  as a programming language, independent of any v9.0 preprint
+  claim."
 
 ## Pilots A–F
 
@@ -48,12 +57,13 @@ foundational demos (`01-numbers` … `20-conway-glider`, 352 ✓):
 | **D** Substrate-internally-driven cosmogenesis | 31 | 17 | Observer establishes its own self-loop at `t=0+` (the substrate-monist bootstrap distinction), then drives further construction via a substrate-readable halting predicate `NSUM(O) ≥ target-min` — no host counter, no programmer-chosen shell count. Closes the substrate-monism gap of Pilot C. |
 | **E** Substrate-internal `Φ_PA` measurement | 32 | 12 | `stdlib/phi.6th` defines `phi-pa = OUT(O) · [O EDGE? O] · L_max` from three primitives alone. Demo 32 verifies the worked values 0 / 50000 / 130000 across non-reflexive / reflexive / demo-31-shape observers. The substrate measures itself; consciousness's structural form is substrate-readable by the same 38 primitives that build it. |
 | **F** Encoding-map demonstrations | 33–36 | 46 | Toy substrates instantiating the preprint's substrate-encoding maps. F.1 (demo 33, transformer): single-pass Φ=0 (PSH1), KV-cache reuse Φ=40000 (PSH2). F.2 (demo 34, brain): waking Φ=80000 (PSH3 high), propofol Φ=0 (PSH3 low). F.3 (demo 35, split-brain): basic Φ_PA indifferent, Φ_integ halves at callosotomy (PSH4 motivates alt-measures). F.4 (demo 36, ant colony): living queen Φ=60000, dead 0 (PSH5). Real-data application is future work. |
+| **(trace)** Visual-trace pilot | 37 | 6 | Replays Pilot D with `dot-snapshot` after each shell-build cycle. Sixth's `stdlib/dot.6th` emits GraphViz DOT to stdout; `code/render_trace.py` parses snapshots and renders a multi-panel matplotlib figure. Generate via `make trace-pilot-d`. Honours the reviewer's request for visual instrumentation of substrate evolution. |
 
 The sacred hello world is `examples/00-first-distinction.6th`: one
 MARK, one boundary, one EDGE, one self-loop, one conflict, one
 resolve — Spencer-Brown's first mark realised in the substrate.
 
-Cumulative: 628 ✓ / 0 ✗ across 37 demos.
+Cumulative: 634 ✓ / 0 ✗ across 38 demos.
 
 ## Quickstart
 
@@ -91,17 +101,22 @@ sixth/        engine — lexer, parser, compiler, VM,
               38 primitives (15 base + 23 substrate), module loader,
               REPL, CLI, #lang sixth reader, PyTorch FFI bridges
 stdlib/       Sixth-language standard library (prelude, peano, graph,
-              grid, ca, bfs, debug, phi) — all helpers above the 38
-              primitives live here, none of them are themselves
+              grid, ca, bfs, debug, phi, dot) — all helpers above the
+              38 primitives live here, none of them are themselves
               primitives. phi.6th defines three candidate substrate-
-              readable observability measures (phi-pa, phi-integ,
-              phi-bidir) used by Pilots E and F.
-examples/     37 emergence demonstrations (00 hello + 01–36)
+              readable observability measures; dot.6th emits substrate
+              snapshots as GraphViz DOT for the visual-trace pilot.
+examples/     38 emergence demonstrations (00 hello + 01–36 + 37 trace)
+code/         Python tooling. render_trace.py reads dot.6th snapshots
+              from stdin and renders multi-panel matplotlib figures.
 tests/        rackunit suites — lexer, parser, VM, substrate, loader,
-              examples-test.rkt (regression gate at 628 ✓)
+              examples-test.rkt (regression gate at 634 ✓)
 CLAIMS.md     three-tier taxonomy: what is proved by tests / what is
               demonstrated on synthetic data / what remains a
               philosophical conjecture under F5
+LANGUAGE.md   Sixth as a stand-alone Forth-like programming language,
+              evaluable without engaging any cosmology / consciousness
+              claim of the v9.0 preprint
 docs/         Scribble manual — language reference, substrate
               foundations, stdlib word index, architecture notes,
               migration guide

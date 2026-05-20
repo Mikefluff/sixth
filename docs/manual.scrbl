@@ -11,17 +11,19 @@ time, space, conservation laws, particles, observers, and universal
 computation, then ascend through substrate-native autopoiesis,
 conscious evolution, and cosmogenesis bootstrap.
 
-@bold{Status:} engine + stdlib + 37 demos (sacred hello world +
-Pilots A--F, 628 ✓) + @litchar{#lang sixth} + Racket-FFI PyTorch
-bridges (shadow / diff / nn-cl) all working.  Pilot E adds three
-candidate substrate-readable observability measures
-(@litchar{phi-pa}, @litchar{phi-integ}, @litchar{phi-bidir}); Pilot F
-instantiates the preprint's transformer / brain / split-brain /
-ant-colony encoding maps on toy substrates, closing the engineering
-loop within the released artifact.  See @litchar{CLAIMS.md} for the
-three-tier taxonomy separating tests-prove / demos-demonstrate /
-philosophical-conjecture.  Reference implementation for the Pointer
-Architecture v9.0 preprint.
+@bold{Status:} engine + stdlib + 38 demos (sacred hello world +
+Pilots A--F + visual-trace pilot, 634 ✓) + @litchar{#lang sixth} +
+Racket-FFI PyTorch bridges (shadow / diff / nn-cl) all working.
+Pilot E adds three candidate substrate-readable observability
+measures (@litchar{phi-pa}, @litchar{phi-integ}, @litchar{phi-bidir});
+Pilot F instantiates the preprint's transformer / brain / split-brain
+/ ant-colony encoding maps on toy substrates; the visual-trace pilot
+(@litchar{stdlib/dot.6th} + @litchar{code/render_trace.py}) renders
+substrate evolution as a multi-panel figure via
+@exec{make trace-pilot-d}.  See @litchar{CLAIMS.md} for the three-
+tier taxonomy and @litchar{LANGUAGE.md} for Sixth as a stand-alone
+programming language separable from the v9.0 cosmology claims.
+Reference implementation for the Pointer Architecture v9.0 preprint.
 
 @table-of-contents[]
 
