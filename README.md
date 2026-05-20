@@ -1,13 +1,13 @@
 # Sixth
 
 > A minimal executable substrate language —
-> 38 primitives, 54 reproducible demos, 767 ✓ across them all,
+> 40 primitives, 54 reproducible demos, 769 ✓ across them all,
 > reference implementation for the Pointer Architecture v9.0 preprint.
 
 ```
 language tests:    ok
 substrate tests:   ok
-examples:          767 / 767 ✓ across 54 demos
+examples:          769 / 769 ✓ across 54 demos
 docs build:        ok
 ffi optional:      n/a
 renderer tests:    ok
@@ -54,7 +54,7 @@ raco pkg install --link .
 # Spencer-Brown's first mark — the sacred hello world
 racket -l sixth/cli -- run examples/00-first-distinction.6th
 
-# the whole regression — all 54 demos, all 767 assertions
+# the whole regression — all 54 demos, all 769 assertions
 make verify
 ```
 
@@ -73,7 +73,7 @@ foundational demos (`01-numbers` … `20-conway-glider`, 359 ✓):
 | **B** Conscious evolution                    | 26–29 | 88  | Symbiosis, reproduction with mutation, observer-driven selection (Lamarck-style, not blind Darwin), goal-directed observer behaviour. |
 | **C** Cosmogenesis bootstrap                 | 30    | 21  | 13-node 48-edge substrate constructed by a substrate-resident observer from one `MARK` at `t=0`; persists under harsh autopoietic decay. |
 | **D** Substrate-internally-driven cosmogenesis | 31  | 17  | Observer establishes its own self-loop at `t=0+` (substrate-monist bootstrap), then drives further construction via `NSUM(O) ≥ target-min` — no host counter. |
-| **E** Substrate-internal Φ_PA measurement     | 32   | 12  | `stdlib/phi.6th` ships three candidate measures: `phi-pa`, `phi-integ`, `phi-bidir`. Same 38 primitives that build the substrate also compute its consciousness scalar. |
+| **E** Substrate-internal Φ_PA measurement     | 32   | 12  | `stdlib/phi.6th` ships three candidate measures: `phi-pa`, `phi-integ`, `phi-bidir`. Same 40 primitives that build the substrate also compute its consciousness scalar. |
 | **F** Encoding-map demonstrations             | 33–36 | 46 | Toy substrates for PSH1–PSH5. F.1 transformer; F.2 brain; F.3 split-brain (motivates Φ_integ); F.4 ant colony. |
 | (trace) | 37–39 | 18 | DOT-rendered snapshots of Pilots D, C, F.3 via `stdlib/dot.6th` + `code/render_trace.py`. Single command `make traces`. |
 | (long)  | 40–41 | 19 | Parametric long-epoch pilots. Demo 40 = stable autopoiesis (after-decay/after-restore sub-cycle snapshots make the dynamics visible), demo 41 = growing substrate. CLI `-D max-cycles=N -D snap-every=K` drives arbitrary run lengths (TCO-safe). |
@@ -85,7 +85,7 @@ foundational demos (`01-numbers` … `20-conway-glider`, 359 ✓):
 | (Pilot F.2 trace) | 52 | 10 | Brain encoding (DMN hub + 7 cortical areas). PSH3 waking thalamocortical loop Φ_PA=80000; in-place EDGE- decouples → Φ_PA=0. `make trace-pilot-f2`. |
 | (Pilot F.4 trace) | 53 | 8 | Ant-colony encoding (queen + 5 trail junctions). PSH5 living colony with queen-pheromone self-loop Φ_PA=60000; in-place EDGE- severs loop → Φ_PA=0. `make trace-pilot-f4`. |
 
-Cumulative: **767 ✓ / 0 ✗ across 54 demos** (Pilots A–F core + 3 substrate-monism trace pilots + 2 long-epoch parametric + 5 foundation visual traces (Conway blinker/glider, Rule 110/90, 1D glider) + 2 atomic-build traces showing entity-by-entity emergence).
+Cumulative: **769 ✓ / 0 ✗ across 54 demos** (Pilots A–F core + 3 substrate-monism trace pilots + 2 long-epoch parametric + 5 foundation visual traces (Conway blinker/glider, Rule 110/90, 1D glider) + 2 atomic-build traces showing entity-by-entity emergence).
 
 ## Running and rendering
 
@@ -128,13 +128,13 @@ racket-mode) runs `.rkt` files starting with `#lang sixth`:
 ## Repository layout
 
 ```
-sixth/        engine — lexer, parser, compiler, VM, 38 primitives
-              (15 base + 23 substrate), module loader, REPL, CLI
+sixth/        engine — lexer, parser, compiler, VM, 40 primitives
+              (17 base + 23 substrate), module loader, REPL, CLI
               (`-D KEY=VAL` for parametric runs), `#lang sixth`
               reader, PyTorch FFI bridges
 stdlib/       Sixth-language standard library (prelude, peano,
-              graph, grid, ca, bfs, debug, phi, dot) — helpers
-              above the 38 primitives. phi.6th ships three
+              graph, bfs, debug, phi, dot) — helpers above the 40
+              primitives. phi.6th ships three
               candidate substrate-readable observability measures;
               dot.6th emits GraphViz DOT snapshots for the
               visual-trace pilots.
@@ -152,7 +152,7 @@ code/         Python tooling. render_trace.py reads dot.6th
               SVG / PDF or animated GIF.
 scripts/      verify.sh (artifact-status report; backs `make verify`)
 tests/        rackunit suites — lexer, parser, VM, substrate,
-              loader, examples-test.rkt (regression gate at 767 ✓)
+              loader, examples-test.rkt (regression gate at 769 ✓)
 docs/         Scribble manual + embedded README figure
 build/        regeneratable artefacts (raco scribble HTML, render
               outputs) — gitignored
@@ -193,8 +193,10 @@ native Racket FFI to libtorch (no Python in the path). Three shapes:
 - `diff.rkt`   — autograd-aware operations over substrate features
 - `nn.rkt`     — Substrate-NN continual-learning architecture
 
-Bridge tests run via `raco test tests/bridges/torch-test.rkt`; they
-skip cleanly if libtorch is absent.
+Bridge tests are advertised at `tests/bridges/torch-test.rkt` but the
+file has not yet been ported from the chibi-Scheme legacy tree;
+`tests/bridges/README.md` documents the gap. `verify.sh` reports
+`ffi optional: n/a` cleanly when the test file is absent.
 
 ## Reference
 
@@ -202,7 +204,7 @@ Sixth is the operational substrate behind:
 
 **Pointer Architecture v9.0** (preprint, pending arXiv submission).
 The paper defines `𝒮 = (G, R, C, A, π)` formally, maps it to Sixth's
-38 primitives, derives the candidate substrate-readable `Φ_PA`
+40 primitives, derives the candidate substrate-readable `Φ_PA`
 family of consciousness measures from Pilots A–F, and posits the
 substrate-monist identity thesis as a working hypothesis under the
 falsifier F5.

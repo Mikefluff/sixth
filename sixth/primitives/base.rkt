@@ -1,6 +1,7 @@
 #lang racket/base
 
-;; sixth/primitives/base.rkt — the 15 base Sixth primitives.
+;; sixth/primitives/base.rkt — the 17 base Sixth primitives
+;; (14 stack/arith/cmp/mem + 3 I/O).
 ;;
 ;; Each primitive is a 1-arg procedure (env -> void) that mutates the
 ;; env.  Registered into the env's primitive hash via `register-base!`.
@@ -43,7 +44,7 @@
 
 (define (bool->int b) (if b 1 0))
 
-;; ---- the 15 primitives ----
+;; ---- the 17 primitives ----
 
 (define (prim-dup e)  (push1 e (peek1 e)))
 (define (prim-drop e) (pop1 e))

@@ -58,10 +58,12 @@
                   (op-srcloc instr)))])])))
 
 ;; Treat false-y values as zero for branching.
+;; `(eq? 0.0 0.0)` is not guaranteed by Racket for boxed flonums,
+;; so use `zero?` with a number? guard for the float case.
 (define (zero-ish? v)
   (or (eq? v 0)
-      (eq? v 0.0)
-      (eq? v #f)))
+      (eq? v #f)
+      (and (number? v) (zero? v))))
 
 ;; ---- handling CALL with TCO ----
 

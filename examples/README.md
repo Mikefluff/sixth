@@ -3,7 +3,7 @@
 This directory holds Sixth's reproducible emergence demonstrations.
 Each file is a standalone Sixth program; `raco test
 tests/examples-test.rkt` (or `make verify`) executes all 54 and
-asserts a cumulative 767 ✓ / 0 ✗.
+asserts a cumulative 769 ✓ / 0 ✗.
 
 The demos are organised in fourteen phases:
 
@@ -402,7 +402,7 @@ realises.](../docs/figures/pa_ontological_shell.png)
 ## Pilot E visual trace (50)
 
 Demo 32 verified Φ_PA numerically but emitted no figure.  Pilot E
-is THE substrate-monism load-bearing demo (same 38 primitives BUILD
+is THE substrate-monism load-bearing demo (same 40 primitives BUILD
 and COMPUTE), so it deserves a visible trace.
 
 | Demo | File | ✓ | Property |
@@ -530,7 +530,7 @@ build/figures/<name>.{png|gif}
 
 The pipeline is pure Sixth → text → Python. No new primitives in
 the substrate; `stdlib/dot.6th` is composed from `EACH`,
-`EACH-EDGE`, `emit`, and `.` alone. The 38-primitive count is
+`EACH-EDGE`, `emit`, and `.` alone. The 40-primitive count is
 preserved by L0 of the v9.0 preprint.
 
 ## Adding your own demo
@@ -558,7 +558,7 @@ Register the demo in `tests/examples-test.rkt`:
     ("54-my-new-demo.6th"           N)))   ; N = expected ✓
 ```
 
-Update the cumulative gate (currently 767) and `make verify` passes
+Update the cumulative gate (currently 769) and `make verify` passes
 cleanly. To add a visual trace, `use dot` and emit `dot-snapshot`
 calls between substrate operations.
 

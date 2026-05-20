@@ -147,19 +147,47 @@ NODES 14 assert-eq
 
 3 "observer-min-bi-edges" store
 
-: reject-edge
-  "rd-dst" store
-  "rd-src" store
-  "rd-src" load "reject-id" load = if
-    "rd-src" load "rd-dst" load EDGE-
+\ Observer rejection — generalised to handle limb-internal edges.
+\ Old `reject-edge` severed only edges TOUCHING the rejected germ
+\ (asymmetric — if a variant had germ + 2 limbs with a limb↔limb
+\ edge, the limbs would survive the cut as a Darwinian rump,
+\ falsifying the Lamarck-vs-Darwin claim of the demo).
+\
+\ Three-pass rejection using NGET=99 as a temporary "rejected cluster"
+\ marker (99 ∉ vitality range 0..10):
+\   pass 1 — mark every direct neighbour of the rejected germ
+\   pass 2 — sever every edge with at least one marked endpoint
+\   pass 3 — set NGET=0 on every marked node (kills them; if any
+\            limb↔limb edge had existed, both endpoints are now
+\            marked AND isolated AND dead)
+
+: pass-mark-neighbours
+  "p1-dst" store
+  "p1-src" store
+  "p1-src" load "reject-id" load = if
+    "p1-dst" load 99 NSET
   then
-  "rd-dst" load "reject-id" load = if
-    "rd-src" load "rd-dst" load EDGE-
+  "p1-dst" load "reject-id" load = if
+    "p1-src" load 99 NSET
   then ;
+
+: pass-sever-edges
+  "p2-dst" store
+  "p2-src" store
+  "p2-src" load NGET 99 =
+  "p2-dst" load NGET 99 = + 0 > if
+    "p2-src" load "p2-dst" load EDGE-
+  then ;
+
+: pass-kill-marked
+  dup NGET 99 = if 0 NSET else drop then ;
 
 : observer-reject
   "reject-id" store
-  ' reject-edge EACH-EDGE ;
+  "reject-id" load 99 NSET            \ mark the germ itself
+  ' pass-mark-neighbours EACH-EDGE    \ mark direct neighbours
+  ' pass-sever-edges     EACH-EDGE    \ sever everything touching marked
+  ' pass-kill-marked     EACH ;       \ NGET=0 on the rejected cluster
 
 \ Apply observer's test
 : maybe-reject

@@ -46,7 +46,7 @@ two tokens (`EDGE+`), or a transformation of those relations
 
 The 54 demonstrations live in `examples/` (file-by-file index in
 [`examples/README.md`](./examples/README.md)). Each isolates a
-single derivation chain, organised in thirteen phases:
+single derivation chain, organised in fourteen phases:
 
 - **00** — sacred hello world (Spencer-Brown's first mark)
 - **01–20** — foundations: arithmetic, time, space, conservation
@@ -59,22 +59,31 @@ single derivation chain, organised in thirteen phases:
 - **33–36** Pilot F — encoding-map demonstrations (transformer / brain
   / split-brain / colony)
 - **37–39** — substrate-monism visual traces (Pilots D, C, F.3)
-- **40–41** — long-epoch parametric pilots
+- **40–41** — long-epoch parametric pilots (40 with after-decay /
+  after-restore sub-cycle snapshots for visible autopoiesis dynamics)
 - **42–46** — foundation visual traces (Conway, Wolfram CA)
-- **47–48** — atomic-build traces (one snapshot per primitive operation)
+- **47–48** — atomic-build traces (one snapshot per primitive
+  operation; 47 with PA primitive labels `distinction`/`pointer`/
+  `state-attach`; 48 with PA-ontological event labels `void`,
+  `first-distinction`, `observer-state`, `i-not-i`, `first-pointer`,
+  `re-entry`, `phi-pa-measurement`)
 - **49** — PA-ontological shell decomposition (unfolds the first
-  shell of demo 31 into Spencer-Brown / PA v9.0 events: `void`,
-  `first-distinction`, `re-entry`, `i-not-i`, `first-pointer`,
-  `recognition`, `closure-of-not-i`, `shell-formation`)
+  shell of demo 31 into 11 Spencer-Brown / PA v9.0 events: `void`,
+  `first-distinction`, `observer-state`, `re-entry`,
+  `second-distinction`, `i-not-i-relation`, `recognition`,
+  `second-not-i`, `closure-of-not-i`, `o-other-closure`, `state-fill`)
+- **50** — Pilot E visual trace (3 observers × Φ_PA)
+- **51–53** — Pilot F.1/F.2/F.4 visual traces (PSH1/PSH2/PSH3/PSH5
+  discriminators visible)
 
-All 767 assertions pass deterministically. Run the regression in
+All 769 assertions pass deterministically. Run the regression in
 one command:
 
 ```bash
 make verify
 # language tests:    ok
 # substrate tests:   ok
-# examples:          767 / 767 ✓ across 54 demos
+# examples:          769 / 769 ✓ across 54 demos
 # docs build:        ok
 # artifact status:   reproducible
 ```
@@ -234,7 +243,7 @@ sufficient for the released demos and can be extended further.
 cd /Users/mikefluff/Documents/Programming/sixt
 raco pkg install --link .          # install the Sixth Racket collection
 
-# the whole regression — all 54 demos, all 767 assertions
+# the whole regression — all 54 demos, all 769 assertions
 make verify
 
 # any single demo

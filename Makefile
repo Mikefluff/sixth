@@ -431,7 +431,7 @@ verify-figures:
 	@bash scripts/verify_figures.sh
 
 # Render every figure the repository ships — static PNGs, animated GIFs,
-# forensic PNG + JSONL + diff for all 11 trace-grade demos.  Idempotent;
+# forensic PNG + JSONL + diff for all 16 trace-grade demos.  Idempotent;
 # safe to re-run.  Output under build/figures/.
 all-figures: traces gifs foundation-gifs atomic-gifs forensic-all \
              trace-conway-blinker trace-conway-glider \

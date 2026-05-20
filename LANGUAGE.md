@@ -21,7 +21,7 @@ beginning with `#lang sixth` runs as a Sixth program via standard
 `raco`.
 
 The primitive count is the project's load-bearing engineering
-constraint: 15 base primitives + 23 substrate primitives. Everything
+constraint: 17 base primitives + 23 substrate primitives. Everything
 else — control flow helpers, Peano arithmetic, graph constructors,
 cellular automaton rules, BFS, the substrate-monist observability
 measures of `stdlib/phi.6th` — is written *in Sixth itself*,
@@ -51,7 +51,7 @@ the first tier is plain stack/arithmetic/control.
 If you reject every interpretive claim of the v9.0 preprint, Sixth
 still gives you: a Forth-like language with `#lang sixth` integration,
 a hypergraph rewriting engine with 23 substrate primitives, 54 demos
-of emergence from 15+23 base operations, a Racket-FFI PyTorch bridge,
+of emergence from 17+23 base operations, a Racket-FFI PyTorch bridge,
 and a Scribble-rendered manual.
 
 ## Stack language quick reference
@@ -90,16 +90,20 @@ if … else … then
 ## Module system
 
 ```sixth
-use prelude        \ auto-loaded unless --no-prelude
-use peano          \ Peano arithmetic (zero, succ, peano-add, ...)
-use graph          \ bi-edge, tri-edge, clique, chain-of
-use grid           \ grid-2d for Moore / von Neumann lattices
-use ca             \ ca-init, rule90, rule110, rule184, conway-rule
-use bfs            \ eff-dist, bfs-step, relax-edge
-use debug          \ assert, assert-eq, dump-stack, words, trace
-use phi            \ candidate substrate-readable observability measures
-use dot            \ DOT-format graph snapshot (visual-trace pilot)
+use prelude        \ 2dup 2drop nip tuck rot -rot 1+ 1- not >= <= ...
+use peano          \ Peano arithmetic (zero, succ, peano-add, peano-mul)
+use graph          \ bi-edge  (only — clique/chain/tri-edge not shipped)
+use bfs            \ eff-dist, bfs-init, bfs-step, relax-edge
+use debug          \ assert-eq  (only — dump-stack/trace/words not shipped)
+use phi            \ phi-pa, phi-integ, phi-bidir, phi-self-ref, phi-L-max
+use dot            \ dot-snapshot, dot-snapshot-state, dot-header, ...
 ```
+
+Note: this stdlib set is what the released artefact ships.  Some
+larger helpers advertised in earlier drafts (`grid`, `ca`, `math`
+modules; `clique`, `chain-of`, `tri-edge`, `dump-stack`, `words`,
+`trace`) are not yet implemented; demos that need 2-D grids inline
+their construction (see demos 14, 19, 20).
 
 Module loader resolves names against `SIXTH_PATH`. A `.6th` file
 under the search path is a module; its top-level forms execute on
@@ -166,10 +170,10 @@ rendered as five panels (shell-count 0..4); render with
 
 ## Engineering invariants
 
-- 38 primitives. No promotion of stdlib to primitive without
+- 40 primitives. No promotion of stdlib to primitive without
   documented justification.
-- 767 ✓ across 54 demos. The regression gate
-  (`tests/examples-test.rkt`) enforces `pass=767 fail=0`. Single-
+- 769 ✓ across 54 demos. The regression gate
+  (`tests/examples-test.rkt`) enforces `pass=769 fail=0`. Single-
   command verification: `make verify`. Parametric / long-epoch
   runs via the CLI `-D KEY=VAL` flag (see `examples/40-long-epoch-
   autopoiesis.6th` and `examples/41-long-epoch-growth.6th`).

@@ -71,20 +71,19 @@
   (define e (run-src ": zero MARK ; zero IN"))
   (check-equal? (car (env-stack e)) 0))
 
-(test-case "Peano: succ chains nodes; PREV traces back"
+(test-case "Peano: succ chains nodes; PREV traces back to root"
   (define e (run-src ": 2dup over over ;
                        : nip swap drop ;
                        : succ MARK 2dup EDGE+ nip ;
                        MARK succ succ succ
-                       dup IN PREV PREV PREV IN"))
-  ;; we built a chain 1→2→3→4; final node 4 on stack
-  ;; dup IN: ( 4 1 ); PREV PREV PREV: ( 4 1 1 ) wait need to think
-  ;; Actually trace:
-  ;; MARK succ succ succ : stack ( 4 )
-  ;; dup IN : ( 4 1 ) — 4 has in-count 1
-  ;; PREV : ( 4 1 ) ... wait PREV needs a node. Stack top is 1, not 4.
-  ;; This test is mis-designed. Let me just check IN of last node.
-  (check-equal? (car (env-stack e)) 0))   ; PREV chain reached node with IN=0 (zero)
+                       PREV PREV PREV IN"))
+  ;; Built chain 1→2→3→4 (node 4 has IN-edge from node 3, etc.)
+  ;; Stack after MARK succ succ succ: ( 4 ).  Then:
+  ;;   PREV  →  ( 3 )      (node 3 is the predecessor of 4)
+  ;;   PREV  →  ( 2 )
+  ;;   PREV  →  ( 1 )      (root)
+  ;;   IN    →  ( 0 )      (root has no incoming edge → IN=0)
+  (check-equal? (car (env-stack e)) 0))
 
 (test-case "Peano value via recursion: 0→0, succ→1, succ succ→2"
   (define src ": 2dup over over ;
@@ -184,5 +183,81 @@
                 1 NGET 2 NGET 3 NGET")
   (define e (run-src src))
   (check-equal? (env-stack e) '(1 1 1)))
+
+;; -----------------------------------------------------------------
+;; Round-2 audit coverage gaps — EDGE-, EACH-2PATH, NEXT, NGET/NSUM
+;; on unset nodes, BORN on never-marked node.
+;; -----------------------------------------------------------------
+
+(test-case "EDGE- removes an existing directed edge"
+  ;; Build edge 1→2, count (1), remove, recount (0), query (0).
+  (define e (run-src ": 2dup over over ;
+                       : 2drop drop drop ;
+                       MARK MARK 2dup EDGE+ 2drop
+                       EDGES
+                       1 2 EDGE-
+                       EDGES
+                       1 2 EDGE?"))
+  (check-equal? (env-stack e) '(0 0 1)))
+
+(test-case "EDGE- on missing edge is a no-op"
+  (define e (run-src "MARK MARK 1 2 EDGE- EDGES"))
+  (check-equal? (car (env-stack e)) 0))
+
+(test-case "NEXT returns out-neighbour of a node"
+  (define e (run-src "MARK MARK MARK
+                       1 2 EDGE+   1 3 EDGE+
+                       1 NEXT"))
+  ;; NEXT returns one of the out-neighbours; either 2 or 3 is acceptable.
+  (define v (car (env-stack e)))
+  (check-true (or (= v 2) (= v 3))))
+
+(test-case "NGET on unset node returns 0"
+  (define e (run-src "MARK NGET"))
+  (check-equal? (car (env-stack e)) 0))
+
+(test-case "NSUM on isolated node returns 0"
+  (define e (run-src "MARK 10 NSET   1 NSUM"))
+  (check-equal? (car (env-stack e)) 0))
+
+(test-case "BORN on never-marked node returns -1 (sentinel)"
+  ;; Node id 999 was never MARKed.
+  (define e (run-src "999 BORN"))
+  (check-equal? (car (env-stack e)) -1))
+
+(test-case "EACH on empty substrate is a no-op"
+  (define src ": tag 99 NSET ;
+                ' tag EACH
+                NODES")
+  (define e (run-src src))
+  (check-equal? (car (env-stack e)) 0))
+
+(test-case "EACH-2PATH iterates length-2 paths"
+  ;; Chain 1→2→3 has one length-2 path (1, 2, 3).
+  (define src (string-append
+                ": count-2path drop drop drop "
+                "  " (string #\") "count-2p" (string #\")
+                " load 1 + " (string #\") "count-2p" (string #\") " store ;\n"
+                "0 " (string #\") "count-2p" (string #\") " store\n"
+                "MARK MARK MARK\n"
+                "1 2 EDGE+   2 3 EDGE+\n"
+                "' count-2path EACH-2PATH\n"
+                (string #\") "count-2p" (string #\") " load"))
+  (define e (run-src src))
+  (check-equal? (car (env-stack e)) 1))
+
+(test-case "RESET-then-MARK starts fresh node IDs"
+  (define e (make-test-env))
+  (with-output-to-string
+    (lambda () (run-on e "MARK MARK MARK RESET MARK"))) ; → node id 1 again
+  (check-equal? (substrate-node-count (env-substrate e)) 1))
+
+(test-case "REPORT writes counts to stdout"
+  (define e (make-test-env))
+  ;; run-on already wraps run! in with-output-to-string and returns
+  ;; the captured string — don't double-wrap.
+  (define out (run-on e "MARK MARK 1 ASSERT 0 ASSERT REPORT"))
+  (check-true (regexp-match? #rx"pass=" out))
+  (check-true (regexp-match? #rx"fail=" out)))
 
 (displayln "substrate tests: all pass")

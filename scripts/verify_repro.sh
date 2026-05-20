@@ -52,6 +52,16 @@ check_repro () {
               --out /dev/null --jsonl "$out" >/dev/null 2>&1
     done
 
+    # Guard: both JSONLs must exist and be non-empty.  Without this
+    # check, a renderer crash on both runs leaves two empty files;
+    # hash_cmd returns empty for both, and the equality test would
+    # wrongly report "ok (…)" with an empty hash prefix.
+    if [ ! -s "$a" ] || [ ! -s "$b" ]; then
+        printf "  %-32s MISSING (renderer produced no JSONL)\n" "$slug"
+        FAIL=1
+        return
+    fi
+
     local ha hb
     ha=$(hash_cmd "$a")
     hb=$(hash_cmd "$b")
@@ -71,7 +81,7 @@ done
 
 echo
 if [ "$FAIL" -eq 0 ]; then
-    printf "%-18s %s\n" "repro status:" "deterministic (11 demos × 2 runs identical)"
+    printf "%-18s %s\n" "repro status:" "deterministic (16 demos × 2 runs identical)"
     exit 0
 else
     printf "%-18s %s\n" "repro status:" "NON-DETERMINISTIC"

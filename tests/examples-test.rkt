@@ -2,11 +2,12 @@
 
 ;; tests/examples-test.rkt — regression gate.
 ;;
-;; Runs each of the 20 migrated emergence demos and asserts the cumulative
-;; ✓ pass count is unchanged.  Per the refactor plan: "all 320 assertions
-;; must still pass."  Counting ✓ marks printed during the run, the
-;; expected total is 352 (engine prints ✓ for every successful ASSERT,
-;; including post-RESET ones the REPORT line does not cumulate).
+;; Runs each of the 54 emergence demos and asserts the cumulative
+;; ✓ pass count is unchanged at 769.  Each demo's expected pass
+;; count is listed in the `expected` table below; the sum must
+;; equal the gate constant.  Counting ✓ marks printed during the
+;; run (engine prints ✓ for every successful ASSERT, including
+;; post-RESET ones the REPORT line does not cumulate).
 
 (require rackunit
          racket/file
@@ -54,7 +55,7 @@
     ("26-symbiosis.6th"                18)
     ("27-reproduction.6th"             31)
     ("28-conscious-mutation.6th"       18)
-    ("29-goal-directed-observer.6th"   21)
+    ("29-goal-directed-observer.6th"   23)
     ("30-cosmogenesis-bootstrap.6th"   21)
     ;; Phase L — observer-driven cosmogenesis (substrate-monist)
     ("31-observer-driven-cosmogenesis.6th" 17)
@@ -112,8 +113,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 767
-                (format "cumulative ✓ count: ~a (expected 767)" total-pass)))
+  (check-equal? total-pass 769
+                (format "cumulative ✓ count: ~a (expected 769)" total-pass)))
 
-(displayln (format "examples regression: ~a / 767 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 769 ✓ across ~a demos"
                    total-pass (length expected)))

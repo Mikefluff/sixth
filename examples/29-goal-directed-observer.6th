@@ -1,17 +1,28 @@
 \ examples/29-goal-directed-observer.6th — substrate-native teleology.
 \
 \ Claim demonstrated:
-\   An observer holds a TARGET TOPOLOGY (here: a 5-node bi-edge ring).
-\   It defines a substrate-native DISTANCE METRIC — count of target
-\   edges absent from the current substrate — using only the EDGE?
-\   primitive.  Each application of the observer's BIAS RULE finds
-\   the first missing target-edge and EDGE+s it.  Distance decreases
-\   monotonically; substrate evolves toward the observer's intended
-\   form.
+\   An observer holds a TARGET TOPOLOGY (here: a 5-node bi-edge ring)
+\   as a TAGGED SUBGRAPH inside the substrate itself.  Tag = NGET 7
+\   on target nodes (chosen non-overlapping with vitality 0..10).
+\
+\   A substrate-native DISTANCE METRIC counts target directed edges
+\   absent from the WORKING subgraph by walking EACH-EDGE over the
+\   substrate, gating on NGET=7 on both endpoints, then looking up
+\   the corresponding working pair via positional offset (working =
+\   target + 5).  No hardcoded edge list, no per-target-edge EDGE?
+\   query unrolled in source; the target is genuinely substrate-
+\   readable and the observer can in principle handle a different
+\   target topology by editing the substrate alone.
+\
+\   Each observer-bias application walks EACH-EDGE, finds the first
+\   target edge whose working counterpart is missing, EDGE+s the
+\   bi-edge into working, sets a done flag to short-circuit.  Distance
+\   decreases monotonically; substrate evolves toward the observer's
+\   intended form.
 \
 \   This is substrate-level teleology: structure pulled toward a goal
-\   by a substrate-resident observer.  No optimization, no gradient —
-\   just sequential application of "make-it-so" operations.
+\   by a substrate-resident observer.  The target lives in the
+\   substrate; the observer reads it from there.
 
 use prelude
 use peano
@@ -19,7 +30,29 @@ use graph
 use debug
 
 \ ============================================================
-\ Five substrate nodes; ring target
+\ Build the TARGET subgraph — 5-node bi-edge ring t1..t5
+\ (substrate nodes 1..5), tagged NGET=7.
+\ ============================================================
+
+zero "t1" store
+zero "t2" store
+zero "t3" store
+zero "t4" store
+zero "t5" store
+
+"t1" load "t2" load bi-edge
+"t2" load "t3" load bi-edge
+"t3" load "t4" load bi-edge
+"t4" load "t5" load bi-edge
+"t5" load "t1" load bi-edge
+
+"t1" load 7 NSET   "t2" load 7 NSET   "t3" load 7 NSET
+"t4" load 7 NSET   "t5" load 7 NSET
+
+\ ============================================================
+\ Build the WORKING subgraph — 5 nodes n1..n5 (substrate
+\ nodes 6..10), initial topology n1↔n2 only.
+\ Convention: working_id = target_id + 5.
 \ ============================================================
 
 zero "n1" store
@@ -28,66 +61,62 @@ zero "n3" store
 zero "n4" store
 zero "n5" store
 
-\ Initial topology — only n1 ↔ n2 (1 of 5 target bi-edges)
 "n1" load "n2" load bi-edge
 
-\ Target = a closed 5-cycle of bi-edges:
-\   n1↔n2  n2↔n3  n3↔n4  n4↔n5  n5↔n1
-\ → 10 target directed edges in total.
+NODES 10 assert-eq
+EDGES 12 assert-eq                \ 10 target + 2 working directed
 
 \ ============================================================
-\ Substrate-native distance metric
+\ Substrate-readable distance — walk EACH-EDGE over target
+\ edges, count how many are missing in working.
 \ ============================================================
-\
-\ distance ( -- d )
-\   Returns count of target edges missing from current substrate.
-\   Uses EDGE? on each of the 10 target directed edges.
 
-: distance
-  10
-  "n1" load "n2" load EDGE? -
-  "n2" load "n1" load EDGE? -
-  "n2" load "n3" load EDGE? -
-  "n3" load "n2" load EDGE? -
-  "n3" load "n4" load EDGE? -
-  "n4" load "n3" load EDGE? -
-  "n4" load "n5" load EDGE? -
-  "n5" load "n4" load EDGE? -
-  "n5" load "n1" load EDGE? -
-  "n1" load "n5" load EDGE? - ;
+0 "missing-count" store
+
+: tally-missing ( src dst -- )
+  "tm-dst" store
+  "tm-src" store
+  "tm-src" load NGET 7 =
+  "tm-dst" load NGET 7 = + 2 = if
+    "tm-src" load 5 + "tm-dst" load 5 + EDGE? not if
+      "missing-count" load 1 + "missing-count" store
+    then
+  then ;
+
+: distance ( -- N )
+  0 "missing-count" store
+  ' tally-missing EACH-EDGE
+  "missing-count" load ;
 
 distance 8 assert-eq
 
 \ ============================================================
-\ Observer's bias rule
+\ Observer's bias rule — walks EACH-EDGE, finds first missing
+\ target edge in canonical (lower-id-first) order, lays down
+\ the working bi-edge, sets done flag to skip the rest.
 \ ============================================================
-\
-\ One application = add the first missing ring bi-edge in canonical
-\ order (n2-n3, n3-n4, n4-n5, n5-n1).  A "done" flag short-circuits
-\ subsequent additions so each call lays down exactly one bi-edge.
+
+: add-first-missing-bi-edge ( src dst -- )
+  "am-dst" store
+  "am-src" store
+  "done" load 0 = if
+    "am-src" load NGET 7 =
+    "am-dst" load NGET 7 = + 2 = if
+      "am-src" load "am-dst" load < if       \ canonical ordering
+        "am-src" load 5 + "am-dst" load 5 +
+        2dup EDGE? not if
+          bi-edge
+          1 "done" store
+        else
+          drop drop
+        then
+      then
+    then
+  then ;
 
 : observer-bias
   0 "done" store
-
-  "n2" load "n3" load EDGE? not  "done" load 0 = *  if
-    "n2" load "n3" load bi-edge
-    1 "done" store
-  then
-
-  "n3" load "n4" load EDGE? not  "done" load 0 = *  if
-    "n3" load "n4" load bi-edge
-    1 "done" store
-  then
-
-  "n4" load "n5" load EDGE? not  "done" load 0 = *  if
-    "n4" load "n5" load bi-edge
-    1 "done" store
-  then
-
-  "n5" load "n1" load EDGE? not  "done" load 0 = *  if
-    "n5" load "n1" load bi-edge
-    1 "done" store
-  then ;
+  ' add-first-missing-bi-edge EACH-EDGE ;
 
 \ ============================================================
 \ Step-by-step convergence toward the target
@@ -105,10 +134,12 @@ distance 2 assert-eq
 observer-bias
 distance 0 assert-eq
 
-\ Target reached — observer's intent matched the substrate.
-EDGES 10 assert-eq
+EDGES 20 assert-eq                \ 10 target + 10 working = 20
 
-\ Verify every target edge is present.
+\ ============================================================
+\ Verify every target edge has its working counterpart
+\ ============================================================
+
 "n1" load "n2" load EDGE? ASSERT
 "n2" load "n3" load EDGE? ASSERT
 "n3" load "n4" load EDGE? ASSERT
@@ -120,13 +151,16 @@ EDGES 10 assert-eq
 "n5" load "n4" load EDGE? ASSERT
 "n1" load "n5" load EDGE? ASSERT
 
-\ Idempotence: applying bias once more changes nothing.
+\ Idempotence: applying bias once more changes nothing structurally.
 observer-bias
 distance 0 assert-eq
-EDGES 10 assert-eq
+EDGES 20 assert-eq
 
 \ ============================================================
-\ The ring is now autopoietic (demo 25').  Verify under decay.
+\ The working ring is now autopoietic.  Verify under decay.
+\ NGET on working nodes is set to vitality 10 (overwriting any
+\ leftover tag); target tag becomes irrelevant past this point
+\ since distance is no longer queried.
 \ ============================================================
 
 "n1" load 10 NSET   "n2" load 10 NSET   "n3" load 10 NSET

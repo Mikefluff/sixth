@@ -9,9 +9,11 @@
 # Output format:
 #   language tests:   ok
 #   substrate tests:  ok
-#   examples:         634 / 634 ✓ across 38 demos
+#   examples:         769 / 769 ✓ across 54 demos
 #   docs build:       ok
-#   ffi optional:     skipped (libtorch absent)
+#   ffi optional:     n/a   (libtorch bridges not yet shipped)
+#   renderer tests:   ok
+#   figures fresh:    ok (16 forensic JSONL traces match)
 #   artifact status:  reproducible
 #
 # Any failure exits non-zero and prints "artifact status:  BROKEN".
@@ -43,7 +45,7 @@ else
     FAIL=1
 fi
 
-# ---- examples regression (628 ✓ across 38 demos style) ----
+# ---- examples regression (769 ✓ across 54 demos style) ----
 EX_OUT=$(raco test tests/examples-test.rkt 2>&1 || true)
 EX_LINE=$(printf "%s\n" "$EX_OUT" | grep -oE 'examples regression: [0-9]+ / [0-9]+ ✓ across [0-9]+ demos' | head -1)
 if [ -n "$EX_LINE" ] && printf "%s\n" "$EX_OUT" | grep -q "tests passed"

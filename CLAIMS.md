@@ -21,13 +21,13 @@ Statements in this tier are mechanically verified on every CI run by
 target. Failure of any one of them is an immediate falsification
 trigger F0 of the v9.0 preprint.
 
-1. **The substrate exists as a 38-primitive language.** The Sixth
-   engine compiles, the 38 primitives are exposed by
+1. **The substrate exists as a 40-primitive language.** The Sixth
+   engine compiles, the 40 primitives are exposed by
    `sixth/primitives/*.rkt`, the module loader resolves the stdlib,
    and a `#lang sixth` reader is registered.
 
-2. **All 50 demonstrations pass deterministically.** `examples-test.rkt`
-   asserts cumulative `pass=767 fail=0` across 54 demos covering
+2. **All 54 demonstrations pass deterministically.** `examples-test.rkt`
+   asserts cumulative `pass=769 fail=0` across 54 demos covering
    the sacred hello world (00), foundations (01–20), Pilots A–F
    (21–36), three substrate-monism visual-trace pilots (37 Pilot D,
    38 Pilot C, 39 split-brain), two long-epoch parametric pilots
@@ -35,11 +35,13 @@ trigger F0 of the v9.0 preprint.
    Conway blinker, 43 Conway glider, 44 Rule 110, 45 Rule 90, 46
    Rule 184 1D glider), two atomic-build traces (47 Pilot D one
    primitive per frame, 48 sacred hello world atomic with PA-
-   ontological event labels), and the PA-ontological shell
+   ontological event labels), the PA-ontological shell
    decomposition (49) that unfolds the first shell of demo 31
-   into Spencer-Brown / PA v9.0 events (`void` → `first-distinction`
-   → `re-entry` → `i-not-i` → `first-pointer` → `recognition` →
-   `closure-of-not-i` → `shell-formation`).
+   into Spencer-Brown / PA v9.0 events (`void → first-distinction
+   → observer-state → re-entry → second-distinction → i-not-i-relation
+   → recognition → second-not-i → closure-of-not-i → o-other-closure
+   → state-fill`), Pilot E visual trace (50), and Pilot F.1/F.2/F.4
+   visual traces (51–53).
 
 3. **The Φ_PA stdlib word reproduces Definition def:phi-pa.** Demo 32
    asserts `phi-pa` on three canonical observers (non-reflexive
