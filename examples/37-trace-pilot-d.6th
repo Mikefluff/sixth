@@ -26,12 +26,14 @@ use debug
 \ Snapshot helper — sentinel + dot-snapshot
 \ ============================================================
 
+"bootstrap-self-loop" "event" store
+
 : snap ( -- )
   "=== SNAPSHOT step=" .
   "shell-count" load .
   "rule=" . "pilot-d-shell-build" .
   "seed=" . "single-MARK-self-loop" .
-  "event=" . "shell-built" .
+  "event=" . "event" load .
   "shell-count=" . "shell-count" load .
   "observer=" . "O" load .
   "nodes=" . NODES .
@@ -66,6 +68,7 @@ snap
   "shell-count" load 1 + "shell-count" store ;
 
 \ Build 4 shells and snapshot after each.
+"shell-built" "event" store
 build-shell snap
 build-shell snap
 build-shell snap

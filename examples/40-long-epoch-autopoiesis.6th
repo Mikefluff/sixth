@@ -69,12 +69,14 @@ NODES 4 assert-eq
 \ can highlight the right node)
 \ ============================================================
 
+"initial-state" "event" store
+
 : snap-with ( i -- )
   "=== SNAPSHOT cycle=" .
   .
   "rule=" . "phase-decay+phase-restore" .
   "seed=" . "observer+3-ring" .
-  "event=" . "autopoiesis-cycle" .
+  "event=" . "event" load .
   "observer=" . "O" load .
   "nodes=" . NODES .
   "edges=" . EDGES .
@@ -101,6 +103,7 @@ NODES 4 assert-eq
 
 \ Snapshot t=0 baseline before the loop.
 0 snap-with
+"autopoiesis-cycle" "event" store
 
 \ Run the epoch.
 epoch-step

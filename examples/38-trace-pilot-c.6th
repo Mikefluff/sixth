@@ -22,7 +22,7 @@ use phi
 use dot
 use debug
 
-"void+first-mark" "event" store
+"initial-state" "event" store
 
 : snap-with ( label-num -- )
   "=== SNAPSHOT shell-count=" .

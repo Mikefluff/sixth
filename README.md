@@ -13,7 +13,7 @@ artifact status:   reproducible
 ```
 
 ![Pilot D evolution — substrate-internally-driven cosmogenesis,
-shell-count 0 → 4, observer node in red.](./docs/pilot_d_trace.png)
+shell-count 0 → 4, observer node in red.](./docs/figures/pilot_d_trace.png)
 
 ## What this is
 
@@ -69,7 +69,9 @@ foundational demos (`01-numbers` … `20-conway-glider`, 352 ✓):
 | **E** Substrate-internal Φ_PA measurement     | 32   | 12  | `stdlib/phi.6th` ships three candidate measures: `phi-pa`, `phi-integ`, `phi-bidir`. Same 38 primitives that build the substrate also compute its consciousness scalar. |
 | **F** Encoding-map demonstrations             | 33–36 | 46 | Toy substrates for PSH1–PSH5. F.1 transformer; F.2 brain; F.3 split-brain (motivates Φ_integ); F.4 ant colony. |
 | (trace) | 37–39 | 18 | DOT-rendered snapshots of Pilots D, C, F.3 via `stdlib/dot.6th` + `code/render_trace.py`. Single command `make traces`. |
-| (long)  | 40    | 11 | Parametric long-epoch autopoiesis. CLI `-D max-cycles=N -D snap-every=K` drives arbitrary run lengths (TCO-safe). |
+| (long)  | 40–41 | 16 | Parametric long-epoch pilots. Demo 40 = stable autopoiesis (structurally invariant), demo 41 = growing substrate. CLI `-D max-cycles=N -D snap-every=K` drives arbitrary run lengths (TCO-safe). |
+| (foundation visual) | 42–46 | 30 | State-aware DOT traces — Conway blinker / glider, Wolfram Rule 110 / 90, Rule 184 1D glider. Per-cell NGET colours alive=red / dead=grey. `make foundation-gifs`. |
+| (atomic) | 47–48 | 10 | One snapshot per primitive operation. Demo 47 = Pilot D in 76 frames; demo 48 = sacred hello world in 7 frames. Entity-by-entity emergence through `MARK` and `EDGE+` alone. `make atomic-gifs`. |
 
 Cumulative: **702 ✓ / 0 ✗ across 49 demos** (Pilots A–F core + 3 substrate-monism trace pilots + 2 long-epoch parametric + 5 foundation visual traces (Conway blinker/glider, Rule 110/90, 1D glider) + 2 atomic-build traces showing entity-by-entity emergence).
 
@@ -124,8 +126,11 @@ stdlib/       Sixth-language standard library (prelude, peano,
               candidate substrate-readable observability measures;
               dot.6th emits GraphViz DOT snapshots for the
               visual-trace pilots.
-examples/     41 emergence demonstrations
-              (00 hello + 01–36 + 37–39 traces + 40 long-epoch)
+examples/     49 emergence demonstrations
+              (00 hello + 01–20 foundations + 21–36 Pilots A–F +
+              37–39 substrate-monism traces + 40–41 long-epoch
+              parametric + 42–46 foundation visual traces +
+              47–48 atomic-build traces).
               See `examples/README.md` for the full demo catalogue
               with embedded figures and animations.
 code/         Python tooling. render_trace.py reads dot.6th

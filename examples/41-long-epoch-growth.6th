@@ -68,12 +68,14 @@ build-shell
 \ Snapshot helper
 \ ============================================================
 
+"initial-state" "event" store
+
 : snap-with ( i -- )
   "=== SNAPSHOT cycle=" .
   .
   "rule=" . "phase-decay+phase-restore+periodic-grow" .
   "seed=" . "observer+1-initial-shell" .
-  "event=" . "autopoiesis+growth-cycle" .
+  "event=" . "event" load .
   "observer=" . "O" load .
   "shell-count=" . "shell-count" load .
   "nodes=" . NODES .
@@ -82,6 +84,7 @@ build-shell
   dot-snapshot ;
 
 0 snap-with
+"autopoiesis+growth-cycle" "event" store
 
 \ ============================================================
 \ Autopoiesis dynamics

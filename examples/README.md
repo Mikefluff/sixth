@@ -5,7 +5,7 @@ Each file is a standalone Sixth program; `raco test
 tests/examples-test.rkt` (or `make verify`) executes all 49 and
 asserts a cumulative 702 ✓ / 0 ✗.
 
-The demos are organised in seven phases:
+The demos are organised in twelve phases:
 
 | Phase | Demos | Asserts | What it shows |
 |-------|-------|---------|---------------|
@@ -25,8 +25,15 @@ The demos are organised in seven phases:
 The visual-trace pilots emit GraphViz DOT blocks on stdout that the
 companion Python renderer (`code/render_trace.py`) parses into
 multi-panel matplotlib figures (PNG / SVG / PDF) or animated GIFs.
-Single command `make traces` regenerates all three static figures,
-`make gifs` regenerates all three animations.
+Make targets:
+
+```
+make traces            # 3 substrate-monism PNGs (Pilots D, C, F.3)
+make gifs              # all 11 GIFs (traces + foundation + long-epoch growth)
+make foundation-gifs   # 5 foundation traces (Conway, Wolfram, glider-1d)
+make atomic-gifs       # 2 atomic-build animations
+make forensic-pilot-d  # PNG + JSONL + diff for Pilot D
+```
 
 ## Visual overview
 
@@ -301,15 +308,46 @@ make trace-long-epoch-growth-gif CYCLES_G=200 SNAP_G=20 GROW=40
 make trace-long-epoch CYCLES=2000 SNAP=200
 ```
 
-## Conway visual trace (42)
+## Foundation visual traces (42–46)
+
+State-aware DOT (`dot-snapshot-state` from `stdlib/dot.6th`) emits
+each node's NGET as a `[label="N"]` attribute. The renderer parses
+the label and colours alive cells (NGET=1) red, dead cells (NGET=0)
+light grey, on a stable layout fixed across animation frames.
 
 | Demo | File | ✓ | Property |
 |------|------|---|----------|
-| 42 | `42-trace-conway-blinker.6th` | 7 | Conway's Game of Life blinker (cells 8, 13, 18) on 5×5 Moore-grid substrate; 9 snapshots across 8 Conway steps; state-aware DOT (`dot-snapshot-state`) emits each node's NGET as a `[label="N"]` attribute. The renderer parses the label and colours alive cells (NGET=1) red, dead cells (NGET=0) light grey. Period-2 oscillation is visible cycle-by-cycle. |
+| 42 | `42-trace-conway-blinker.6th` | 7 | Conway's Game of Life blinker (cells 8, 13, 18) on 5×5 Moore-grid substrate; 9 snapshots across 8 Conway steps; period-2 oscillation visible cycle-by-cycle. |
+| 43 | `43-trace-conway-glider.6th`  | 7 | Conway's 5-cell glider (cells 2, 8, 11, 12, 13); 5 snapshots across 4 STEP-CA cycles showing diagonal +1, +1 translation. |
+| 44 | `44-trace-rule110.6th`        | 5 | Wolfram Rule 110 (Cook 2004, universal CA); 11-cell chain, single seed at c6; 9 snapshots showing propagation. |
+| 45 | `45-trace-rule90.6th`         | 4 | Wolfram Rule 90 (Sierpinski-like fractal); 11-cell chain, single centre seed; 9 snapshots. |
+| 46 | `46-trace-glider-1d.6th`      | 7 | Wolfram Rule 184 ("traffic"); 7-cell chain, car at c3; 6 snapshots showing car advance c3 → c7 then boundary evaporation. |
 
 ```bash
-make trace-conway-blinker    # build/figures/conway_blinker.png
-make gif-conway-blinker      # build/figures/conway_blinker.gif
+make trace-conway-blinker     gif-conway-blinker
+make trace-conway-glider      gif-conway-glider
+make trace-rule110            gif-rule110
+make trace-rule90             gif-rule90
+make trace-glider-1d          gif-glider-1d
+make foundation-gifs          # all five GIFs in one shot
+```
+
+## Atomic-build traces (47–48)
+
+One snapshot per **primitive operation** — every `MARK` becomes its
+own frame, every `EDGE+` becomes its own frame, every `NSET` becomes
+its own frame. Substrate emerges entity-by-entity through `MARK`
+(distinction) and `EDGE+` (pointer) alone.
+
+| Demo | File | ✓ | Property |
+|------|------|---|----------|
+| 47 | `47-trace-atomic-pilot-d.6th` | 5 | Pilot D rebuilt one primitive at a time: 76 frames, each one MARK / EDGE+ / NSET operation. Substrate grows from `void` → `MARK O` → self-loop → 4 shells × 12 primitives each. |
+| 48 | `48-trace-atomic-hello.6th`   | 5 | Sacred hello world in 7 frames at 1 fps: void → MARK → NSET → MARK → EDGE+ → EDGE+ → phi-pa-measurement. The minimum executable substrate that contains every ontological moment of Sixth, one primitive per frame. |
+
+```bash
+make trace-atomic-pilot-d     gif-atomic-pilot-d
+make trace-atomic-hello       gif-atomic-hello
+make atomic-gifs              # both GIFs in one shot
 ```
 
 ## Forensic trace mode
@@ -414,10 +452,10 @@ Register the demo in `tests/examples-test.rkt`:
 ```scheme
 (define expected
   '(...
-    ("41-my-new-demo.6th"           N)))   ; N = expected ✓
+    ("49-my-new-demo.6th"           N)))   ; N = expected ✓
 ```
 
-Update the cumulative gate (currently 657) and `make verify` passes
+Update the cumulative gate (currently 702) and `make verify` passes
 cleanly. To add a visual trace, `use dot` and emit `dot-snapshot`
 calls between substrate operations.
 
