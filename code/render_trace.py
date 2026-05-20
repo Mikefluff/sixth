@@ -4,20 +4,35 @@
 Reads a stream of Sixth DOT snapshots from stdin (or a file), each
 preceded by a sentinel:
     === SNAPSHOT [meta-key=val ...] ===
-followed by a `digraph substrate { ... }` block, and renders them as
-side-by-side panels in a single matplotlib figure.
+followed by a `digraph substrate { ... }` block.
 
-This is the visual-trace pilot answering the external reviewer's
-request to make the substrate's life visible.
+Outputs:
+  - static multi-panel PNG / SVG / PDF (default)
+  - animated GIF (--gif or .gif extension)
+  - diff mode showing before/after/diff per step (--diff)
+  - parallel JSONL trace for forensic reproducibility (--jsonl PATH)
+
+Each rendered panel carries metadata extracted from the sentinel:
+  rule=, seed=, step=, event=, observer=, nodes=, edges=
+plus computed deltas Δn / Δe / Δlive vs the previous frame.
+
+The JSONL trace is the machine-readable proof that the visualisation
+is not a hand-drawn artefact: every snapshot includes the full edge
+list, per-node labels (NGET state), and the metadata above, so an
+external reviewer can replay or audit the trace without trusting
+the rendered image.
 
 Usage:
     racket -l sixth/cli -- run examples/37-trace-pilot-d.6th \\
-        | python3 code/render_trace.py --out figures/pilot_d_trace.png
+        | python3 code/render_trace.py \\
+            --out figures/pilot_d_trace.png \\
+            --jsonl figures/pilot_d_trace.jsonl
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
@@ -150,9 +165,10 @@ def render(snapshots, out_path: Path, title: str | None) -> None:
     for i in range(n, rows * cols):
         axes[i // cols][i % cols].set_axis_off()
 
-    if title:
-        fig.suptitle(title, fontsize=11)
-        fig.tight_layout(rect=(0, 0, 1, 0.96))
+    suptitle = _figure_suptitle(snaps, title)
+    if suptitle:
+        fig.suptitle(suptitle, fontsize=10)
+        fig.tight_layout(rect=(0, 0, 1, 0.93))
     else:
         fig.tight_layout()
 
@@ -161,18 +177,188 @@ def render(snapshots, out_path: Path, title: str | None) -> None:
     print(f"wrote {out_path} ({n} panels)", file=sys.stderr)
 
 
+_PRIMARY_KEYS = ("step", "shell-count", "cycle", "case", "frame")
+_DELTA_KEYS = ("Δn", "Δe", "Δlive")
+_HEADER_KEYS = ("rule", "seed")
+_HIDDEN_KEYS = (set(_PRIMARY_KEYS) | set(_DELTA_KEYS) | set(_HEADER_KEYS)
+                | {"event", "observer", "nodes", "edges"})
+
+
 def _panel_title(meta: dict[str, str], idx: int) -> str:
+    """Compact per-panel title: step | event | n/e | Δn/Δe.
+    Heavy metadata (rule, seed, full edge list) lives in the figure
+    suptitle and the JSONL trace respectively."""
     if not meta:
         return f"snapshot {idx}"
-    parts = []
-    for k in ("shell-count", "cycle", "case", "nodes", "edges"):
-        if k in meta:
-            parts.append(f"{k}={meta[k]}")
-    extra = " ".join(f"{k}={v}" for k, v in meta.items()
-                     if k not in ("shell-count", "cycle", "case",
-                                  "nodes", "edges", "observer"))
-    head = " ".join(parts) if parts else f"snapshot {idx}"
-    return f"{head}  {extra}".rstrip()
+    lead = next(
+        (f"{k}={meta[k]}" for k in _PRIMARY_KEYS if k in meta),
+        f"#{idx}",
+    )
+    pieces = [lead]
+    if "event" in meta:
+        pieces.append(meta["event"])
+    if "nodes" in meta and "edges" in meta:
+        pieces.append(f"n={meta['nodes']} e={meta['edges']}")
+    deltas = [f"{k}={meta[k]}" for k in _DELTA_KEYS if k in meta]
+    if deltas:
+        pieces.append(" ".join(deltas))
+    extras = [f"{k}={v}" for k, v in meta.items() if k not in _HIDDEN_KEYS]
+    if extras:
+        pieces.append(" ".join(extras))
+    return "  ".join(pieces)
+
+
+def _figure_suptitle(snaps, fallback: str | None) -> str:
+    """Lift rule/seed to figure-level suptitle when present and stable
+    across the trace."""
+    if not snaps:
+        return fallback or ""
+    bits = []
+    for k in _HEADER_KEYS:
+        vals = {meta.get(k) for meta, _g in snaps if meta and meta.get(k)}
+        if len(vals) == 1:
+            bits.append(f"{k}: {next(iter(vals))}")
+        elif len(vals) > 1:
+            bits.append(f"{k}: <varies>")
+    rule_seed = "  ·  ".join(bits)
+    if fallback and rule_seed:
+        return f"{fallback}\n{rule_seed}"
+    return rule_seed or (fallback or "")
+
+
+def _annotate_deltas(snaps):
+    """Mutate snapshot metadata in place with Δn, Δe, Δlive vs prev."""
+    prev_nodes = None
+    prev_edges = None
+    prev_live = None
+    for meta, graph in snaps:
+        n = graph.number_of_nodes()
+        e = graph.number_of_edges()
+        live = sum(
+            1 for nd in graph.nodes
+            if int(graph.nodes[nd].get("label", "0") or "0") > 0
+        )
+        if prev_nodes is not None:
+            meta["Δn"] = f"{n - prev_nodes:+d}"
+            meta["Δe"] = f"{e - prev_edges:+d}"
+            meta["Δlive"] = f"{live - prev_live:+d}"
+        else:
+            meta["Δn"] = "—"
+            meta["Δe"] = "—"
+            meta["Δlive"] = "—"
+        prev_nodes, prev_edges, prev_live = n, e, live
+    return snaps
+
+
+def write_jsonl(snaps, out_path: Path) -> None:
+    """Write the snapshot stream as a JSONL trace — one object per
+    frame, with metadata + edge list + per-node labels. This is the
+    forensic-trace artefact: a machine-readable proof that the
+    visualisation reflects an actual substrate execution."""
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with out_path.open("w") as f:
+        for idx, (meta, graph) in enumerate(snaps):
+            obj = {
+                "snapshot_index": idx,
+                "metadata": dict(meta) if meta else {},
+                "nodes": sorted(graph.nodes),
+                "edges": sorted([list(e) for e in graph.edges]),
+                "node_labels": {
+                    n: graph.nodes[n].get("label")
+                    for n in graph.nodes
+                    if "label" in graph.nodes[n]
+                },
+            }
+            f.write(json.dumps(obj, sort_keys=True, default=str) + "\n")
+    print(f"wrote {out_path} ({len(snaps)} JSONL frames)", file=sys.stderr)
+
+
+def _diff_panel(ax, meta, prev_graph, graph, idx) -> None:
+    """Three-state diff: green = added, red = removed, grey = unchanged."""
+    if graph.number_of_nodes() == 0:
+        ax.set_axis_off()
+        ax.set_title(_panel_title(meta, idx), fontsize=8)
+        return
+
+    prev_nodes = set(prev_graph.nodes) if prev_graph else set()
+    prev_edges = set(prev_graph.edges) if prev_graph else set()
+    curr_nodes = set(graph.nodes)
+    curr_edges = set(graph.edges)
+
+    union = nx.DiGraph()
+    union.add_nodes_from(prev_nodes | curr_nodes)
+    union.add_edges_from(prev_edges | curr_edges)
+    try:
+        pos = nx.kamada_kawai_layout(union)
+    except Exception:
+        pos = nx.spring_layout(union, seed=42)
+
+    node_color = []
+    for n in union.nodes:
+        if n in curr_nodes and n not in prev_nodes:
+            node_color.append("#2eb02e")   # added — green
+        elif n in prev_nodes and n not in curr_nodes:
+            node_color.append("#d04040")   # removed — red
+        else:
+            node_color.append("#a8a8a8")   # unchanged — grey
+
+    edge_color = []
+    for u, v in union.edges:
+        if (u, v) in curr_edges and (u, v) not in prev_edges:
+            edge_color.append("#1f8b1f")
+        elif (u, v) in prev_edges and (u, v) not in curr_edges:
+            edge_color.append("#b03030")
+        else:
+            edge_color.append("#888888")
+
+    ax.clear()
+    nx.draw_networkx_edges(
+        union, pos, ax=ax,
+        edge_color=edge_color, arrows=True, arrowsize=8,
+        width=1.0, connectionstyle="arc3,rad=0.08",
+    )
+    nx.draw_networkx_nodes(
+        union, pos, ax=ax,
+        node_color=node_color, node_size=180,
+        linewidths=0.5, edgecolors="black",
+    )
+    nx.draw_networkx_labels(
+        union, pos, ax=ax, font_size=7, font_color="white",
+    )
+    ax.set_axis_off()
+    ax.set_title(_panel_title(meta, idx) + "  [DIFF added/removed/—]",
+                 fontsize=8)
+
+
+def render_diff(snapshots, out_path: Path, title: str | None) -> None:
+    """Render per-step diffs: panel N shows what changed from N-1 to N.
+    Frame 0 omitted (no prior frame to diff against)."""
+    snaps = list(snapshots)
+    if len(snaps) < 2:
+        sys.exit("diff mode needs at least 2 snapshots")
+
+    n = len(snaps) - 1
+    cols = min(n, 5)
+    rows = (n + cols - 1) // cols
+    fig, axes = plt.subplots(
+        rows, cols, figsize=(3.6 * cols, 3.6 * rows), squeeze=False,
+    )
+    for idx in range(1, len(snaps)):
+        ax = axes[(idx - 1) // cols][(idx - 1) % cols]
+        prev_meta, prev_graph = snaps[idx - 1]
+        meta, graph = snaps[idx]
+        _diff_panel(ax, meta, prev_graph, graph, idx)
+    for i in range(n, rows * cols):
+        axes[i // cols][i % cols].set_axis_off()
+    suptitle = _figure_suptitle(snaps, title)
+    if suptitle:
+        fig.suptitle(suptitle + "  —  per-step DIFF view", fontsize=10)
+        fig.tight_layout(rect=(0, 0, 1, 0.93))
+    else:
+        fig.tight_layout()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=150, bbox_inches="tight")
+    print(f"wrote {out_path} ({n} diff panels)", file=sys.stderr)
 
 
 def _observer_node(meta: dict[str, str], graph) -> str | None:
@@ -275,8 +461,9 @@ def render_gif(snapshots, out_path: Path, title: str | None,
     union_pos = _union_layout(snaps)
 
     fig, ax = plt.subplots(figsize=(6.5, 6.5))
-    if title:
-        fig.suptitle(title, fontsize=11)
+    suptitle = _figure_suptitle(snaps, title)
+    if suptitle:
+        fig.suptitle(suptitle, fontsize=10)
 
     def frame(idx):
         meta, graph = snaps[idx]
@@ -305,7 +492,7 @@ def main(argv=None):
         help="trace input file (default: stdin)")
     parser.add_argument(
         "--out", "-o", type=Path, required=True,
-        help="output image path (PNG/SVG/PDF for static, GIF for animation)")
+        help="output image path (PNG/SVG/PDF static; .gif animation)")
     parser.add_argument(
         "--title", "-t", default=None,
         help="figure suptitle")
@@ -315,6 +502,16 @@ def main(argv=None):
     parser.add_argument(
         "--fps", type=int, default=4,
         help="GIF frame rate (default 4)")
+    parser.add_argument(
+        "--diff", action="store_true",
+        help="render per-step DIFF view (panel N shows what changed "
+             "between snapshot N-1 and N: green added, red removed, "
+             "grey unchanged)")
+    parser.add_argument(
+        "--jsonl", type=Path, default=None,
+        help="also write a forensic JSONL trace to this path "
+             "(one object per snapshot: metadata + edge list + "
+             "per-node labels)")
     args = parser.parse_args(argv)
 
     if args.input:
@@ -322,14 +519,21 @@ def main(argv=None):
     else:
         stream = sys.stdin
 
-    # Auto-detect GIF mode from extension if flag not set.
     if args.out.suffix.lower() == ".gif":
         args.gif = True
 
-    if args.gif:
-        render_gif(parse_snapshots(stream), args.out, args.title, args.fps)
+    snaps = list(parse_snapshots(stream))
+    _annotate_deltas(snaps)
+
+    if args.jsonl:
+        write_jsonl(snaps, args.jsonl)
+
+    if args.diff:
+        render_diff(snaps, args.out, args.title)
+    elif args.gif:
+        render_gif(iter(snaps), args.out, args.title, args.fps)
     else:
-        render(parse_snapshots(stream), args.out, args.title)
+        render(iter(snaps), args.out, args.title)
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@
         trace-glider-1d gif-glider-1d \
         trace-atomic-pilot-d gif-atomic-pilot-d \
         trace-atomic-hello gif-atomic-hello \
-        atomic-gifs \
+        atomic-gifs forensic-pilot-d \
         foundation-gifs \
         gif-pilot-c gif-pilot-d gif-split-brain gifs
 
@@ -254,6 +254,24 @@ gif-atomic-hello:
 
 atomic-gifs: gif-atomic-hello gif-atomic-pilot-d
 	@echo "→ atomic-build GIFs rendered to build/figures/"
+
+# Forensic trace — image + JSONL evidence + per-step diff view.
+# Produces three artefacts per pilot so an external reviewer can
+# audit the substrate execution from machine-readable logs, not
+# only the rendered figure.  Demo 37 (Pilot D) is the showcase.
+forensic-pilot-d:
+	@mkdir -p build/figures
+	@racket -l sixth/cli -- run examples/37-trace-pilot-d.6th > build/figures/pilot_d_trace.dot
+	python3 code/render_trace.py build/figures/pilot_d_trace.dot \
+	    --out build/figures/pilot_d_forensic.png \
+	    --jsonl build/figures/pilot_d_forensic.jsonl \
+	    --title "Pilot D — forensic trace"
+	python3 code/render_trace.py build/figures/pilot_d_trace.dot \
+	    --out build/figures/pilot_d_diff.png --diff \
+	    --title "Pilot D"
+	@echo "→ build/figures/pilot_d_forensic.png  (snapshots + deltas)"
+	@echo "→ build/figures/pilot_d_forensic.jsonl (machine-readable trace)"
+	@echo "→ build/figures/pilot_d_diff.png      (per-step DIFF view)"
 
 # Visibly growing substrate over a long epoch (demo 41 — shell added
 # every GROW cycles; structure changes across frames).

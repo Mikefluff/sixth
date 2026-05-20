@@ -312,6 +312,59 @@ make trace-conway-blinker    # build/figures/conway_blinker.png
 make gif-conway-blinker      # build/figures/conway_blinker.gif
 ```
 
+## Forensic trace mode
+
+The renderer can do more than draw pictures. Three additional artefacts
+turn a visual trace into auditable evidence of substrate execution:
+
+- **Per-step deltas** (Δn, Δe, Δlive) computed and shown in every
+  panel title — invariant reading is direct (e.g. Pilot D consistently
+  exhibits `Δn=+3 Δe=+12 Δlive=0` per shell).
+- **`--jsonl PATH`** writes one JSON object per snapshot containing the
+  full edge list, per-node `[label="N"]` states, and all metadata
+  (`rule`, `seed`, `event`, `step`, `observer`, `nodes`, `edges`,
+  computed deltas). The JSONL is machine-readable proof the figure
+  reflects a real execution, not a hand drawing.
+- **`--diff`** renders per-step diff panels — green nodes/edges are
+  added in this step, red removed, grey unchanged. The invariant
+  Δn=+3 Δe=+12 becomes visually unmissable.
+
+```bash
+make forensic-pilot-d
+# → build/figures/pilot_d_forensic.png   (snapshots + deltas)
+# → build/figures/pilot_d_forensic.jsonl (machine-readable trace)
+# → build/figures/pilot_d_diff.png       (per-step DIFF view)
+```
+
+![Pilot D forensic trace — each panel labels rule, seed, event,
+step, n/e counts, and Δn/Δe/Δlive vs the previous
+frame.](../docs/figures/pilot_d_forensic.png)
+
+![Pilot D per-step DIFF — green = added in this step, red = removed,
+grey = unchanged. The invariant Δn=+3 Δe=+12 per shell is direct
+visual evidence.](../docs/figures/pilot_d_diff.png)
+
+Sample JSONL line (one snapshot):
+
+```json
+{
+  "snapshot_index": 1,
+  "metadata": {
+    "rule": "pilot-d-shell-build",
+    "seed": "single-MARK-self-loop",
+    "event": "shell-built",
+    "step": "1", "observer": "1", "nodes": "4", "edges": "13",
+    "Δn": "+3", "Δe": "+12", "Δlive": "+0"
+  },
+  "nodes": ["1", "2", "3", "4"],
+  "edges": [["1","1"], ["1","2"], ["1","3"], ["1","4"], …],
+  "node_labels": {}
+}
+```
+
+The JSONL is the canonical artefact for reviewers who want to verify
+the trace independently of the rendered image.
+
 ## How rendering works
 
 ```

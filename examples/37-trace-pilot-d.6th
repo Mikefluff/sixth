@@ -27,8 +27,12 @@ use debug
 \ ============================================================
 
 : snap ( -- )
-  "=== SNAPSHOT shell-count=" .
+  "=== SNAPSHOT step=" .
   "shell-count" load .
+  "rule=" . "pilot-d-shell-build" .
+  "seed=" . "single-MARK-self-loop" .
+  "event=" . "shell-built" .
+  "shell-count=" . "shell-count" load .
   "observer=" . "O" load .
   "nodes=" . NODES .
   "edges=" . EDGES .
