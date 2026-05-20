@@ -1,0 +1,107 @@
+\ examples/34-phi-pa-brain-toy.6th
+\ Encoding-map pilot — brain side (PSH3 direction).
+\
+\ Builds a synthetic 8-node cortical-area substrate per the
+\ encoding map of §sec:encoding-brain (v9.0 preprint). Nodes are
+\ cortical microcolumn / area aggregates. Out-edges are
+\ functional-connectivity above r-threshold (here, full coupling).
+\
+\ Observer node: the DMN hub (node 0), the canonical default-mode-
+\ network observer-candidate (precuneus / posterior-cingulate /
+\ medial-prefrontal triad collapsed to one substrate-node in this
+\ toy version).
+\
+\ Self-reference in waking: the thalamocortical loop — thalamus →
+\ cortex layer IV → corticothalamic projection → thalamus — is the
+\ canonical substrate-side self-loop of the DMN observer.
+\
+\ Case 1 — waking (PSH3 high-Φ direction):
+\   DMN hub has self-loop (thalamocortical recurrence active) plus
+\   edges to all 7 other areas. phi-pa(DMN) = 8 · 1 · 10000 = 80000.
+\
+\ Case 2 — propofol anaesthesia (PSH3 low-Φ direction):
+\   RESET, rebuild same connections, omit the self-loop
+\   (thalamocortical decoupling). phi-pa(DMN) = 0.
+\
+\ Real-EEG application against Casali et al. (2013) PCI on public
+\ wake/sleep/propofol corpora is the companion preprint #2
+\ (future work §sec:future-work-psh).
+
+use prelude
+use phi
+use debug
+
+\ ============================================================
+\ Case 1: waking state — thalamocortical loop active.
+\ ============================================================
+
+MARK "DMN" store
+MARK "n1" store  MARK "n2" store  MARK "n3" store
+MARK "n4" store  MARK "n5" store  MARK "n6" store  MARK "n7" store
+
+\ DMN ↔ self (thalamocortical loop).
+"DMN" load "DMN" load EDGE+
+
+\ DMN → other areas (FC above threshold).
+"DMN" load "n1" load EDGE+
+"DMN" load "n2" load EDGE+
+"DMN" load "n3" load EDGE+
+"DMN" load "n4" load EDGE+
+"DMN" load "n5" load EDGE+
+"DMN" load "n6" load EDGE+
+"DMN" load "n7" load EDGE+
+
+NODES 8 assert-eq
+EDGES 8 assert-eq
+
+"DMN" load OUT 8 assert-eq
+"DMN" load "DMN" load EDGE? 1 assert-eq
+"DMN" load phi-self-ref 1 assert-eq
+\ phi-pa(DMN) = 8 · 1 · 10000 = 80000. PSH3 waking direction.
+"DMN" load phi-pa 80000 assert-eq
+
+\ ============================================================
+\ Case 2: propofol anaesthesia — thalamocortical decoupling.
+\ ============================================================
+
+RESET
+
+MARK "DMN2" store
+MARK "m1" store  MARK "m2" store  MARK "m3" store
+MARK "m4" store  MARK "m5" store  MARK "m6" store  MARK "m7" store
+
+\ Same FC connections as waking, but no self-loop.
+"DMN2" load "m1" load EDGE+
+"DMN2" load "m2" load EDGE+
+"DMN2" load "m3" load EDGE+
+"DMN2" load "m4" load EDGE+
+"DMN2" load "m5" load EDGE+
+"DMN2" load "m6" load EDGE+
+"DMN2" load "m7" load EDGE+
+
+NODES 8 assert-eq
+EDGES 7 assert-eq
+
+"DMN2" load OUT 7 assert-eq
+"DMN2" load "DMN2" load EDGE? 0 assert-eq
+"DMN2" load phi-self-ref 0 assert-eq
+\ phi-pa(DMN2) = 7 · 0 · 10000 = 0. PSH3 anaesthesia direction.
+"DMN2" load phi-pa 0 assert-eq
+
+\ ============================================================
+\ Substrate-state report
+\ ============================================================
+
+cr
+"=== Encoding-map pilot — brain (Pilot F.2) ===" . cr
+"Substrate: 8 cortical areas, DMN hub as observer-node" . cr
+cr
+"Case 1 (waking, thalamocortical loop):" . cr
+"  EDGE?(DMN, DMN) = 1  (loop active)" . cr
+"  phi-pa(DMN)     = 80000  ← PSH3 high-Phi direction" . cr
+cr
+"Case 2 (propofol, decoupled):" . cr
+"  EDGE?(DMN2, DMN2) = 0  (loop severed)" . cr
+"  phi-pa(DMN2)      = 0  ← PSH3 low-Phi direction" . cr
+
+REPORT

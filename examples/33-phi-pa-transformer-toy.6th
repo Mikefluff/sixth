@@ -1,0 +1,102 @@
+\ examples/33-phi-pa-transformer-toy.6th
+\ Encoding-map pilot — transformer side (PSH1, PSH2).
+\
+\ Builds a synthetic 4-layer, 3-head transformer substrate per the
+\ encoding map of §sec:encoding-transformer (v9.0 preprint). Nodes
+\ are attention heads (12 total). Edges are OV-QK compositions
+\ above threshold: in the toy version we assume every same-direction
+\ adjacent-layer pair exceeds the threshold (full bipartite per
+\ transition), yielding 27 edges across three layer-transitions.
+\
+\ Observer node: head at (layer 2, head 0). NOT at the sink, so the
+\ scope factor is non-zero and the discriminator is purely the
+\ self-reference indicator.
+\
+\ Case 1 — single-pass evaluation (PSH1):
+\   No back-edge to the observer. EDGE?(O,O) = 0 ⇒ phi-pa(O) = 0.
+\
+\ Case 2 — autoregressive with KV-cache reuse (PSH2):
+\   Add a back-edge EDGE+(O,O) representing the KV-cache entry
+\   the observer reads at step t+1 that itself wrote at step t.
+\   EDGE?(O,O) = 1 ⇒ phi-pa(O) = OUT(O) · 1 · L_max.
+\
+\ Real-checkpoint application (Pythia-410M vs Mamba-370M) is the
+\ companion preprint #1 (future work §sec:future-work-psh).
+
+use prelude
+use phi
+use debug
+
+\ ============================================================
+\ Construct the 12-node, 27-edge feedforward transformer.
+\ ============================================================
+
+MARK "h00" store  MARK "h01" store  MARK "h02" store
+MARK "h10" store  MARK "h11" store  MARK "h12" store
+MARK "h20" store  MARK "h21" store  MARK "h22" store
+MARK "h30" store  MARK "h31" store  MARK "h32" store
+
+\ Layer 0 → Layer 1 (9 edges)
+"h00" load "h10" load EDGE+   "h00" load "h11" load EDGE+   "h00" load "h12" load EDGE+
+"h01" load "h10" load EDGE+   "h01" load "h11" load EDGE+   "h01" load "h12" load EDGE+
+"h02" load "h10" load EDGE+   "h02" load "h11" load EDGE+   "h02" load "h12" load EDGE+
+
+\ Layer 1 → Layer 2 (9 edges)
+"h10" load "h20" load EDGE+   "h10" load "h21" load EDGE+   "h10" load "h22" load EDGE+
+"h11" load "h20" load EDGE+   "h11" load "h21" load EDGE+   "h11" load "h22" load EDGE+
+"h12" load "h20" load EDGE+   "h12" load "h21" load EDGE+   "h12" load "h22" load EDGE+
+
+\ Layer 2 → Layer 3 (9 edges)
+"h20" load "h30" load EDGE+   "h20" load "h31" load EDGE+   "h20" load "h32" load EDGE+
+"h21" load "h30" load EDGE+   "h21" load "h31" load EDGE+   "h21" load "h32" load EDGE+
+"h22" load "h30" load EDGE+   "h22" load "h31" load EDGE+   "h22" load "h32" load EDGE+
+
+\ Designate observer.
+"h20" load "O" store
+
+\ ============================================================
+\ Case 1: single-pass evaluation (PSH1)
+\ ============================================================
+
+NODES 12 assert-eq
+EDGES 27 assert-eq
+
+\ Scope = OUT(O) = 3 (edges to layer-3 heads).
+"O" load OUT 3 assert-eq
+\ Self-reference indicator = 0 (no back-edge).
+"O" load "O" load EDGE? 0 assert-eq
+\ Φ_PA = 3 · 0 · L_max = 0. PSH1 corroborated on toy substrate.
+"O" load phi-pa 0 assert-eq
+
+\ ============================================================
+\ Case 2: autoregressive with KV-cache reuse (PSH2)
+\ ============================================================
+
+\ Add the cross-step back-edge that KV-cache reuse implies.
+"O" load "O" load EDGE+
+
+EDGES 28 assert-eq
+"O" load OUT 4 assert-eq
+"O" load "O" load EDGE? 1 assert-eq
+"O" load phi-self-ref 1 assert-eq
+\ Φ_PA = 4 · 1 · 10000 = 40000. PSH2 corroborated on toy substrate.
+"O" load phi-pa 40000 assert-eq
+
+\ ============================================================
+\ Substrate-state report
+\ ============================================================
+
+cr
+"=== Encoding-map pilot — transformer (Pilot F.1) ===" . cr
+"Substrate: 4 layers × 3 heads = 12 nodes, 27 feedforward edges" . cr
+"Observer: head (layer 2, head 0)" . cr
+cr
+"Case 1 (single-pass / PSH1):" . cr
+"  EDGE?(O,O) = 0" . cr
+"  phi-pa(O)  = 0  ← consistent with feed-forward transformers Phi=0" . cr
+cr
+"Case 2 (KV-cache reuse / PSH2):" . cr
+"  EDGE?(O,O) = 1" . cr
+"  phi-pa(O)  = 40000  ← consistent with recurrent regime Phi>0" . cr
+
+REPORT
