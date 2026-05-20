@@ -28,6 +28,9 @@ use debug
   "frame-i" load 1 + dup "frame-i" store
   "=== SNAPSHOT frame=" .
   .
+  "rule=" . "pilot-d-atomic-build" .
+  "seed=" . "void" .
+  "event=" . "primitive-applied" .
   "nodes=" . NODES .
   "edges=" . EDGES .
   "===" . cr

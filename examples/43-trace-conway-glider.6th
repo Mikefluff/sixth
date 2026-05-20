@@ -74,6 +74,9 @@ clear-all
 : snap-with ( step -- )
   "=== SNAPSHOT step=" .
   .
+  "rule=" . "conway-life-B3-S23" .
+  "seed=" . "glider-{2,8,11,12,13}" .
+  "event=" . "ca-step" .
   "===" . cr
   dot-snapshot-state ;
 

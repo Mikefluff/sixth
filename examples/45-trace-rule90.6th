@@ -42,6 +42,9 @@ NODES 11 assert-eq
 : snap-with ( step -- )
   "=== SNAPSHOT step=" .
   .
+  "rule=" . "wolfram-rule-90" .
+  "seed=" . "single-center-cell-c6" .
+  "event=" . "ca-step" .
   "===" . cr
   dot-snapshot-state ;
 

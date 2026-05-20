@@ -24,9 +24,14 @@ use phi
 use dot
 use debug
 
+"intact" "event" store
+
 : snap-with ( label-num -- )
   "=== SNAPSHOT case=" .
   .
+  "rule=" . "pilot-f3-callosotomy" .
+  "seed=" . "two-hemisphere-brain" .
+  "event=" . "event" load .
   "observer=" . "O" load .
   "nodes=" . NODES .
   "edges=" . EDGES .
@@ -68,6 +73,7 @@ MARK "R1" store  MARK "R2" store
 \ Callosotomy — sever corpus callosum bi-edges in place.
 \ ============================================================
 
+"corpus-callosum-severed" "event" store
 "L1" load "R1" load EDGE-
 "R1" load "L1" load EDGE-
 "L2" load "R2" load EDGE-

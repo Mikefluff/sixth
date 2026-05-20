@@ -27,6 +27,9 @@ use debug
   "frame-i" load 1 + dup "frame-i" store
   "=== SNAPSHOT frame=" .
   .
+  "rule=" . "spencer-brown-first-mark" .
+  "seed=" . "void" .
+  "event=" . "primitive-applied" .
   "nodes=" . NODES .
   "edges=" . EDGES .
   "===" . cr

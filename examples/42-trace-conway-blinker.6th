@@ -89,6 +89,9 @@ clear-all
 : snap-with ( step -- )
   "=== SNAPSHOT step=" .
   .
+  "rule=" . "conway-life-B3-S23" .
+  "seed=" . "vertical-blinker-{8,13,18}" .
+  "event=" . "ca-step" .
   "alive=" . 0
   1 NGET +    2 NGET +    3 NGET +    4 NGET +    5 NGET +
   6 NGET +    7 NGET +    8 NGET +    9 NGET +   10 NGET +

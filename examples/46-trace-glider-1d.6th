@@ -42,6 +42,9 @@ EDGES 6 assert-eq
 : snap-with ( step -- )
   "=== SNAPSHOT step=" .
   .
+  "rule=" . "wolfram-rule-184-traffic" .
+  "seed=" . "car-at-c3" .
+  "event=" . "ca-step" .
   "===" . cr
   dot-snapshot-state ;
 

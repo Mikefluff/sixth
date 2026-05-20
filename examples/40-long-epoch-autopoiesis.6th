@@ -72,6 +72,9 @@ NODES 4 assert-eq
 : snap-with ( i -- )
   "=== SNAPSHOT cycle=" .
   .
+  "rule=" . "phase-decay+phase-restore" .
+  "seed=" . "observer+3-ring" .
+  "event=" . "autopoiesis-cycle" .
   "observer=" . "O" load .
   "nodes=" . NODES .
   "edges=" . EDGES .

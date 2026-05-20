@@ -22,9 +22,14 @@ use phi
 use dot
 use debug
 
+"void+first-mark" "event" store
+
 : snap-with ( label-num -- )
   "=== SNAPSHOT shell-count=" .
   .
+  "rule=" . "pilot-c-cosmogenesis" .
+  "seed=" . "void+first-MARK" .
+  "event=" . "event" load .
   "observer=" . "O" load .
   "nodes=" . NODES .
   "edges=" . EDGES .
@@ -58,6 +63,7 @@ MARK "O" store
   "s2" load 10 NSET
   "s3" load 10 NSET ;
 
+"shell-built" "event" store
 build-shell  1 snap-with
 build-shell  2 snap-with
 build-shell  3 snap-with
@@ -70,6 +76,7 @@ build-shell  3 snap-with
 : phase-restore dup NSUM 5 > if drop 10 else NGET then ;
 : cycle         ' phase-decay STEP-CA  ' phase-restore STEP-CA ;
 
+"decay-cycles" "event" store
 cycle cycle cycle cycle cycle
 cycle cycle cycle cycle cycle
 
@@ -83,6 +90,7 @@ cycle cycle cycle cycle cycle
 \ Build fourth shell on the weathered substrate
 \ ============================================================
 
+"weathered-shell-built" "event" store
 build-shell
 
 4 snap-with
