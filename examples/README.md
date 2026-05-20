@@ -1,11 +1,11 @@
-# `examples/` — the 49 demonstrations
+# `examples/` — the 50 demonstrations
 
 This directory holds Sixth's reproducible emergence demonstrations.
 Each file is a standalone Sixth program; `raco test
-tests/examples-test.rkt` (or `make verify`) executes all 49 and
-asserts a cumulative 702 ✓ / 0 ✗.
+tests/examples-test.rkt` (or `make verify`) executes all 50 and
+asserts a cumulative 707 ✓ / 0 ✗.
 
-The demos are organised in twelve phases:
+The demos are organised in thirteen phases:
 
 | Phase | Demos | Asserts | What it shows |
 |-------|-------|---------|---------------|
@@ -20,7 +20,8 @@ The demos are organised in twelve phases:
 | Visual traces                         | 37–39 | 18 | DOT snapshot pilots — Pilots D, C, F.3 rendered as multi-panel figures or animated GIFs |
 | Long-epoch parametric                 | 40–41 | 16 | TCO-safe long autopoiesis runs, CLI-driven cycle count; demo 41 grows the substrate every K cycles for visible long-epoch evolution |
 | Foundation visual traces              | 42–46 | 30 | Conway blinker / glider, Rule 110, Rule 90, Rule 184 1D glider — substrate-state-aware DOT (each cell carries `[label="NGET"]`); the renderer colours alive cells red, dead light grey, and reuses a stable layout across animation frames |
-| Atomic-build traces                   | 47–48 | 10 | One snapshot per **primitive operation** — every `MARK` and every `EDGE+` becomes its own frame. Demo 47 builds Pilot D in 76 atomic frames; demo 48 builds the sacred hello world in 7 frames. Entity-by-entity emergence through `MARK` (distinction) and `EDGE+` (pointer) alone. |
+| Atomic-build traces                   | 47–48 | 10 | One snapshot per **primitive operation** — every `MARK` and every `EDGE+` becomes its own frame. Demo 47 builds Pilot D in 76 atomic frames; demo 48 builds the sacred hello world in 7 frames with PA-ontological event labels (`void`, `first-distinction`, `observer-state`, `i-not-i`, `first-pointer`, `re-entry`, `phi-pa-measurement`). Entity-by-entity emergence through `MARK` (distinction) and `EDGE+` (pointer) alone. |
+| PA-ontological decomposition          | 49    |  5 | First shell of Pilot D unfolded as Spencer-Brown / PA v9.0 events — answers the reviewer question "*где различие я / не-я?*" that demo 37 hides inside a single `shell-built` macro. 10 frames: `void → first-distinction → observer-state → re-entry → i-not-i → first-pointer → recognition → second-not-i → closure-of-not-i → shell-formation`. End-state matches demo 37 step 1 exactly (4 nodes, 13 edges, Φ_PA = 40000). |
 
 The visual-trace pilots emit GraphViz DOT blocks on stdout that the
 companion Python renderer (`code/render_trace.py`) parses into
@@ -350,6 +351,44 @@ make trace-atomic-hello       gif-atomic-hello
 make atomic-gifs              # both GIFs in one shot
 ```
 
+## PA-ontological shell decomposition (49)
+
+Demo 37 collapses an entire shell-construction into a single
+`event=shell-built` frame.  Demo 49 opens that macro: every
+ontologically distinct moment of the first shell becomes its own
+snapshot, labelled by the Spencer-Brown / PA v9.0 event it realises.
+End-state matches demo 37's step 1 (4 nodes, 13 edges, Φ_PA = 40000).
+
+| Demo | File | ✓ | Property |
+|------|------|---|----------|
+| 49 | `49-trace-pa-ontological-shell.6th` | 5 | 10 frames showing every PA-spec event of the first shell. Answers the question "*where is the I / not-I distinction?*" that the macro-level `shell-built` trace hides. |
+
+Sequence (preprint §sec:bootstrap, §sec:demo-31):
+
+| frame | event              | substrate after                       |
+|-------|--------------------|---------------------------------------|
+|  1    | `void`             | nothing exists                        |
+|  2    | `first-distinction`| 1 node (the observer O)               |
+|  3    | `observer-state`   | O carries feature (NGET=10)           |
+|  4    | `re-entry`         | O→O self-loop (Spencer-Brown bootstrap) |
+|  5    | `i-not-i`          | second token (`s1`) exists           |
+|  6    | `first-pointer`    | O→s1 (observer marks the other)       |
+|  7    | `recognition`      | s1→O (mutual relation established)    |
+|  8    | `second-not-i`     | third token (`s2`)                    |
+|  9    | `closure-of-not-i` | `s3` + triangle of bi-edges (not-I gains internal structure) |
+| 10    | `shell-formation`  | remaining edges + NSETs — matches demo 37 step 1 |
+
+```bash
+make trace-pa-ontological-shell    # build/figures/pa_ontological_shell.png
+make gif-pa-ontological-shell      # 10-frame animation @ 1 fps
+make forensic-pa-ontological-shell # + JSONL evidence + diff view
+```
+
+![PA-ontological shell — first shell of Pilot D unfolded into
+Spencer-Brown / PA v9.0 events.  Every frame is one ontologically
+distinct moment, labelled by the PA-spec event it
+realises.](../docs/figures/pa_ontological_shell.png)
+
 ## Forensic trace mode
 
 The renderer can do more than draw pictures. Three additional artefacts
@@ -452,10 +491,10 @@ Register the demo in `tests/examples-test.rkt`:
 ```scheme
 (define expected
   '(...
-    ("49-my-new-demo.6th"           N)))   ; N = expected ✓
+    ("50-my-new-demo.6th"           N)))   ; N = expected ✓
 ```
 
-Update the cumulative gate (currently 702) and `make verify` passes
+Update the cumulative gate (currently 707) and `make verify` passes
 cleanly. To add a visual trace, `use dot` and emit `dot-snapshot`
 calls between substrate operations.
 

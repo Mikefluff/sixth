@@ -50,7 +50,7 @@ the first tier is plain stack/arithmetic/control.
 
 If you reject every interpretive claim of the v9.0 preprint, Sixth
 still gives you: a Forth-like language with `#lang sixth` integration,
-a hypergraph rewriting engine with 23 substrate primitives, 49 demos
+a hypergraph rewriting engine with 23 substrate primitives, 50 demos
 of emergence from 15+23 base operations, a Racket-FFI PyTorch bridge,
 and a Scribble-rendered manual.
 
@@ -168,8 +168,8 @@ rendered as five panels (shell-count 0..4); render with
 
 - 38 primitives. No promotion of stdlib to primitive without
   documented justification.
-- 702 ✓ across 49 demos. The regression gate
-  (`tests/examples-test.rkt`) enforces `pass=702 fail=0`. Single-
+- 707 ✓ across 50 demos. The regression gate
+  (`tests/examples-test.rkt`) enforces `pass=707 fail=0`. Single-
   command verification: `make verify`. Parametric / long-epoch
   runs via the CLI `-D KEY=VAL` flag (see `examples/40-long-epoch-
   autopoiesis.6th` and `examples/41-long-epoch-growth.6th`).

@@ -36,32 +36,40 @@ use debug
   "===" . cr
   dot-snapshot-state ;
 
-\ Frame 1 — the void.
+\ Frame 1 — the void.  No substrate exists.
 snap-atom
 
-\ Frame 2 — the first distinction.  Spencer-Brown's first mark.
+\ Frame 2 — first distinction.  Spencer-Brown's first mark.
+\ The substrate now contains exactly one distinguishable token.
 MARK "A" store
-"MARK" "event" store snap-atom
+"first-distinction" "event" store snap-atom
 
-\ Frame 3 — substrate-state attaches to the token.
+\ Frame 3 — observer-state attaches.  The token now carries phenomenal
+\ weight (NGET > 0).  In PA terms: the observer has a feature value.
 "A" load 1 NSET
-"NSET" "event" store snap-atom
+"observer-state" "event" store snap-atom
 
-\ Frame 4 — a second token exists.  Distinction begets multiplicity.
+\ Frame 4 — I / not-I.  A second distinction posits a second token,
+\ distinct from the first.  This is the substrate's discrete
+\ realisation of the I-not-I split (preprint sec:bootstrap).
 MARK "B" store
-"MARK" "event" store snap-atom
+"i-not-i" "event" store snap-atom
 
-\ Frame 5 — the first pointer.  A relates to B.
+\ Frame 5 — first pointer.  The first relation between distinct tokens.
+\ Direction: I → not-I (the observer marks the other).
 "A" load "B" load EDGE+
-"EDGE+" "event" store snap-atom
+"first-pointer" "event" store snap-atom
 
-\ Frame 6 — re-entry.  A points at itself.  The strange loop is born.
+\ Frame 6 — re-entry.  The observer points at itself.  This is the
+\ bootstrap distinction — Spencer-Brown's mark-of-distinction made
+\ self-referential, establishing the Φ_PA self-reference factor
+\ strictly (preprint sec:demo-31).
 "A" load "A" load EDGE+
-"EDGE+" "event" store snap-atom
+"re-entry" "event" store snap-atom
 
-\ Frame 7 — measurement.  Same primitives compute Φ_PA on the substrate.
-\ This frame is the substrate AFTER the measurement; the state itself
-\ does not change.  Verify Φ_PA = 2 · 1 · 10000 = 20000.
+\ Frame 7 — substrate-internal measurement.  The same 38 primitives
+\ that built the substrate compute its substrate-monist scalar.
+\ Verify Φ_PA = OUT(A) · 1[A EDGE? A] · 10^4 = 2 · 1 · 10000 = 20000.
 "A" load phi-pa 20000 assert-eq
 "phi-pa-measurement" "event" store snap-atom
 

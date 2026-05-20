@@ -29,6 +29,7 @@ DEMOS=(
   "examples/46-trace-glider-1d.6th       glider_1d_f"
   "examples/47-trace-atomic-pilot-d.6th  atomic_pilot_d_f"
   "examples/48-trace-atomic-hello.6th    atomic_hello_f"
+  "examples/49-trace-pa-ontological-shell.6th  pa_ontological_shell_f"
 )
 
 check_one () {

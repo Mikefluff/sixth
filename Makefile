@@ -15,7 +15,8 @@
         forensic-conway-blinker forensic-conway-glider \
         forensic-rule110 forensic-rule90 forensic-glider-1d \
         forensic-atomic-pilot-d forensic-atomic-hello \
-        forensic-long-epoch-growth forensic-all \
+        forensic-long-epoch-growth forensic-pa-ontological-shell forensic-all \
+        trace-pa-ontological-shell gif-pa-ontological-shell \
         foundation-gifs all-figures \
         gif-pilot-c gif-pilot-d gif-split-brain gifs
 
@@ -261,6 +262,26 @@ gif-atomic-hello:
 atomic-gifs: gif-atomic-hello gif-atomic-pilot-d
 	@echo "→ atomic-build GIFs rendered to build/figures/"
 
+# PA-ontological shell trace — first shell of Pilot D unfolded as
+# Spencer-Brown / PA v9.0 events (first-distinction, re-entry,
+# i-not-i, first-pointer, recognition, closure-of-not-i,
+# shell-formation).  Demo 49.
+trace-pa-ontological-shell:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- run examples/49-trace-pa-ontological-shell.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/pa_ontological_shell.png \
+	      --title "PA-ontological shell — first shell of Pilot D unfolded"
+	@echo "→ open build/figures/pa_ontological_shell.png"
+
+gif-pa-ontological-shell:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- run examples/49-trace-pa-ontological-shell.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/pa_ontological_shell.gif --fps 1 \
+	      --title "PA-ontological shell — Spencer-Brown bootstrap, frame by frame"
+	@echo "→ open build/figures/pa_ontological_shell.gif"
+
 # Forensic trace — image + JSONL evidence + per-step diff view.
 # Produces three artefacts per pilot so an external reviewer can
 # audit the substrate execution from machine-readable logs, not
@@ -298,12 +319,15 @@ forensic-atomic-hello:
 forensic-long-epoch-growth:
 	@bash scripts/forensic.sh examples/41-long-epoch-growth.6th long_epoch_growth_f "Long-epoch growth"
 
+forensic-pa-ontological-shell:
+	@bash scripts/forensic.sh examples/49-trace-pa-ontological-shell.6th pa_ontological_shell_f "PA-ontological shell"
+
 forensic-all: forensic-pilot-d forensic-pilot-c forensic-split-brain \
               forensic-conway-blinker forensic-conway-glider \
               forensic-rule110 forensic-rule90 forensic-glider-1d \
               forensic-atomic-pilot-d forensic-atomic-hello \
-              forensic-long-epoch-growth
-	@echo "→ all 11 forensic traces rendered (PNG + JSONL + diff per demo)"
+              forensic-long-epoch-growth forensic-pa-ontological-shell
+	@echo "→ all 12 forensic traces rendered (PNG + JSONL + diff per demo)"
 
 # Visibly growing substrate over a long epoch (demo 41 — shell added
 # every GROW cycles; structure changes across frames).

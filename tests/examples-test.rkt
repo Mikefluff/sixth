@@ -80,7 +80,9 @@
     ("46-trace-glider-1d.6th"               7)
     ;; Phase R — atomic-build traces (one primitive per frame)
     ("47-trace-atomic-pilot-d.6th"          5)
-    ("48-trace-atomic-hello.6th"            5)))
+    ("48-trace-atomic-hello.6th"            5)
+    ;; Phase S — PA-ontological decomposition trace
+    ("49-trace-pa-ontological-shell.6th"    5)))
 
 (define (run-demo file)
   (define out
@@ -105,8 +107,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 702
-                (format "cumulative ✓ count: ~a (expected 702)" total-pass)))
+  (check-equal? total-pass 707
+                (format "cumulative ✓ count: ~a (expected 707)" total-pass)))
 
-(displayln (format "examples regression: ~a / 702 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 707 ✓ across ~a demos"
                    total-pass (length expected)))

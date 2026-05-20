@@ -1,7 +1,7 @@
 # Sixth Substrate — Foundational Pointer Architecture
 
 This document accompanies the Sixth substrate implementation in
-`sixth/primitives/substrate.rkt` and the 49 emergence demonstrations
+`sixth/primitives/substrate.rkt` and the 50 emergence demonstrations
 under `examples/`. The goal is *not* to derive physics — it is to
 build the minimum formal artifact in which structures such as
 numbers, time, space, conservation laws, particles, self-reference,
@@ -44,9 +44,9 @@ two tokens (`EDGE+`), or a transformation of those relations
 
 ## What the demos demonstrate
 
-The 49 demonstrations live in `examples/` (file-by-file index in
+The 50 demonstrations live in `examples/` (file-by-file index in
 [`examples/README.md`](./examples/README.md)). Each isolates a
-single derivation chain, organised in twelve phases:
+single derivation chain, organised in thirteen phases:
 
 - **00** — sacred hello world (Spencer-Brown's first mark)
 - **01–20** — foundations: arithmetic, time, space, conservation
@@ -62,15 +62,19 @@ single derivation chain, organised in twelve phases:
 - **40–41** — long-epoch parametric pilots
 - **42–46** — foundation visual traces (Conway, Wolfram CA)
 - **47–48** — atomic-build traces (one snapshot per primitive operation)
+- **49** — PA-ontological shell decomposition (unfolds the first
+  shell of demo 31 into Spencer-Brown / PA v9.0 events: `void`,
+  `first-distinction`, `re-entry`, `i-not-i`, `first-pointer`,
+  `recognition`, `closure-of-not-i`, `shell-formation`)
 
-All 702 assertions pass deterministically. Run the regression in
+All 707 assertions pass deterministically. Run the regression in
 one command:
 
 ```bash
 make verify
 # language tests:    ok
 # substrate tests:   ok
-# examples:          702 / 702 ✓ across 49 demos
+# examples:          707 / 707 ✓ across 50 demos
 # docs build:        ok
 # artifact status:   reproducible
 ```
@@ -230,7 +234,7 @@ sufficient for the released demos and can be extended further.
 cd /Users/mikefluff/Documents/Programming/sixt
 raco pkg install --link .          # install the Sixth Racket collection
 
-# the whole regression — all 49 demos, all 702 assertions
+# the whole regression — all 50 demos, all 707 assertions
 make verify
 
 # any single demo

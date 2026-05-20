@@ -1,0 +1,159 @@
+\ examples/49-trace-pa-ontological-shell.6th
+\ PA-ontological trace — first shell of Pilot D unfolded as
+\ Spencer-Brown / PA v9.0 ontological events.
+\
+\ Demo 37 collapses an entire shell-construction into one frame
+\ labelled "shell-built".  This demo opens that frame: every
+\ ontologically distinct moment of the first shell becomes its
+\ own snapshot, labelled by the PA-spec event it realises.
+\
+\ Reviewer-requested decomposition (2026-05-20):
+\   "где различие я / не-я?"   ← demo 37 hides it
+\
+\ Sequence (preprint sec:bootstrap / sec:demo-31):
+\   void
+\   first-distinction         MARK O                 first token exists
+\   observer-state            NSET O 10              token carries weight
+\   re-entry                  EDGE+ O O              Spencer-Brown bootstrap
+\   i-not-i                   MARK s1                first non-self token
+\   first-pointer             EDGE+ O s1             observer → other
+\   recognition               EDGE+ s1 O             other → observer
+\   second-not-i              MARK s2
+\   closure-of-not-i          MARK s3 + triangle     not-I gains internal structure
+\   shell-formation           remaining edges+NSETs  full shell as in demo 37 step 1
+\
+\ This is the PA-ontological skeleton.  Demo 31 / demo 37 then
+\ repeat the closure+shell-formation phase three more times to
+\ build the 13-node 49-edge cosmos.
+
+use prelude
+use graph
+use phi
+use dot
+use debug
+
+0 "frame-i" store
+"void" "event" store
+
+: snap-onto ( -- )
+  "frame-i" load 1 + dup "frame-i" store
+  "=== SNAPSHOT frame=" .
+  .
+  "rule=" . "pa-ontological-bootstrap" .
+  "seed=" . "void" .
+  "event=" . "event" load .
+  "observer=" . "O" load dup 0 = if drop "-" . else . then
+  "nodes=" . NODES .
+  "edges=" . EDGES .
+  "===" . cr
+  dot-snapshot-state ;
+
+\ Workaround — "O" key undefined at the start; snap-onto guards.
+0 "O" store
+
+\ ============================================================
+\ Frame 1 — the void.
+\ ============================================================
+snap-onto
+
+\ ============================================================
+\ Frame 2 — first distinction.  One MARK; one token exists.
+\ ============================================================
+MARK "O" store
+"first-distinction" "event" store snap-onto
+
+\ ============================================================
+\ Frame 3 — observer-state.  The token now carries phenomenal weight.
+\ ============================================================
+"O" load 10 NSET
+"observer-state" "event" store snap-onto
+
+\ ============================================================
+\ Frame 4 — re-entry.  Spencer-Brown's bootstrap distinction:
+\ the observer establishes the Φ_PA self-reference factor strictly.
+\ ============================================================
+"O" load "O" load EDGE+
+"re-entry" "event" store snap-onto
+
+\ ============================================================
+\ Frame 5 — I / not-I.  The first non-self distinction.
+\ The substrate now contains "the observer" and "something else".
+\ ============================================================
+MARK "s1" store
+"i-not-i" "event" store snap-onto
+
+\ ============================================================
+\ Frame 6 — first pointer.  Observer marks the other (I → not-I).
+\ The first asymmetric relation between distinct tokens.
+\ ============================================================
+"O" load "s1" load EDGE+
+"first-pointer" "event" store snap-onto
+
+\ ============================================================
+\ Frame 7 — recognition.  Other points back to observer (not-I → I).
+\ The mutual relation that constitutes second-order observation.
+\ ============================================================
+"s1" load "O" load EDGE+
+"recognition" "event" store snap-onto
+
+\ ============================================================
+\ Frame 8 — second not-I.  Another non-self distinction.
+\ Multiplicity within not-I begins.
+\ ============================================================
+MARK "s2" store
+"second-not-i" "event" store snap-onto
+
+\ ============================================================
+\ Frame 9 — closure-of-not-I.  Third not-self token + the triangle
+\ of bi-edges that closes the not-I region internally.  not-I has
+\ acquired its own structure independent of the observer.
+\ ============================================================
+MARK "s3" store
+"s1" load "s2" load bi-edge
+"s2" load "s3" load bi-edge
+"s3" load "s1" load bi-edge
+"closure-of-not-i" "event" store snap-onto
+
+\ ============================================================
+\ Frame 10 — shell-formation.  The remaining observer ↔ not-I edges
+\ and NSETs complete the shell.  This is the substrate-state demo 37
+\ shows at shell-count = 1: 4 nodes, 13 edges.
+\ ============================================================
+"O" load "s2" load bi-edge
+"O" load "s3" load bi-edge
+"s1" load "O" load EDGE+
+"O" load "s1" load EDGE+
+"s1" load 10 NSET
+"s2" load 10 NSET
+"s3" load 10 NSET
+"shell-formation" "event" store snap-onto
+
+\ Reconcile asymmetry: frames 6+7 added directed edges (O→s1, s1→O)
+\ while frame 10 added bi-edges (O↔s2, O↔s3) — net result must
+\ match demo 37 step 1.  Drop the duplicate O→s1 / s1→O that bi-edge
+\ would also have added.  EDGE+ on existing edge is a no-op in Sixth.
+"O" load "s1" load EDGE+
+"s1" load "O" load EDGE+
+
+\ ============================================================
+\ End-state invariants — exactly matches demo 37 shell-count = 1.
+\ ============================================================
+NODES 4 assert-eq
+EDGES 13 assert-eq
+"O" load OUT 4 assert-eq
+"O" load "O" load EDGE? 1 assert-eq
+"O" load phi-pa 40000 assert-eq
+
+cr
+"=== PA-ontological shell trace ===" . cr
+"frames     :" . "frame-i" load . cr
+"NODES      :" . NODES . cr
+"EDGES      :" . EDGES . cr
+"phi-pa(O)  :" . "O" load phi-pa . cr
+cr
+"This demo decomposes the single 'shell-built' event of demo 37" . cr
+"into its 9 PA-ontological moments.  Each frame is a distinct" . cr
+"event in the Spencer-Brown / PA v9.0 bootstrap vocabulary." . cr
+"Render with: make trace-pa-ontological-shell" . cr
+
+REPORT
