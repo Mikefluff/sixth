@@ -1,0 +1,112 @@
+\ examples/32-phi-pa-measurement.6th — substrate measures itself.
+\
+\ Claim demonstrated:
+\   Phi_PA (Definition def:phi-pa of the v9.0 preprint) is
+\   substrate-readable in the strict sense — the same 38 primitives
+\   that BUILD the substrate also COMPUTE the substrate-monist
+\   consciousness measure on it.  No host-side computation; no
+\   external pipeline.  The stdlib word `phi-pa` (stdlib/phi.6th)
+\   composes OUT, EDGE?, and L_max into the scalar.
+\
+\ Cases:
+\   (1) Non-reflexive observer with 5 out-edges to disconnected
+\       sinks: scope=5, self-ref=0, phi-pa = 0.
+\   (2) Reflexive observer with 5 out-edges INCLUDING the self-loop:
+\       scope=5, self-ref=1, phi-pa = 5 * 10000 = 50000.
+\   (3) Demo-31-shape: observer with self-loop + 4 shells of 3 nodes
+\       each (12 bi-edges from O), scope=13, self-ref=1,
+\       phi-pa = 13 * 10000 = 130000.
+\
+\ The asserts verify each substrate-internal Phi_PA matches the
+\ preprint's worked values.
+
+use prelude
+use graph
+use phi
+use debug
+
+\ ============================================================
+\ Case 1: non-reflexive observer with scope 5
+\ ============================================================
+
+MARK "O1" store
+MARK "n1" store
+MARK "n2" store
+MARK "n3" store
+MARK "n4" store
+MARK "n5" store
+
+"O1" load "n1" load EDGE+
+"O1" load "n2" load EDGE+
+"O1" load "n3" load EDGE+
+"O1" load "n4" load EDGE+
+"O1" load "n5" load EDGE+
+
+"O1" load OUT 5 assert-eq
+"O1" load "O1" load EDGE? 0 assert-eq
+"O1" load phi-self-ref 0 assert-eq
+"O1" load phi-pa 0 assert-eq
+
+\ ============================================================
+\ Case 2: reflexive observer with scope 5 (self-loop included)
+\ ============================================================
+
+MARK "O2" store
+MARK "m1" store
+MARK "m2" store
+MARK "m3" store
+MARK "m4" store
+
+"O2" load "O2" load EDGE+
+"O2" load "m1" load EDGE+
+"O2" load "m2" load EDGE+
+"O2" load "m3" load EDGE+
+"O2" load "m4" load EDGE+
+
+"O2" load OUT 5 assert-eq
+"O2" load "O2" load EDGE? 1 assert-eq
+"O2" load phi-self-ref 1 assert-eq
+"O2" load phi-pa 50000 assert-eq
+
+\ ============================================================
+\ Case 3: demo-31-shape — observer + 4 shells of 3 nodes
+\ ============================================================
+
+MARK "O3" store
+"O3" load "O3" load EDGE+
+
+\ Build 4 shells with 3 bi-edges from O3 each (and a triangle within).
+: build-O3-shell
+  MARK "s1" store
+  MARK "s2" store
+  MARK "s3" store
+  "s1" load "s2" load bi-edge
+  "s2" load "s3" load bi-edge
+  "s3" load "s1" load bi-edge
+  "O3" load "s1" load bi-edge
+  "O3" load "s2" load bi-edge
+  "O3" load "s3" load bi-edge ;
+
+build-O3-shell
+build-O3-shell
+build-O3-shell
+build-O3-shell
+
+"O3" load OUT 13 assert-eq         \ 1 self-loop + 4 shells * 3
+"O3" load "O3" load EDGE? 1 assert-eq
+"O3" load phi-self-ref 1 assert-eq
+"O3" load phi-pa 130000 assert-eq
+
+\ ============================================================
+\ Substrate-state report
+\ ============================================================
+
+cr
+"=== Phi_PA substrate-internal measurement ===" . cr
+"Case 1 (non-reflexive, scope 5): phi_PA =" . "O1" load phi-pa . cr
+"Case 2 (reflexive,    scope 5): phi_PA =" . "O2" load phi-pa . cr
+"Case 3 (demo-31-shape, scope 13): phi_PA =" . "O3" load phi-pa . cr
+cr
+"phi-L-max =" . "phi-L-max" load . cr
+
+REPORT

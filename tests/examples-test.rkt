@@ -55,7 +55,9 @@
     ("29-goal-directed-observer.6th"   21)
     ("30-cosmogenesis-bootstrap.6th"   21)
     ;; Phase L — observer-driven cosmogenesis (substrate-monist)
-    ("31-observer-driven-cosmogenesis.6th" 17)))
+    ("31-observer-driven-cosmogenesis.6th" 17)
+    ;; Phase M — substrate-internal Phi_PA measurement (Pilot E)
+    ("32-phi-pa-measurement.6th"           12)))
 
 (define (run-demo file)
   (define out
@@ -80,8 +82,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 559
-                (format "cumulative ✓ count: ~a (expected 559)" total-pass)))
+  (check-equal? total-pass 571
+                (format "cumulative ✓ count: ~a (expected 571)" total-pass)))
 
-(displayln (format "examples regression: ~a / 559 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 571 ✓ across ~a demos"
                    total-pass (length expected)))

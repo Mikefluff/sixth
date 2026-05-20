@@ -1,0 +1,32 @@
+\ stdlib/phi.6th — substrate-monist Phi_PA measure.
+\
+\ Phi_PA(O) := |C_O| * 1[O in C_O] * min(L(sigma), L_max)
+\
+\ where
+\   |C_O|             = OUT(O), the observer's out-neighbour set size
+\   1[O in C_O]       = (O EDGE? O), the self-reference indicator
+\   min(L, L_max)     = autopoietic lifespan capped at L_max
+\
+\ For reflexive observers under canonical autopoiesis dynamics
+\ (preprint Eq. autopoiesis-dynamics, see substrate.md), NGET(O)
+\ does not decrement, so L diverges; the cap L_max is then the
+\ effective lifespan. For non-reflexive observers the self-reference
+\ indicator is 0 and the whole product is 0 regardless of L.
+\
+\ Reference: Pointer Architecture v9.0, sec. phi-pa,
+\            Definition def:phi-pa.
+
+10000 "phi-L-max" store
+
+\ Self-reference factor: 1 if observer's substrate-state contains
+\ a self-loop, 0 otherwise. Substrate-readable via EDGE?.
+: phi-self-ref ( O -- 0|1 )
+  dup EDGE? ;
+
+\ Phi_PA scalar.  Reflexive case uses L_max as the lifespan cap.
+\ Non-reflexive case short-circuits via the indicator factor.
+: phi-pa ( O -- phi )
+  dup OUT             \ ( O scope )
+  swap phi-self-ref   \ ( scope indicator )
+  *                   \ ( scope*indicator )
+  "phi-L-max" load * ;
