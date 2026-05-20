@@ -26,6 +26,10 @@
 : true 1 ;
 : false 0 ;
 
+\ Comparison helpers: >= and <= built from < and >.
+: >= < not ;
+: <= > not ;
+
 : negate 0 swap - ;
 : abs dup 0 < if negate then ;
 : square dup * ;

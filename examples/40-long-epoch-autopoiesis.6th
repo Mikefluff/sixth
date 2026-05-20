@@ -1,0 +1,134 @@
+\ examples/40-long-epoch-autopoiesis.6th
+\ Long-epoch autopoiesis pilot — parametric cycle count.
+\
+\ Builds a reflexive observer with a 3-node maintenance ring and
+\ runs canonical autopoiesis (phase-decay / phase-restore) for
+\ N cycles, snapshotting every K cycles.  Defaults run 50 cycles
+\ with snapshots every 10; the CLI `--define` flag overrides:
+\
+\   racket -l sixth/cli -- -D max-cycles=1000 -D snap-every=100 \\
+\                          run examples/40-long-epoch-autopoiesis.6th
+\
+\ The demo is regression-safe at the default settings and the same
+\ source runs unchanged at 10 000-cycle scale; tail-call optimisation
+\ ensures the recursive epoch loop has constant stack depth.
+
+use prelude
+use graph
+use phi
+use dot
+use debug
+
+\ ============================================================
+\ Parameter resolution (CLI --define overrides take precedence)
+\ ============================================================
+
+50  "max-cycles-default" store
+10  "snap-every-default" store
+
+: max-cycles ( -- n )
+  "max-cycles" load dup 0 = if drop "max-cycles-default" load then ;
+
+: snap-every ( -- n )
+  "snap-every" load dup 0 = if drop "snap-every-default" load then ;
+
+\ ============================================================
+\ Substrate construction — reflexive observer + maintenance ring
+\ ============================================================
+
+MARK "O" store
+"O" load 10 NSET
+"O" load "O" load EDGE+           \ bootstrap self-loop
+
+MARK "s1" store  "s1" load 10 NSET
+MARK "s2" store  "s2" load 10 NSET
+MARK "s3" store  "s3" load 10 NSET
+
+"s1" load "s2" load bi-edge
+"s2" load "s3" load bi-edge
+"s3" load "s1" load bi-edge
+
+"O" load "s1" load bi-edge
+"O" load "s2" load bi-edge
+"O" load "s3" load bi-edge
+
+NODES 4 assert-eq
+"O" load OUT 4 assert-eq         \ self + 3 ring members
+"O" load phi-pa 40000 assert-eq
+
+\ ============================================================
+\ Autopoiesis dynamics
+\ ============================================================
+
+: phase-decay   NGET 8 - dup 0 < if drop 0 then ;
+: phase-restore dup NSUM 5 > if drop 10 else NGET then ;
+: cycle         ' phase-decay STEP-CA  ' phase-restore STEP-CA ;
+
+\ ============================================================
+\ Snapshot helper (observer id encoded in metadata so the renderer
+\ can highlight the right node)
+\ ============================================================
+
+: snap-with ( i -- )
+  "=== SNAPSHOT cycle=" .
+  .
+  "observer=" . "O" load .
+  "nodes=" . NODES .
+  "edges=" . EDGES .
+  "nsum=" . "O" load NSUM .
+  "nget=" . "O" load NGET .
+  "===" . cr
+  dot-snapshot ;
+
+\ ============================================================
+\ Epoch loop  — TCO-safe tail recursion
+\ ============================================================
+
+0 "epoch-i" store
+
+: epoch-step
+  "epoch-i" load max-cycles < if
+    cycle
+    "epoch-i" load 1 + "epoch-i" store
+    "epoch-i" load snap-every mod 0 = if
+      "epoch-i" load snap-with
+    then
+    epoch-step
+  then ;
+
+\ Snapshot t=0 baseline before the loop.
+0 snap-with
+
+\ Run the epoch.
+epoch-step
+
+\ Final snapshot if not aligned to snap-every.
+"epoch-i" load snap-every mod 0 = not if
+  "epoch-i" load snap-with
+then
+
+\ ============================================================
+\ End-state assertions — observer must survive the epoch
+\ ============================================================
+
+"O" load NGET 10 assert-eq        \ observer at full vitality
+"O" load OUT 4 assert-eq          \ scope unchanged
+"O" load "O" load EDGE? 1 assert-eq
+"O" load phi-pa 40000 assert-eq
+
+\ Each ring node also restored.
+"s1" load NGET 10 assert-eq
+"s2" load NGET 10 assert-eq
+"s3" load NGET 10 assert-eq
+
+\ Total cycles executed equals max-cycles.
+"epoch-i" load max-cycles assert-eq
+
+cr
+"=== Long-epoch autopoiesis ===" . cr
+"max-cycles  =" . max-cycles . cr
+"snap-every  =" . snap-every . cr
+"epoch-i     =" . "epoch-i" load . cr
+"observer NGET=" . "O" load NGET . cr
+
+REPORT

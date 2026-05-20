@@ -10,6 +10,8 @@
 ;;   bench                 run perf benchmarks (Phase I)
 
 (require racket/cmdline
+         racket/list
+         racket/string
          (only-in "main.rkt" sixth-version)
          "env.rkt"
          "loader.rkt"
@@ -17,6 +19,27 @@
          "primitives/substrate.rkt")
 
 (define no-prelude? (make-parameter #f))
+(define defines    (make-parameter '()))   ; list of (cons KEY VAL)
+
+;; --define KEY=VAL pre-populates a memory key before the file runs.
+;; Value is parsed as integer when possible, otherwise stored as
+;; string.  Used to parameterise demos that read e.g. `"max-cycles"
+;; load` for long-epoch runs.
+(define (parse-define arg)
+  (define eq (string-split arg "="))
+  (cond
+    [(< (length eq) 2)
+     (printf "ERR: --define expects KEY=VAL, got `~a`~n" arg)
+     (exit 2)]
+    [else
+     (define key (car eq))
+     (define raw (string-join (cdr eq) "="))
+     (define val (or (string->number raw) raw))
+     (defines (cons (cons key val) (defines)))]))
+
+(define (apply-defines! e)
+  (for ([kv (in-list (reverse (defines)))])
+    (env-store! e (car kv) (cdr kv))))
 
 (define (make-runtime-env)
   (define e (make-env))
@@ -24,6 +47,7 @@
   (register-substrate! e)
   (unless (no-prelude?)
     (use-module! "prelude" e))
+  (apply-defines! e)
   e)
 
 (define (cmd-repl)
@@ -62,13 +86,15 @@
    #:program "sixth"
    #:once-each
    [("--no-prelude") "skip auto-loading prelude" (no-prelude? #t)]
+   #:multi
+   [("-D" "--define") kv "set memory key (repeatable; KEY=VAL)" (parse-define kv)]
    #:args args
    (cond
      [(null? args) (cmd-repl)]
      [(equal? (car args) "repl") (cmd-repl)]
      [(equal? (car args) "run")
       (when (null? (cdr args))
-        (printf "usage: sixth run <file.6th>~n") (exit 2))
+        (printf "usage: sixth run [--define KEY=VAL]... <file.6th>~n") (exit 2))
       (cmd-run (cadr args))]
      [(equal? (car args) "test") (cmd-test)]
      [(equal? (car args) "bench") (cmd-bench)]

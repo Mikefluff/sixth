@@ -29,6 +29,7 @@ use debug
 : snap ( -- )
   "=== SNAPSHOT shell-count=" .
   "shell-count" load .
+  "observer=" . "O" load .
   "nodes=" . NODES .
   "edges=" . EDGES .
   "===" . cr

@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Iterator
 
 import matplotlib.pyplot as plt
+import matplotlib.animation as anim
 import networkx as nx
 
 SNAPSHOT_HEADER = re.compile(r"^===\s*SNAPSHOT\s*(.*?)\s*===\s*$")
@@ -130,48 +131,7 @@ def render(snapshots, out_path: Path, title: str | None) -> None:
 
     for idx, (meta, graph) in enumerate(snaps):
         ax = axes[idx // cols][idx % cols]
-        if graph.number_of_nodes() == 0:
-            ax.set_axis_off()
-            ax.set_title(_panel_title(meta, idx), fontsize=9)
-            continue
-
-        observer_id = next(iter(graph.nodes), None)
-        node_colors = [
-            "#d04040" if n == observer_id else "#909090"
-            for n in graph.nodes
-        ]
-        edge_colors = [
-            "#a04040" if u == v else "#606060"
-            for (u, v) in graph.edges
-        ]
-        try:
-            pos = nx.kamada_kawai_layout(graph)
-        except Exception:
-            pos = nx.spring_layout(graph, seed=42)
-
-        nx.draw_networkx_edges(
-            graph, pos, ax=ax,
-            edge_color=edge_colors,
-            arrows=True,
-            arrowsize=8,
-            width=0.8,
-            connectionstyle="arc3,rad=0.08",
-        )
-        nx.draw_networkx_nodes(
-            graph, pos, ax=ax,
-            node_color=node_colors,
-            node_size=180,
-            linewidths=0.5,
-            edgecolors="black",
-        )
-        nx.draw_networkx_labels(
-            graph, pos, ax=ax,
-            font_size=7,
-            font_color="white",
-        )
-
-        ax.set_axis_off()
-        ax.set_title(_panel_title(meta, idx), fontsize=9)
+        _draw_snapshot(ax, meta, graph, idx)
 
     # Hide unused axes.
     for i in range(n, rows * cols):
@@ -192,13 +152,99 @@ def _panel_title(meta: dict[str, str], idx: int) -> str:
     if not meta:
         return f"snapshot {idx}"
     parts = []
-    for k in ("shell-count", "nodes", "edges"):
+    for k in ("shell-count", "cycle", "case", "nodes", "edges"):
         if k in meta:
             parts.append(f"{k}={meta[k]}")
     extra = " ".join(f"{k}={v}" for k, v in meta.items()
-                     if k not in ("shell-count", "nodes", "edges"))
+                     if k not in ("shell-count", "cycle", "case",
+                                  "nodes", "edges", "observer"))
     head = " ".join(parts) if parts else f"snapshot {idx}"
     return f"{head}  {extra}".rstrip()
+
+
+def _observer_node(meta: dict[str, str], graph) -> str | None:
+    """Sixth's snapshot metadata may carry `observer=N` — honour it
+    so the highlighted node is the substrate's actual observer rather
+    than whichever node happens to come first in graph.nodes."""
+    obs = meta.get("observer") if meta else None
+    if obs and obs in graph.nodes:
+        return obs
+    return next(iter(graph.nodes), None)
+
+
+def _draw_snapshot(ax, meta, graph, idx) -> None:
+    if graph.number_of_nodes() == 0:
+        ax.set_axis_off()
+        ax.set_title(_panel_title(meta, idx), fontsize=9)
+        return
+
+    observer_id = _observer_node(meta, graph)
+    node_colors = [
+        "#d04040" if n == observer_id else "#909090"
+        for n in graph.nodes
+    ]
+    edge_colors = [
+        "#a04040" if u == v else "#606060"
+        for (u, v) in graph.edges
+    ]
+    try:
+        pos = nx.kamada_kawai_layout(graph)
+    except Exception:
+        pos = nx.spring_layout(graph, seed=42)
+
+    ax.clear()
+    nx.draw_networkx_edges(
+        graph, pos, ax=ax,
+        edge_color=edge_colors,
+        arrows=True,
+        arrowsize=8,
+        width=0.8,
+        connectionstyle="arc3,rad=0.08",
+    )
+    nx.draw_networkx_nodes(
+        graph, pos, ax=ax,
+        node_color=node_colors,
+        node_size=180,
+        linewidths=0.5,
+        edgecolors="black",
+    )
+    nx.draw_networkx_labels(
+        graph, pos, ax=ax,
+        font_size=7,
+        font_color="white",
+    )
+
+    ax.set_axis_off()
+    ax.set_title(_panel_title(meta, idx), fontsize=9)
+
+
+def render_gif(snapshots, out_path: Path, title: str | None,
+               fps: int) -> None:
+    snaps = list(snapshots)
+    if not snaps:
+        sys.exit("no snapshots found in input")
+
+    fig, ax = plt.subplots(figsize=(6.5, 6.5))
+    if title:
+        fig.suptitle(title, fontsize=11)
+
+    def frame(idx):
+        meta, graph = snaps[idx]
+        _draw_snapshot(ax, meta, graph, idx)
+        return []
+
+    animation = anim.FuncAnimation(
+        fig, frame,
+        frames=len(snaps),
+        interval=1000 // max(fps, 1),
+        blit=False,
+        repeat=True,
+    )
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    animation.save(out_path, writer=anim.PillowWriter(fps=fps))
+    print(f"wrote {out_path} ({len(snaps)} frames @ {fps} fps)",
+          file=sys.stderr)
 
 
 def main(argv=None):
@@ -209,10 +255,16 @@ def main(argv=None):
         help="trace input file (default: stdin)")
     parser.add_argument(
         "--out", "-o", type=Path, required=True,
-        help="output image path (PNG, SVG, PDF)")
+        help="output image path (PNG/SVG/PDF for static, GIF for animation)")
     parser.add_argument(
         "--title", "-t", default=None,
         help="figure suptitle")
+    parser.add_argument(
+        "--gif", action="store_true",
+        help="render as animated GIF (one frame per snapshot)")
+    parser.add_argument(
+        "--fps", type=int, default=4,
+        help="GIF frame rate (default 4)")
     args = parser.parse_args(argv)
 
     if args.input:
@@ -220,7 +272,14 @@ def main(argv=None):
     else:
         stream = sys.stdin
 
-    render(parse_snapshots(stream), args.out, args.title)
+    # Auto-detect GIF mode from extension if flag not set.
+    if args.out.suffix.lower() == ".gif":
+        args.gif = True
+
+    if args.gif:
+        render_gif(parse_snapshots(stream), args.out, args.title, args.fps)
+    else:
+        render(parse_snapshots(stream), args.out, args.title)
 
 
 if __name__ == "__main__":

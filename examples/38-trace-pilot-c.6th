@@ -25,6 +25,7 @@ use debug
 : snap-with ( label-num -- )
   "=== SNAPSHOT shell-count=" .
   .
+  "observer=" . "O" load .
   "nodes=" . NODES .
   "edges=" . EDGES .
   "===" . cr

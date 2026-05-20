@@ -11,20 +11,24 @@ time, space, conservation laws, particles, observers, and universal
 computation, then ascend through substrate-native autopoiesis,
 conscious evolution, and cosmogenesis bootstrap.
 
-@bold{Status:} engine + stdlib + 40 demos (sacred hello world +
-Pilots A--F + 3 visual-trace pilots, 646 ✓) + @litchar{#lang sixth}
-+ Racket-FFI PyTorch bridges (shadow / diff / nn-cl) all working.
-Pilot E adds three candidate substrate-readable observability
-measures (@litchar{phi-pa}, @litchar{phi-integ}, @litchar{phi-bidir});
-Pilot F instantiates the preprint's transformer / brain / split-brain
-/ ant-colony encoding maps on toy substrates; three visual-trace
-pilots (@litchar{stdlib/dot.6th} + @litchar{code/render_trace.py})
-render Pilots C, D, and F.3 substrate evolution as multi-panel
-figures via @exec{make traces}.  Single-shot artifact status:
-@exec{make verify}.  See @litchar{CLAIMS.md} for the three-tier
-taxonomy and @litchar{LANGUAGE.md} for Sixth as a stand-alone
-programming language separable from the v9.0 cosmology claims.
-Reference implementation for the Pointer Architecture v9.0 preprint.
+@bold{Status:} engine + stdlib + 41 demos (sacred hello world +
+Pilots A--F + 3 visual-trace pilots + 1 long-epoch parametric, 657
+✓) + @litchar{#lang sixth} + Racket-FFI PyTorch bridges (shadow /
+diff / nn-cl) all working.  Pilot E adds three candidate substrate-
+readable observability measures (@litchar{phi-pa},
+@litchar{phi-integ}, @litchar{phi-bidir}); Pilot F instantiates the
+preprint's transformer / brain / split-brain / ant-colony encoding
+maps on toy substrates; three visual-trace pilots
+(@litchar{stdlib/dot.6th} + @litchar{code/render_trace.py}) render
+Pilots C, D, and F.3 substrate evolution as multi-panel figures or
+animated GIFs via @exec{make traces} / @exec{make gif-pilot-d};
+demo 40 is a parametric long-epoch autopoiesis run controlled by
+the CLI @exec{-D max-cycles=N -D snap-every=K} flags (TCO-safe
+arbitrary scale).  Single-shot artifact status: @exec{make verify}.
+See @litchar{CLAIMS.md} for the three-tier taxonomy and
+@litchar{LANGUAGE.md} for Sixth as a stand-alone programming
+language separable from the v9.0 cosmology claims.  Reference
+implementation for the Pointer Architecture v9.0 preprint.
 
 @table-of-contents[]
 
