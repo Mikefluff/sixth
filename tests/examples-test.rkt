@@ -22,7 +22,9 @@
                'up "examples")))
 
 (define expected
-  '(("01-numbers.6th"                  11)
+  '(;; Sacred hello world — the first distinction
+    ("00-first-distinction.6th"        11)
+    ("01-numbers.6th"                  11)
     ("02-time.6th"                     13)
     ("03-stable.6th"                   14)
     ("04-conflict.6th"                 12)
@@ -60,7 +62,9 @@
     ("32-phi-pa-measurement.6th"           12)
     ;; Phase N — encoding-map pilots (Pilot F)
     ("33-phi-pa-transformer-toy.6th"       10)
-    ("34-phi-pa-brain-toy.6th"             12)))
+    ("34-phi-pa-brain-toy.6th"             12)
+    ("35-phi-pa-split-brain-toy.6th"       14)
+    ("36-phi-pa-ant-colony-toy.6th"        10)))
 
 (define (run-demo file)
   (define out
@@ -85,8 +89,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 593
-                (format "cumulative ✓ count: ~a (expected 593)" total-pass)))
+  (check-equal? total-pass 628
+                (format "cumulative ✓ count: ~a (expected 628)" total-pass)))
 
-(displayln (format "examples regression: ~a / 593 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 628 ✓ across ~a demos"
                    total-pass (length expected)))

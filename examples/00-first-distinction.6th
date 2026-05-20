@@ -1,0 +1,74 @@
+\ examples/00-first-distinction.6th
+\ The first mark.  The boundary of cosmos.
+\
+\ Spencer-Brown: "Draw a distinction."  Laws of Form, the first
+\ operation of any formal universe.  This is the substrate's
+\ realisation: one MARK and the cosmos begins.
+\
+\ This demo is the canonical hello-world.  It is small enough to
+\ be the entire substrate; it is rich enough that the next 33 demos
+\ are commentary on it.
+\
+\ Six moments:
+\   (0) the void           NODES = 0, EDGES = 0
+\   (1) first distinction  MARK         — one token exists
+\   (2) the boundary       NSET, NGET   — a state is attached
+\   (3) first pointer      EDGE+ A B    — token A relates to token B
+\   (4) first self-loop    EDGE+ A A    — the token sees itself
+\   (5) first conflict     EDGE? A A    — does the loop hold?
+\   (6) first resolve      phi-pa A     — measure what now exists
+\
+\ Nothing in this demo requires more than five primitives:
+\   MARK, store, load, NSET, NGET, EDGE+, EDGE?, OUT, NODES, EDGES.
+
+use prelude
+use phi
+use debug
+
+\ (0) The void.
+NODES 0 assert-eq
+EDGES 0 assert-eq
+
+\ (1) The first distinction — a single token comes into existence.
+MARK "A" store
+NODES 1 assert-eq
+EDGES 0 assert-eq
+
+\ (2) The boundary — the token acquires a substrate-state.
+"A" load 1 NSET
+"A" load NGET 1 assert-eq
+
+\ (3) The first pointer — A relates to a fresh token B.
+\     (Two tokens now exist; one edge between them.)
+MARK "B" store
+"A" load "B" load EDGE+
+NODES 2 assert-eq
+EDGES 1 assert-eq
+
+\ (4) The first self-loop — A points at itself.
+\     This is Spencer-Brown's re-entry, Hofstadter's strange loop,
+\     the substrate-monist's bootstrap distinction of Pilot D.
+"A" load "A" load EDGE+
+EDGES 2 assert-eq
+
+\ (5) The first conflict — does the loop hold?
+\     EDGE? interrogates the substrate.  The substrate answers.
+"A" load "A" load EDGE? 1 assert-eq
+
+\ (6) The first resolve — Φ_PA measures what now exists.
+\     OUT(A) = 2 (→A self-loop, →B).
+\     Self-reference indicator = 1.
+\     phi-pa(A) = 2 · 1 · L_max = 20000.
+"A" load OUT 2 assert-eq
+"A" load phi-pa 20000 assert-eq
+
+cr
+"=== The first distinction ===" . cr
+"NODES = 2 (A, B)" . cr
+"EDGES = 2 (A→B, A→A)" . cr
+"A points at itself: 1" . cr
+"phi-pa(A) = 20000" . cr
+cr
+"The substrate exists." . cr
+
+REPORT

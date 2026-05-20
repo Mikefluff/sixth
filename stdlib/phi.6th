@@ -1,20 +1,27 @@
-\ stdlib/phi.6th — substrate-monist Phi_PA measure.
+\ stdlib/phi.6th — candidate substrate-readable observability measures.
 \
-\ Phi_PA(O) := |C_O| * 1[O in C_O] * min(L(sigma), L_max)
+\ This file provides a family of substrate-readable scalars that
+\ summarise an observer's structural relation to the substrate it
+\ inhabits.  Φ_PA (the basic measure) is the working hypothesis of
+\ the v9.0 preprint.  It is NOT the unique choice — the substrate
+\ supports many candidate measures, of which we ship three.  The
+\ empirical question of which discriminates predictions P1–P5 best
+\ is decided by F5 against real-data application; the substrate
+\ itself does not depend on a unique measure.
 \
-\ where
-\   |C_O|             = OUT(O), the observer's out-neighbour set size
-\   1[O in C_O]       = (O EDGE? O), the self-reference indicator
-\   min(L, L_max)     = autopoietic lifespan capped at L_max
+\ Measures provided:
+\   phi-pa     ( O -- phi ) : OUT(O) · 1[O EDGE? O] · L_max
+\   phi-integ  ( O -- phi ) : phi-pa · NSUM(O)
+\                              integration-weighted; requires nodes
+\                              to have feature-loaded NGET
+\   phi-bidir  ( O -- phi ) : (OUT(O)+IN(O)) · 1[O EDGE? O] · L_max
+\                              symmetric bidirectional scope
 \
-\ For reflexive observers under canonical autopoiesis dynamics
-\ (preprint Eq. autopoiesis-dynamics, see substrate.md), NGET(O)
-\ does not decrement, so L diverges; the cap L_max is then the
-\ effective lifespan. For non-reflexive observers the self-reference
-\ indicator is 0 and the whole product is 0 regardless of L.
+\ All three reduce to 0 for non-reflexive observers (self-reference
+\ indicator factors through every measure).
 \
-\ Reference: Pointer Architecture v9.0, sec. phi-pa,
-\            Definition def:phi-pa.
+\ Reference: Pointer Architecture v9.0, Definition def:phi-pa and
+\            §sec:phi-pa-alternatives.
 
 10000 "phi-L-max" store
 
@@ -23,10 +30,56 @@
 : phi-self-ref ( O -- 0|1 )
   dup EDGE? ;
 
-\ Phi_PA scalar.  Reflexive case uses L_max as the lifespan cap.
-\ Non-reflexive case short-circuits via the indicator factor.
+\ ----------------------------------------------------------------
+\ phi-pa — basic measure (Definition def:phi-pa)
+\
+\ Φ_PA = scope · self-ref · L_max
+\
+\ Non-zero iff observer has at least one out-edge AND points at
+\ itself.  Lifespan is the L_max cap (preprint clarifies: NGET does
+\ not decrement for reflexive observers under canonical autopoiesis).
+\ ----------------------------------------------------------------
 : phi-pa ( O -- phi )
   dup OUT             \ ( O scope )
   swap phi-self-ref   \ ( scope indicator )
   *                   \ ( scope*indicator )
   "phi-L-max" load * ;
+
+\ ----------------------------------------------------------------
+\ phi-integ — integration-weighted measure
+\
+\ Φ_integ = scope · self-ref · NSUM(O) · L_max
+\
+\ NSUM(O) is the substrate-internal feature aggregation across
+\ O's out-neighbours.  If each node's NGET is loaded with a
+\ connectivity feature (canonical: NSET n OUT(n)), then NSUM(O)
+\ reflects the integration weight of O's scope — high when O's
+\ neighbours are themselves well-connected, low when they are
+\ peripheral.  This is the substrate-readable analogue of
+\ integration loss across a callosotomy: severing cross-hemispheric
+\ edges reduces NGET of border nodes, which propagates into NSUM(O).
+\ ----------------------------------------------------------------
+: phi-integ ( O -- phi )
+  dup "phi-tmp-O" store
+  OUT                                 \ ( scope )
+  "phi-tmp-O" load phi-self-ref *     \ ( scope*indicator )
+  "phi-tmp-O" load NSUM *             \ ( scope*indicator*nsum )
+  "phi-L-max" load * ;                \ ( phi )
+
+\ ----------------------------------------------------------------
+\ phi-bidir — bidirectional-scope measure
+\
+\ Φ_bidir = (OUT(O) + IN(O)) · self-ref · L_max
+\
+\ Symmetric: counts both observer-points-at-X edges and
+\ X-points-at-observer edges.  Captures connectivity in both
+\ directions equally — useful when the substrate's natural
+\ neighbour-relation is non-directional (e.g. functional
+\ connectivity in EEG, where edges are correlations not flows).
+\ ----------------------------------------------------------------
+: phi-bidir ( O -- phi )
+  dup "phi-tmp-O" store
+  OUT                                 \ ( out )
+  "phi-tmp-O" load IN +               \ ( out+in )
+  "phi-tmp-O" load phi-self-ref *     \ ( scope*indicator )
+  "phi-L-max" load * ;                \ ( phi )

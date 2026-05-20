@@ -1,0 +1,119 @@
+\ examples/36-phi-pa-ant-colony-toy.6th
+\ Encoding-map pilot — ant colony (PSH5).
+\
+\ Builds a synthetic 6-chamber colony substrate per the encoding
+\ map of §sec:encoding-colony (v9.0 preprint):
+\
+\   substrate-node = nest chamber / pheromone-trail junction
+\   out-edge       = pheromone-gradient link
+\   observer       = queen chamber (the privileged aggregation node)
+\   self-reference = queen pheromone is deposited then re-read by
+\                    returning workers (loop closes back to queen)
+\   lifespan       = colony years (we use L_max as cap)
+\
+\ Case 1 — living colony (PSH5 corroboration on toy)
+\   Queen chamber with self-loop + edges to 5 trail-junctions; the
+\   junctions form an internal trail-network triangle/loop.
+\   phi-pa(queen) = 6 · 1 · 10000 = 60000.  Distinctly non-zero —
+\   substrate-monism predicts colony-level consciousness on the
+\   substrate without invoking eliminativism (deny all) or
+\   panpsychism (smear across ants).
+\
+\ Case 2 — dead colony (negative control)
+\   Same chamber topology, but the queen self-loop is absent
+\   (no pheromone re-read).  phi-pa(queen-dead) = 0.
+\
+\ Pilot F.4 is the toy substrate demonstration of PSH5 — the
+\ NOVEL substrate-monist prediction (no brain required, no neural
+\ tissue invoked).  Real myrmecology collaboration is the
+\ companion-programme future work (§sec:future-work-psh).
+
+use prelude
+use graph
+use phi
+use debug
+
+\ ============================================================
+\ Case 1: living colony — queen self-loop active.
+\ ============================================================
+
+MARK "Q" store
+MARK "j1" store  MARK "j2" store  MARK "j3" store
+MARK "j4" store  MARK "j5" store
+
+\ Queen pheromone self-loop (deposit → returning workers re-read).
+"Q" load "Q" load EDGE+
+
+\ Queen → all 5 trail-junctions (pheromone gradient outward).
+"Q" load "j1" load EDGE+
+"Q" load "j2" load EDGE+
+"Q" load "j3" load EDGE+
+"Q" load "j4" load EDGE+
+"Q" load "j5" load EDGE+
+
+\ Internal trail network: triangular path j1-j2-j3-j1 + j4-j5.
+"j1" load "j2" load bi-edge
+"j2" load "j3" load bi-edge
+"j3" load "j1" load bi-edge
+"j4" load "j5" load bi-edge
+
+NODES 6 assert-eq
+
+"Q" load OUT 6 assert-eq                  \ self + 5 junctions
+"Q" load "Q" load EDGE? 1 assert-eq
+"Q" load phi-self-ref 1 assert-eq
+\ Φ_PA(queen, living) = 6 · 1 · 10000 = 60000
+"Q" load phi-pa 60000 assert-eq
+
+\ ============================================================
+\ Case 2: dead colony — queen self-loop severed.
+\ ============================================================
+
+RESET
+
+MARK "Qd" store
+MARK "k1" store  MARK "k2" store  MARK "k3" store
+MARK "k4" store  MARK "k5" store
+
+\ NO queen self-loop (pheromone not re-read / queen absent).
+"Qd" load "k1" load EDGE+
+"Qd" load "k2" load EDGE+
+"Qd" load "k3" load EDGE+
+"Qd" load "k4" load EDGE+
+"Qd" load "k5" load EDGE+
+
+"k1" load "k2" load bi-edge
+"k2" load "k3" load bi-edge
+"k3" load "k1" load bi-edge
+"k4" load "k5" load bi-edge
+
+NODES 6 assert-eq
+
+"Qd" load OUT 5 assert-eq                 \ no self-loop, just junctions
+"Qd" load "Qd" load EDGE? 0 assert-eq
+"Qd" load phi-self-ref 0 assert-eq
+\ Φ_PA(queen-dead) = 5 · 0 · 10000 = 0
+"Qd" load phi-pa 0 assert-eq
+
+\ ============================================================
+\ Pilot F.4 outcome report
+\ ============================================================
+
+cr
+"=== Encoding-map pilot — ant colony (Pilot F.4) ===" . cr
+"Substrate: 1 queen chamber + 5 trail junctions = 6 nodes" . cr
+cr
+"Case 1 (living colony, queen pheromone re-read):" . cr
+"  EDGE?(Q, Q) = 1  (loop active)" . cr
+"  phi-pa(Q)   = 60000  ← PSH5: colony has Phi > 0" . cr
+cr
+"Case 2 (dead colony, no queen self-loop):" . cr
+"  EDGE?(Qd, Qd) = 0" . cr
+"  phi-pa(Qd)    = 0    ← negative control" . cr
+cr
+"PSH5 is the substrate-monist resolution of swarm cognition:" . cr
+"the colony substrate hosts an observer whose Phi is computed at" . cr
+"the colony-graph level — neither absent (eliminativist) nor" . cr
+"smeared per-ant (panpsychist combination problem)." . cr
+
+REPORT
