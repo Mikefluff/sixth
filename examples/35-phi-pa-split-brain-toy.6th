@@ -30,6 +30,16 @@
 \                  reducing NGET(border) = OUT(border), which
 \                  propagates into NSUM(O).
 \
+\ NOTE on the phi-integ "halving": the demo manually sets
+\ NGET(border) = OUT(border) before each measurement (lines below).
+\ This encodes connectivity directly into the substrate feature, so
+\ the "integration" signal that phi-integ reads is by construction
+\ exactly OUT_sum.  This is Tier 2 by design: the demo demonstrates
+\ that an alternative substrate-readable measure CAN halve under
+\ callosotomy when the substrate-state encodes connectivity.  It
+\ does NOT prove that phi-integ captures integration on a generic
+\ substrate where NGET is independent of OUT.  See CLAIMS.md.
+\
 \ Pilot F.3 is the substrate-readable demonstration that
 \ \emph{PSH4 motivates the alternative-measures programme}: the
 \ basic Φ_PA does not discriminate intact from split; the
@@ -103,47 +113,41 @@ MARK "R1" store  MARK "R2" store
 "O" load phi-integ 400000 assert-eq
 
 \ ============================================================
-\ Case 2: callosotomy — same connections, no corpus callosum.
+\ Case 2: in-place callosotomy on the SAME substrate.
+\ EDGE- the four corpus-callosum directed edges (L1↔R1, L2↔R2)
+\ then re-NSET border features.  This matches demo 39's split-brain
+\ pattern and the preprint PSH4 claim: the SAME brain transitions
+\ from intact to severed.  Previously this demo used RESET +
+\ rebuild, which made Case 2 a fresh substrate (rightly criticised
+\ as "two unrelated substrates" rather than a transition).
 \ ============================================================
 
-RESET
+\ Sever the corpus callosum.
+"L1" load "R1" load EDGE-
+"R1" load "L1" load EDGE-
+"L2" load "R2" load EDGE-
+"R2" load "L2" load EDGE-
 
-MARK "O2" store
-MARK "l1" store  MARK "l2" store
-MARK "r1" store  MARK "r2" store
+\ Recompute border NGETs — each lost one cross-hemisphere out-edge.
+"L1" load "L1" load OUT NSET
+"L2" load "L2" load OUT NSET
+"R1" load "R1" load OUT NSET
+"R2" load "R2" load OUT NSET
 
-"O2" load "O2" load EDGE+
-"O2" load "l1" load EDGE+
-"O2" load "l2" load EDGE+
-"O2" load "r1" load EDGE+
-"O2" load "r2" load EDGE+
+\ ---- callosotomy asserts ----
+"O" load OUT 5 assert-eq                  \ SAME as intact (matched scope)
+"O" load "O" load EDGE? 1 assert-eq
+"O" load phi-pa 50000 assert-eq           \ SAME as intact — basic Φ blind
 
-\ Intra-hemisphere preserved.
-"l1" load "l2" load bi-edge
-"r1" load "r2" load bi-edge
+\ OUT(L1) now = 1 (→L2 only), no →R1.
+"L1" load NGET 1 assert-eq
+"R1" load NGET 1 assert-eq
 
-\ Corpus callosum SEVERED (no bi-edges l1-r1, l2-r2).
-
-\ Each hemispheric node's NGET = its own OUT.
-"l1" load "l1" load OUT NSET
-"l2" load "l2" load OUT NSET
-"r1" load "r1" load OUT NSET
-"r2" load "r2" load OUT NSET
-
-\ ---- callosotomy ----
-"O2" load OUT 5 assert-eq                 \ SAME as intact (matched scope)
-"O2" load "O2" load EDGE? 1 assert-eq
-"O2" load phi-pa 50000 assert-eq           \ SAME as intact — basic Φ blind
-
-\ OUT(l1) now = 1 (→l2 only), no →r1.
-"l1" load NGET 1 assert-eq
-"r1" load NGET 1 assert-eq
-
-\ NSUM(O2) = 0 + 1+1+1+1 = 4.  Half of intact.
-"O2" load NSUM 4 assert-eq
+\ NSUM(O) = 0 + 1+1+1+1 = 4.  Half of intact.
+"O" load NSUM 4 assert-eq
 
 \ phi-integ(split) = 5 · 1 · 4 · 10000 = 200000.  HALF of intact.
-"O2" load phi-integ 200000 assert-eq
+"O" load phi-integ 200000 assert-eq
 
 \ ============================================================
 \ Pilot F.3 outcome report

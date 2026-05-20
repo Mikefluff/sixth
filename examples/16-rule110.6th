@@ -1,9 +1,15 @@
-\ examples/16-rule110.6th — Wolfram Rule 110: Turing-complete CA on substrate.
+\ examples/16-rule110.6th — Wolfram Rule 110 on the substrate-CA.
 \
 \ Rule 110 lookup table:
 \   (L,C,R):  000→0  001→1  010→1  011→1  100→0  101→1  110→1  111→0
-\ Cook (2004) proved it universal.  The same STEP-CA that ran Peano,
-\ BFS, conservation, and Rule 90 now runs universal computation.
+\
+\ Scope: this demo verifies Rule 110's lookup table fires correctly on
+\ the substrate-CA for 4 steps.  Rule 110 is KNOWN to be
+\ Turing-complete by external proof (Cook, _Universality in Elementary
+\ Cellular Automata_, Complex Systems 15 (1) 2004) — that universality
+\ is not re-derived here; the demo only establishes that Sixth's
+\ STEP-CA hosts Rule 110's transitions correctly.  See demo 44 for
+\ the visual trace.
 
 use prelude
 use peano

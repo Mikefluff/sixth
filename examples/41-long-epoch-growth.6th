@@ -124,11 +124,18 @@ epoch-step
 
 "O" load NGET 10 assert-eq
 "epoch-i" load max-cycles assert-eq
-\ shell-count grew at least once across the epoch (initial + ≥1 grown)
-"shell-count" load 1 > ASSERT
-\ observer survived its own substrate growth
+\ Exact end-state — substrate is fully deterministic, so weak
+\ inequalities (> 1, > 0) are leaving information on the table.
+\ With defaults max=50, grow-every=10: initial 1 shell + 5 grown
+\ at cycles 10/20/30/40/50 = 6 shells.  Each shell = 3 nodes.
+\ Φ_PA = OUT(O) · 1 · 10000.  OUT(O) = 1 self-loop + 3·6 outward
+\ to shells = 19 → Φ_PA = 190000.
+"shell-count" load 6 assert-eq
 "O" load "O" load EDGE? 1 assert-eq
-"O" load phi-pa 0 > ASSERT
+"O" load OUT 19 assert-eq
+"O" load phi-pa 190000 assert-eq
+NODES 19 assert-eq
+EDGES 73 assert-eq
 
 cr
 "=== Long-epoch growth ===" . cr

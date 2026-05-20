@@ -11,16 +11,22 @@
 \   "где различие я / не-я?"   ← demo 37 hides it
 \
 \ Sequence (preprint sec:bootstrap / sec:demo-31):
-\   void
-\   first-distinction         MARK O                 first token exists
-\   observer-state            NSET O 10              token carries weight
-\   re-entry                  EDGE+ O O              Spencer-Brown bootstrap
-\   i-not-i                   MARK s1                first non-self token
-\   first-pointer             EDGE+ O s1             observer → other
-\   recognition               EDGE+ s1 O             other → observer
-\   second-not-i              MARK s2
-\   closure-of-not-i          MARK s3 + triangle     not-I gains internal structure
-\   shell-formation           remaining edges+NSETs  full shell as in demo 37 step 1
+\   1  void                                          nothing exists
+\   2  first-distinction    MARK O                   first token exists
+\   3  observer-state       NSET O 10                token carries weight
+\   4  re-entry             EDGE+ O O                Spencer-Brown bootstrap
+\   5  second-distinction   MARK s1                  second token exists
+\   6  i-not-i-relation     EDGE+ O s1               I/not-I split CONSTITUTED
+\   7  recognition          EDGE+ s1 O               mutual relation forms
+\   8  second-not-i         MARK s2                  multiplicity in not-I
+\   9  closure-of-not-i     MARK s3 + s1↔s2↔s3↔s1    not-I closes internally
+\  10  o-other-closure      O↔s2, O↔s3 bi-edges      observer reaches all not-I
+\  11  state-fill           NSETs on s1, s2, s3      full shell as demo 37 step 1
+\
+\ Per the reviewer's correction: MARK alone is not yet "I/not-I" —
+\ that distinction is constituted by the POINTER relation in frame 6,
+\ not the bare second MARK in frame 5.  Frame 5 is therefore
+\ "second-distinction"; frame 6 is "i-not-i-relation".
 \
 \ This is the PA-ontological skeleton.  Demo 31 / demo 37 then
 \ repeat the closure+shell-formation phase three more times to
@@ -76,18 +82,23 @@ MARK "O" store
 "re-entry" "event" store snap-onto
 
 \ ============================================================
-\ Frame 5 — I / not-I.  The first non-self distinction.
-\ The substrate now contains "the observer" and "something else".
+\ Frame 5 — second distinction.  A MARK alone is not yet the
+\ I/not-I split: the substrate has two tokens but no relation
+\ that constitutes one as "I" and the other as "other".  That
+\ split is forged by the next frame, when the observer points
+\ at the new token.
 \ ============================================================
 MARK "s1" store
-"i-not-i" "event" store snap-onto
+"second-distinction" "event" store snap-onto
 
 \ ============================================================
-\ Frame 6 — first pointer.  Observer marks the other (I → not-I).
-\ The first asymmetric relation between distinct tokens.
+\ Frame 6 — I/not-I relation.  Observer marks the other (O → s1).
+\ THIS is the moment the I/not-I distinction is constituted:
+\ the observer's pointer at s1 is what makes s1 "not-I" from
+\ the observer's view (preprint sec:operational).
 \ ============================================================
 "O" load "s1" load EDGE+
-"first-pointer" "event" store snap-onto
+"i-not-i-relation" "event" store snap-onto
 
 \ ============================================================
 \ Frame 7 — recognition.  Other points back to observer (not-I → I).
@@ -115,25 +126,25 @@ MARK "s3" store
 "closure-of-not-i" "event" store snap-onto
 
 \ ============================================================
-\ Frame 10 — shell-formation.  The remaining observer ↔ not-I edges
-\ and NSETs complete the shell.  This is the substrate-state demo 37
-\ shows at shell-count = 1: 4 nodes, 13 edges.
+\ Frame 10 — o-other-closure.  Observer extends bi-edge relations
+\ to s2 and s3 (s1 already pointed both ways from frames 6+7).
+\ The observer's view of not-I is now complete: every not-I node
+\ is mutually pointed-at by the observer.
 \ ============================================================
 "O" load "s2" load bi-edge
 "O" load "s3" load bi-edge
-"s1" load "O" load EDGE+
-"O" load "s1" load EDGE+
+"o-other-closure" "event" store snap-onto
+
+\ ============================================================
+\ Frame 11 — state-fill.  Substrate features (NGET) attach to
+\ every not-I node, bringing them to observer's vitality (10).
+\ Substrate-state matches demo 37 step 1: 4 nodes, 13 edges,
+\ Φ_PA = 40000.
+\ ============================================================
 "s1" load 10 NSET
 "s2" load 10 NSET
 "s3" load 10 NSET
-"shell-formation" "event" store snap-onto
-
-\ Reconcile asymmetry: frames 6+7 added directed edges (O→s1, s1→O)
-\ while frame 10 added bi-edges (O↔s2, O↔s3) — net result must
-\ match demo 37 step 1.  Drop the duplicate O→s1 / s1→O that bi-edge
-\ would also have added.  EDGE+ on existing edge is a no-op in Sixth.
-"O" load "s1" load EDGE+
-"s1" load "O" load EDGE+
+"state-fill" "event" store snap-onto
 
 \ ============================================================
 \ End-state invariants — exactly matches demo 37 shell-count = 1.
@@ -152,7 +163,7 @@ cr
 "phi-pa(O)  :" . "O" load phi-pa . cr
 cr
 "This demo decomposes the single 'shell-built' event of demo 37" . cr
-"into its 9 PA-ontological moments.  Each frame is a distinct" . cr
+"into 11 PA-ontological moments.  Each frame is a distinct" . cr
 "event in the Spencer-Brown / PA v9.0 bootstrap vocabulary." . cr
 "Render with: make trace-pa-ontological-shell" . cr
 

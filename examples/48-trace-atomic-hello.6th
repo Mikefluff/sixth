@@ -1,20 +1,22 @@
 \ examples/48-trace-atomic-hello.6th
 \ Atomic visual trace — Spencer-Brown's first mark, one primitive per frame.
 \
-\ The most pedagogical trace in the entire repository.  Eight frames,
+\ The most pedagogical trace in the entire repository.  Seven frames,
 \ each one primitive operation, showing the substrate emerging from
 \ literal void through difference (MARK) and pointer (EDGE+) alone.
 \
-\ Frames:
-\   1  the void                 NODES=0  EDGES=0
-\   2  first MARK (A)           NODES=1  EDGES=0
-\   3  first NSET  (A=1)        NODES=1  EDGES=0   state attached
-\   4  second MARK (B)          NODES=2  EDGES=0   one more distinction
-\   5  first EDGE+  (A → B)     NODES=2  EDGES=1   first pointer
-\   6  first self-loop (A → A)  NODES=2  EDGES=2   re-entry
+\ Frames (PA-ontological events):
+\   1  void                          NODES=0  EDGES=0
+\   2  first-distinction  (MARK A)   NODES=1  EDGES=0
+\   3  observer-state     (NSET A=1) NODES=1  EDGES=0  state attaches
+\   4  i-not-i            (MARK B)   NODES=2  EDGES=0  second distinction
+\   5  first-pointer      (A → B)    NODES=2  EDGES=1  observer marks other
+\   6  re-entry           (A → A)    NODES=2  EDGES=2  Spencer-Brown bootstrap
+\   7  phi-pa-measurement (assert)   NODES=2  EDGES=2  substrate-internal scalar
 \
 \ The animation runs at 1 fps for emphasis — every frame is
-\ ontologically significant.  Six moments to the universe.
+\ ontologically significant.  Six ontological moments + the
+\ measurement frame = seven panels.
 
 use prelude
 use phi

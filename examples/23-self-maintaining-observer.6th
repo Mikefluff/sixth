@@ -161,10 +161,10 @@ zero "xO" store
 0 "lifespan" store
 tick
 
-\ Lifespan should be small (single-digit cycles) for a non-reflexive
-\ observer under decay=3, threshold=5.
+\ Lifespan must match preprint claim — non-reflexive observer dies
+\ in ≤ 6 cycles under decay=3, threshold=5 (preprint sec:pilot-a).
+\ Exact equality, not just "small": the value is deterministic.
 "lifespan" load .  cr
-"lifespan" load 20 < ASSERT
-"lifespan" load 1 > ASSERT
+"lifespan" load 6 assert-eq
 
 REPORT

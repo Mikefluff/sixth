@@ -62,6 +62,8 @@ MARK "h30" store  MARK "h31" store  MARK "h32" store
 \ Case 1 — PSH1: single-pass evaluation, no back-edge.
 \ ============================================================
 
+NODES 12 assert-eq
+EDGES 27 assert-eq
 "O" load OUT 3 assert-eq
 "O" load "O" load EDGE? 0 assert-eq
 "O" load phi-pa 0 assert-eq
@@ -74,6 +76,9 @@ MARK "h30" store  MARK "h31" store  MARK "h32" store
 \ ============================================================
 
 "O" load "O" load EDGE+
+EDGES 28 assert-eq
+"O" load OUT 4 assert-eq
+"O" load "O" load EDGE? 1 assert-eq
 "O" load phi-pa 40000 assert-eq
 
 "psh2-kv-cache-reuse" "event" store

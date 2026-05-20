@@ -49,14 +49,17 @@ zero "M" store
 "M" load OUT 4 assert-eq
 "M" load "M" load EDGE? ASSERT
 
-\ Strange-loop verification: O and M out-sets both equal {A,B,C,M}.
-"O" load OUT "M" load OUT assert-eq
-"O" load "M" load EDGE?    "M" load "M" load EDGE?  assert-eq
-"O" load "A" load EDGE?    "M" load "A" load EDGE?  assert-eq
+\ Strange-loop verification: O and M out-sets are STRUCTURALLY equal.
+\ OUT count alone is necessary but not sufficient (two unrelated
+\ nodes can both have OUT=4); per-target EDGE? equality is the real
+\ structural-mirror condition.
+"O" load OUT "M" load OUT assert-eq                                    \ |out(O)| = |out(M)|
+"O" load "A" load EDGE?    "M" load "A" load EDGE?  assert-eq          \ both point at A
+"O" load "B" load EDGE?    "M" load "B" load EDGE?  assert-eq          \ both point at B
+"O" load "C" load EDGE?    "M" load "C" load EDGE?  assert-eq          \ both point at C
+"O" load "M" load EDGE?    "M" load "M" load EDGE?  assert-eq          \ self-reflective at M
 
-"O" load NEXT NEXT NEXT
-drop
-
+\ Re-entry check: M's self-loop and observer→model relation persist.
 "M" load "M" load EDGE? ASSERT
 "O" load "M" load EDGE? ASSERT
 "M" load OUT 4 assert-eq

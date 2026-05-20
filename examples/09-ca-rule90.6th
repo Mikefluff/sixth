@@ -1,10 +1,17 @@
-\ examples/09-ca-rule90.6th — Sierpinski-like fractal from Wolfram Rule 90.
+\ examples/09-ca-rule90.6th — Wolfram Rule 90 on the substrate-CA.
 \
 \ Cellular-automaton dynamics fall out of substrate primitives directly:
 \ cells = nodes in a chain, state = NSET/NGET feature, neighbour =
 \ PREV/NEXT, tick = STEP-CA (parallel update from current snapshot).
-\ Rule 90: next(n) = state(left) XOR state(right).  One live cell seeds
-\ a fractal that doubles each tick.
+\ Rule 90: next(n) = state(left) XOR state(right).
+\
+\ Scope: this demo verifies Rule 90's lookup table fires correctly on
+\ the substrate for a small number of steps from a single-seed
+\ initial condition.  Rule 90 is KNOWN to produce a Sierpinski-like
+\ pattern on an infinite chain (Wolfram, NKS Ch. 3, p. 25) — the
+\ full fractal structure is not asserted here because the 11-cell
+\ chain truncates the pattern at the boundary.  See demo 45 for the
+\ visual trace.
 
 use prelude
 use peano

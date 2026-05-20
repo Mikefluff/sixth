@@ -53,6 +53,9 @@ MARK "j4" store  MARK "j5" store
 "j3" load "j1" load bi-edge
 "j4" load "j5" load bi-edge
 
+NODES 6 assert-eq
+"Q" load OUT 6 assert-eq
+"Q" load "Q" load EDGE? 1 assert-eq
 "Q" load phi-pa 60000 assert-eq
 "psh5-living-queen-self-loop" "event" store
 1 "Q" load snap-f4
@@ -76,6 +79,9 @@ MARK "k4" store  MARK "k5" store
 "k3" load "k1" load bi-edge
 "k4" load "k5" load bi-edge
 
+NODES 6 assert-eq
+"Qd" load OUT 5 assert-eq
+"Qd" load "Qd" load EDGE? 0 assert-eq
 "Qd" load phi-pa 0 assert-eq
 "psh5-dead-no-self-loop" "event" store
 2 "Qd" load snap-f4

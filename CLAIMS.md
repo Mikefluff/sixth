@@ -27,7 +27,7 @@ trigger F0 of the v9.0 preprint.
    and a `#lang sixth` reader is registered.
 
 2. **All 50 demonstrations pass deterministically.** `examples-test.rkt`
-   asserts cumulative `pass=724 fail=0` across 54 demos covering
+   asserts cumulative `pass=767 fail=0` across 54 demos covering
    the sacred hello world (00), foundations (01–20), Pilots A–F
    (21–36), three substrate-monism visual-trace pilots (37 Pilot D,
    38 Pilot C, 39 split-brain), two long-epoch parametric pilots

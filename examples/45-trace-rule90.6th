@@ -50,7 +50,16 @@ NODES 11 assert-eq
 
 0 snap-with
 
+\ Step 1 — verify Rule-90 lookup on centre neighbourhood.
+\ next(i) = NGET(PREV) XOR NGET(NEXT).
+\ c5 → 0 XOR 1 = 1.  c6 → 0 XOR 0 = 0.  c7 → 1 XOR 0 = 1.
+\ Pins Rule-90 dynamics precisely on the first step; the previous
+\ "c1+c11 >= 0" assertion was trivially true even on a dead substrate.
 ' rule90 STEP-CA    1 snap-with
+"c5" load NGET 1 assert-eq
+"c6" load NGET 0 assert-eq
+"c7" load NGET 1 assert-eq
+
 ' rule90 STEP-CA    2 snap-with
 ' rule90 STEP-CA    3 snap-with
 ' rule90 STEP-CA    4 snap-with
@@ -59,11 +68,9 @@ NODES 11 assert-eq
 ' rule90 STEP-CA    7 snap-with
 ' rule90 STEP-CA    8 snap-with
 
-\ Sanity: pattern has propagated; structure unchanged.
+\ Structure unchanged across the trace (chain topology).
 NODES 11 assert-eq
 EDGES 10 assert-eq
-\ At least one cell besides c6 alive after eight steps.
-"c1" load NGET "c11" load NGET +  0 >=  ASSERT
 
 cr
 "=== Rule 90 trace ===" . cr

@@ -3,27 +3,27 @@
 This directory holds Sixth's reproducible emergence demonstrations.
 Each file is a standalone Sixth program; `raco test
 tests/examples-test.rkt` (or `make verify`) executes all 54 and
-asserts a cumulative 724 ✓ / 0 ✗.
+asserts a cumulative 767 ✓ / 0 ✗.
 
 The demos are organised in fourteen phases:
 
 | Phase | Demos | Asserts | What it shows |
 |-------|-------|---------|---------------|
 | Sacred hello world | 00 | 11 | Spencer-Brown's first mark realised in the substrate |
-| Foundations         | 01–20 | 352 | arithmetic, time, space, conservation, CA, Conway, BFS, morphism |
-| Pilot A (autopoiesis)   | 21–25 | 81 | Maturana–Varela self-production on the discrete substrate |
+| Foundations         | 01–20 | 359 | arithmetic, time, space, conservation, CA, Conway, BFS, morphism |
+| Pilot A (autopoiesis)   | 21–25 | 80 | Maturana–Varela self-production on the discrete substrate |
 | Pilot B (conscious evolution) | 26–29 | 88 | symbiosis, reproduction, Lamarck-style observer selection |
 | Pilot C (cosmogenesis)  | 30 | 21 | 13-node 48-edge cosmos from one `MARK`, surviving harsh decay |
 | Pilot D (substrate-internally-driven) | 31 | 17 | observer drives construction via its own NSUM threshold |
 | Pilot E (Φ_PA measurement)            | 32 | 12 | substrate measures its own substrate-monist scalar |
-| Pilot F (encoding maps)               | 33–36 | 46 | toy substrates for PSH1–PSH5 (transformer / brain / split-brain / colony) |
+| Pilot F (encoding maps)               | 33–36 | 46 | toy substrates for PSH1–PSH5 (transformer / brain (in-place EDGE-) / split-brain (in-place EDGE-) / colony (in-place EDGE-)) |
 | Visual traces                         | 37–39 | 18 | DOT snapshot pilots — Pilots D, C, F.3 rendered as multi-panel figures or animated GIFs |
-| Long-epoch parametric                 | 40–41 | 16 | TCO-safe long autopoiesis runs, CLI-driven cycle count; demo 41 grows the substrate every K cycles for visible long-epoch evolution |
-| Foundation visual traces              | 42–46 | 30 | Conway blinker / glider, Rule 110, Rule 90, Rule 184 1D glider — substrate-state-aware DOT (each cell carries `[label="NGET"]`); the renderer colours alive cells red, dead light grey, and reuses a stable layout across animation frames |
-| Atomic-build traces                   | 47–48 | 10 | One snapshot per **primitive operation** — every `MARK` and every `EDGE+` becomes its own frame. Demo 47 builds Pilot D in 76 atomic frames; demo 48 builds the sacred hello world in 7 frames with PA-ontological event labels (`void`, `first-distinction`, `observer-state`, `i-not-i`, `first-pointer`, `re-entry`, `phi-pa-measurement`). Entity-by-entity emergence through `MARK` (distinction) and `EDGE+` (pointer) alone. |
-| PA-ontological decomposition          | 49    |  5 | First shell of Pilot D unfolded as Spencer-Brown / PA v9.0 events — answers the reviewer question "*где различие я / не-я?*" that demo 37 hides inside a single `shell-built` macro. 10 frames: `void → first-distinction → observer-state → re-entry → i-not-i → first-pointer → recognition → second-not-i → closure-of-not-i → shell-formation`. End-state matches demo 37 step 1 exactly (4 nodes, 13 edges, Φ_PA = 40000). |
+| Long-epoch parametric                 | 40–41 | 19 | TCO-safe long autopoiesis runs, CLI-driven cycle count; demo 40 takes sub-cycle snapshots (after-phase-decay vs after-phase-restore) so the dynamics are VISIBLE; demo 41 grows the substrate every K cycles |
+| Foundation visual traces              | 42–46 | 45 | Conway blinker / glider, Rule 110, Rule 90, Rule 184 1D glider — substrate-state-aware DOT (each cell carries `[label="NGET"]`); the renderer colours alive cells red, dead light grey, and reuses a stable layout across animation frames. Per-step rule-table and oscillation/translation invariants asserted (not just end-state). |
+| Atomic-build traces                   | 47–48 | 10 | One snapshot per **primitive operation** — every `MARK` and every `EDGE+` becomes its own frame. Demo 47 builds Pilot D in 76 atomic frames with semantic event labels (`distinction`/`pointer`/`state-attach`); demo 48 builds the sacred hello world in 7 frames with PA-ontological event labels (`void`, `first-distinction`, `observer-state`, `i-not-i`, `first-pointer`, `re-entry`, `phi-pa-measurement`). |
+| PA-ontological decomposition          | 49    |  5 | First shell of Pilot D unfolded as Spencer-Brown / PA v9.0 events — answers the reviewer question "*где различие я / не-я?*" that demo 37 hides inside a single `shell-built` macro. 11 frames: `void → first-distinction → observer-state → re-entry → second-distinction → i-not-i-relation → recognition → second-not-i → closure-of-not-i → o-other-closure → state-fill`. End-state matches demo 37 step 1 exactly (4 nodes, 13 edges, Φ_PA = 40000). |
 | Pilot E visual trace                  | 50    |  9 | Substrate-internal Φ_PA measurement on three observers. Same scope (case 1 vs case 2 both have 5 out-edges) yields Φ_PA=0 without self-loop and Φ_PA=50000 with it — PSH1 self-reference factor visible as the red self-arc on the observer node. |
-| Pilot F visual traces                 | 51–53 |  8 | F.1 transformer encoding (PSH1/PSH2); F.2 brain encoding (PSH3 waking vs propofol); F.4 ant-colony encoding (PSH5 living vs dead). Each is a side-by-side comparison where the SOLE topological difference is the observer self-loop, and Φ_PA flips between concrete values labelled in the panel title. |
+| Pilot F visual traces                 | 51–53 | 27 | F.1 transformer encoding (PSH1/PSH2); F.2 brain encoding (PSH3 waking vs propofol); F.4 ant-colony encoding (PSH5 living vs dead). Each is a side-by-side comparison where the SOLE topological difference is the observer self-loop, and Φ_PA flips between concrete values labelled in the panel title. |
 
 The visual-trace pilots emit GraphViz DOT blocks on stdout that the
 companion Python renderer (`code/render_trace.py`) parses into
@@ -558,7 +558,7 @@ Register the demo in `tests/examples-test.rkt`:
     ("54-my-new-demo.6th"           N)))   ; N = expected ✓
 ```
 
-Update the cumulative gate (currently 724) and `make verify` passes
+Update the cumulative gate (currently 767) and `make verify` passes
 cleanly. To add a visual trace, `use dot` and emit `dot-snapshot`
 calls between substrate operations.
 

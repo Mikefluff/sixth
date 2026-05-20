@@ -107,8 +107,17 @@ clear-all
 
 0 snap-with
 
+\ Step 1 — vertical {8,13,18} → horizontal {12,13,14}.  Pin the
+\ off-orientation explicitly; the previous test only verified the
+\ even-step (vertical) state, leaving period-2 unproven.
 ' conway STEP-CA      1 snap-with
+12 NGET 1 assert-eq   13 NGET 1 assert-eq   14 NGET 1 assert-eq
+8  NGET 0 assert-eq   18 NGET 0 assert-eq
+
 ' conway STEP-CA      2 snap-with
+\ Step 2 — back to vertical.  Period-2 verified.
+8  NGET 1 assert-eq   13 NGET 1 assert-eq   18 NGET 1 assert-eq
+
 ' conway STEP-CA      3 snap-with
 ' conway STEP-CA      4 snap-with
 ' conway STEP-CA      5 snap-with
@@ -117,10 +126,9 @@ clear-all
 ' conway STEP-CA      8 snap-with
 
 \ ============================================================
-\ Oscillation invariants  (period 2)
+\ Long-term oscillation invariants (period 2 → step 8 = vertical)
 \ ============================================================
 
-\ At step 8 (even), back to original vertical orientation.
 8 NGET 1 assert-eq
 13 NGET 1 assert-eq
 18 NGET 1 assert-eq

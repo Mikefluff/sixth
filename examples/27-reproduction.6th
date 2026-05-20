@@ -142,6 +142,15 @@ cycle cycle cycle
 "oL1" load NGET 10 assert-eq
 
 \ Both clusters can now reproduce.  Parent fires its second offspring.
+\
+\ NOTE on copy-paste: `build-offspring-2` is identical to
+\ `build-offspring` modulo memory-key prefix ("o2"-prefixed instead
+\ of "o"-prefixed).  Sixth has no string-concat primitive, so the
+\ key namespace cannot be parameterised inside a single helper.  In
+\ a string-aware host this would be a single `(build-offspring
+\ prefix --)` word.  The substrate-level operation (MARK + bi-edges
+\ + NSET) is identical between calls — the duplication is in the
+\ Sixth namespace plumbing, not in the substrate semantics.
 
 : build-offspring-2
   MARK "o2G"  store

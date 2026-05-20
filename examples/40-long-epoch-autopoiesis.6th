@@ -26,6 +26,10 @@ use debug
 50  "max-cycles-default" store
 10  "snap-every-default" store
 
+\ Note: `-D max-cycles=0` is indistinguishable from "no override"
+\ because Sixth's `load` on an unset key returns 0.  We treat 0 as
+\ "use the default"; passing 0 explicitly therefore has no effect.
+\ Use any positive value (including 1) for explicit override.
 : max-cycles ( -- n )
   "max-cycles" load dup 0 = if drop "max-cycles-default" load then ;
 

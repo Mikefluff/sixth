@@ -62,31 +62,24 @@ EDGES 8 assert-eq
 
 \ ============================================================
 \ Case 2: propofol anaesthesia — thalamocortical decoupling.
+\ In-place EDGE- of the DMN self-loop on the SAME substrate as
+\ Case 1.  This matches the preprint PSH3 claim: the SAME brain
+\ loses consciousness when the thalamocortical loop disengages —
+\ not "a second, unrelated brain with no loop".  (Demo 39 uses
+\ the same in-place pattern for split-brain; previously this
+\ demo used RESET, which made Case 2 a fresh substrate.)
 \ ============================================================
 
-RESET
-
-MARK "DMN2" store
-MARK "m1" store  MARK "m2" store  MARK "m3" store
-MARK "m4" store  MARK "m5" store  MARK "m6" store  MARK "m7" store
-
-\ Same FC connections as waking, but no self-loop.
-"DMN2" load "m1" load EDGE+
-"DMN2" load "m2" load EDGE+
-"DMN2" load "m3" load EDGE+
-"DMN2" load "m4" load EDGE+
-"DMN2" load "m5" load EDGE+
-"DMN2" load "m6" load EDGE+
-"DMN2" load "m7" load EDGE+
+"DMN" load "DMN" load EDGE-
 
 NODES 8 assert-eq
 EDGES 7 assert-eq
 
-"DMN2" load OUT 7 assert-eq
-"DMN2" load "DMN2" load EDGE? 0 assert-eq
-"DMN2" load phi-self-ref 0 assert-eq
-\ phi-pa(DMN2) = 7 · 0 · 10000 = 0. PSH3 anaesthesia direction.
-"DMN2" load phi-pa 0 assert-eq
+"DMN" load OUT 7 assert-eq
+"DMN" load "DMN" load EDGE? 0 assert-eq
+"DMN" load phi-self-ref 0 assert-eq
+\ phi-pa(DMN) = 7 · 0 · 10000 = 0. PSH3 anaesthesia direction.
+"DMN" load phi-pa 0 assert-eq
 
 \ ============================================================
 \ Substrate-state report

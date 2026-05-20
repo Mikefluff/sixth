@@ -67,14 +67,14 @@ single derivation chain, organised in thirteen phases:
   `first-distinction`, `re-entry`, `i-not-i`, `first-pointer`,
   `recognition`, `closure-of-not-i`, `shell-formation`)
 
-All 724 assertions pass deterministically. Run the regression in
+All 767 assertions pass deterministically. Run the regression in
 one command:
 
 ```bash
 make verify
 # language tests:    ok
 # substrate tests:   ok
-# examples:          724 / 724 ✓ across 54 demos
+# examples:          767 / 767 ✓ across 54 demos
 # docs build:        ok
 # artifact status:   reproducible
 ```
@@ -234,7 +234,7 @@ sufficient for the released demos and can be extended further.
 cd /Users/mikefluff/Documents/Programming/sixt
 raco pkg install --link .          # install the Sixth Racket collection
 
-# the whole regression — all 54 demos, all 724 assertions
+# the whole regression — all 54 demos, all 767 assertions
 make verify
 
 # any single demo

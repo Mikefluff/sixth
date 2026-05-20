@@ -48,6 +48,10 @@ MARK "n4" store  MARK "n5" store  MARK "n6" store  MARK "n7" store
 "DMN" load "n5" load EDGE+   "DMN" load "n6" load EDGE+
 "DMN" load "n7" load EDGE+
 
+NODES 8 assert-eq
+EDGES 8 assert-eq
+"DMN" load OUT 8 assert-eq
+"DMN" load "DMN" load EDGE? 1 assert-eq
 "DMN" load phi-pa 80000 assert-eq
 "psh3-waking-thalamocortical-loop" "event" store
 1 "DMN" load snap-f2
@@ -67,6 +71,10 @@ MARK "m4" store  MARK "m5" store  MARK "m6" store  MARK "m7" store
 "DMN2" load "m5" load EDGE+   "DMN2" load "m6" load EDGE+
 "DMN2" load "m7" load EDGE+
 
+NODES 8 assert-eq
+EDGES 7 assert-eq
+"DMN2" load OUT 7 assert-eq
+"DMN2" load "DMN2" load EDGE? 0 assert-eq
 "DMN2" load phi-pa 0 assert-eq
 "psh3-propofol-decoupled" "event" store
 2 "DMN2" load snap-f2

@@ -82,18 +82,30 @@ clear-all
 
 0 snap-with
 
-' conway STEP-CA      1 snap-with
-' conway STEP-CA      2 snap-with
-' conway STEP-CA      3 snap-with
-' conway STEP-CA      4 snap-with
+\ Live-cell count is a glider invariant — 5 alive at every step.
+\ (Other invariants like specific cell positions vary by phase;
+\ the conservation of glider mass is the simplest per-step check.)
+: live-count
+  0
+   1 NGET +   2 NGET +   3 NGET +   4 NGET +   5 NGET +
+   6 NGET +   7 NGET +   8 NGET +   9 NGET +  10 NGET +
+  11 NGET +  12 NGET +  13 NGET +  14 NGET +  15 NGET +
+  16 NGET +  17 NGET +  18 NGET +  19 NGET +  20 NGET +
+  21 NGET +  22 NGET +  23 NGET +  24 NGET +  25 NGET + ;
+
+' conway STEP-CA      1 snap-with    live-count 5 assert-eq
+' conway STEP-CA      2 snap-with    live-count 5 assert-eq
+' conway STEP-CA      3 snap-with    live-count 5 assert-eq
+' conway STEP-CA      4 snap-with    live-count 5 assert-eq
 
 \ After 4 steps the glider has translated (+1, +1) — final live set is
-\ {8, 14, 17, 18, 19}, matching demo 20.
-8 NGET 1 assert-eq
-14 NGET 1 assert-eq
-17 NGET 1 assert-eq
-18 NGET 1 assert-eq
-19 NGET 1 assert-eq
+\ {8, 14, 17, 18, 19}, matching demo 20.  Grid is 5×5 row-major so
+\ a (+1 row, +1 col) shift = cell-id + 6.
+2  6 + NGET 1 assert-eq      \ initial cell 2  → cell 8
+8  6 + NGET 1 assert-eq      \ initial cell 8  → cell 14
+11 6 + NGET 1 assert-eq      \ initial cell 11 → cell 17
+12 6 + NGET 1 assert-eq      \ initial cell 12 → cell 18
+13 6 + NGET 1 assert-eq      \ initial cell 13 → cell 19
 
 cr
 "=== Conway glider trace ===" . cr

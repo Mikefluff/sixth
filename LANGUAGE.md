@@ -168,8 +168,8 @@ rendered as five panels (shell-count 0..4); render with
 
 - 38 primitives. No promotion of stdlib to primitive without
   documented justification.
-- 724 ✓ across 54 demos. The regression gate
-  (`tests/examples-test.rkt`) enforces `pass=724 fail=0`. Single-
+- 767 ✓ across 54 demos. The regression gate
+  (`tests/examples-test.rkt`) enforces `pass=767 fail=0`. Single-
   command verification: `make verify`. Parametric / long-epoch
   runs via the CLI `-D KEY=VAL` flag (see `examples/40-long-epoch-
   autopoiesis.6th` and `examples/41-long-epoch-growth.6th`).

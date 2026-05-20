@@ -107,4 +107,19 @@ live-count 5 assert-eq
 13 NGET 0 assert-eq
 live-count 5 assert-eq
 
+\ ============================================================
+\ Translation invariance — the glider's defining property.
+\ Grid is 5×5 row-major, so a (+1 row, +1 col) shift maps
+\ cell N to cell N+6 (one row down = +5, one col right = +1).
+\ Initial live-set was {2, 8, 11, 12, 13} → after 4 STEP-CA
+\ should be exactly those cells shifted by +6: {8, 14, 17, 18, 19}.
+\ The five asserts below verify the SHIFT itself, not just the
+\ raw final cell IDs.
+\ ============================================================
+2  6 + NGET 1 assert-eq      \ initial cell  2 → cell  8
+8  6 + NGET 1 assert-eq      \ initial cell  8 → cell 14
+11 6 + NGET 1 assert-eq      \ initial cell 11 → cell 17
+12 6 + NGET 1 assert-eq      \ initial cell 12 → cell 18
+13 6 + NGET 1 assert-eq      \ initial cell 13 → cell 19
+
 REPORT

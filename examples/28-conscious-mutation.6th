@@ -116,8 +116,14 @@ NODES 14 assert-eq
   "ad-dst" store
   "ad-src" store
   "ad-src" load "from-node" load = if
-    "ad-dst" load "ad-src" load EDGE? if
-      "bi-count" load 1 + "bi-count" store
+    \ Exclude self-loops — the observer's acceptance test is about
+    \ bi-edge degree to OTHER nodes (the limbs), not self-reflexivity.
+    \ Without this guard, EDGE+(g,g) would inflate the count and a
+    \ no-limbs variant could pass by adding a single self-loop.
+    "ad-src" load "ad-dst" load = not if
+      "ad-dst" load "ad-src" load EDGE? if
+        "bi-count" load 1 + "bi-count" store
+      then
     then
   then ;
 
@@ -127,9 +133,9 @@ NODES 14 assert-eq
   ' tally-bi EACH-EDGE
   "bi-count" load ;
 
-"v1G" load count-bi-edges-from 3 assert-eq
-"v2G" load count-bi-edges-from 1 assert-eq
-"v3G" load count-bi-edges-from 4 assert-eq    \ 3 to limbs + 1 self-loop
+"v1G" load count-bi-edges-from 3 assert-eq    \ 3 bi-edges to limbs
+"v2G" load count-bi-edges-from 1 assert-eq    \ 1 bi-edge to single limb
+"v3G" load count-bi-edges-from 3 assert-eq    \ 3 limbs (self-loop excluded)
 
 \ ============================================================
 \ Observer's conscious selection: minimum bi-edge degree = 3

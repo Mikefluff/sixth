@@ -14,7 +14,7 @@ conscious evolution, and cosmogenesis bootstrap.
 @bold{Status:} engine + stdlib + 54 demos (sacred hello world +
 Pilots A--F + 3 substrate-monism trace pilots + 2 long-epoch
 parametric + 5 foundation visual traces + 2 atomic-build traces +
-1 PA-ontological shell decomposition, 724 ✓) + @litchar{#lang sixth} + Racket-FFI PyTorch bridges
+1 PA-ontological shell decomposition, 767 ✓) + @litchar{#lang sixth} + Racket-FFI PyTorch bridges
 (shadow / diff / nn-cl) all working.  Pilot E adds three candidate substrate-
 readable observability measures (@litchar{phi-pa},
 @litchar{phi-integ}, @litchar{phi-bidir}); Pilot F instantiates the

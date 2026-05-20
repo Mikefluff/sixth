@@ -66,34 +66,22 @@ NODES 6 assert-eq
 "Q" load phi-pa 60000 assert-eq
 
 \ ============================================================
-\ Case 2: dead colony — queen self-loop severed.
+\ Case 2: dead colony — queen self-loop severed in place on the
+\ SAME substrate as Case 1.  PSH5 claim is that THIS colony loses
+\ Φ_PA when the queen-pheromone loop stops, not that a different
+\ no-queen colony has Φ_PA = 0.  In-place EDGE- matches demo 39's
+\ split-brain pattern.
 \ ============================================================
 
-RESET
-
-MARK "Qd" store
-MARK "k1" store  MARK "k2" store  MARK "k3" store
-MARK "k4" store  MARK "k5" store
-
-\ NO queen self-loop (pheromone not re-read / queen absent).
-"Qd" load "k1" load EDGE+
-"Qd" load "k2" load EDGE+
-"Qd" load "k3" load EDGE+
-"Qd" load "k4" load EDGE+
-"Qd" load "k5" load EDGE+
-
-"k1" load "k2" load bi-edge
-"k2" load "k3" load bi-edge
-"k3" load "k1" load bi-edge
-"k4" load "k5" load bi-edge
+"Q" load "Q" load EDGE-
 
 NODES 6 assert-eq
 
-"Qd" load OUT 5 assert-eq                 \ no self-loop, just junctions
-"Qd" load "Qd" load EDGE? 0 assert-eq
-"Qd" load phi-self-ref 0 assert-eq
+"Q" load OUT 5 assert-eq                  \ no self-loop, just junctions
+"Q" load "Q" load EDGE? 0 assert-eq
+"Q" load phi-self-ref 0 assert-eq
 \ Φ_PA(queen-dead) = 5 · 0 · 10000 = 0
-"Qd" load phi-pa 0 assert-eq
+"Q" load phi-pa 0 assert-eq
 
 \ ============================================================
 \ Pilot F.4 outcome report

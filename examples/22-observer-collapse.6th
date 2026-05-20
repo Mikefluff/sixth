@@ -146,18 +146,10 @@ run-six-steps
 \ that differ pairwise.
 \ ============================================================
 
-: any-cell-differs?
-  "ad-prefix" store                       \ "h1-" / "h2-" / "h3-"
-  "bd-prefix" store
-  0
-  \ Manual unrolled check — string concat would need a primitive we
-  \ don't have.  Just check each cell in turn.
-  "h1-c1" load "h2-c1" load = not  +
-  "h1-c2" load "h2-c2" load = not  +
-  "h1-c3" load "h2-c3" load = not  +
-  "h1-c4" load "h2-c4" load = not  +
-  "h1-c5" load "h2-c5" load = not  +
-  0 > ;
+\ Pairwise difference check — `any-cell-differs?` was prototyped as a
+\ parameterised helper but Sixth has no string-concat primitive, so
+\ the prefix-keyed lookup couldn't fly; the assertions inline the
+\ per-cell comparison instead.
 
 \ H1 vs H2
 "h1-c1" load "h2-c1" load = not
