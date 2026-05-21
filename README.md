@@ -1,23 +1,23 @@
 # Sixth
 
 > A minimal executable substrate language —
-> 40 primitives, 76 reproducible demos, 1049 ✓ across them all,
+> 40 primitives, 78 reproducible demos, 1081 ✓ across them all,
 > reference implementation for the Pointer Architecture v9.0 preprint.
 
 ```
 language tests:    ok
 substrate tests:   ok
-examples:          1049 / 1049 ✓ across 76 demos
+examples:          1081 / 1081 ✓ across 78 demos
 docs build:        ok
 ffi optional:      n/a
 renderer tests:    ok
-figures fresh:     ok (22 forensic JSONL traces match)
+figures fresh:     ok (23 forensic JSONL traces match)
 artifact status:   reproducible
 ```
 
 Stronger reproducibility evidence via `make verify-repro` — runs
 each forensic-trace demo twice, hashes the JSONL, asserts byte-
-identical outputs across all 22 demos × 2 runs.
+identical outputs across all 23 demos × 2 runs.
 
 ![Pilot D evolution — substrate-internally-driven cosmogenesis,
 shell-count 0 → 4, observer node in red.](./docs/figures/pilot_d_trace.png)
@@ -51,10 +51,10 @@ programming language for readers who reject the v9.0 cosmology.
 # install the package
 raco pkg install --link .
 
-# Spencer-Brown's first mark — the sacred hello world
-racket -l sixth/cli -- run examples/00-first-distinction.6th
+# Spencer-Brown's first mark — the second rung of the canonical ladder
+racket -l sixth/cli -- run examples/02-first-distinction.6th
 
-# the whole regression — all 76 demos, all 1049 assertions
+# the whole regression — all 78 demos, all 1081 assertions
 make verify
 ```
 
@@ -90,8 +90,9 @@ foundational demos (`01-numbers` … `20-conway-glider`, 359 ✓):
 | **J** Substrate-native charge conservation     | 51/73 | 60 | 11-cell linear chain, 5 particles tagged by species (NGET=1/2/3 → α/β/γ). STEP-CA `charge-shift` rule (generalised Wolfram Rule 184 lifted from {0,1} to integer NGET) moves particles right one cell per step iff the slot is empty. Across 5 steps, total Σ NGET = 9 AND per-species count (α=2, β=2, γ=1) are conserved EXACTLY. Smallest construction exhibiting a Noether-style conservation law derived structurally from the rule, substrate-readable via `EACH` + sum. `make trace-charge-conservation`. |
 | **K** Spontaneous coalition assembly           | 52/74 | 36 | 9 first-order observers in 3 disjoint K_3 mutual-pointing triangles. A single substrate-readable rule `try-spawn-coalition` — three `EDGE?` checks → MARK new node + bi-edges + own self-loop — fires four times (3× at family tier + 1× at genus tier after sibling socialisation) and reconstructs the full Pilot I hierarchy with no hand-placed meta-observers. The rule reads substrate state, the substrate spawns the response. `make trace-spontaneous-assembly`. |
 | **L** Particle interaction (bound state)       | 75/76 | 33 | Two structurally distinct particles α (NGET=1, 3-limb cluster) and β (NGET=2, 4-limb cluster) interact via a substrate-readable BIND rule: mutual bi-edge α↔β + composite observer M (NGET=8) with own self-loop. The bound state carries its own Φ_PA = 30000; α and β gain scope +2 each → Φ_PA 60000/70000. Σ NGET over particles preserved (M is binding marker, not a particle). Same physics-grammar as meson = quark + antiquark + gluon binding. `make trace-particle-interaction`. |
+| **M** Bound-state decay (inverse of L)         | 77/78 | 32 | Reverse direction of Pilot L. The DECAY EVENT is severing M's self-loop alone — Φ_PA(M) collapses 30000 → 0 the instant phi-self-ref(M) = 0, even though M is still topologically connected to α and β (Pilot G principle in reverse). Phase B housekeeping removes M↔α/β + α↔β bi-edges; M survives as an isolated ash node (no edges, NGET=0). Σ NGET over particles preserved across the full bind+decay cycle. Binding is REVERSIBLE under EDGE-. `make trace-particle-decay`. |
 
-Cumulative: **1049 ✓ / 0 ✗ across 76 demos** (canonical Spencer-Brown ladder + substrate applications + Pilots A–F core + 3 substrate-monism trace pilots + 2 long-epoch parametric + 5 foundation visual traces + 2 atomic-build traces + Pilot G composite distinction + Pilot H mutation+selection + Pilot I multi-level hierarchy + Pilot J substrate-native charge conservation + Pilot K spontaneous coalition assembly + Pilot L particle interaction / bound-state formation).
+Cumulative: **1081 ✓ / 0 ✗ across 78 demos** (canonical Spencer-Brown ladder + substrate applications + Pilots A–F core + 3 substrate-monism trace pilots + 2 long-epoch parametric + 5 foundation visual traces + 2 atomic-build traces + Pilot G composite distinction + Pilot H mutation+selection + Pilot I multi-level hierarchy + Pilot J substrate-native charge conservation + Pilot K spontaneous coalition assembly + Pilot L particle interaction / bound-state formation + Pilot M bound-state decay / inverse of L).
 
 ## Running and rendering
 
@@ -99,10 +100,10 @@ Cumulative: **1049 ✓ / 0 ✗ across 76 demos** (canonical Spencer-Brown ladder
 # one-shot artifact-status report (Tier-1 verification, see CLAIMS.md)
 make verify
 
-# any of the 76 demos
+# any of the 78 demos
 racket -l sixth/cli -- run examples/46-phi-pa-split-brain-toy.6th
 
-# all 76 demos against the rackunit regression gate
+# all 78 demos against the rackunit regression gate
 raco test tests/examples-test.rkt
 
 # render the three static trace figures (Pilots C, D, F.3)
@@ -144,7 +145,7 @@ stdlib/       Sixth-language standard library (prelude, peano,
               candidate substrate-readable observability measures;
               dot.6th emits GraphViz DOT snapshots for the
               visual-trace pilots.
-examples/     76 emergence demonstrations
+examples/     78 emergence demonstrations
               (00 hello + 01–20 foundations + 21–36 Pilots A–F +
               37–39 substrate-monism traces + 40–41 long-epoch
               parametric + 42–46 foundation visual traces +
@@ -163,7 +164,7 @@ code/         Python tooling. render_trace.py reads dot.6th
               SVG / PDF or animated GIF.
 scripts/      verify.sh (artifact-status report; backs `make verify`)
 tests/        rackunit suites — lexer, parser, VM, substrate,
-              loader, examples-test.rkt (regression gate at 1049 ✓)
+              loader, examples-test.rkt (regression gate at 1081 ✓)
 docs/         Scribble manual + embedded README figure
 build/        regeneratable artefacts (raco scribble HTML, render
               outputs) — gitignored

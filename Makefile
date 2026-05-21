@@ -25,6 +25,7 @@
         trace-charge-conservation forensic-charge-conservation \
         trace-spontaneous-assembly forensic-spontaneous-assembly \
         trace-particle-interaction forensic-particle-interaction \
+        trace-particle-decay forensic-particle-decay \
         foundation-gifs all-figures \
         gif-pilot-c gif-pilot-d gif-split-brain gifs
 
@@ -425,6 +426,21 @@ trace-particle-interaction:
 forensic-particle-interaction:
 	@bash scripts/forensic.sh examples/76-trace-particle-interaction.6th particle_interaction "Pilot L particle interaction" tiered
 
+# Pilot M — bound-state decay (inverse of Pilot L, demo 78).
+# DECAY EVENT = loss of M's self-loop (Φ_PA(M) flips to 0); then
+# substrate housekeeping unwinds the remaining edges.
+trace-particle-decay:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- run examples/78-trace-particle-decay.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/particle_decay.png \
+	      --title "Pilot M — bound-state decay (sever M's self-loop → Φ_PA(M) collapses → particles free)" \
+	      --layout tiered
+	@echo "→ open build/figures/particle_decay.png"
+
+forensic-particle-decay:
+	@bash scripts/forensic.sh examples/78-trace-particle-decay.6th particle_decay "Pilot M bound-state decay" tiered
+
 forensic-pilot-e:
 	@bash scripts/forensic.sh examples/66-trace-pilot-e-phi-pa.6th pilot_e "Pilot E"
 
@@ -489,8 +505,9 @@ forensic-all: forensic-pilot-d forensic-pilot-c forensic-split-brain \
               forensic-particle-families \
               forensic-charge-conservation \
               forensic-spontaneous-assembly \
-              forensic-particle-interaction
-	@echo "→ all 22 forensic traces rendered (PNG + JSONL + diff per demo)"
+              forensic-particle-interaction \
+              forensic-particle-decay
+	@echo "→ all 23 forensic traces rendered (PNG + JSONL + diff per demo)"
 
 # Visibly growing substrate over a long epoch (demo 41 — shell added
 # every GROW cycles; structure changes across frames).

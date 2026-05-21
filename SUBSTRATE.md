@@ -1,7 +1,7 @@
 # Sixth Substrate — Foundational Pointer Architecture
 
 This document accompanies the Sixth substrate implementation in
-`sixth/primitives/substrate.rkt` and the 76 emergence demonstrations
+`sixth/primitives/substrate.rkt` and the 78 emergence demonstrations
 under `examples/`. The goal is *not* to derive physics — it is to
 build the minimum formal artifact in which structures such as
 numbers, time, space, conservation laws, particles, self-reference,
@@ -44,7 +44,7 @@ two tokens (`EDGE+`), or a transformation of those relations
 
 ## What the demos demonstrate
 
-The 76 demonstrations live in `examples/` (file-by-file index in
+The 78 demonstrations live in `examples/` (file-by-file index in
 [`examples/README.md`](./examples/README.md)). Each isolates a
 single derivation chain, organised in six conceptual phases that
 go from simplest distinction to highest-order composition:
@@ -90,6 +90,15 @@ go from simplest distinction to highest-order composition:
   its own Φ_PA (= 30000) while flavour charges of constituents
   remain individually conserved (Σ NGET over particles preserved).
   Same physics-grammar as meson = quark + antiquark + gluon binding.
+- **77–78 Pilot M — bound-state decay (inverse of Pilot L).**
+  The DECAY EVENT is severing M's self-loop alone — Φ_PA(M) flips
+  30000 → 0 the instant phi-self-ref(M) = 0, even though M still
+  bi-edges α and β (Pilot G principle in reverse). Phase-B
+  housekeeping unwinds the remaining edges; particles return to
+  their free state. Σ NGET over particles preserved across the
+  full bind+decay cycle. Binding is REVERSIBLE under EDGE-, and
+  the substrate's charge-conservation grammar holds in both
+  directions of the interaction.
 - **53–54 Long-epoch parametric pilots.** TCO-safe runs of arbitrary
   cycle count; demo 53 shows after-decay/after-restore sub-cycle
   snapshots for visible autopoiesis dynamics; demo 54 grows the
@@ -106,14 +115,14 @@ go from simplest distinction to highest-order composition:
   trace (72), charge-conservation trace (73), spontaneous-assembly
   trace (74).
 
-All 1049 assertions pass deterministically. Run the regression in
+All 1081 assertions pass deterministically. Run the regression in
 one command:
 
 ```bash
 make verify
 # language tests:    ok
 # substrate tests:   ok
-# examples:          1049 / 1049 ✓ across 76 demos
+# examples:          1081 / 1081 ✓ across 78 demos
 # docs build:        ok
 # artifact status:   reproducible
 ```
@@ -273,7 +282,7 @@ sufficient for the released demos and can be extended further.
 cd /Users/mikefluff/Documents/Programming/sixt
 raco pkg install --link .          # install the Sixth Racket collection
 
-# the whole regression — all 76 demos, all 1049 assertions
+# the whole regression — all 78 demos, all 1081 assertions
 make verify
 
 # any single demo

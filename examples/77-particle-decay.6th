@@ -1,0 +1,212 @@
+\ examples/77-particle-decay.6th
+\ Pilot M — bound-state decay (inverse of Pilot L binding).
+\
+\ Pilot L showed that two particles can BIND via mutual bi-edge +
+\ composite observer with own self-loop.  Pilot M shows the inverse:
+\ the same substrate-readable structure can be UNWOUND by EDGE-
+\ removals, returning the constituents to their free-particle state.
+\
+\ Two facts about the decay sequence make it more than mechanical
+\ undo:
+\
+\   1. The DECAY-EVENT — the qualitative moment when M ceases to be
+\      a bound state — is the removal of M's SELF-LOOP, not the
+\      removal of its bi-edges to α and β.  Φ_PA(M) flips from 30000
+\      to 0 the instant the self-loop is gone, even though M is
+\      still topologically connected to both particles.  This is
+\      Pilot G's principle (composite-distinction requires meta-
+\      self-reference) read in reverse.
+\
+\   2. CHARGE CONSERVATION holds through decay just as it did through
+\      binding (Pilot J).  Σ NGET over particles never changes; the
+\      composite marker (M with NGET=8) becomes a substrate-resident
+\      "ash" node (NGET=0, OUT=0) but does not destroy or create
+\      flavour charge.
+\
+\ Construction:
+\
+\   1. Start from the Pilot L end-state (α, β, composite M with all
+\      binding edges in place).
+\   2. Apply DECAY rule in two phases:
+\        Phase A — sever M's self-loop only.  M.Φ_PA → 0 immediately;
+\                  the bound state ceases to exist as an observer.
+\        Phase B — sever M↔α, M↔β, and α↔β bi-edges; reset M's NGET
+\                  to 0.  Particles return to their pre-binding
+\                  free state; M becomes an isolated ash node.
+\   3. Assert at each phase that Σ NGET over particles is unchanged.
+
+use prelude
+use graph
+use phi
+use debug
+
+\ ============================================================
+\ Particle constructors (same as Pilot L).
+\ ============================================================
+
+: ring-3 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l1" load bi-edge ;
+
+: ring-4 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store  MARK "l4" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l4" load bi-edge
+  "l4" load "l1" load bi-edge ;
+
+: obs-attach-3 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge ;
+
+: obs-attach-4 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge
+  "ok" load load "l4" load bi-edge ;
+
+\ ============================================================
+\ Charge telemetry (Pilot J pattern).
+\ ============================================================
+
+0 "particle-charge" store
+
+: add-if-particle ( node -- )
+  NGET dup 0 > over 4 < * if
+    "particle-charge" load + "particle-charge" store
+  else
+    drop
+  then ;
+
+: total-particle-charge ( -- s )
+  0 "particle-charge" store
+  ' add-if-particle EACH
+  "particle-charge" load ;
+
+\ ============================================================
+\ Build particles α and β + composite M (the Pilot L end-state).
+\ ============================================================
+
+MARK "alpha" store
+"alpha" load "alpha" load EDGE+
+ring-3
+"alpha" obs-attach-3
+"alpha" load 1 NSET
+
+MARK "beta" store
+"beta" load "beta" load EDGE+
+ring-4
+"beta" obs-attach-4
+"beta" load 2 NSET
+
+"alpha" load "beta" load bi-edge
+
+MARK "M" store
+"M" load "M" load EDGE+
+"M" load "alpha" load bi-edge
+"M" load "beta"  load bi-edge
+"M" load 8 NSET
+
+\ Sanity — Pilot L end-state (cross-check).
+NODES 10 assert-eq
+EDGES 37 assert-eq
+"M" load phi-pa 30000 assert-eq
+"alpha" load phi-pa 60000 assert-eq
+"beta"  load phi-pa 70000 assert-eq
+total-particle-charge 3 assert-eq
+
+\ ============================================================
+\ Phase A — the DECAY EVENT: sever M's self-loop only.
+\ Φ_PA(M) flips from 30000 to 0 because phi-self-ref(M) = 0.
+\ M is still topologically a hub (bi-edges to α, β intact) but
+\ substrate-monism no longer reads it as a bound state.
+\ ============================================================
+
+"M" load "M" load EDGE-
+
+"M" load OUT 2 assert-eq              \ to α, to β (no self anymore)
+"M" load "M" load EDGE? 0 assert-eq
+"M" load phi-self-ref 0 assert-eq
+"M" load phi-pa 0 assert-eq           \ DECAY EVENT
+
+\ Particles still have bi-edges to M and to each other, so their
+\ scope is still elevated.
+"alpha" load OUT 6 assert-eq          \ unchanged
+"alpha" load phi-pa 60000 assert-eq
+"beta"  load OUT 7 assert-eq
+"beta"  load phi-pa 70000 assert-eq
+
+\ Charge unchanged.
+total-particle-charge 3 assert-eq
+
+\ ============================================================
+\ Phase B — substrate housekeeping: sever the remaining edges
+\ (M↔α, M↔β, α↔β) and reset M's NGET to 0.  Particles return
+\ to their pre-binding free state.
+\ ============================================================
+
+"M" load "alpha" load EDGE-
+"alpha" load "M" load EDGE-
+"M" load "beta"  load EDGE-
+"beta"  load "M" load EDGE-
+"alpha" load "beta" load EDGE-
+"beta"  load "alpha" load EDGE-
+
+"M" load 0 NSET                       \ composite marker dissolved
+
+"M" load OUT 0 assert-eq
+"M" load IN  0 assert-eq
+"M" load NGET 0 assert-eq
+
+\ Particles are now back to their free state — identical to the
+\ initial conditions of Pilot L.
+"alpha" load OUT 4 assert-eq          \ self + 3 limbs (free α)
+"alpha" load phi-pa 40000 assert-eq
+"beta"  load OUT 5 assert-eq          \ self + 4 limbs (free β)
+"beta"  load phi-pa 50000 assert-eq
+
+"alpha" load "beta"  load EDGE? 0 assert-eq
+"beta"  load "alpha" load EDGE? 0 assert-eq
+
+\ ============================================================
+\ End-state structural invariants.
+\ Substrate has no node-deletion primitive, so M survives as
+\ an isolated ash node (no edges, NGET=0).  Edge count returns
+\ to the pre-binding total of 30.
+\ ============================================================
+
+NODES 10 assert-eq                    \ M still exists as node (no DELETE)
+EDGES 30 assert-eq                    \ back to pre-binding total
+
+\ ============================================================
+\ Charge conservation across the FULL bind+decay cycle:
+\ Before binding (initial)  : Σ = 3
+\ After binding              : Σ = 3
+\ After decay event (phase A): Σ = 3
+\ After full decay (phase B) : Σ = 3
+\ ============================================================
+
+total-particle-charge 3 assert-eq
+
+cr
+"=== Pilot M — bound-state decay ===" . cr
+"Phase A (decay event): sever M's self-loop only" . cr
+"  Φ_PA(M) flips 30000 → 0 — bound state ceases to exist" . cr
+"  particles' Φ_PA unchanged; topology to M still in place" . cr
+"Phase B (housekeeping): sever M↔α, M↔β, α↔β + NGET(M)=0" . cr
+"  particles return to free state (Φ_PA back to 40000, 50000)" . cr
+"  M becomes an isolated ash node (no edges, no charge)" . cr
+cr
+"Σ NGET particles preserved at 3 across the full bind+decay cycle." . cr
+"Binding is REVERSIBLE: the substrate's EDGE- primitive provides" . cr
+"structural undo while charge-conservation grammar holds in both" . cr
+"directions.  The decay event is identified as the loss of M's" . cr
+"self-loop (Pilot G principle in reverse: no meta-self-reference," . cr
+"no held composite)." . cr
+
+REPORT

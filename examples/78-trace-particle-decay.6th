@@ -1,0 +1,138 @@
+\ examples/78-trace-particle-decay.6th
+\ Visual trace — Pilot M bound-state decay.
+\
+\ Three snapshots covering the decay sequence:
+\
+\   #0 bound-state
+\       Pilot L end-state: α (NGET=1, teal), β (NGET=2, amber),
+\       composite M (NGET=8, steel blue) with self-loop + bi-edges
+\       to both particles + α↔β interaction quantum.
+\       Φ_PA(M) = 30000 (held composite).
+\
+\   #1 self-loop-severed   ← THE DECAY EVENT
+\       Only M's self-loop is removed.  M is still topologically
+\       a hub (bi-edges to α, β intact, α↔β intact), but
+\       phi-self-ref(M) = 0 so Φ_PA(M) = 0.  The composite no
+\       longer reads as a bound state — Pilot G's principle in
+\       reverse.
+\
+\   #2 fully-dissolved
+\       Remaining edges (M↔α, M↔β, α↔β) severed; M's NGET reset
+\       to 0.  Particles return to their free state with original
+\       Φ_PA = 40000, 50000.  M survives as an isolated ash node
+\       (no edges, no charge — substrate has no node-deletion
+\       primitive).
+
+use prelude
+use graph
+use phi
+use dot
+use debug
+
+: ring-3 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l1" load bi-edge ;
+
+: ring-4 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store  MARK "l4" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l4" load bi-edge
+  "l4" load "l1" load bi-edge ;
+
+: obs-attach-3 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge ;
+
+: obs-attach-4 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge
+  "ok" load load "l4" load bi-edge ;
+
+: snap-decay ( label-num -- )
+  "=== SNAPSHOT level=" .
+  .
+  "rule=" . "pilot-m-bound-state-decay" .
+  "seed=" . "two-particles-bound" .
+  "event=" . "event" load .
+  "nodes=" . NODES .
+  "edges=" . EDGES .
+  "phi-pa-alpha=" . "alpha" load phi-pa .
+  "phi-pa-beta="  . "beta"  load phi-pa .
+  "phi-pa-M="     . "M" load phi-pa .
+  "===" . cr
+  dot-snapshot-state ;
+
+\ ============================================================
+\ Build the Pilot L end-state directly (α + β bound by composite M).
+\ ============================================================
+
+MARK "alpha" store
+"alpha" load "alpha" load EDGE+
+ring-3
+"alpha" obs-attach-3
+"alpha" load 1 NSET
+
+MARK "beta" store
+"beta" load "beta" load EDGE+
+ring-4
+"beta" obs-attach-4
+"beta" load 2 NSET
+
+"alpha" load "beta" load bi-edge
+
+MARK "M" store
+"M" load "M" load EDGE+
+"M" load "alpha" load bi-edge
+"M" load "beta"  load bi-edge
+"M" load 8 NSET
+
+"bound-state" "event" store
+0 snap-decay
+
+\ ============================================================
+\ Phase A — DECAY EVENT (sever M's self-loop only).
+\ Φ_PA(M) collapses from 30000 to 0.
+\ ============================================================
+
+"M" load "M" load EDGE-
+
+"self-loop-severed" "event" store
+1 snap-decay
+
+\ ============================================================
+\ Phase B — housekeeping (sever M↔α, M↔β, α↔β + NGET(M)=0).
+\ Particles return to their free state.
+\ ============================================================
+
+"M" load "alpha" load EDGE-
+"alpha" load "M" load EDGE-
+"M" load "beta"  load EDGE-
+"beta"  load "M" load EDGE-
+"alpha" load "beta" load EDGE-
+"beta"  load "alpha" load EDGE-
+
+"M" load 0 NSET
+
+"fully-dissolved" "event" store
+2 snap-decay
+
+\ End-state invariants.
+NODES 10 assert-eq
+EDGES 30 assert-eq
+"alpha" load phi-pa 40000 assert-eq
+"beta"  load phi-pa 50000 assert-eq
+"M"     load phi-pa 0     assert-eq
+
+cr
+"=== Bound-state decay visual trace ===" . cr
+"3 snapshots:  bound → self-loop-severed (DECAY EVENT) → fully-dissolved" . cr
+"Render with: make trace-particle-decay" . cr
+
+REPORT
