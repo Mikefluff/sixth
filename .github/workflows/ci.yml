@@ -8,7 +8,7 @@ on:
 
 jobs:
   verify:
-    name: make verify (81 demos / 1117 ✓)
+    name: make verify (84 demos / 1140 ✓)
     runs-on: ubuntu-latest
     timeout-minutes: 15
 

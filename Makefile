@@ -468,6 +468,18 @@ stress-test:
 	@echo "=== stress test: autopoiesis stability × $(STRESS_CYCLES) ==="
 	@racket -l sixth/cli -- -D max-cycles=$(STRESS_CYCLES) \
 	  run examples/81-stress-autopoiesis-stability.6th | tail -8
+	@echo
+	@echo "=== stress test: Conway blinker periodicity × $(STRESS_CYCLES) ==="
+	@racket -l sixth/cli -- -D max-cycles=$(STRESS_CYCLES) \
+	  run examples/82-stress-conway-blinker-periodicity.6th | tail -10
+	@echo
+	@echo "=== stress test: sprout linear growth × $(STRESS_CYCLES) ==="
+	@racket -l sixth/cli -- -D max-cycles=$(STRESS_CYCLES) \
+	  run examples/83-stress-sprout-linear-growth.6th | tail -10
+	@echo
+	@echo "=== stress test: Rule 184 ring conservation × $(STRESS_CYCLES) ==="
+	@racket -l sixth/cli -- -D max-cycles=$(STRESS_CYCLES) \
+	  run examples/84-stress-rule184-ring-conservation.6th | tail -8
 
 forensic-pilot-e:
 	@bash scripts/forensic.sh examples/66-trace-pilot-e-phi-pa.6th pilot_e "Pilot E"

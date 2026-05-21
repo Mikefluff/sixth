@@ -1,0 +1,99 @@
+\ examples/83-stress-sprout-linear-growth.6th
+\ Sprout stress — substrate-time linear-growth invariant.
+\
+\ Demo 13 established that under the SPROUT rule (every leaf gets
+\ one child per step), the substrate grows by exactly one new
+\ node per STEP.  This demo runs the sprout rule CLI-parametric N
+\ steps and asserts at EVERY step that the invariant
+\
+\     NODES(t) = 3 + t       (3 = initial chain length)
+\
+\ holds exactly.  Any drift (sprout fails to fire, or fires
+\ multiple times) raises the divergence counter.
+\
+\ Each step also adds exactly one EDGE+ (from the old leaf to the
+\ new child), so EDGES(t) = 2 + t.
+\
+\ Default N=1000 steps → 1003 nodes at end (~0.4s).  Cost is
+\ O(N²) because each STEP's EACH iterates the GROWING substrate;
+\ practical showcase ceiling is around 10⁴ steps (~30s).  For pure
+\ linear-CA stress without substrate growth, see demos 79/84.
+
+use prelude
+use peano
+use debug
+
+1000 "max-cycles-default" store
+: max-cycles ( -- n )
+  "max-cycles" load dup 0 = if drop "max-cycles-default" load then ;
+
+\ Sprout rule (from demo 13).
+: sprout
+  dup OUT 0 = if
+    MARK 2dup EDGE+ 2drop
+  else
+    drop
+  then ;
+
+\ Initial chain 1→2→3.
+zero
+succ
+succ
+drop
+
+NODES 3 assert-eq
+EDGES 2 assert-eq
+
+\ ============================================================
+\ Per-step invariant: NODES = 3 + step, EDGES = 2 + step.
+\ Track max divergence across the epoch.
+\ ============================================================
+
+0 "epoch-i"    store
+0 "max-drift"  store
+
+: track-drift
+  NODES "epoch-i" load 3 + - dup 0 < if 0 swap - then
+  "max-drift" load over < if "max-drift" store else drop then
+  EDGES "epoch-i" load 2 + - dup 0 < if 0 swap - then
+  "max-drift" load over < if "max-drift" store else drop then ;
+
+: sprout-step
+  STEP
+  ' sprout EACH
+  track-drift ;
+
+: stress-step
+  "epoch-i" load max-cycles < if
+    "epoch-i" load 1 + "epoch-i" store
+    sprout-step
+    stress-step
+  then ;
+
+stress-step
+
+\ ============================================================
+\ End-state assertions.
+\ ============================================================
+
+"max-drift" load 0 assert-eq               \ NODES/EDGES grew by exactly 1 every step
+
+NODES "epoch-i" load 3 + assert-eq         \ final structural
+EDGES "epoch-i" load 2 + assert-eq
+NOW   "epoch-i" load assert-eq             \ global step counter
+"epoch-i" load max-cycles assert-eq
+
+cr
+"=== Sprout stress — substrate-time linear growth ===" . cr
+"max-cycles =" . max-cycles . cr
+"epoch-i    =" . "epoch-i" load . cr
+"NOW        =" . NOW . cr
+"NODES      =" . NODES . cr
+"EDGES      =" . EDGES . cr
+"max drift  =" . "max-drift" load . cr
+cr
+"Across every one of the" . max-cycles . "STEPs, sprout added" . cr
+"EXACTLY one node and one edge.  Substrate-time grows linearly at" . cr
+"scale, with no missed beats or double sprouts." . cr
+
+REPORT

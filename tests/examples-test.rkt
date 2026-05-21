@@ -2,8 +2,8 @@
 
 ;; tests/examples-test.rkt — regression gate.
 ;;
-;; Runs each of the 81 emergence demos and asserts the cumulative
-;; ✓ pass count is unchanged at 1117.  Each demo's expected pass
+;; Runs each of the 84 emergence demos and asserts the cumulative
+;; ✓ pass count is unchanged at 1140.  Each demo's expected pass
 ;; count is listed in the `expected` table below; the sum must
 ;; equal the gate constant.  Counting ✓ marks printed during the
 ;; run (engine prints ✓ for every successful ASSERT, including
@@ -137,7 +137,10 @@
     ;; via `make stress-test CYCLES=1000000`.
     ("79-stress-charge-conservation.6th"    8)
     ("80-stress-bind-decay-cycle.6th"      17)
-    ("81-stress-autopoiesis-stability.6th" 11)))
+    ("81-stress-autopoiesis-stability.6th" 11)
+    ("82-stress-conway-blinker-periodicity.6th"  8)
+    ("83-stress-sprout-linear-growth.6th"   7)
+    ("84-stress-rule184-ring-conservation.6th"   8)))
 
 (define (run-demo file)
   (define out
@@ -162,8 +165,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1117
-                (format "cumulative ✓ count: ~a (expected 1117)" total-pass)))
+  (check-equal? total-pass 1140
+                (format "cumulative ✓ count: ~a (expected 1140)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1117 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1140 ✓ across ~a demos"
                    total-pass (length expected)))

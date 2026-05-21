@@ -1,0 +1,130 @@
+\ examples/84-stress-rule184-ring-conservation.6th
+\ Wolfram Rule 184 stress — particle-count conservation on a
+\ closed ring at scale.
+\
+\ Demo 26 verified Rule 184 ("traffic CA") moves a single particle
+\ rightward on an open chain.  This demo strengthens the claim:
+\ Rule 184 strictly preserves the BINARY particle count across
+\ arbitrary STEP-CA iterations when the substrate is a closed
+\ ring (particles wrap around instead of evaporating at boundary).
+\
+\ Pilot J' (demo 79) covered the multi-flavour generalisation
+\ (integer NGET); this demo confirms the binary special case ─
+\ Wolfram's original "traffic conservation" property ─ holds
+\ exactly at scale.
+\
+\ Default N=1000 cycles, showcase via -D max-cycles=1000000.
+
+use prelude
+use peano
+use debug
+
+1000 "max-cycles-default" store
+: max-cycles ( -- n )
+  "max-cycles" load dup 0 = if drop "max-cycles-default" load then ;
+
+\ ============================================================
+\ Build 10-cell ring (succ chain + closing edge).
+\ ============================================================
+
+zero "c1"  store
+"c1"  load succ "c2"  store
+"c2"  load succ "c3"  store
+"c3"  load succ "c4"  store
+"c4"  load succ "c5"  store
+"c5"  load succ "c6"  store
+"c6"  load succ "c7"  store
+"c7"  load succ "c8"  store
+"c8"  load succ "c9"  store
+"c9"  load succ "c10" store
+"c10" load "c1" load EDGE+
+
+NODES 10 assert-eq
+EDGES 10 assert-eq                 \ 9 succ-edges + 1 closing
+
+\ Initial: 3 particles at c1, c4, c7.
+"c1"  load 1 NSET
+"c2"  load 0 NSET
+"c3"  load 0 NSET
+"c4"  load 1 NSET
+"c5"  load 0 NSET
+"c6"  load 0 NSET
+"c7"  load 1 NSET
+"c8"  load 0 NSET
+"c9"  load 0 NSET
+"c10" load 0 NSET
+
+\ ============================================================
+\ Rule 184 (binary traffic CA).
+\ ============================================================
+
+: rule184
+  dup PREV NGET "r184-L" store
+  dup NGET "r184-C" store
+  NEXT NGET "r184-R" store
+  "r184-L" load "r184-C" load not * "r184-C" load "r184-R" load * + 0 > if 1 else 0 then ;
+
+\ ============================================================
+\ Particle-count telemetry.
+\ ============================================================
+
+0 "alive-count" store
+
+: count-if-alive ( node -- )
+  NGET 1 = if
+    "alive-count" load 1 + "alive-count" store
+  then ;
+
+: total-alive ( -- n )
+  0 "alive-count" store
+  ' count-if-alive EACH
+  "alive-count" load ;
+
+total-alive 3 assert-eq             \ initial 3 particles
+
+\ ============================================================
+\ Epoch loop with per-step conservation check.
+\ ============================================================
+
+0 "epoch-i"   store
+0 "max-drift" store
+
+: drift-now ( -- d )
+  total-alive 3 - dup 0 < if 0 swap - then ;
+
+: stress-step
+  "epoch-i" load max-cycles < if
+    ' rule184 STEP-CA
+    "epoch-i" load 1 + "epoch-i" store
+    drift-now
+    "max-drift" load over < if "max-drift" store else drop then
+    stress-step
+  then ;
+
+stress-step
+
+\ ============================================================
+\ Conservation assertion across the full epoch.
+\ ============================================================
+
+"max-drift" load 0 assert-eq
+total-alive 3 assert-eq
+
+\ Structure unchanged.
+NODES 10 assert-eq
+EDGES 10 assert-eq
+"epoch-i" load max-cycles assert-eq
+
+cr
+"=== Rule 184 stress — particle conservation on a ring ===" . cr
+"max-cycles =" . max-cycles . cr
+"max drift  =" . "max-drift" load . cr
+"alive (end)=" . total-alive . cr
+"epoch-i    =" . "epoch-i" load . cr
+cr
+"Across" . max-cycles . "STEP-CA cycles, Rule 184 preserved the" . cr
+"3-particle count exactly on the closed 10-cell ring.  Wolfram's" . cr
+"traffic-CA conservation property holds at scale on the Sixth" . cr
+"substrate." . cr
+
+REPORT

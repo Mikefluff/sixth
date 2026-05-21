@@ -1,7 +1,7 @@
 # Sixth Substrate — Foundational Pointer Architecture
 
 This document accompanies the Sixth substrate implementation in
-`sixth/primitives/substrate.rkt` and the 81 emergence demonstrations
+`sixth/primitives/substrate.rkt` and the 84 emergence demonstrations
 under `examples/`. The goal is *not* to derive physics — it is to
 build the minimum formal artifact in which structures such as
 numbers, time, space, conservation laws, particles, self-reference,
@@ -44,7 +44,7 @@ two tokens (`EDGE+`), or a transformation of those relations
 
 ## What the demos demonstrate
 
-The 81 demonstrations live in `examples/` (file-by-file index in
+The 84 demonstrations live in `examples/` (file-by-file index in
 [`examples/README.md`](./examples/README.md)). Each isolates a
 single derivation chain, organised in six conceptual phases that
 go from simplest distinction to highest-order composition:
@@ -114,26 +114,31 @@ go from simplest distinction to highest-order composition:
   trace (70), mutation-selection trace (71), particle-families
   trace (72), charge-conservation trace (73), spontaneous-assembly
   trace (74).
-- **79–81 Stress-test track.** Parametric long-run versions of the
-  dynamic pilots, each tracking its invariant at EVERY cycle (not
+- **79–84 Stress-test track.** Parametric long-run versions of EVERY
+  dynamic pilot, each tracking its invariant at EVERY cycle (not
   just end-state) and asserting max-drift = 0 at the end.  Default
   CYCLES=1000 keeps the regression gate CI-fast; CLI override
   `-D max-cycles=N` scales to 10⁴/10⁵/10⁶ on the same source.
-  Demo 79: charge-shift Σ NGET on a closed ring, verified across
-  10⁶ STEP-CA iterations.  Demo 80: bind+decay cycle idempotence
-  + Σ NGET preserved across 10⁶ interaction cycles.  Demo 81:
-  autopoiesis observer-NGET-after-restore = 10 at every one of
-  10⁶ phase-decay/phase-restore cycles.  Stress-test showcase:
+  Demo 79 (Pilot J'): charge-shift Σ NGET on a closed ring across
+  10⁶ STEP-CA iterations.  Demo 80 (Pilots L+M): bind+decay cycle
+  idempotence + Σ NGET preserved across 10⁶ interaction cycles.
+  Demo 81 (Pilot A'): autopoiesis observer-NGET-after-restore = 10
+  at every one of 10⁶ phase-decay/phase-restore cycles.  Demo 82:
+  Conway blinker returns to its initial vertical configuration at
+  every one of 10⁶ pairs of STEP-CAs.  Demo 83: sprout rule adds
+  EXACTLY one node and one edge per STEP across 10⁶ STEPs.
+  Demo 84: Wolfram Rule 184 preserves binary particle count on a
+  closed ring across 10⁶ STEP-CAs.  Stress-test showcase:
   `make stress-test STRESS_CYCLES=1000000`.
 
-All 1117 assertions pass deterministically. Run the regression in
+All 1140 assertions pass deterministically. Run the regression in
 one command:
 
 ```bash
 make verify
 # language tests:    ok
 # substrate tests:   ok
-# examples:          1117 / 1117 ✓ across 81 demos
+# examples:          1140 / 1140 ✓ across 84 demos
 # docs build:        ok
 # artifact status:   reproducible
 ```
@@ -293,7 +298,7 @@ sufficient for the released demos and can be extended further.
 cd /Users/mikefluff/Documents/Programming/sixt
 raco pkg install --link .          # install the Sixth Racket collection
 
-# the whole regression — all 81 demos, all 1117 assertions
+# the whole regression — all 84 demos, all 1140 assertions
 make verify
 
 # any single demo

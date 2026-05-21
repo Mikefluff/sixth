@@ -1,0 +1,173 @@
+\ examples/82-stress-conway-blinker-periodicity.6th
+\ Conway blinker stress — period-2 invariance over N pairs.
+\
+\ Demo 30 verified the blinker oscillates with period 2 over a
+\ handful of cycles.  This demo runs the same construction
+\ CLI-parametric N times, asserting AT EVERY PAIR that the
+\ post-second-STEP-CA state matches the initial state EXACTLY
+\ (cells 8, 13, 18 alive; all others dead).
+\
+\ Any single state divergence (a "blinker drift") would fail the
+\ invariant — Conway's deterministic rule is supposed to be
+\ exactly periodic, and at scale we verify it actually is.
+\
+\ Default N=1000 pairs (= 2000 STEP-CAs); showcase via
+\   racket -l sixth/cli -- -D max-cycles=1000000 \\
+\                          run examples/82-stress-conway-blinker-periodicity.6th
+
+use prelude
+use graph
+use debug
+
+1000 "max-cycles-default" store
+: max-cycles ( -- n )
+  "max-cycles" load dup 0 = if drop "max-cycles-default" load then ;
+
+\ ============================================================
+\ Conway CA rule (same as demo 30).
+\ ============================================================
+
+: conway
+  dup NSUM "cw-sum" store
+  NGET "cw-st" store
+  "cw-sum" load 3 = if 1 else
+    "cw-sum" load 2 = "cw-st" load 1 = * if 1 else 0 then
+  then ;
+
+\ ============================================================
+\ 5×5 grid setup (cells 1..25, Moore neighbourhood via bi-edges).
+\ ============================================================
+
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK
+drop drop drop drop drop drop drop drop drop drop
+drop drop drop drop drop drop drop drop drop drop
+drop drop drop drop drop
+
+NODES 25 assert-eq
+
+\ Horizontal edges per row.
+1 2 bi-edge   2 3 bi-edge   3 4 bi-edge   4 5 bi-edge
+6 7 bi-edge   7 8 bi-edge   8 9 bi-edge   9 10 bi-edge
+11 12 bi-edge   12 13 bi-edge   13 14 bi-edge   14 15 bi-edge
+16 17 bi-edge   17 18 bi-edge   18 19 bi-edge   19 20 bi-edge
+21 22 bi-edge   22 23 bi-edge   23 24 bi-edge   24 25 bi-edge
+
+\ Vertical edges per column.
+1 6 bi-edge   6 11 bi-edge   11 16 bi-edge   16 21 bi-edge
+2 7 bi-edge   7 12 bi-edge   12 17 bi-edge   17 22 bi-edge
+3 8 bi-edge   8 13 bi-edge   13 18 bi-edge   18 23 bi-edge
+4 9 bi-edge   9 14 bi-edge   14 19 bi-edge   19 24 bi-edge
+5 10 bi-edge   10 15 bi-edge   15 20 bi-edge   20 25 bi-edge
+
+\ Diagonal edges (Moore neighbourhood).
+1 7 bi-edge   2 8 bi-edge   3 9 bi-edge   4 10 bi-edge
+6 12 bi-edge   7 13 bi-edge   8 14 bi-edge   9 15 bi-edge
+11 17 bi-edge   12 18 bi-edge   13 19 bi-edge   14 20 bi-edge
+16 22 bi-edge   17 23 bi-edge   18 24 bi-edge   19 25 bi-edge
+
+2 6 bi-edge   3 7 bi-edge   4 8 bi-edge   5 9 bi-edge
+7 11 bi-edge   8 12 bi-edge   9 13 bi-edge   10 14 bi-edge
+12 16 bi-edge   13 17 bi-edge   14 18 bi-edge   15 19 bi-edge
+17 21 bi-edge   18 22 bi-edge   19 23 bi-edge   20 24 bi-edge
+
+\ Initial: vertical blinker (cells 8, 13, 18 alive).
+: clear-all
+  1 0 NSET   2 0 NSET   3 0 NSET   4 0 NSET   5 0 NSET
+  6 0 NSET   7 0 NSET   8 0 NSET   9 0 NSET  10 0 NSET
+  11 0 NSET  12 0 NSET  13 0 NSET  14 0 NSET  15 0 NSET
+  16 0 NSET  17 0 NSET  18 0 NSET  19 0 NSET  20 0 NSET
+  21 0 NSET  22 0 NSET  23 0 NSET  24 0 NSET  25 0 NSET ;
+
+clear-all
+8 1 NSET    13 1 NSET    18 1 NSET
+
+\ ============================================================
+\ Pair-stress: each cycle = 2 STEP-CAs.  After every pair,
+\ verify the state matches the initial blinker exactly.
+\ Track max divergence: if any cell ever ends a pair with the
+\ wrong NGET, increment divergence.
+\ ============================================================
+
+0 "epoch-i"      store
+0 "divergence"   store
+
+: cell-divergence ( cell expected -- 0|1 )
+  swap NGET = if 0 else 1 then ;
+
+: check-blinker-state ( -- )
+  \ Live cells should be 8, 13, 18.  All others = 0.
+  0
+  \ Sum divergences for cells 1..25.
+  1  0 cell-divergence +
+  2  0 cell-divergence +
+  3  0 cell-divergence +
+  4  0 cell-divergence +
+  5  0 cell-divergence +
+  6  0 cell-divergence +
+  7  0 cell-divergence +
+  8  1 cell-divergence +
+  9  0 cell-divergence +
+  10 0 cell-divergence +
+  11 0 cell-divergence +
+  12 0 cell-divergence +
+  13 1 cell-divergence +
+  14 0 cell-divergence +
+  15 0 cell-divergence +
+  16 0 cell-divergence +
+  17 0 cell-divergence +
+  18 1 cell-divergence +
+  19 0 cell-divergence +
+  20 0 cell-divergence +
+  21 0 cell-divergence +
+  22 0 cell-divergence +
+  23 0 cell-divergence +
+  24 0 cell-divergence +
+  25 0 cell-divergence +
+  "divergence" load + "divergence" store ;
+
+: pair-step
+  ' conway STEP-CA    \ → horizontal blinker (cells 12,13,14)
+  ' conway STEP-CA    \ → back to vertical (cells 8,13,18)
+  check-blinker-state ;
+
+: stress-step
+  "epoch-i" load max-cycles < if
+    "epoch-i" load 1 + "epoch-i" store
+    pair-step
+    stress-step
+  then ;
+
+stress-step
+
+\ ============================================================
+\ Assertion: across max-cycles pairs (= 2·max-cycles STEP-CAs),
+\ blinker state matched initial every time → divergence = 0.
+\ ============================================================
+
+"divergence" load 0 assert-eq
+
+\ End-state checks.
+8  NGET 1 assert-eq
+13 NGET 1 assert-eq
+18 NGET 1 assert-eq
+1  NGET 0 assert-eq
+25 NGET 0 assert-eq
+
+"epoch-i" load max-cycles assert-eq
+
+cr
+"=== Conway blinker stress — period-2 invariance ===" . cr
+"max-cycles  =" . max-cycles . cr
+"pairs run   =" . "epoch-i" load . cr
+"STEP-CAs    =" . "epoch-i" load 2 * . cr
+"divergence  =" . "divergence" load . cr
+cr
+"Across" . max-cycles . "pairs of STEP-CAs, the blinker returned" . cr
+"to its initial vertical configuration every single time.  Conway's" . cr
+"rule is deterministically periodic on the substrate at scale." . cr
+
+REPORT
