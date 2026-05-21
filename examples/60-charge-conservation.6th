@@ -1,0 +1,243 @@
+\ examples/60-charge-conservation.6th
+\ Pilot J — substrate-native charge conservation under STEP-CA.
+\
+\ Pilot I gave us a substrate-readable taxonomy of "particles".
+\ Pilot J asks the next physics-like question: under substrate
+\ rewriting, what is conserved?
+\
+\ The answer mirrors Noether/baryon-number conservation in physics:
+\ if the rewrite rule never creates or destroys NGET tags but only
+\ moves them between cells, then both the TOTAL CHARGE (Σ NGET
+\ across all cells) AND THE PER-SPECIES COUNT (number of cells
+\ with each specific NGET value) are conserved exactly.
+\
+\ Construction:
+\
+\   1. 11-cell linear substrate (chained via Peano `succ`, so each
+\      cell has well-defined PREV/NEXT neighbours).
+\
+\   2. Initial config: particles packed at the left end:
+\        c1=1  c2=2  c3=3  c4=1  c5=2  c6..c11 = 0
+\      Species labelled by NGET value (α=1, β=2, γ=3).
+\      Per-species count: α=2, β=2, γ=1.  Total charge Σ NGET = 9.
+\
+\   3. STEP-CA rule "charge-shift" — generalisation of Wolfram
+\      Rule 184 (traffic-flow CA) lifted from {0,1} to integer
+\      NGET values:
+\        if I'm empty (NGET=0) and my left neighbour is non-empty:
+\           receive that neighbour's NGET value
+\        if I'm non-empty and my right neighbour is empty:
+\           become empty (my charge moves right)
+\        else: unchanged
+\      Each particle independently shifts right one cell per step
+\      iff the right slot is empty.  No NGET value is ever created
+\      or destroyed — they are just relocated.
+\
+\   4. Apply STEP-CA five times.  Assert after EACH step:
+\        (a) Σ NGET (total charge) is still 9
+\        (b) α-count is still 2, β-count is still 2, γ-count is still 1
+\        (c) The exact post-step pattern matches the analytic
+\            prediction (particles spread out 1-0-2-0-3-0-1-0-2 after
+\            5 steps).
+\
+\ Substrate-native interpretation: the NGET tag, treated as a
+\ "quantum number" of each substrate-node, is conserved under any
+\ rewrite rule that is composed of moves (never creates/destroys
+\ NGET).  The conservation is itself substrate-readable: you can
+\ check it by EACHing the substrate and summing.  This is the
+\ smallest construction that exhibits a Noether-style conservation
+\ law in Sixth — derived structurally from the rule, not asserted
+\ from outside.
+
+use prelude
+use peano
+use phi
+use debug
+
+\ ============================================================
+\ Build an 11-cell linear chain via Peano `succ`.
+\ ============================================================
+
+zero "c1"  store
+"c1"  load succ "c2"  store
+"c2"  load succ "c3"  store
+"c3"  load succ "c4"  store
+"c4"  load succ "c5"  store
+"c5"  load succ "c6"  store
+"c6"  load succ "c7"  store
+"c7"  load succ "c8"  store
+"c8"  load succ "c9"  store
+"c9"  load succ "c10" store
+"c10" load succ "c11" store
+
+NODES 11 assert-eq
+EDGES 10 assert-eq
+
+\ Initial packed config: charges 1,2,3,1,2 at left end.
+"c1" load 1 NSET
+"c2" load 2 NSET
+"c3" load 3 NSET
+"c4" load 1 NSET
+"c5" load 2 NSET
+"c6" load 0 NSET
+"c7" load 0 NSET
+"c8" load 0 NSET
+"c9" load 0 NSET
+"c10" load 0 NSET
+"c11" load 0 NSET
+
+\ ============================================================
+\ Counters — substrate-readable telemetry words.
+\ ============================================================
+
+0 "total-charge"  store
+0 "target-tag"    store
+0 "species-cnt"   store
+
+: add-nget ( node -- )
+  NGET "total-charge" load + "total-charge" store ;
+
+: sum-all-nget ( -- s )
+  0 "total-charge" store
+  ' add-nget EACH
+  "total-charge" load ;
+
+: inc-if-target ( node -- )
+  NGET "target-tag" load = if
+    "species-cnt" load 1 + "species-cnt" store
+  then ;
+
+: count-species ( tag -- count )
+  "target-tag" store
+  0 "species-cnt" store
+  ' inc-if-target EACH
+  "species-cnt" load ;
+
+\ ============================================================
+\ Initial-state invariants.
+\ ============================================================
+
+sum-all-nget 9 assert-eq                  \ total charge
+1 count-species 2 assert-eq               \ α-count
+2 count-species 2 assert-eq               \ β-count
+3 count-species 1 assert-eq               \ γ-count
+
+\ ============================================================
+\ The charge-shift CA rule.
+\ ============================================================
+
+: charge-shift ( node -- new-tag )
+  dup PREV NGET "csh-L" store
+  dup NGET      "csh-C" store
+       NEXT NGET "csh-R" store
+  "csh-C" load 0 = if
+    \ I am empty — receive from left iff left is non-empty.
+    "csh-L" load
+  else
+    "csh-R" load 0 = if
+      \ I am non-empty and my right is empty — I move out.
+      0
+    else
+      \ I am non-empty and my right is occupied — I stay.
+      "csh-C" load
+    then
+  then ;
+
+\ ============================================================
+\ Step-by-step evolution with conservation asserts.
+\ Expected analytical trajectory (positions are 1..11):
+\   t=0 : 1 2 3 1 2 0 0 0 0 0 0
+\   t=1 : 1 2 3 1 0 2 0 0 0 0 0
+\   t=2 : 1 2 3 0 1 0 2 0 0 0 0
+\   t=3 : 1 2 0 3 0 1 0 2 0 0 0
+\   t=4 : 1 0 2 0 3 0 1 0 2 0 0
+\   t=5 : 0 1 0 2 0 3 0 1 0 2 0
+\ ============================================================
+
+\ --- step 1 ---
+' charge-shift STEP-CA
+"c1" load NGET 1 assert-eq
+"c2" load NGET 2 assert-eq
+"c3" load NGET 3 assert-eq
+"c4" load NGET 1 assert-eq
+"c5" load NGET 0 assert-eq
+"c6" load NGET 2 assert-eq
+sum-all-nget 9 assert-eq
+1 count-species 2 assert-eq
+2 count-species 2 assert-eq
+3 count-species 1 assert-eq
+
+\ --- step 2 ---
+' charge-shift STEP-CA
+"c4" load NGET 0 assert-eq
+"c5" load NGET 1 assert-eq
+"c6" load NGET 0 assert-eq
+"c7" load NGET 2 assert-eq
+sum-all-nget 9 assert-eq
+1 count-species 2 assert-eq
+2 count-species 2 assert-eq
+3 count-species 1 assert-eq
+
+\ --- step 3 ---
+' charge-shift STEP-CA
+"c3" load NGET 0 assert-eq
+"c4" load NGET 3 assert-eq
+"c8" load NGET 2 assert-eq
+sum-all-nget 9 assert-eq
+1 count-species 2 assert-eq
+2 count-species 2 assert-eq
+3 count-species 1 assert-eq
+
+\ --- step 4 ---
+' charge-shift STEP-CA
+"c2" load NGET 0 assert-eq
+"c3" load NGET 2 assert-eq
+"c5" load NGET 3 assert-eq
+"c9" load NGET 2 assert-eq
+sum-all-nget 9 assert-eq
+1 count-species 2 assert-eq
+2 count-species 2 assert-eq
+3 count-species 1 assert-eq
+
+\ --- step 5: fully spread state ---
+' charge-shift STEP-CA
+"c1"  load NGET 0 assert-eq
+"c2"  load NGET 1 assert-eq
+"c3"  load NGET 0 assert-eq
+"c4"  load NGET 2 assert-eq
+"c5"  load NGET 0 assert-eq
+"c6"  load NGET 3 assert-eq
+"c7"  load NGET 0 assert-eq
+"c8"  load NGET 1 assert-eq
+"c9"  load NGET 0 assert-eq
+"c10" load NGET 2 assert-eq
+"c11" load NGET 0 assert-eq
+
+sum-all-nget 9 assert-eq
+1 count-species 2 assert-eq
+2 count-species 2 assert-eq
+3 count-species 1 assert-eq
+
+\ ============================================================
+\ Final inventory + narrative.
+\ ============================================================
+
+NODES 11 assert-eq                        \ structure unchanged
+EDGES 10 assert-eq                        \ no edges added/removed
+
+cr
+"=== Pilot J — substrate-native charge conservation ===" . cr
+"11-cell chain, 5 particles (α=2, β=2, γ=1), STEP-CA charge-shift × 5" . cr
+"Across all 5 steps:" . cr
+"  Σ NGET (total charge) = 9             (conserved)" . cr
+"  α-count (NGET=1)      = 2             (conserved)" . cr
+"  β-count (NGET=2)      = 2             (conserved)" . cr
+"  γ-count (NGET=3)      = 1             (conserved)" . cr
+cr
+"The substrate exhibits its own Noether-style conservation law:" . cr
+"any rewrite rule that only MOVES NGET (never creates/destroys it)" . cr
+"preserves both the total charge AND per-species count exactly." . cr
+"Conservation is itself substrate-readable — checked by EACHing" . cr
+"the substrate and summing.  No external bookkeeping required." . cr
+
+REPORT

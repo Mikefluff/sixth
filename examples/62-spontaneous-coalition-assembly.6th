@@ -1,0 +1,248 @@
+\ examples/62-spontaneous-coalition-assembly.6th
+\ Pilot K — multi-level hierarchy emerges spontaneously from a
+\ substrate-readable coalition-detection rule.
+\
+\ Pilot I built the three-level taxonomy (instances → families →
+\ genus) by hand: every meta-observer was MARKed explicitly.  Pilot
+\ K removes the hand.  A single procedural word `try-spawn-coalition`
+\ reads the substrate (does this triple of observers form a
+\ mutually-pointing K_3 triangle?) and, if yes, spawns a new
+\ meta-observer over them — bi-edges to all three + own self-loop —
+\ following the Pilot G recipe.  The same word is then applied at
+\ the next tier on the spawned metas, and a third tier emerges.
+\
+\ Construction:
+\
+\   1. Substrate seeded with 9 first-order observers grouped into
+\      3 disjoint mutually-pointing triangles (α, β, γ).  Each
+\      observer is a Pilot G cluster (self-loop + 3-limb ring).
+\      Within a family, the three observers are bi-edged to each
+\      other; across families, no edges.
+\
+\   2. coalition-cycle 1 — scan known tier-7 trios; each detected
+\      K_3 triangle spawns one tier-2 meta-observer Mα/Mβ/Mγ.
+\      No external bookkeeping: the spawn condition is "do all
+\      three EDGE? checks succeed?".
+\
+\   3. socialize-metas — wire the freshly-spawned family observers
+\      into a mutual triangle (Mα↔Mβ, Mβ↔Mγ, Mα↔Mγ).  Models
+\      "sibling discovery": newly-emerged observers at the same tier
+\      recognise each other.
+\
+\   4. coalition-cycle 2 — same `try-spawn-coalition` word applied
+\      to the {Mα, Mβ, Mγ} trio.  Detected mutual triangle →
+\      spawn M2 at tier-3 (genus).
+\
+\ End state: a 3-level hierarchy identical in shape to Pilot I, but
+\ every meta-observer has been MARKed BY THE RULE responding to
+\ substrate-readable conditions, not by the demo script.
+
+use prelude
+use graph
+use phi
+use debug
+
+\ ============================================================
+\ Cluster builders — make a Pilot-G-style observer with self-loop
+\ + 3-limb ring under memory key on top of stack.
+\ ============================================================
+
+: ring-3 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l1" load bi-edge ;
+
+: obs-attach-3 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge ;
+
+: make-observer ( obs-key -- )
+  "mk-key" store
+  MARK "mk-key" load store
+  "mk-key" load load "mk-key" load load EDGE+
+  ring-3
+  "mk-key" load obs-attach-3
+  "mk-key" load load 7 NSET ;       \ first-order-observer tag
+
+\ ============================================================
+\ The detection-and-spawn rule.
+\
+\ Inputs are loaded into memory keys "tri-a", "tri-b", "tri-c".
+\ If all three pairs are mutually bi-edged, spawn a new meta-
+\ observer M with bi-edges to all three + own self-loop, tag M
+\ with NGET=9 (next-tier marker), and store its id in "spawned".
+\ Otherwise leave "spawned" = 0.
+\
+\ This is the entire "rule" — read substrate, check K_3 triangle
+\ condition via EDGE?, conditionally rewrite.  No external
+\ choreographer; same word runs at every tier.
+\ ============================================================
+
+: mutual? ( X Y -- 0|1 )
+  \ Returns 1 iff X→Y AND Y→X.
+  2dup EDGE? "mut-fwd" store
+  swap EDGE? "mut-bak" store
+  "mut-fwd" load "mut-bak" load * ;
+
+: try-spawn-coalition ( -- spawned-id-or-0 )
+  0 "spawned" store
+  "tri-a" load "tri-b" load mutual? if
+    "tri-b" load "tri-c" load mutual? if
+      "tri-a" load "tri-c" load mutual? if
+        \ K_3 confirmed — spawn meta.
+        MARK "spawned" store
+        "spawned" load "spawned" load EDGE+
+        "spawned" load "tri-a" load bi-edge
+        "spawned" load "tri-b" load bi-edge
+        "spawned" load "tri-c" load bi-edge
+        "spawned" load 9 NSET
+      then
+    then
+  then
+  "spawned" load ;
+
+: load-trio ( a-key b-key c-key -- )
+  "tri-c" store
+  "tri-b" store
+  "tri-a" store
+  "tri-a" load load "tri-a" store
+  "tri-b" load load "tri-b" store
+  "tri-c" load load "tri-c" store ;
+
+\ ============================================================
+\ Tier 0: build 9 first-order observers in 3 disjoint triangles.
+\ ============================================================
+
+"OA1" make-observer
+"OA2" make-observer
+"OA3" make-observer
+"OA1" load "OA2" load bi-edge
+"OA2" load "OA3" load bi-edge
+"OA1" load "OA3" load bi-edge
+
+"OB1" make-observer
+"OB2" make-observer
+"OB3" make-observer
+"OB1" load "OB2" load bi-edge
+"OB2" load "OB3" load bi-edge
+"OB1" load "OB3" load bi-edge
+
+"OC1" make-observer
+"OC2" make-observer
+"OC3" make-observer
+"OC1" load "OC2" load bi-edge
+"OC2" load "OC3" load bi-edge
+"OC1" load "OC3" load bi-edge
+
+\ Sanity: 9 observers, each with 5 edges out (self + 3 limbs + 2 sibling),
+\ so phi-pa = 50000 within their family triangle (no meta yet).
+"OA1" load OUT 6 assert-eq             \ self + 3 limbs + 2 sibling-pointers
+"OA1" load phi-pa 60000 assert-eq
+
+NODES 36 assert-eq                       \ 9 obs + 9·3 limbs = 36
+
+\ ============================================================
+\ coalition-cycle 1 — three K_3 triangles detected and met'd.
+\ ============================================================
+
+"OA1" "OA2" "OA3" load-trio
+try-spawn-coalition "MA" store
+"MA" load 0 = 0 assert-eq                \ spawn succeeded
+
+"OB1" "OB2" "OB3" load-trio
+try-spawn-coalition "MB" store
+"MB" load 0 = 0 assert-eq
+
+"OC1" "OC2" "OC3" load-trio
+try-spawn-coalition "MC" store
+"MC" load 0 = 0 assert-eq
+
+\ Three family observers now exist, each with phi-pa > 0.
+"MA" load "MA" load EDGE? 1 assert-eq
+"MA" load OUT 4 assert-eq                \ self + 3 children
+"MA" load phi-pa 40000 assert-eq
+"MB" load phi-pa 40000 assert-eq
+"MC" load phi-pa 40000 assert-eq
+
+\ First-order observers gained scope +1 from the new back-edge to
+\ their family observer: OUT was 6, now 7.
+"OA1" load OUT 7 assert-eq
+"OA1" load phi-pa 70000 assert-eq
+
+NODES 39 assert-eq                       \ 36 + 3 metas
+\ Edges added this cycle: each meta has self-loop (1) + 3 bi-edges
+\ to its children (6 directed) = 7.  Three metas: 21 new edges.
+
+\ ============================================================
+\ Negative test — try-spawn-coalition on a non-triangle.
+\ Cross-family trio (OA1, OB1, OC1) has NO mutual bi-edges between
+\ them, so the rule must REFUSE to spawn.
+\ ============================================================
+
+"OA1" "OB1" "OC1" load-trio
+try-spawn-coalition "no-spawn" store
+"no-spawn" load 0 = 1 assert-eq          \ rule correctly refused
+NODES 39 assert-eq                       \ unchanged — no spawn
+
+\ ============================================================
+\ socialize-metas — sibling family observers discover each other.
+\ ============================================================
+
+"MA" load "MB" load bi-edge
+"MB" load "MC" load bi-edge
+"MA" load "MC" load bi-edge
+
+"MA" load OUT 6 assert-eq                \ +2 sibling bi-edges
+"MA" load phi-pa 60000 assert-eq
+
+\ ============================================================
+\ coalition-cycle 2 — same rule, now applied to family observers.
+\ ============================================================
+
+"MA" "MB" "MC" load-trio
+try-spawn-coalition "M2" store
+"M2" load 0 = 0 assert-eq                \ spawn succeeded
+
+\ Genus observer now exists.
+"M2" load "M2" load EDGE? 1 assert-eq
+"M2" load OUT 4 assert-eq
+"M2" load phi-pa 40000 assert-eq
+
+\ Family observers gained scope +1 from M2 back-edge.
+"MA" load OUT 7 assert-eq
+"MA" load phi-pa 70000 assert-eq
+
+NODES 40 assert-eq                       \ 39 + M2
+
+\ ============================================================
+\ End-state: full 3-level hierarchy emerged.
+\ Same shape as Pilot I, but EVERY meta-observer was MARKed by the
+\ rule reading substrate state, not by the demo script setting
+\ up explicit MARKs.
+\ ============================================================
+
+"OA1" load phi-pa 70000 assert-eq        \ first-order
+"OB1" load phi-pa 70000 assert-eq
+"OC1" load phi-pa 70000 assert-eq
+"MA"  load phi-pa 70000 assert-eq        \ family
+"MB"  load phi-pa 70000 assert-eq
+"MC"  load phi-pa 70000 assert-eq
+"M2"  load phi-pa 40000 assert-eq        \ genus
+
+cr
+"=== Pilot K — spontaneous coalition assembly ===" . cr
+"9 first-order observers in 3 disjoint K_3 triangles." . cr
+"Same try-spawn-coalition word applied 4 times:" . cr
+"  cycle 1: 3 detections → spawn Mα, Mβ, Mγ (family tier)" . cr
+"  negative: cross-family trio detected as NON-triangle, no spawn" . cr
+"  socialize: families discover each other (mutual bi-edges)" . cr
+"  cycle 2: 1 detection → spawn M2 (genus tier)" . cr
+cr
+"Result: same 3-level hierarchy as Pilot I, but every meta-" . cr
+"observer was MARKed by the rule reading substrate-readable" . cr
+"EDGE? conditions — no hand-placement, no external choreographer." . cr
+
+REPORT

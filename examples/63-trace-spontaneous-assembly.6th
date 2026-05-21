@@ -1,0 +1,179 @@
+\ examples/63-trace-spontaneous-assembly.6th
+\ Visual trace — Pilot K spontaneous coalition assembly.
+\
+\ Four snapshots covering the emergence of a 3-level hierarchy from
+\ a substrate of 9 first-order observers + a single detection rule
+\ (try-spawn-coalition).
+\
+\   #0 seeded
+\       9 first-order observers in 3 disjoint K_3 triangles.
+\       Tier 2 tagged NGET=7 (purple-plum); limbs at NGET=0.
+\       No meta-observers yet.
+\
+\   #1 cycle-1
+\       try-spawn-coalition fired 3 times (once per known trio).
+\       Each detection → new tier-3 meta-observer (NGET=9, red).
+\       Three family observers Mα, Mβ, Mγ now exist, each holding
+\       its triangle as a Pilot-G-style composite.
+\
+\   #2 socialized
+\       Three family observers wired to each other (mutual bi-edges
+\       Mα↔Mβ, Mβ↔Mγ, Mα↔Mγ).  No new node spawned — just edge
+\       additions.  Sets up the K_3 condition at the family tier.
+\
+\   #3 cycle-2
+\       try-spawn-coalition fires once on the (Mα, Mβ, Mγ) trio.
+\       Detection succeeds → genus observer M2 (NGET=9, red,
+\       top tier) spawned.  Full Pilot-I-shape hierarchy now
+\       present, built entirely by the rule.
+
+use prelude
+use graph
+use phi
+use dot
+use debug
+
+\ Stub keys for snap-with reads before they exist.
+0 "MA" store  0 "MB" store  0 "MC" store  0 "M2" store
+
+: ring-3 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l1" load bi-edge ;
+
+: obs-attach-3 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge ;
+
+: make-observer ( obs-key -- )
+  "mk-key" store
+  MARK "mk-key" load store
+  "mk-key" load load "mk-key" load load EDGE+
+  ring-3
+  "mk-key" load obs-attach-3
+  "mk-key" load load 7 NSET ;
+
+: mutual? ( X Y -- 0|1 )
+  2dup EDGE? "mut-fwd" store
+  swap EDGE? "mut-bak" store
+  "mut-fwd" load "mut-bak" load * ;
+
+: try-spawn-coalition ( -- spawned-id-or-0 )
+  0 "spawned" store
+  "tri-a" load "tri-b" load mutual? if
+    "tri-b" load "tri-c" load mutual? if
+      "tri-a" load "tri-c" load mutual? if
+        MARK "spawned" store
+        "spawned" load "spawned" load EDGE+
+        "spawned" load "tri-a" load bi-edge
+        "spawned" load "tri-b" load bi-edge
+        "spawned" load "tri-c" load bi-edge
+        "spawned" load 9 NSET
+      then
+    then
+  then
+  "spawned" load ;
+
+: load-trio ( a-key b-key c-key -- )
+  "tri-c" store
+  "tri-b" store
+  "tri-a" store
+  "tri-a" load load "tri-a" store
+  "tri-b" load load "tri-b" store
+  "tri-c" load load "tri-c" store ;
+
+: snap-assembly ( label-num -- )
+  "=== SNAPSHOT level=" .
+  .
+  "rule=" . "pilot-k-coalition-assembly" .
+  "seed=" . "9-obs-3-triangles" .
+  "event=" . "event" load .
+  "nodes=" . NODES .
+  "edges=" . EDGES .
+  "phi-pa-OA1=" . "OA1" load phi-pa .
+  "phi-pa-MA="  . "MA" load dup 0 = if drop "-" . else phi-pa . then
+  "phi-pa-MC="  . "MC" load dup 0 = if drop "-" . else phi-pa . then
+  "phi-pa-M2="  . "M2" load dup 0 = if drop "-" . else phi-pa . then
+  "===" . cr
+  dot-snapshot-state ;
+
+\ ============================================================
+\ Tier 0 setup — 9 observers in 3 disjoint K_3 triangles.
+\ ============================================================
+
+"OA1" make-observer
+"OA2" make-observer
+"OA3" make-observer
+"OA1" load "OA2" load bi-edge
+"OA2" load "OA3" load bi-edge
+"OA1" load "OA3" load bi-edge
+
+"OB1" make-observer
+"OB2" make-observer
+"OB3" make-observer
+"OB1" load "OB2" load bi-edge
+"OB2" load "OB3" load bi-edge
+"OB1" load "OB3" load bi-edge
+
+"OC1" make-observer
+"OC2" make-observer
+"OC3" make-observer
+"OC1" load "OC2" load bi-edge
+"OC2" load "OC3" load bi-edge
+"OC1" load "OC3" load bi-edge
+
+"seeded" "event" store
+0 snap-assembly
+
+\ ============================================================
+\ Cycle 1 — detect 3 triangles, spawn 3 family observers.
+\ ============================================================
+
+"OA1" "OA2" "OA3" load-trio
+try-spawn-coalition "MA" store
+
+"OB1" "OB2" "OB3" load-trio
+try-spawn-coalition "MB" store
+
+"OC1" "OC2" "OC3" load-trio
+try-spawn-coalition "MC" store
+
+"cycle-1" "event" store
+1 snap-assembly
+
+\ ============================================================
+\ Socialize — wire family observers into a mutual triangle.
+\ ============================================================
+
+"MA" load "MB" load bi-edge
+"MB" load "MC" load bi-edge
+"MA" load "MC" load bi-edge
+
+"socialized" "event" store
+2 snap-assembly
+
+\ ============================================================
+\ Cycle 2 — same rule detects the family-tier triangle, spawns M2.
+\ ============================================================
+
+"MA" "MB" "MC" load-trio
+try-spawn-coalition "M2" store
+
+"cycle-2" "event" store
+3 snap-assembly
+
+\ End-state invariants.
+NODES 40 assert-eq
+"M2" load phi-pa 40000 assert-eq
+"MA" load phi-pa 70000 assert-eq
+"OA1" load phi-pa 70000 assert-eq
+
+cr
+"=== Spontaneous-assembly visual trace ===" . cr
+"4 snapshots:  seeded → cycle-1 → socialized → cycle-2" . cr
+"Render with: make trace-spontaneous-assembly" . cr
+
+REPORT

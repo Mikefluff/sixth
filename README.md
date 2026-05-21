@@ -1,23 +1,23 @@
 # Sixth
 
 > A minimal executable substrate language —
-> 40 primitives, 60 reproducible demos, 867 ✓ across them all,
+> 40 primitives, 64 reproducible demos, 963 ✓ across them all,
 > reference implementation for the Pointer Architecture v9.0 preprint.
 
 ```
 language tests:    ok
 substrate tests:   ok
-examples:          867 / 867 ✓ across 60 demos
+examples:          963 / 963 ✓ across 64 demos
 docs build:        ok
 ffi optional:      n/a
 renderer tests:    ok
-figures fresh:     ok (19 forensic JSONL traces match)
+figures fresh:     ok (21 forensic JSONL traces match)
 artifact status:   reproducible
 ```
 
 Stronger reproducibility evidence via `make verify-repro` — runs
 each forensic-trace demo twice, hashes the JSONL, asserts byte-
-identical outputs across all 19 demos × 2 runs.
+identical outputs across all 21 demos × 2 runs.
 
 ![Pilot D evolution — substrate-internally-driven cosmogenesis,
 shell-count 0 → 4, observer node in red.](./docs/figures/pilot_d_trace.png)
@@ -54,7 +54,7 @@ raco pkg install --link .
 # Spencer-Brown's first mark — the sacred hello world
 racket -l sixth/cli -- run examples/00-first-distinction.6th
 
-# the whole regression — all 60 demos, all 867 assertions
+# the whole regression — all 64 demos, all 963 assertions
 make verify
 ```
 
@@ -87,8 +87,10 @@ foundational demos (`01-numbers` … `20-conway-glider`, 359 ✓):
 | **G** Composite distinction via meta-self-loop | 54–55 | 26 | Three first-order observers OA/OB/OC each hold their own composite (4-node cluster, Φ_PA=40000). A meta-observer M bi-edged to all three holds nothing (Φ_PA=0) until M acquires its own self-loop, at which point Φ_PA(M)=40000 and the first-order observers gain scope +1 (Φ_PA → 50000). Demonstrates that higher-order self-reference is what holds composite distinction. `make trace-composite-distinction`. |
 | **H** Mutation + substrate-readable selection | 56–57 | 33 | Five candidate first-order observers with varied topologies (3/4/5-limb rings + self-loop; 3-limb ring without self-loop; isolated MARK). Meta-observer M reads each candidate's Φ_PA and bi-edges only to those with Φ_PA > 0; M's own self-loop closes the construction. Result: diversified composite over three structurally distinct "particle species" (Φ_PA = 50000 / 60000 / 70000). Lamarck-style, observer-driven — not blind Darwin. `make trace-mutation-selection`. |
 | **I** Multi-level particle hierarchy           | 58–59 | 39 | Six instances across three species (α: 1×3-limb, β: 2×4-limb, γ: 3×5-limb), each with own self-loop. Three family observers Mα/Mβ/Mγ hold their populations (each with own self-loop, Pilot G pattern). One genus observer M2 holds the families (own self-loop). Result: three-level taxonomy with distinct Φ_PA signatures at each level — instances 50000/60000/70000, families 30000/40000/50000, genus 40000. Within-family instances are indistinguishable (substrate-native analogue of physical particle indistinguishability); cross-family + cross-level differences are substrate-readable. `make trace-particle-families`. |
+| **J** Substrate-native charge conservation     | 60–61 | 60 | 11-cell linear chain, 5 particles tagged by species (NGET=1/2/3 → α/β/γ). STEP-CA `charge-shift` rule (generalised Wolfram Rule 184 lifted from {0,1} to integer NGET) moves particles right one cell per step iff the slot is empty. Across 5 steps, total Σ NGET = 9 AND per-species count (α=2, β=2, γ=1) are conserved EXACTLY. Smallest construction exhibiting a Noether-style conservation law derived structurally from the rule, substrate-readable via `EACH` + sum. `make trace-charge-conservation`. |
+| **K** Spontaneous coalition assembly           | 62–63 | 36 | 9 first-order observers in 3 disjoint K_3 mutual-pointing triangles. A single substrate-readable rule `try-spawn-coalition` — three `EDGE?` checks → MARK new node + bi-edges + own self-loop — fires four times (3× at family tier + 1× at genus tier after sibling socialisation) and reconstructs the full Pilot I hierarchy with no hand-placed meta-observers. The rule reads substrate state, the substrate spawns the response. `make trace-spontaneous-assembly`. |
 
-Cumulative: **867 ✓ / 0 ✗ across 60 demos** (Pilots A–F core + 3 substrate-monism trace pilots + 2 long-epoch parametric + 5 foundation visual traces (Conway blinker/glider, Rule 110/90, 1D glider) + 2 atomic-build traces showing entity-by-entity emergence + Pilot G composite distinction via meta-self-loop + Pilot H mutation + substrate-readable selection + Pilot I multi-level particle hierarchy).
+Cumulative: **963 ✓ / 0 ✗ across 64 demos** (Pilots A–F core + 3 substrate-monism trace pilots + 2 long-epoch parametric + 5 foundation visual traces (Conway blinker/glider, Rule 110/90, 1D glider) + 2 atomic-build traces showing entity-by-entity emergence + Pilot G composite distinction via meta-self-loop + Pilot H mutation + substrate-readable selection + Pilot I multi-level particle hierarchy + Pilot J substrate-native charge conservation + Pilot K spontaneous coalition assembly).
 
 ## Running and rendering
 
@@ -96,10 +98,10 @@ Cumulative: **867 ✓ / 0 ✗ across 60 demos** (Pilots A–F core + 3 substrate
 # one-shot artifact-status report (Tier-1 verification, see CLAIMS.md)
 make verify
 
-# any of the 60 demos
+# any of the 64 demos
 racket -l sixth/cli -- run examples/35-phi-pa-split-brain-toy.6th
 
-# all 60 demos against the rackunit regression gate
+# all 64 demos against the rackunit regression gate
 raco test tests/examples-test.rkt
 
 # render the three static trace figures (Pilots C, D, F.3)
@@ -150,7 +152,9 @@ examples/     56 emergence demonstrations
               51–53 Pilot F.1/F.2/F.4 visual traces +
               54–55 Pilot G composite distinction via meta-self-loop +
               56–57 Pilot H mutation + substrate-readable selection +
-              58–59 Pilot I multi-level particle hierarchy).
+              58–59 Pilot I multi-level particle hierarchy +
+              60–61 Pilot J charge conservation +
+              62–63 Pilot K spontaneous coalition assembly).
               See `examples/README.md` for the full demo catalogue
               with embedded figures and animations.
 code/         Python tooling. render_trace.py reads dot.6th
@@ -158,7 +162,7 @@ code/         Python tooling. render_trace.py reads dot.6th
               SVG / PDF or animated GIF.
 scripts/      verify.sh (artifact-status report; backs `make verify`)
 tests/        rackunit suites — lexer, parser, VM, substrate,
-              loader, examples-test.rkt (regression gate at 867 ✓)
+              loader, examples-test.rkt (regression gate at 963 ✓)
 docs/         Scribble manual + embedded README figure
 build/        regeneratable artefacts (raco scribble HTML, render
               outputs) — gitignored

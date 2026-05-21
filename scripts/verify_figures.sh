@@ -37,6 +37,8 @@ DEMOS=(
   "examples/55-trace-composite-distinction.6th composite_distinction"
   "examples/57-trace-mutation-selection.6th    mutation_selection"
   "examples/59-trace-particle-families.6th     particle_families"
+  "examples/61-trace-charge-conservation.6th   charge_conservation"
+  "examples/63-trace-spontaneous-assembly.6th  spontaneous_assembly"
 )
 
 check_one () {

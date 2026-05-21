@@ -150,13 +150,19 @@ def render(snapshots, out_path: Path, title: str | None,
         sys.exit("no snapshots found in input")
 
     n = len(snaps)
-    cols = min(n, 5)
-    rows = (n + cols - 1) // cols
-    # Wider + taller panels for tiered layouts — hierarchy rows need
-    # horizontal breathing room AND vertical room for the multi-line
-    # per-panel title (which collects per-observer Φ_PA values).
-    panel_w = 5.6 if layout == "tiered" else 3.2
-    panel_h = 4.6 if layout == "tiered" else 3.2
+    # Chain layouts read top-to-bottom as a time series — one row per
+    # snapshot, all in a single column.  Otherwise default 5-wide grid.
+    if layout == "chain":
+        cols, rows = 1, n
+        panel_w, panel_h = 9.0, 1.6
+    elif layout == "tiered":
+        cols = min(n, 5)
+        rows = (n + cols - 1) // cols
+        panel_w, panel_h = 5.6, 4.6
+    else:
+        cols = min(n, 5)
+        rows = (n + cols - 1) // cols
+        panel_w = panel_h = 3.2
     fig, axes = plt.subplots(
         rows, cols,
         figsize=(panel_w * cols, panel_h * rows),
@@ -489,6 +495,22 @@ def _tier_colour(label_val: int) -> str:
 _TIER_SIZE = {0: 90, 1: 320, 2: 620, 3: 980}
 
 
+def _chain_layout(graph):
+    """Horizontal-line layout — nodes placed left-to-right by integer id.
+
+    Designed for 1D-chain CA demos (Pilot J charge conservation, Rule 110/
+    90 traces, Conway 1D glider) where the substrate topology IS a linear
+    sequence and the natural reading direction is left-to-right.
+    """
+    if graph.number_of_nodes() == 0:
+        return {}
+    nodes = list(graph.nodes)
+    nodes.sort(key=lambda n: int(n) if n.isdigit() else 0)
+    n = len(nodes)
+    return {node: ((i / max(n - 1, 1)) * 2.0 - 1.0, 0.0)
+            for i, node in enumerate(nodes)}
+
+
 def _tiered_layout(graph, label_values):
     """Multipartite layout keyed by tier — tier 0 at bottom, tier 3 at top.
 
@@ -511,6 +533,10 @@ def _tiered_layout(graph, label_values):
         # Fall back gracefully if some tier is empty in a weird way.
         pos = nx.kamada_kawai_layout(graph)
     return pos
+
+
+def _is_hierarchical_layout(layout: str) -> bool:
+    return layout in ("tiered",)
 
 
 def _draw_snapshot(ax, meta, graph, idx, fixed_pos=None, label_max=None,
@@ -562,16 +588,30 @@ def _draw_snapshot(ax, meta, graph, idx, fixed_pos=None, label_max=None,
             return _label_colour(label_values.get(n, 0))
         return "#909090"
 
-    if layout == "tiered" and has_labels:
+    if layout in ("tiered", "chain") and has_labels:
+        # Categorical palette by NGET — same hues whether stacked by
+        # tier (tiered) or laid out linearly (chain).
         node_colors = [_tier_colour(label_values.get(n, 0))
                        for n in graph.nodes]
-        node_sizes = [_TIER_SIZE.get(
-                          _tier_from_label(label_values.get(n, 0)), 220)
-                      for n in graph.nodes]
-        node_borders = [
-            (2.2 if _tier_from_label(label_values.get(n, 0)) >= 2 else 0.8)
-            for n in graph.nodes
-        ]
+        if layout == "tiered":
+            node_sizes = [_TIER_SIZE.get(
+                              _tier_from_label(label_values.get(n, 0)), 220)
+                          for n in graph.nodes]
+            node_borders = [
+                (2.2 if _tier_from_label(label_values.get(n, 0)) >= 2 else 0.8)
+                for n in graph.nodes
+            ]
+        else:  # chain
+            # Uniform "cell" size on a chain; non-empty cells get heavier
+            # border so the occupied vs vacuum split is obvious.
+            node_sizes = [
+                (520 if label_values.get(n, 0) > 0 else 220)
+                for n in graph.nodes
+            ]
+            node_borders = [
+                (1.8 if label_values.get(n, 0) > 0 else 0.6)
+                for n in graph.nodes
+            ]
     else:
         node_colors = [_node_colour(n) for n in graph.nodes]
         # Observer is structurally load-bearing in PA — give it ~3× area
@@ -593,11 +633,16 @@ def _draw_snapshot(ax, meta, graph, idx, fixed_pos=None, label_max=None,
         pos = {n: fixed_pos[n] for n in graph.nodes if n in fixed_pos}
         if len(pos) != graph.number_of_nodes():
             # Fall back if any node is missing from fixed positions.
-            pos = (_tiered_layout(graph, label_values)
-                   if layout == "tiered"
-                   else nx.kamada_kawai_layout(graph))
+            if layout == "tiered":
+                pos = _tiered_layout(graph, label_values)
+            elif layout == "chain":
+                pos = _chain_layout(graph)
+            else:
+                pos = nx.kamada_kawai_layout(graph)
     elif layout == "tiered":
         pos = _tiered_layout(graph, label_values)
+    elif layout == "chain":
+        pos = _chain_layout(graph)
     else:
         try:
             pos = nx.kamada_kawai_layout(graph)
@@ -653,6 +698,8 @@ def _union_layout(snaps, layout: str = "auto"):
         return {}
     if layout == "tiered":
         return _tiered_layout(union, union_labels)
+    if layout == "chain":
+        return _chain_layout(union)
     try:
         return nx.kamada_kawai_layout(union)
     except Exception:
@@ -727,12 +774,15 @@ def main(argv=None):
              "(one object per snapshot: metadata + edge list + "
              "per-node labels)")
     parser.add_argument(
-        "--layout", choices=("auto", "tiered"), default="auto",
+        "--layout", choices=("auto", "tiered", "chain"), default="auto",
         help="node layout strategy. 'auto' = kamada-kawai (default, "
              "good for flat / force-directed); 'tiered' = multipartite "
-             "by NGET tier (limbs at bottom, instances → families → "
-             "genus stacking upward, categorical palette per species). "
-             "Use 'tiered' for Pilots G/H/I and any hierarchical demo.")
+             "by NGET tier (Pilots G/H/I composite-distinction hierarchy); "
+             "'chain' = horizontal line by node id (Pilot J charge "
+             "conservation, 1D CA traces). Both 'tiered' and 'chain' "
+             "use the categorical NGET palette: NGET=1/2/3 are species "
+             "α/β/γ in teal/amber/plum, 5/6/7 are darker family hues, "
+             "9 is genus red, 0 is grey background.")
     args = parser.parse_args(argv)
 
     if args.input:

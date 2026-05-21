@@ -1,11 +1,11 @@
-# `examples/` — the 60 demonstrations
+# `examples/` — the 64 demonstrations
 
 This directory holds Sixth's reproducible emergence demonstrations.
 Each file is a standalone Sixth program; `raco test
-tests/examples-test.rkt` (or `make verify`) executes all 60 and
-asserts a cumulative 867 ✓ / 0 ✗.
+tests/examples-test.rkt` (or `make verify`) executes all 64 and
+asserts a cumulative 963 ✓ / 0 ✗.
 
-The demos are organised in seventeen phases:
+The demos are organised in nineteen phases:
 
 | Phase | Demos | Asserts | What it shows |
 |-------|-------|---------|---------------|
@@ -27,6 +27,8 @@ The demos are organised in seventeen phases:
 | Pilot G (composite distinction)       | 54–55 | 26 | Three first-order observers OA/OB/OC each hold their own 4-node composite (Φ_PA=40000). A meta-observer M bi-edged to all three holds nothing (Φ_PA=0) until M acquires its own self-loop, at which point Φ_PA(M)=40000 and the first-order observers gain scope +1 → Φ_PA=50000. Demonstrates that holding *composite* distinction requires higher-order self-reference. |
 | Pilot H (mutation + selection)        | 56–57 | 33 | Five candidate first-order observers with varied topologies (3/4/5-limb rings + self-loop; 3-limb ring without self-loop; isolated MARK). Meta-observer M reads each candidate's Φ_PA and bi-edges only to those with Φ_PA > 0; M's own self-loop closes the construction. Result: diversified composite over three structurally distinct "particle species" (Φ_PA = 50000 / 60000 / 70000). Substrate-readable selection criterion — Lamarck-style, not blind Darwin. |
 | Pilot I (multi-level hierarchy)       | 58–59 | 39 | Six instances across three species (α: 1×3-limb, β: 2×4-limb, γ: 3×5-limb), each with own self-loop. Three family observers Mα/Mβ/Mγ hold their populations. One genus observer M2 holds the families. Composite-distinction mechanism (Pilot G) re-applied at every level: each observer carries its own self-loop. Result: three-level substrate-readable taxonomy with distinct Φ_PA signatures at each level. Within-family particles are indistinguishable (β1==β2, γ1==γ2==γ3) — substrate-native analogue of physical particle indistinguishability. |
+| Pilot J (charge conservation)         | 60–61 | 60 | 11-cell linear chain, 5 particles tagged by species (NGET=1/2/3 → α/β/γ). STEP-CA `charge-shift` rule (Wolfram Rule 184 lifted from {0,1} to integer NGET) shifts particles right one cell per step iff the right slot is empty. Across 5 steps, total Σ NGET = 9 AND per-species counts (α=2, β=2, γ=1) preserved EXACTLY. First substrate-native Noether-style conservation law — derived structurally from the rule, substrate-readable by `EACH` + sum. |
+| Pilot K (spontaneous assembly)        | 62–63 | 36 | 9 first-order observers in 3 disjoint K_3 mutual-pointing triangles. A single rule `try-spawn-coalition` reads substrate state (three `EDGE?` checks) and, if the triangle holds, spawns a new meta-observer with bi-edges + own self-loop. Fired 4 times reconstructs the full Pilot I three-level hierarchy with no hand-placed meta-observers. Same rule used at every tier — substrate detects, substrate responds. |
 
 The visual-trace pilots emit GraphViz DOT blocks on stdout that the
 companion Python renderer (`code/render_trace.py`) parses into
@@ -607,6 +609,100 @@ that the higher-order observer (a) bi-edges its substructures and
 constituted distinction at level 0.  No fundamentally new substrate
 machinery is needed to climb the ladder.
 
+## Pilot J — substrate-native charge conservation (60–61)
+
+Pilot I gave us a substrate-readable taxonomy.  Pilot J asks the
+next physics-like question: under substrate rewriting, what is
+conserved?
+
+The answer mirrors Noether/baryon-number conservation in physics:
+if the rewrite rule never creates or destroys NGET tags but only
+moves them between cells, then both the TOTAL CHARGE (Σ NGET
+across all cells) AND THE PER-SPECIES COUNT (number of cells with
+each specific NGET value) are conserved exactly under arbitrary
+many STEP-CA iterations.
+
+Construction:
+- 11-cell linear chain (Peano `succ` for PREV/NEXT linking).
+- 5 particles packed at the left end with NGET 1,2,3,1,2
+  (species α, β, γ, α, β — total Σ = 9; α-count = 2, β-count = 2,
+  γ-count = 1).
+- STEP-CA rule `charge-shift`: each cell becomes its left neighbour's
+  NGET if empty and the left is occupied; becomes empty if non-empty
+  and the right is empty; otherwise unchanged.  Equivalent to
+  Wolfram Rule 184 lifted from {0,1} to integer NGET values.
+
+| Demo | File | ✓ | Property |
+|------|------|---|----------|
+| 60 | `60-charge-conservation.6th`        | 56 | Numerical: 5 STEP-CA steps, asserts exact position pattern at each step AND Σ NGET = 9 + per-species counts (2,2,1) preserved across all steps. |
+| 61 | `61-trace-charge-conservation.6th`  | 4  | Visual: 6 stacked snapshots showing particles spreading from packed (1,2,3,1,2,_,_,_,_,_,_) to fully spread (_,1,_,2,_,3,_,1,_,2,_) while species colors persist. Renderer uses `--layout chain` for horizontal time-series. |
+
+```bash
+make trace-charge-conservation
+make forensic-charge-conservation
+```
+
+![Pilot J — six stacked chain snapshots show 5 particles spreading
+rightward across an 11-cell substrate over 5 STEP-CA steps; each
+particle keeps its species color (teal/amber/plum) and Σ NGET = 9
+persists across every frame.](../docs/figures/charge_conservation.png)
+
+The corollary for the v9.0 cosmology: conservation laws are
+substrate-readable — checked by `EACH`ing and summing, without any
+external bookkeeping.  Any rule that only MOVES NGET (does not
+create or destroy it) carries an automatic Noether-style invariant.
+
+## Pilot K — spontaneous coalition assembly (62–63)
+
+Pilot I built the three-level hierarchy by hand: every meta-observer
+was MARKed explicitly in the demo script.  Pilot K removes the hand.
+
+A single procedural word `try-spawn-coalition` reads the substrate
+(do these three observers form a mutually-pointing K_3 triangle?)
+and conditionally spawns a new meta-observer over them — bi-edges
+to all three + own self-loop (Pilot G recipe).  Same word fires at
+every tier.
+
+Construction:
+- Seed substrate with 9 first-order observers in 3 disjoint
+  mutually-pointing triangles (α-clique OA1↔OA2↔OA3↔OA1, β-clique
+  OB1..OB3, γ-clique OC1..OC3).  Each observer is a Pilot G cluster.
+- coalition-cycle 1: `try-spawn-coalition` fires 3 times, once per
+  known trio.  Each detection spawns a tier-2 family observer
+  (Mα, Mβ, Mγ).
+- Negative test: `try-spawn-coalition` on a CROSS-family trio
+  (OA1, OB1, OC1) correctly refuses to spawn — `EDGE?` fails.
+- socialize-metas: family observers Mα/Mβ/Mγ wire into a mutual
+  triangle.
+- coalition-cycle 2: same `try-spawn-coalition` fires once on the
+  family-tier triangle, spawns the genus observer M2.
+
+End-state hierarchy is shape-identical to Pilot I (9 instances → 3
+families → 1 genus), but every meta-observer was MARKed by the rule
+responding to substrate-readable `EDGE?` conditions.
+
+| Demo | File | ✓ | Property |
+|------|------|---|----------|
+| 62 | `62-spontaneous-coalition-assembly.6th` | 32 | Numerical: seeds 3 triangles, applies `try-spawn-coalition` 4 times, asserts each spawn occurred + cross-family negative test + final Φ_PA at every tier. |
+| 63 | `63-trace-spontaneous-assembly.6th`     | 4  | Visual: 4-snapshot trace (seeded / cycle-1 / socialized / cycle-2) shows the hierarchy emerging level by level under repeated application of the same rule. |
+
+```bash
+make trace-spontaneous-assembly
+make forensic-spontaneous-assembly
+```
+
+![Pilot K — four panels show a three-level observer hierarchy
+emerging from 9 first-order observers + a single substrate-readable
+coalition-detection rule.  No hand-placed meta-observers; every
+spawn is a substrate-readable
+response.](../docs/figures/spontaneous_assembly.png)
+
+The corollary for the v9.0 cosmology: hierarchy formation is not
+imposed top-down.  A flat substrate populated with mutually-pointing
+clusters self-organises into a multi-level taxonomy under a single
+local detection-and-spawn rule.  Pilot I's compositional structure
+is what the substrate produces, not what we impose.
+
 ## Forensic trace mode
 
 The renderer can do more than draw pictures. Three additional artefacts
@@ -712,7 +808,7 @@ Register the demo in `tests/examples-test.rkt`:
     ("54-my-new-demo.6th"           N)))   ; N = expected ✓
 ```
 
-Update the cumulative gate (currently 867) and `make verify` passes
+Update the cumulative gate (currently 963) and `make verify` passes
 cleanly. To add a visual trace, `use dot` and emit `dot-snapshot`
 calls between substrate operations.
 

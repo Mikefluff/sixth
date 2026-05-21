@@ -2,8 +2,8 @@
 
 ;; tests/examples-test.rkt — regression gate.
 ;;
-;; Runs each of the 60 emergence demos and asserts the cumulative
-;; ✓ pass count is unchanged at 867.  Each demo's expected pass
+;; Runs each of the 64 emergence demos and asserts the cumulative
+;; ✓ pass count is unchanged at 963.  Each demo's expected pass
 ;; count is listed in the `expected` table below; the sum must
 ;; equal the gate constant.  Counting ✓ marks printed during the
 ;; run (engine prints ✓ for every successful ASSERT, including
@@ -97,7 +97,13 @@
     ("57-trace-mutation-selection.6th"              4)
     ;; Phase W — Pilot I: multi-level particle hierarchy
     ("58-particle-families-hierarchy.6th"          35)
-    ("59-trace-particle-families.6th"               4)))
+    ("59-trace-particle-families.6th"               4)
+    ;; Phase X — Pilot J: substrate-native charge conservation
+    ("60-charge-conservation.6th"                  56)
+    ("61-trace-charge-conservation.6th"             4)
+    ;; Phase Y — Pilot K: spontaneous coalition assembly
+    ("62-spontaneous-coalition-assembly.6th"       32)
+    ("63-trace-spontaneous-assembly.6th"            4)))
 
 (define (run-demo file)
   (define out
@@ -122,8 +128,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 867
-                (format "cumulative ✓ count: ~a (expected 867)" total-pass)))
+  (check-equal? total-pass 963
+                (format "cumulative ✓ count: ~a (expected 963)" total-pass)))
 
-(displayln (format "examples regression: ~a / 867 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 963 ✓ across ~a demos"
                    total-pass (length expected)))

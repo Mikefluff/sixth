@@ -26,8 +26,8 @@ trigger F0 of the v9.0 preprint.
    `sixth/primitives/*.rkt`, the module loader resolves the stdlib,
    and a `#lang sixth` reader is registered.
 
-2. **All 60 demonstrations pass deterministically.** `examples-test.rkt`
-   asserts cumulative `pass=867 fail=0` across 60 demos covering
+2. **All 64 demonstrations pass deterministically.** `examples-test.rkt`
+   asserts cumulative `pass=963 fail=0` across 64 demos covering
    the sacred hello world (00), foundations (01–20), Pilots A–F
    (21–36), three substrate-monism visual-trace pilots (37 Pilot D,
    38 Pilot C, 39 split-brain), two long-epoch parametric pilots
@@ -45,10 +45,17 @@ trigger F0 of the v9.0 preprint.
    meta-self-loop (54 numerical, 55 visual), Pilot H
    mutation + substrate-readable selection producing a
    diversified composite over three structurally distinct
-   "particle species" (56 numerical, 57 visual), and Pilot I
+   "particle species" (56 numerical, 57 visual), Pilot I
    multi-level particle hierarchy (six instances → three family
    observers → one genus observer, all held by iterated
-   composite-distinction; 58 numerical, 59 visual).
+   composite-distinction; 58 numerical, 59 visual), Pilot J
+   substrate-native charge conservation (Noether-style invariant:
+   Σ NGET and per-species count preserved exactly under STEP-CA
+   `charge-shift`; 60 numerical, 61 visual), and Pilot K
+   spontaneous coalition assembly (full Pilot I hierarchy
+   re-built by a single `try-spawn-coalition` rule reading
+   substrate-readable `EDGE?` conditions; 62 numerical,
+   63 visual).
 
 3. **The Φ_PA stdlib word reproduces Definition def:phi-pa.** Demo 32
    asserts `phi-pa` on three canonical observers (non-reflexive

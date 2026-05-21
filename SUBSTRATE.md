@@ -1,7 +1,7 @@
 # Sixth Substrate — Foundational Pointer Architecture
 
 This document accompanies the Sixth substrate implementation in
-`sixth/primitives/substrate.rkt` and the 60 emergence demonstrations
+`sixth/primitives/substrate.rkt` and the 64 emergence demonstrations
 under `examples/`. The goal is *not* to derive physics — it is to
 build the minimum formal artifact in which structures such as
 numbers, time, space, conservation laws, particles, self-reference,
@@ -44,9 +44,9 @@ two tokens (`EDGE+`), or a transformation of those relations
 
 ## What the demos demonstrate
 
-The 60 demonstrations live in `examples/` (file-by-file index in
+The 64 demonstrations live in `examples/` (file-by-file index in
 [`examples/README.md`](./examples/README.md)). Each isolates a
-single derivation chain, organised in sixteen phases:
+single derivation chain, organised in nineteen phases:
 
 - **00** — sacred hello world (Spencer-Brown's first mark)
 - **01–20** — foundations: arithmetic, time, space, conservation
@@ -100,15 +100,29 @@ single derivation chain, organised in sixteen phases:
   (instances 50000/60000/70000, families 30000/40000/50000, genus
   40000). Within-family instances are indistinguishable —
   substrate-native analogue of physical particle indistinguishability.
+- **60–61** Pilot J — substrate-native charge conservation: 11-cell
+  chain, 5 particles tagged by species (NGET=1/2/3). STEP-CA
+  `charge-shift` rule (Wolfram Rule 184 lifted from {0,1} to integer
+  NGET) preserves total Σ NGET AND per-species count exactly across
+  all steps. First Noether-style conservation law derived structurally
+  from the rule, substrate-readable by `EACH` + sum — no external
+  bookkeeping.
+- **62–63** Pilot K — spontaneous coalition assembly: 9 first-order
+  observers in 3 disjoint mutually-pointing triangles; a single
+  rule `try-spawn-coalition` (three `EDGE?` checks → MARK + bi-edges
+  + own self-loop) fires four times and reconstructs the full
+  Pilot I three-level hierarchy with no hand-placed meta-observers.
+  The substrate detects its own coalition conditions and spawns
+  meta-observers in response.
 
-All 867 assertions pass deterministically. Run the regression in
+All 963 assertions pass deterministically. Run the regression in
 one command:
 
 ```bash
 make verify
 # language tests:    ok
 # substrate tests:   ok
-# examples:          867 / 867 ✓ across 60 demos
+# examples:          963 / 963 ✓ across 64 demos
 # docs build:        ok
 # artifact status:   reproducible
 ```
@@ -268,7 +282,7 @@ sufficient for the released demos and can be extended further.
 cd /Users/mikefluff/Documents/Programming/sixt
 raco pkg install --link .          # install the Sixth Racket collection
 
-# the whole regression — all 60 demos, all 867 assertions
+# the whole regression — all 64 demos, all 963 assertions
 make verify
 
 # any single demo

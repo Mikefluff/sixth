@@ -22,6 +22,8 @@
         trace-composite-distinction forensic-composite-distinction \
         trace-mutation-selection forensic-mutation-selection \
         trace-particle-families forensic-particle-families \
+        trace-charge-conservation forensic-charge-conservation \
+        trace-spontaneous-assembly forensic-spontaneous-assembly \
         foundation-gifs all-figures \
         gif-pilot-c gif-pilot-d gif-split-brain gifs
 
@@ -376,6 +378,37 @@ trace-particle-families:
 forensic-particle-families:
 	@bash scripts/forensic.sh examples/59-trace-particle-families.6th particle_families "Pilot I particle hierarchy" tiered
 
+# Pilot J — substrate-native charge conservation (demo 61).
+# 11-cell chain, 5 particles, STEP-CA charge-shift rule preserves
+# total Σ NGET and per-species count exactly across all steps.
+trace-charge-conservation:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- run examples/61-trace-charge-conservation.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/charge_conservation.png \
+	      --title "Pilot J — substrate-native charge conservation (Σ NGET invariant under STEP-CA)" \
+	      --layout chain
+	@echo "→ open build/figures/charge_conservation.png"
+
+forensic-charge-conservation:
+	@bash scripts/forensic.sh examples/61-trace-charge-conservation.6th charge_conservation "Pilot J charge conservation" chain
+
+# Pilot K — spontaneous coalition assembly (demo 63).
+# Three-level hierarchy emerges entirely by repeated application of
+# the substrate-readable try-spawn-coalition rule (no hand-placed
+# meta-observers).
+trace-spontaneous-assembly:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- run examples/63-trace-spontaneous-assembly.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/spontaneous_assembly.png \
+	      --title "Pilot K — spontaneous coalition assembly (3-level hierarchy emerges from a single substrate-readable rule)" \
+	      --layout tiered
+	@echo "→ open build/figures/spontaneous_assembly.png"
+
+forensic-spontaneous-assembly:
+	@bash scripts/forensic.sh examples/63-trace-spontaneous-assembly.6th spontaneous_assembly "Pilot K spontaneous assembly" tiered
+
 forensic-pilot-e:
 	@bash scripts/forensic.sh examples/50-trace-pilot-e-phi-pa.6th pilot_e "Pilot E"
 
@@ -437,8 +470,10 @@ forensic-all: forensic-pilot-d forensic-pilot-c forensic-split-brain \
               forensic-pilot-f2 forensic-pilot-f4 \
               forensic-composite-distinction \
               forensic-mutation-selection \
-              forensic-particle-families
-	@echo "→ all 19 forensic traces rendered (PNG + JSONL + diff per demo)"
+              forensic-particle-families \
+              forensic-charge-conservation \
+              forensic-spontaneous-assembly
+	@echo "→ all 21 forensic traces rendered (PNG + JSONL + diff per demo)"
 
 # Visibly growing substrate over a long epoch (demo 41 — shell added
 # every GROW cycles; structure changes across frames).
