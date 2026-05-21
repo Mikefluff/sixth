@@ -13,10 +13,10 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Racket
-        uses: Bogdanp/setup-racket@v1.11
+        uses: Bogdanp/setup-racket@v1.15
         with:
           architecture: x64
           distribution: minimal
@@ -31,7 +31,7 @@ jobs:
         run: raco pkg install --link --auto --no-docs --batch --name sixth "$GITHUB_WORKSPACE"
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
