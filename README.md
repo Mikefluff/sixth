@@ -1,13 +1,13 @@
 # Sixth
 
 > A minimal executable substrate language —
-> 40 primitives, 98 reproducible demos, 1440 ✓ across them all,
+> 40 primitives, 102 reproducible demos, 1535 ✓ across them all,
 > reference implementation for the Pointer Architecture v9.0 preprint.
 
 ```
 language tests:    ok
 substrate tests:   ok
-examples:          1440 / 1440 ✓ across 98 demos
+examples:          1535 / 1535 ✓ across 102 demos
 docs build:        ok
 ffi optional:      n/a
 renderer tests:    ok
@@ -45,6 +45,11 @@ philosophical / research hypothesis (Tier 3). The
 [LANGUAGE.md](./LANGUAGE.md) document pitches Sixth as a stand-alone
 programming language for readers who reject the v9.0 cosmology.
 
+> **New reader?** Start with [`docs/TOUR.md`](./docs/TOUR.md) — a
+> curated 10-demo reading path through the 102 demonstrations.
+> The full catalogue in `examples/README.md` is for completeness;
+> the tour is for understanding.  ~40 minutes end-to-end.
+
 ## 30-second quickstart
 
 ```bash
@@ -54,7 +59,7 @@ raco pkg install --link .
 # Spencer-Brown's first mark — the second rung of the canonical ladder
 racket -l sixth/cli -- run examples/02-first-distinction.6th
 
-# the whole regression — all 98 demos, all 1440 assertions
+# the whole regression — all 102 demos, all 1535 assertions
 make verify
 ```
 
@@ -96,7 +101,7 @@ foundational demos (`01-numbers` … `20-conway-glider`, 359 ✓):
 | (Peircean trit) | 90 | 21 | Substrate-readable classifier tags every node into balanced trit {−1, 0, +1} corresponding to Peirce's firstness / secondness / thirdness. Trit 0 (secondness) = self-loop only = Φ_PA = L_max — the "Tao of the substrate." Philosophical anchor: Peirce's reduction thesis (Burch 1991; Hereth Correia & Pöschel 2006), not the apparent "three multiplicands in Φ_PA" rhyme (which is a notational accident, not structural). |
 | (HEDGE3) | 93–98 | 119 | Typed trivalent hyperedge primitive family (HEDGE3+/-/?, HEDGES3, HEDGES3-KIND, EACH-HEDGE3, EACH-HEDGE3-KIND; +7 primitives) + `stdlib/hedge.6th` kind constants. Four canonical kinds with strict typing: WITNESS (src, dst, witness — substrate-native provenance; demo 93), CONTEXT (in, ctx, out — rewrite-rule firings as substrate-readable history; demo 95), MEDIATOR (src, mid, dst — channels as substrate nodes with load tracking + rerouting + fault injection; demo 97), SIMPLEX (a, b, c — undirected 2-cells of a simplicial complex with Euler characteristic χ = V−E+F computed from substrate state; demo 98). Demo 94 shows all four coexisting under strict typing. Demo 96 demonstrates wobble-at-position-3 via DNA codon analogy (8 hyperedges encode 32 codons, 4× compression matches Crick's wobble degeneracy). Substantive substrate-level realisation of Peirce's reduction thesis. Coexists with binary edges; bootstrap claim for the original 40-demo ascent preserved. |
 
-Cumulative: **1440 ✓ / 0 ✗ across 98 demos** (canonical Spencer-Brown ladder + substrate applications + Pilots A–F core + 3 substrate-monism trace pilots + 2 long-epoch parametric + 5 foundation visual traces + 2 atomic-build traces + Pilots G–M composite/particle pilots + stress-test track + honest-emergence track + Peircean trit observer + HEDGE3 typed trivalent hyperedges).
+Cumulative: **1535 ✓ / 0 ✗ across 102 demos** (canonical Spencer-Brown ladder + substrate applications + Pilots A–F core + 3 substrate-monism trace pilots + 2 long-epoch parametric + 5 foundation visual traces + 2 atomic-build traces + Pilots G–M composite/particle pilots + stress-test track + honest-emergence track + Peircean trit observer + HEDGE3 typed trivalent hyperedges).
 
 ## Running and rendering
 
@@ -104,10 +109,10 @@ Cumulative: **1440 ✓ / 0 ✗ across 98 demos** (canonical Spencer-Brown ladder
 # one-shot artifact-status report (Tier-1 verification, see CLAIMS.md)
 make verify
 
-# any of the 98 demos
+# any of the 102 demos
 racket -l sixth/cli -- run examples/46-phi-pa-split-brain-toy.6th
 
-# all 98 demos against the rackunit regression gate
+# all 102 demos against the rackunit regression gate
 raco test tests/examples-test.rkt
 
 # render the three static trace figures (Pilots C, D, F.3)
@@ -149,7 +154,7 @@ stdlib/       Sixth-language standard library (prelude, peano,
               candidate substrate-readable observability measures;
               dot.6th emits GraphViz DOT snapshots for the
               visual-trace pilots.
-examples/     98 emergence demonstrations
+examples/     102 emergence demonstrations
               (00 hello + 01–20 foundations + 21–36 Pilots A–F +
               37–39 substrate-monism traces + 40–41 long-epoch
               parametric + 42–46 foundation visual traces +
@@ -168,7 +173,7 @@ code/         Python tooling. render_trace.py reads dot.6th
               SVG / PDF or animated GIF.
 scripts/      verify.sh (artifact-status report; backs `make verify`)
 tests/        rackunit suites — lexer, parser, VM, substrate,
-              loader, examples-test.rkt (regression gate at 1440 ✓)
+              loader, examples-test.rkt (regression gate at 1535 ✓)
 docs/         Scribble manual + embedded README figure
 build/        regeneratable artefacts (raco scribble HTML, render
               outputs) — gitignored

@@ -1,9 +1,14 @@
-# `examples/` — the 98 demonstrations
+# `examples/` — the 102 demonstrations
 
 This directory holds Sixth's reproducible emergence demonstrations.
 Each file is a standalone Sixth program; `raco test
-tests/examples-test.rkt` (or `make verify`) executes all 98 and
-asserts a cumulative 1440 ✓ / 0 ✗.
+tests/examples-test.rkt` (or `make verify`) executes all 102 and
+asserts a cumulative 1535 ✓ / 0 ✗.
+
+> **First-time reader?** This catalogue is exhaustive.  For a
+> curated 10-demo reading path (~40 min), see
+> [`docs/TOUR.md`](../docs/TOUR.md) — author's pick of which
+> demos shift the mental model of what the substrate IS.
 
 The demos are organised in six conceptual phases.  The numbering
 goes strictly from simplest to most complex: rung 1 is the void,
