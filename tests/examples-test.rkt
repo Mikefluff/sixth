@@ -2,8 +2,8 @@
 
 ;; tests/examples-test.rkt — regression gate.
 ;;
-;; Runs each of the 84 emergence demos and asserts the cumulative
-;; ✓ pass count is unchanged at 1140.  Each demo's expected pass
+;; Runs each of the 86 emergence demos and asserts the cumulative
+;; ✓ pass count is unchanged at 1180.  Each demo's expected pass
 ;; count is listed in the `expected` table below; the sum must
 ;; equal the gate constant.  Counting ✓ marks printed during the
 ;; run (engine prints ✓ for every successful ASSERT, including
@@ -140,7 +140,12 @@
     ("81-stress-autopoiesis-stability.6th" 11)
     ("82-stress-conway-blinker-periodicity.6th"  8)
     ("83-stress-sprout-linear-growth.6th"   7)
-    ("84-stress-rule184-ring-conservation.6th"   8)))
+    ("84-stress-rule184-ring-conservation.6th"   8)
+    ;; --- Honest emergent track — composites EMERGE from rules ---
+    ;; (corrective to G/H/I/K which hand-place the answer; here the
+    ;; rule SCANS the substrate and spawns composites in response)
+    ("85-emergent-composite-from-scan.6th"  19)
+    ("86-emergent-composite-from-chain.6th" 21)))
 
 (define (run-demo file)
   (define out
@@ -165,8 +170,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1140
-                (format "cumulative ✓ count: ~a (expected 1140)" total-pass)))
+  (check-equal? total-pass 1180
+                (format "cumulative ✓ count: ~a (expected 1180)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1140 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1180 ✓ across ~a demos"
                    total-pass (length expected)))

@@ -1,0 +1,218 @@
+\ examples/85-emergent-composite-from-scan.6th
+\ Honest version of Pilot K — composites EMERGE from a substrate-
+\ blind scanner, not from hand-placement.
+\
+\ Reviewer (2026-05-21): "Pilots G/H/I/L/M — static composites,
+\ откуда у нас static если у нас все начинается от я/не-я и
+\ дальше всегда прогрессия, какие нахуй one-shot construction —
+\ это всё синтетика, подгонка под ответ".  Critique stands.
+\
+\ Previous composite pilots:
+\   G  (48): hand-wired 3 observers + hand-wired meta + asserts.
+\   H  (49): hand-wired 5 candidates + hand-applied selection.
+\   I  (50): hand-wired 3-level hierarchy.
+\   K  (52): try-spawn-coalition word called 4 times on KNOWN trios.
+\
+\ All of those tell the substrate the answer, then verify it.
+\ This demo is the first step toward real emergence: the RULE
+\ does not know where triangles are.  It iterates EACH-2PATH
+\ across the whole substrate and, for each (a, b, c) triple, tests
+\ the mutual-triangle condition via EDGE? on all six directed
+\ edges.  Where the condition holds, a new composite is MARKed
+\ on the spot.
+\
+\ The substrate's initial state is still hand-built (five
+\ observers wired into two overlapping triangles).  But the
+\ COMPOSITES are not — they appear as a substrate-readable
+\ response to substrate-readable conditions.  Move 1 of N toward
+\ fully-emergent composite formation; later demos can replace the
+\ initial bi-edge wiring with a rule-driven adjacency formation
+\ stage, etc.
+
+use prelude
+use graph
+use phi
+use debug
+
+\ ============================================================
+\ Build five raw observers (self-loop, no limbs).  Tag NGET=7
+\ (first-order observer marker) so the scanner can later filter
+\ "observer-tier nodes" if it wants to (current scan doesn't
+\ filter by NGET — it scans everything).
+\ ============================================================
+
+MARK "OA" store
+"OA" load "OA" load EDGE+
+"OA" load 7 NSET
+
+MARK "OB" store
+"OB" load "OB" load EDGE+
+"OB" load 7 NSET
+
+MARK "OC" store
+"OC" load "OC" load EDGE+
+"OC" load 7 NSET
+
+MARK "OD" store
+"OD" load "OD" load EDGE+
+"OD" load 7 NSET
+
+MARK "OE" store
+"OE" load "OE" load EDGE+
+"OE" load 7 NSET
+
+\ Wire two overlapping triangles, sharing OC.
+\ Triangle 1: OA-OB-OC.
+"OA" load "OB" load bi-edge
+"OA" load "OC" load bi-edge
+"OB" load "OC" load bi-edge
+
+\ Triangle 2: OC-OD-OE.
+"OC" load "OD" load bi-edge
+"OC" load "OE" load bi-edge
+"OD" load "OE" load bi-edge
+
+NODES 5 assert-eq
+\ Edges: 5 self-loops + 6 bi-edges (12 directed) = 17.
+EDGES 17 assert-eq
+
+\ ============================================================
+\ Triangle scanner — called once per 2-path by EACH-2PATH.
+\ Stack convention from EACH-2PATH: ( src mid dst -- )
+\
+\ Filters in order:
+\   1. canonical ordering   a < b < c   (one detection per triangle)
+\   2. all six directed edges of the triangle present:
+\        a→b (given by 2-path), b→a, b→c (given), c→b,
+\        a→c, c→a
+\ If all pass, MARK a new composite + bi-edge to all three +
+\ own self-loop + NGET=8 (composite marker).  Track spawn count.
+\ ============================================================
+
+0 "triangle-spawns" store
+
+: scan-2path-for-triangle ( a b c -- )
+  "s2t-c" store
+  "s2t-b" store
+  "s2t-a" store
+  "s2t-a" load "s2t-b" load < if
+    "s2t-b" load "s2t-c" load < if
+      "s2t-b" load "s2t-a" load EDGE? if
+        "s2t-c" load "s2t-b" load EDGE? if
+          "s2t-a" load "s2t-c" load EDGE? if
+            "s2t-c" load "s2t-a" load EDGE? if
+              \ Triangle confirmed.
+              MARK "spawn-M" store
+              "spawn-M" load "spawn-M" load EDGE+
+              "spawn-M" load "s2t-a" load bi-edge
+              "spawn-M" load "s2t-b" load bi-edge
+              "spawn-M" load "s2t-c" load bi-edge
+              "spawn-M" load 8 NSET
+              "triangle-spawns" load 1 + "triangle-spawns" store
+            then
+          then
+        then
+      then
+    then
+  then ;
+
+\ ============================================================
+\ Apply the scanner.  EACH-2PATH walks every src→mid→dst pair in
+\ the substrate; the scanner spawns a composite for each detected
+\ triangle (with dedup via canonical ordering, exactly one per
+\ triangle).
+\ ============================================================
+
+' scan-2path-for-triangle EACH-2PATH
+
+\ ============================================================
+\ Results: two triangles in the substrate, so exactly two
+\ composites should have been spawned.  Each composite has:
+\   self-loop + bi-edges to its three triangle members
+\   NGET=8 (composite marker)
+\ ============================================================
+
+"triangle-spawns" load 2 assert-eq
+
+\ Substrate now has 5 observers + 2 composites = 7 nodes.
+NODES 7 assert-eq
+
+\ Edges added per spawned composite:
+\   self-loop (1) + 3 bi-edges to triangle members (6 directed) = 7
+\ Two composites: 14 new edges.  Initial 17 + 14 = 31.
+EDGES 31 assert-eq
+
+\ Find the two composites — they're the only NGET=8 nodes.
+0 "found-count" store
+0 "comp-a" store
+0 "comp-b" store
+
+: register-composite ( node -- )
+  dup NGET 8 = if
+    "found-count" load 0 = if
+      "comp-a" store
+      1 "found-count" store
+    else "found-count" load 1 = if
+        "comp-b" store
+        2 "found-count" store
+      else drop then
+    then
+  else drop
+  then ;
+
+' register-composite EACH
+
+"found-count" load 2 assert-eq
+
+\ Each composite is held by its own self-loop and has OUT = 4
+\ (self + 3 triangle members).  Φ_PA(M) = 4·1·10000 = 40000.
+"comp-a" load OUT 4 assert-eq
+"comp-a" load "comp-a" load EDGE? 1 assert-eq
+"comp-a" load phi-pa 40000 assert-eq
+
+"comp-b" load OUT 4 assert-eq
+"comp-b" load "comp-b" load EDGE? 1 assert-eq
+"comp-b" load phi-pa 40000 assert-eq
+
+\ The composites are different nodes (id distinguished).
+"comp-a" load "comp-b" load = 0 assert-eq
+
+\ Each original observer's scope grew by the number of composites
+\ that adopted it.  OC is in BOTH triangles, so its scope grew by 2.
+\ Others grew by 1.
+\
+\ Pre-scan OA was: self + 2 triangle siblings (OB, OC) = OUT 3.
+\ After scan: gained back-edge from M1 → OUT 4.
+"OA" load OUT 4 assert-eq
+"OA" load phi-pa 40000 assert-eq
+
+\ OC: pre-scan OUT = self + 4 siblings (OA OB OD OE) = 5.
+\ Post-scan: + 2 back-edges from M1 and M2 → OUT 7.
+"OC" load OUT 7 assert-eq
+"OC" load phi-pa 70000 assert-eq
+
+\ OD: pre-scan OUT = self + 2 siblings (OC OE) = 3.
+\ Post-scan: + 1 back-edge from M2 → OUT 4.
+"OD" load OUT 4 assert-eq
+"OD" load phi-pa 40000 assert-eq
+
+cr
+"=== Demo 85 — emergent composite via substrate scan ===" . cr
+"5 observers, 2 hand-wired triangles (sharing OC)." . cr
+"Scanner: EACH-2PATH iterates every 2-path in the substrate;" . cr
+"         for each (a, b, c) triple, checks the mutual-triangle" . cr
+"         condition via 6 EDGE? calls.  Spawns a composite on" . cr
+"         each match, deduplicated by canonical ordering." . cr
+cr
+"Scanner spawned" . "triangle-spawns" load . "composites." . cr
+"OC, shared between both triangles, has scope = 7 (extra back-edge" . cr
+"from each composite that adopts it) and Φ_PA = 70000." . cr
+cr
+"Improvement vs Pilot K: scanner has NO pre-knowledge of which" . cr
+"trios are triangles.  It discovers them by reading the substrate." . cr
+"The hand-built parts that REMAIN: the observers themselves and" . cr
+"the bi-edges between them (initial conditions).  The composites" . cr
+"are NOT hand-built — they emerge as the substrate's response to" . cr
+"the substrate-readable triangle condition." . cr
+
+REPORT

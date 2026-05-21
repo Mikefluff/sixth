@@ -1,7 +1,7 @@
 # Sixth Substrate — Foundational Pointer Architecture
 
 This document accompanies the Sixth substrate implementation in
-`sixth/primitives/substrate.rkt` and the 84 emergence demonstrations
+`sixth/primitives/substrate.rkt` and the 86 emergence demonstrations
 under `examples/`. The goal is *not* to derive physics — it is to
 build the minimum formal artifact in which structures such as
 numbers, time, space, conservation laws, particles, self-reference,
@@ -44,7 +44,7 @@ two tokens (`EDGE+`), or a transformation of those relations
 
 ## What the demos demonstrate
 
-The 84 demonstrations live in `examples/` (file-by-file index in
+The 86 demonstrations live in `examples/` (file-by-file index in
 [`examples/README.md`](./examples/README.md)). Each isolates a
 single derivation chain, organised in six conceptual phases that
 go from simplest distinction to highest-order composition:
@@ -130,15 +130,29 @@ go from simplest distinction to highest-order composition:
   Demo 84: Wolfram Rule 184 preserves binary particle count on a
   closed ring across 10⁶ STEP-CAs.  Stress-test showcase:
   `make stress-test STRESS_CYCLES=1000000`.
+- **85–86 Honest-emergence track.** Corrective to Pilots G/H/I/L/M/K,
+  which hand-place their composites and then assert the construction
+  has the expected properties.  Demo 85 uses an EACH-2PATH-driven
+  rule that scans the whole substrate without pre-knowledge of where
+  triangles are; composites emerge as the substrate's response to
+  substrate-readable conditions (initial topology still hand-built).
+  Demo 86 removes the last bit of "fitting to the answer": initial
+  state is a plain 5-cell chain of bi-edges (no triangles); a
+  transitive-closure rule (close-2path) is applied via EACH-2PATH,
+  which makes 1↔3, 2↔4, 3↔5 emerge — and now three triangles exist;
+  the triangle-scanner rule is then applied and three composites
+  spawn for them.  Every node and edge past t=0 is rule-driven.
+  This is the substrate DERIVING composite distinction from a
+  minimal initial state, not us posting the answer and asserting it.
 
-All 1140 assertions pass deterministically. Run the regression in
+All 1180 assertions pass deterministically. Run the regression in
 one command:
 
 ```bash
 make verify
 # language tests:    ok
 # substrate tests:   ok
-# examples:          1140 / 1140 ✓ across 84 demos
+# examples:          1180 / 1180 ✓ across 86 demos
 # docs build:        ok
 # artifact status:   reproducible
 ```
@@ -298,7 +312,7 @@ sufficient for the released demos and can be extended further.
 cd /Users/mikefluff/Documents/Programming/sixt
 raco pkg install --link .          # install the Sixth Racket collection
 
-# the whole regression — all 84 demos, all 1140 assertions
+# the whole regression — all 86 demos, all 1180 assertions
 make verify
 
 # any single demo

@@ -1,0 +1,201 @@
+\ examples/86-emergent-composite-from-chain.6th
+\ Real emergence — composites arise from a MINIMAL chain via
+\ substrate-readable rules, no triangles hand-placed.
+\
+\ Demo 85 was a partial honest step (scanner finds triangles, but
+\ the triangles themselves were hand-wired).  This demo removes
+\ that last bit of "fitting to the answer": the initial substrate
+\ is a plain 5-cell chain of bi-edges, with NO triangles present.
+\
+\ Two stages of substrate-readable rule application:
+\
+\   STAGE 1 — Transitive closure (close-2path):
+\     For every 2-path a→b→c with a≠c, add bi-edge a↔c.  EACH-2PATH
+\     applies this rule to every existing 2-path; the substrate
+\     gains the "1-hop closure" edges.  Triangles now exist.
+\
+\   STAGE 2 — Triangle scanner (scan-2path-for-triangle):
+\     Same EACH-2PATH-driven detector as demo 85.  Finds the
+\     triangles that emerged in stage 1, spawns a composite for
+\     each.
+\
+\ Trace of the substrate's evolution:
+\
+\   t=0 (initial)   chain of 4 bi-edges  →   8 directed edges,
+\                                            0 triangles
+\
+\   t=1 (closure)   add a↔c for each 2-path:
+\                   1↔3, 2↔4, 3↔5 emerge
+\                                       →  14 directed edges,
+\                                           3 triangles
+\
+\   t=2 (scan)      composites spawn for each detected triangle:
+\                   M1 over (1,2,3), M2 over (2,3,4), M3 over (3,4,5)
+\                                       →  35 directed edges,
+\                                           3 composites
+\
+\ Every node and every edge added after t=0 is a substrate-readable
+\ response to substrate-readable conditions.  Nothing was placed by
+\ hand beyond the initial 5-cell chain.
+
+use prelude
+use graph
+use phi
+use debug
+
+\ ============================================================
+\ Initial substrate — 5-cell chain with bi-edges.
+\ MINIMAL: no observers, no NSET tags, no triangles.
+\ ============================================================
+
+MARK "c1" store
+MARK "c2" store
+MARK "c3" store
+MARK "c4" store
+MARK "c5" store
+
+"c1" load "c2" load bi-edge
+"c2" load "c3" load bi-edge
+"c3" load "c4" load bi-edge
+"c4" load "c5" load bi-edge
+
+NODES 5 assert-eq
+EDGES 8 assert-eq                   \ 4 bi-edges × 2 directed
+
+\ Sanity: no triangles exist yet.
+\ Specifically, "c1" is not bi-edged to "c3" (transitive gap).
+"c1" load "c3" load EDGE? 0 assert-eq
+"c2" load "c4" load EDGE? 0 assert-eq
+"c3" load "c5" load EDGE? 0 assert-eq
+
+\ ============================================================
+\ STAGE 1 — Transitive closure rule.
+\ For each 2-path a→b→c (from EACH-2PATH) with a≠c, add a↔c.
+\ EDGE+ is idempotent (no-op if already present), so the rule is
+\ safe to apply across all 2-paths including self-loops.
+\ ============================================================
+
+: close-2path ( a b c -- )
+  "cl-c" store
+  "cl-b" store
+  "cl-a" store
+  "cl-a" load "cl-c" load = not if
+    "cl-a" load "cl-c" load bi-edge
+  then ;
+
+' close-2path EACH-2PATH
+
+\ Post-closure state.
+\ Expected new bi-edges:
+\   1↔3 (via 2-path 1→2→3 and 3→2→1)
+\   2↔4 (via 2→3→4 and 4→3→2)
+\   3↔5 (via 3→4→5 and 5→4→3)
+\ Original 4 bi-edges + 3 new = 7 bi-edges = 14 directed edges.
+
+EDGES 14 assert-eq
+
+"c1" load "c3" load EDGE? 1 assert-eq
+"c3" load "c1" load EDGE? 1 assert-eq
+"c2" load "c4" load EDGE? 1 assert-eq
+"c4" load "c2" load EDGE? 1 assert-eq
+"c3" load "c5" load EDGE? 1 assert-eq
+"c5" load "c3" load EDGE? 1 assert-eq
+
+\ Non-emerged edges remain absent.
+"c1" load "c4" load EDGE? 0 assert-eq          \ would need 2-hop closure
+"c1" load "c5" load EDGE? 0 assert-eq
+"c2" load "c5" load EDGE? 0 assert-eq
+
+\ ============================================================
+\ STAGE 2 — Triangle scanner.
+\ Same rule as demo 85: for each 2-path (a, b, c) with canonical
+\ a<b<c and all 6 directed edges of the triangle present, MARK a
+\ composite + bi-edge it to all three + own self-loop + NGET=8.
+\ ============================================================
+
+0 "triangle-spawns" store
+
+: scan-2path-for-triangle ( a b c -- )
+  "s2t-c" store
+  "s2t-b" store
+  "s2t-a" store
+  "s2t-a" load "s2t-b" load < if
+    "s2t-b" load "s2t-c" load < if
+      "s2t-b" load "s2t-a" load EDGE? if
+        "s2t-c" load "s2t-b" load EDGE? if
+          "s2t-a" load "s2t-c" load EDGE? if
+            "s2t-c" load "s2t-a" load EDGE? if
+              MARK "spawn-M" store
+              "spawn-M" load "spawn-M" load EDGE+
+              "spawn-M" load "s2t-a" load bi-edge
+              "spawn-M" load "s2t-b" load bi-edge
+              "spawn-M" load "s2t-c" load bi-edge
+              "spawn-M" load 8 NSET
+              "triangle-spawns" load 1 + "triangle-spawns" store
+            then
+          then
+        then
+      then
+    then
+  then ;
+
+' scan-2path-for-triangle EACH-2PATH
+
+\ ============================================================
+\ Results.
+\ Exactly 3 triangles emerged in stage 1 — (1,2,3), (2,3,4),
+\ (3,4,5) — and the scanner spawned a composite for each one.
+\ ============================================================
+
+"triangle-spawns" load 3 assert-eq
+
+\ NODES: 5 original + 3 composites = 8.
+NODES 8 assert-eq
+
+\ EDGES: 14 (post-closure) + 3·7 (per composite: self-loop + 3
+\ bi-edges to triangle members, 1 + 6 = 7 directed) = 35.
+EDGES 35 assert-eq
+
+\ Each composite carries its own substrate-readable Φ_PA.
+\ OUT(M) = self + 3 triangle members = 4.  Φ_PA = 40000.
+0 "comp-count" store
+0 "phi-sum"    store
+
+: tally-composite ( node -- )
+  dup NGET 8 = if
+    "comp-count" load 1 + "comp-count" store
+    phi-pa "phi-sum" load + "phi-sum" store
+  else drop
+  then ;
+
+' tally-composite EACH
+
+"comp-count" load 3 assert-eq
+"phi-sum"    load 120000 assert-eq         \ 3 composites × 40000
+
+\ ============================================================
+\ The middle cell c3 is the busiest node.  After closure it
+\ bi-edges to {c1, c2, c4, c5} plus all 3 composites adopt it
+\ (it's in all three triangles).  OUT(c3) = 4 (siblings) + 3
+\ (composite back-edges) = 7.
+\ ============================================================
+
+"c3" load OUT 7 assert-eq
+
+cr
+"=== Demo 86 — emergent composites from a minimal chain ===" . cr
+"t=0  5-cell chain with 4 bi-edges (8 directed); no triangles." . cr
+"t=1  transitive-closure rule adds 3 bi-edges via EACH-2PATH:" . cr
+"     1↔3, 2↔4, 3↔5.  3 triangles now exist." . cr
+"t=2  triangle-scanner rule spawns 3 composites via EACH-2PATH." . cr
+cr
+"Final substrate: 8 nodes (5 cells + 3 composites), 35 directed" . cr
+"edges, 3 composite observers each with Φ_PA = 40000." . cr
+cr
+"Every node and every edge added past t=0 is a substrate-readable" . cr
+"response to substrate-readable conditions.  No triangle was" . cr
+"hand-placed; no composite was hand-MARKed.  This is the substrate" . cr
+"DERIVING the composite-distinction structure from a minimal chain," . cr
+"not us posting the answer and asserting it." . cr
+
+REPORT

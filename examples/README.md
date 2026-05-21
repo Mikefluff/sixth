@@ -1,9 +1,9 @@
-# `examples/` — the 84 demonstrations
+# `examples/` — the 86 demonstrations
 
 This directory holds Sixth's reproducible emergence demonstrations.
 Each file is a standalone Sixth program; `raco test
-tests/examples-test.rkt` (or `make verify`) executes all 84 and
-asserts a cumulative 1140 ✓ / 0 ✗.
+tests/examples-test.rkt` (or `make verify`) executes all 86 and
+asserts a cumulative 1180 ✓ / 0 ✗.
 
 The demos are organised in six conceptual phases.  The numbering
 goes strictly from simplest to most complex: rung 1 is the void,
@@ -26,6 +26,7 @@ higher-order composition.
 | **Pilot L — particle interaction** | 75–76 | 33 | Two structurally distinct particles α (NGET=1) and β (NGET=2) interact via a substrate-readable BIND rule: mutual bi-edge + composite observer M (NGET=8) with own self-loop. Bound state carries Φ_PA = 30000; constituent flavour charges individually conserved. Substrate-native analogue of meson formation. Trace adjacent to numerical (75 + 76 instead of separated into the visual-trace track) — this becomes the pattern for future pilots beyond L. |
 | **Pilot M — bound-state decay**    | 77–78 | 32 | Inverse of Pilot L. DECAY EVENT = severing M's self-loop alone (Φ_PA(M) flips 30000 → 0 the instant phi-self-ref(M) = 0, even though M still topologically bi-edges α and β — Pilot G principle in reverse). Phase-B housekeeping unwinds the remaining edges; particles return to their pre-binding free state. Σ NGET over particles preserved across the full bind+decay cycle — binding is REVERSIBLE and charge conservation holds in both directions. |
 | **Stress-test track**              | 79–84 | 59 | Parametric long-run stress tests via `-D max-cycles=N` (default 1000 in CI, scaleable to 10⁶) for EVERY dynamic pilot. Each tracks invariant at EVERY cycle and asserts max-drift = 0. Demo 79: closed-ring charge-shift conserves Σ NGET across 10⁶ STEP-CA cycles. Demo 80: bind+decay idempotence — substrate state IDENTICAL before/after 10⁶ interaction cycles. Demo 81: autopoiesis observer fully restores to NGET=10 at every one of 10⁶ phase-decay/phase-restore cycles. Demo 82: Conway blinker returns to initial state every 2 STEP-CAs across 10⁶ pairs. Demo 83: sprout rule adds exactly 1 node + 1 edge per STEP across 10⁶ STEPs. Demo 84: Wolfram Rule 184 preserves binary particle count on closed ring across 10⁶ STEP-CAs. Showcase: `make stress-test STRESS_CYCLES=1000000`. |
+| **Honest-emergence track**         | 85–86 | 40 | Corrective to Pilots G/H/I/L/M/K which hand-place their composites. Demo 85: EACH-2PATH triangle scanner discovers triangles WITHOUT pre-knowledge and spawns composites for each (initial topology still hand-built). Demo 86: full emergence — start with a plain 5-cell chain of bi-edges (no triangles), apply transitive-closure rule via EACH-2PATH (1↔3, 2↔4, 3↔5 emerge), then apply triangle-scanner — 3 composites spawn for the 3 triangles that arose. Every node and edge past t=0 is rule-driven. Substrate DERIVING composite-distinction from a minimal chain. |
 
 The visual-trace pilots emit GraphViz DOT blocks on stdout that the
 companion Python renderer (`code/render_trace.py`) parses into
@@ -805,7 +806,7 @@ Register the demo in `tests/examples-test.rkt`:
     ("54-my-new-demo.6th"           N)))   ; N = expected ✓
 ```
 
-Update the cumulative gate (currently 1140) and `make verify` passes
+Update the cumulative gate (currently 1180) and `make verify` passes
 cleanly. To add a visual trace, `use dot` and emit `dot-snapshot`
 calls between substrate operations.
 
