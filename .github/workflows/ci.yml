@@ -8,7 +8,7 @@ on:
 
 jobs:
   verify:
-    name: make verify (86 demos / 1180 ✓)
+    name: make verify (102 demos / 1535 ✓)
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -24,7 +24,11 @@ jobs:
           version: 8.13
 
       - name: Install Sixth package
-        run: raco pkg install --link --auto --no-docs --batch .
+        # `.` is rejected as a package source by current raco
+        # ("ending path element is not a name"); pass an explicit
+        # --name and an absolute path so the install resolves
+        # cleanly across racket / setup-racket versions.
+        run: raco pkg install --link --auto --no-docs --batch --name sixth "$GITHUB_WORKSPACE"
 
       - name: Set up Python
         uses: actions/setup-python@v5
