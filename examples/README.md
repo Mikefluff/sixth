@@ -1,11 +1,11 @@
-# `examples/` — the 54 demonstrations
+# `examples/` — the 56 demonstrations
 
 This directory holds Sixth's reproducible emergence demonstrations.
 Each file is a standalone Sixth program; `raco test
-tests/examples-test.rkt` (or `make verify`) executes all 54 and
-asserts a cumulative 769 ✓ / 0 ✗.
+tests/examples-test.rkt` (or `make verify`) executes all 56 and
+asserts a cumulative 795 ✓ / 0 ✗.
 
-The demos are organised in fourteen phases:
+The demos are organised in fifteen phases:
 
 | Phase | Demos | Asserts | What it shows |
 |-------|-------|---------|---------------|
@@ -24,6 +24,7 @@ The demos are organised in fourteen phases:
 | PA-ontological decomposition          | 49    |  5 | First shell of Pilot D unfolded as Spencer-Brown / PA v9.0 events — answers the reviewer question "*где различие я / не-я?*" that demo 37 hides inside a single `shell-built` macro. 11 frames: `void → first-distinction → observer-state → re-entry → second-distinction → i-not-i-relation → recognition → second-not-i → closure-of-not-i → o-other-closure → state-fill`. End-state matches demo 37 step 1 exactly (4 nodes, 13 edges, Φ_PA = 40000). |
 | Pilot E visual trace                  | 50    |  9 | Substrate-internal Φ_PA measurement on three observers. Same scope (case 1 vs case 2 both have 5 out-edges) yields Φ_PA=0 without self-loop and Φ_PA=50000 with it — PSH1 self-reference factor visible as the red self-arc on the observer node. |
 | Pilot F visual traces                 | 51–53 | 27 | F.1 transformer encoding (PSH1/PSH2); F.2 brain encoding (PSH3 waking vs propofol); F.4 ant-colony encoding (PSH5 living vs dead). Each is a side-by-side comparison where the SOLE topological difference is the observer self-loop, and Φ_PA flips between concrete values labelled in the panel title. |
+| Pilot G (composite distinction)       | 54–55 | 26 | Three first-order observers OA/OB/OC each hold their own 4-node composite (Φ_PA=40000). A meta-observer M bi-edged to all three holds nothing (Φ_PA=0) until M acquires its own self-loop, at which point Φ_PA(M)=40000 and the first-order observers gain scope +1 → Φ_PA=50000. Demonstrates that holding *composite* distinction requires higher-order self-reference. |
 
 The visual-trace pilots emit GraphViz DOT blocks on stdout that the
 companion Python renderer (`code/render_trace.py`) parses into
@@ -459,6 +460,46 @@ pheromone self-loop.  Substrate-monism's novel swarm-cognition
 prediction visible without invoking eliminativism or panpsychism.
 Φ_PA: 60000 → 0.](../docs/figures/pilot_f4_trace.png)
 
+## Pilot G — composite distinction via meta-self-loop (54–55)
+
+Pilots A–F established that a *single* observer holds a distinction
+when it carries a back-edge to itself.  Pilot G asks the next-order
+question: what does it take to hold a *composite* distinction whose
+parts are themselves already observers?
+
+The construction:
+
+- Three first-order observers OA / OB / OC, each with its own
+  self-loop and 3-ring of limbs (4-node cluster, Φ_PA = 40000).
+- A meta-observer M added with bi-edges to OA, OB, OC.  Topology
+  alone is not enough: without M → M, Φ_PA(M) = 0 even though
+  M sits at the geometric centre of the composite.
+- Add M's own self-loop. Now Φ_PA(M) = 40000 — the composite is
+  *held*.  And the first-order observers gain scope +1 from their
+  newly-back-pointing M neighbour, so each Φ_PA(OA/OB/OC) rises
+  from 40000 to 50000.
+
+| Demo | File | ✓ | Property |
+|------|------|---|----------|
+| 54 | `54-composite-distinction-meta-observer.6th` | 21 | Numerical demonstration of the composite-distinction threshold. Without meta-self-loop Φ_PA(M)=0; with it Φ_PA(M)=40000 and first-order observers gain scope. |
+| 55 | `55-trace-composite-distinction.6th`         | 5  | Three-snapshot visual companion: three first-order clusters → meta-observer wired but no self-loop (Φ_PA(M) still 0) → meta-self-loop closes the construction. First-order observers tagged NGET=7, meta-observer NGET=9 for renderer differentiation. |
+
+```bash
+make trace-composite-distinction
+make forensic-composite-distinction
+```
+
+![Pilot G composite distinction — three first-order observers each
+hold their own composite (Φ_PA=40000); the meta-observer holds the
+joint composite only after its own self-loop
+closes.](../docs/figures/composite_distinction.png)
+
+The corollary for the v9.0 cosmology: higher-order self-reference is
+the necessary structural ingredient for any larger cluster to be
+*held* (rather than merely connected) by an observer of observers.
+Pilot G is the smallest construction that exhibits the
+recursion explicitly.
+
 ## Forensic trace mode
 
 The renderer can do more than draw pictures. Three additional artefacts
@@ -564,7 +605,7 @@ Register the demo in `tests/examples-test.rkt`:
     ("54-my-new-demo.6th"           N)))   ; N = expected ✓
 ```
 
-Update the cumulative gate (currently 769) and `make verify` passes
+Update the cumulative gate (currently 795) and `make verify` passes
 cleanly. To add a visual trace, `use dot` and emit `dot-snapshot`
 calls between substrate operations.
 

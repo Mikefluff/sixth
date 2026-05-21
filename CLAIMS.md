@@ -26,8 +26,8 @@ trigger F0 of the v9.0 preprint.
    `sixth/primitives/*.rkt`, the module loader resolves the stdlib,
    and a `#lang sixth` reader is registered.
 
-2. **All 54 demonstrations pass deterministically.** `examples-test.rkt`
-   asserts cumulative `pass=769 fail=0` across 54 demos covering
+2. **All 56 demonstrations pass deterministically.** `examples-test.rkt`
+   asserts cumulative `pass=795 fail=0` across 56 demos covering
    the sacred hello world (00), foundations (01–20), Pilots A–F
    (21–36), three substrate-monism visual-trace pilots (37 Pilot D,
    38 Pilot C, 39 split-brain), two long-epoch parametric pilots
@@ -40,8 +40,9 @@ trigger F0 of the v9.0 preprint.
    into Spencer-Brown / PA v9.0 events (`void → first-distinction
    → observer-state → re-entry → second-distinction → i-not-i-relation
    → recognition → second-not-i → closure-of-not-i → o-other-closure
-   → state-fill`), Pilot E visual trace (50), and Pilot F.1/F.2/F.4
-   visual traces (51–53).
+   → state-fill`), Pilot E visual trace (50), Pilot F.1/F.2/F.4
+   visual traces (51–53), and Pilot G composite distinction via
+   meta-self-loop (54 numerical, 55 visual).
 
 3. **The Φ_PA stdlib word reproduces Definition def:phi-pa.** Demo 32
    asserts `phi-pa` on three canonical observers (non-reflexive

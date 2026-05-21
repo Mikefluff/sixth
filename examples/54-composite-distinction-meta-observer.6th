@@ -1,0 +1,184 @@
+\ examples/54-composite-distinction-meta-observer.6th
+\ Pilot G — composite distinction held by higher-order self-reference.
+\
+\ Reviewer (2026-05-20): "где у нас когда самореференция следующего
+\ порядка которая за удержание композитного различия отвечает, и чтобы
+\ потом более и более крупные кластеры удерживаемые самовниманием
+\ формировались?"
+\
+\ Existing 53 demos all show FIRST-ORDER self-reference: a single
+\ observer node points at itself (Pilot D, E, F.x), or a 2-node
+\ mutual pair points at each other (demo 49 i-not-i-relation +
+\ recognition).  None of them demonstrate META-self-reference:
+\ where a HIGHER-LEVEL observer holds a COMPOSITE distinction
+\ (multiple first-order observers as one unit) via its own
+\ meta-self-loop.
+\
+\ Preprint sec:pilot-i describes a 6-layer nested-observer chain
+\ implemented in Python (code/substrate_cone_nested_observers.py).
+\ This demo is the Sixth-substrate-internal minimum-case version:
+\ three first-order observers + one meta-observer + meta-self-loop.
+\
+\ Sequence:
+\   1. Build three first-order clusters (cluster A, B, C).
+\      Each cluster = observer (OA/OB/OC) with self-loop + 3-ring
+\      of limbs (matches Pilot D step 1).  Each first-order
+\      observer has phi-pa = 4 · 1 · 10000 = 40000.
+\   2. Introduce meta-observer M.  M points at each first-order
+\      observer; each first-order observer points back at M
+\      (mutual second-order relation).
+\   3. WITHOUT M's self-loop:  M holds the composite topologically
+\      but phi-pa(M) = OUT · 0 · L_max = 0 because there's no
+\      meta-level self-reference.  PSH1 says: holding-a-composite
+\      without self-reference at the meta-level still scores zero.
+\   4. WITH M's self-loop (meta-self-reference): phi-pa(M) > 0.
+\      The composite is now "held" at meta-level — substrate-monism
+\      recognises M as an observer of the composite cluster, with
+\      its own non-zero Φ_PA scalar.
+\
+\ This is the substrate-readable demonstration of "composite
+\ distinction holding via higher-order self-reference".  Larger
+\ aggregations (M2 observing meta-observers, M3 observing those,
+\ etc.) compose by the same pattern; demo size grows linearly per
+\ level.  The dynamics rule for "self-attention-driven cluster
+\ growth" (mutual edge → coalition recruitment of common neighbours)
+\ is left for future work — this demo establishes the STATIC
+\ composite-distinction claim only.
+
+use prelude
+use graph
+use phi
+use debug
+
+\ ============================================================
+\ Build three first-order clusters.
+\ Each cluster: observer self-loop + 3-ring of limbs.
+\ ============================================================
+
+: build-cluster ( -- )
+  \ Caller must `"OA" store` / `"OB" store` / `"OC" store` the MARK
+  \ result before calling; this helper builds the ring around that
+  \ stored observer name (using positional limb keys l1/l2/l3 that
+  \ are shadowed on each call — only the observer key persists).
+  MARK "l1" store
+  MARK "l2" store
+  MARK "l3" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l1" load bi-edge ;
+
+: attach-observer-to-limbs ( observer-key -- )
+  \ Caller passes the observer's memory key as a literal-style
+  \ string.  Internal: load observer id, bi-edge to l1/l2/l3.
+  "obs-key" store
+  "obs-key" load load "l1" load bi-edge
+  "obs-key" load load "l2" load bi-edge
+  "obs-key" load load "l3" load bi-edge ;
+
+\ ---- Cluster A ----
+MARK "OA" store
+"OA" load "OA" load EDGE+                 \ first-order self-loop
+build-cluster
+"OA" attach-observer-to-limbs
+
+"OA" load OUT 4 assert-eq                 \ self + 3 limbs
+"OA" load "OA" load EDGE? 1 assert-eq
+"OA" load phi-pa 40000 assert-eq
+
+\ ---- Cluster B ----
+MARK "OB" store
+"OB" load "OB" load EDGE+
+build-cluster
+"OB" attach-observer-to-limbs
+
+"OB" load phi-pa 40000 assert-eq
+
+\ ---- Cluster C ----
+MARK "OC" store
+"OC" load "OC" load EDGE+
+build-cluster
+"OC" attach-observer-to-limbs
+
+"OC" load phi-pa 40000 assert-eq
+
+\ At this point three independent first-order observers exist with
+\ phi-pa = 40000 each.  No meta-level structure yet.
+
+NODES 12 assert-eq                        \ 3 observers + 3·3 limbs = 12
+
+\ ============================================================
+\ Meta-observer M without self-loop.
+\ M points at each first-order observer; each first-order observer
+\ points back at M.  M topologically holds the composite, but the
+\ meta-self-reference factor is still 0.
+\ ============================================================
+
+MARK "M" store
+
+"M" load "OA" load EDGE+
+"M" load "OB" load EDGE+
+"M" load "OC" load EDGE+
+
+"OA" load "M" load EDGE+
+"OB" load "M" load EDGE+
+"OC" load "M" load EDGE+
+
+"M" load OUT 3 assert-eq                  \ to OA, OB, OC (no self yet)
+"M" load IN  3 assert-eq                  \ from OA, OB, OC
+"M" load "M" load EDGE? 0 assert-eq
+"M" load phi-self-ref 0 assert-eq
+\ CRITICAL: even though M holds the composite topologically, phi-pa
+\ at the meta-level is zero — no meta-self-reference yet.
+"M" load phi-pa 0 assert-eq
+
+\ ============================================================
+\ Add meta-self-loop — composite distinction now HELD.
+\ ============================================================
+
+"M" load "M" load EDGE+
+
+"M" load OUT 4 assert-eq                  \ self + 3 first-order observers
+"M" load "M" load EDGE? 1 assert-eq
+"M" load phi-self-ref 1 assert-eq
+\ Phi_PA at the META level: M is now a second-order observer holding
+\ the composite (OA + OB + OC) as ONE substrate-readable entity.
+"M" load phi-pa 40000 assert-eq
+
+\ ============================================================
+\ Nested observation — each first-order observer still has its own
+\ phi-pa (the meta-observer didn't "absorb" them).  Their scope
+\ increased by 1 (the back-edge to M):
+\   OA: self-loop + 3 limbs + M = OUT 5; phi-pa = 5·1·10000 = 50000
+\ ============================================================
+
+"OA" load OUT 5 assert-eq
+"OA" load phi-pa 50000 assert-eq
+"OB" load phi-pa 50000 assert-eq
+"OC" load phi-pa 50000 assert-eq
+
+\ ============================================================
+\ Final substrate inventory.
+\ ============================================================
+
+NODES 13 assert-eq                        \ 3 first-order + 9 limbs + M = 13
+\ Edges: 3 first-order self-loops + 3·12 cluster edges (3 ring + 3 bi-edge
+\ each cluster's observer↔3 limbs = 6+3=9 per cluster → wait
+\ Each cluster: self-loop (1) + ring 3 bi-edges (6 directed) + observer↔3
+\ limbs (3 bi-edges = 6 directed) = 1 + 6 + 6 = 13.
+\ Three clusters: 39 edges.
+\ Meta: 3 M→Oi + 3 Oi→M + M self-loop = 7.
+\ Total: 39 + 7 = 46.
+EDGES 46 assert-eq
+
+cr
+"=== Pilot G — composite distinction via meta-self-loop ===" . cr
+"first-order: 3 observers (OA OB OC) × phi-pa = 50000 (was 40000;" . cr
+"             gained 1 to scope from back-edge to M)" . cr
+"meta:        M phi-pa = 40000 (4 out-edges, self-loop present)" . cr
+cr
+"Without M's self-loop: phi-pa(M) = 0 — composite held topologically" . cr
+"but not substrate-readably as a meta-observer." . cr
+"With M's self-loop:    phi-pa(M) = 40000 — composite is held," . cr
+"M is a second-order observer of the (OA + OB + OC) cluster." . cr
+
+REPORT

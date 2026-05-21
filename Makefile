@@ -327,6 +327,20 @@ trace-pilot-f4:
 	      --title "Pilot F.4 — ant colony encoding (PSH5 living queen vs dead colony)"
 	@echo "→ open build/figures/pilot_f4_trace.png"
 
+# Pilot G — composite distinction via meta-self-loop (demo 55).
+# Three first-order observers + meta-observer M; M's self-loop flips
+# phi-pa(M) from 0 to 40000, constituting the composite distinction.
+trace-composite-distinction:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- run examples/55-trace-composite-distinction.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/composite_distinction.png \
+	      --title "Pilot G — composite distinction held by meta-self-loop"
+	@echo "→ open build/figures/composite_distinction.png"
+
+forensic-composite-distinction:
+	@bash scripts/forensic.sh examples/55-trace-composite-distinction.6th composite_distinction "Pilot G composite distinction"
+
 forensic-pilot-e:
 	@bash scripts/forensic.sh examples/50-trace-pilot-e-phi-pa.6th pilot_e "Pilot E"
 
@@ -385,8 +399,9 @@ forensic-all: forensic-pilot-d forensic-pilot-c forensic-split-brain \
               forensic-atomic-pilot-d forensic-atomic-hello \
               forensic-long-epoch-growth forensic-pa-ontological-shell \
               forensic-pilot-e forensic-pilot-f1 \
-              forensic-pilot-f2 forensic-pilot-f4
-	@echo "→ all 16 forensic traces rendered (PNG + JSONL + diff per demo)"
+              forensic-pilot-f2 forensic-pilot-f4 \
+              forensic-composite-distinction
+	@echo "→ all 17 forensic traces rendered (PNG + JSONL + diff per demo)"
 
 # Visibly growing substrate over a long epoch (demo 41 — shell added
 # every GROW cycles; structure changes across frames).

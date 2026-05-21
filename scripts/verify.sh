@@ -90,7 +90,7 @@ fi
 # ---- figure freshness (committed forensic JSONL = fresh regen) ----
 if bash scripts/verify_figures.sh >/dev/null 2>&1
 then
-    report "figures fresh:" "ok (16 forensic JSONL traces match)"
+    report "figures fresh:" "ok (17 forensic JSONL traces match)"
 else
     report "figures fresh:" "STALE (run 'make forensic-all' + commit)"
     FAIL=1

@@ -1,7 +1,7 @@
 # Sixth Substrate — Foundational Pointer Architecture
 
 This document accompanies the Sixth substrate implementation in
-`sixth/primitives/substrate.rkt` and the 54 emergence demonstrations
+`sixth/primitives/substrate.rkt` and the 56 emergence demonstrations
 under `examples/`. The goal is *not* to derive physics — it is to
 build the minimum formal artifact in which structures such as
 numbers, time, space, conservation laws, particles, self-reference,
@@ -44,9 +44,9 @@ two tokens (`EDGE+`), or a transformation of those relations
 
 ## What the demos demonstrate
 
-The 54 demonstrations live in `examples/` (file-by-file index in
+The 56 demonstrations live in `examples/` (file-by-file index in
 [`examples/README.md`](./examples/README.md)). Each isolates a
-single derivation chain, organised in fourteen phases:
+single derivation chain, organised in fifteen phases:
 
 - **00** — sacred hello world (Spencer-Brown's first mark)
 - **01–20** — foundations: arithmetic, time, space, conservation
@@ -75,15 +75,22 @@ single derivation chain, organised in fourteen phases:
 - **50** — Pilot E visual trace (3 observers × Φ_PA)
 - **51–53** — Pilot F.1/F.2/F.4 visual traces (PSH1/PSH2/PSH3/PSH5
   discriminators visible)
+- **54–55** Pilot G — composite distinction via meta-self-loop:
+  three first-order observers each hold their own 4-node composite
+  (Φ_PA=40000); a meta-observer M bi-edged to all three holds
+  nothing (Φ_PA=0) until M acquires its own self-loop, after which
+  Φ_PA(M)=40000 and the first-order observers gain scope +1 →
+  Φ_PA=50000. Demonstrates that holding *composite* distinction
+  requires higher-order self-reference.
 
-All 769 assertions pass deterministically. Run the regression in
+All 795 assertions pass deterministically. Run the regression in
 one command:
 
 ```bash
 make verify
 # language tests:    ok
 # substrate tests:   ok
-# examples:          769 / 769 ✓ across 54 demos
+# examples:          795 / 795 ✓ across 56 demos
 # docs build:        ok
 # artifact status:   reproducible
 ```
@@ -243,7 +250,7 @@ sufficient for the released demos and can be extended further.
 cd /Users/mikefluff/Documents/Programming/sixt
 raco pkg install --link .          # install the Sixth Racket collection
 
-# the whole regression — all 54 demos, all 769 assertions
+# the whole regression — all 56 demos, all 795 assertions
 make verify
 
 # any single demo

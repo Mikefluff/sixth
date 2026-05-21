@@ -1,0 +1,134 @@
+\ examples/55-trace-composite-distinction.6th
+\ Visual trace — composite-distinction holding via meta-self-loop.
+\
+\ Companion to demo 54.  Same construction, but emits DOT snapshots
+\ at the three substrate-monism-load-bearing moments:
+\
+\   1  three-first-order-clusters
+\       OA / OB / OC each have self-loop + 3 limbs.  Three
+\       structurally identical first-order observers, all
+\       independent.  phi-pa(each) = 40000.
+\
+\   2  composite-held-not-yet                    (M with NO self-loop)
+\       Meta-observer M added; bi-edges M↔OA, M↔OB, M↔OC.  M holds
+\       the composite TOPOLOGICALLY (the substrate now has a node
+\       that touches all three first-order observers) but
+\       substrate-monism reads phi-pa(M) = 0 — the self-reference
+\       factor is still zero at the meta level.
+\
+\   3  composite-held                            (M self-loop added)
+\       The single EDGE+(M,M) flips phi-pa(M) from 0 to 40000.
+\       M is now a SECOND-ORDER observer holding the composite
+\       (OA + OB + OC) as one substrate-readable entity.
+\       Spencer-Brown bootstrap re-applied at the meta level.
+
+use prelude
+use graph
+use phi
+use dot
+use debug
+
+: snap-meta ( label-num -- )
+  "=== SNAPSHOT level=" .
+  .
+  "rule=" . "pilot-g-composite-distinction" .
+  "seed=" . "three-first-order-clusters" .
+  "event=" . "event" load .
+  "observer=" . "M" load dup 0 = if drop "-" . else . then
+  "nodes=" . NODES .
+  "edges=" . EDGES .
+  "phi-pa-OA=" . "OA" load phi-pa .
+  "phi-pa-M=" . "M" load dup 0 = if drop "-" . else phi-pa . then
+  "===" . cr
+  dot-snapshot-state ;
+
+\ Stub for M until level 2.
+0 "M" store
+
+\ ============================================================
+\ Build three first-order clusters.
+\ ============================================================
+
+: build-cluster
+  MARK "l1" store
+  MARK "l2" store
+  MARK "l3" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l1" load bi-edge ;
+
+: attach-to-limbs ( observer-key -- )
+  "obs-key" store
+  "obs-key" load load "l1" load bi-edge
+  "obs-key" load load "l2" load bi-edge
+  "obs-key" load load "l3" load bi-edge ;
+
+\ Tag observer nodes with NGET=7 so the renderer's per-node label
+\ colouring distinguishes them from limbs.  (Not load-bearing for
+\ phi-pa; visual only.)
+
+MARK "OA" store
+"OA" load "OA" load EDGE+
+build-cluster
+"OA" attach-to-limbs
+"OA" load 7 NSET
+
+MARK "OB" store
+"OB" load "OB" load EDGE+
+build-cluster
+"OB" attach-to-limbs
+"OB" load 7 NSET
+
+MARK "OC" store
+"OC" load "OC" load EDGE+
+build-cluster
+"OC" attach-to-limbs
+"OC" load 7 NSET
+
+"three-first-order-clusters" "event" store
+1 snap-meta
+
+\ ============================================================
+\ Add meta-observer M (no self-loop yet) + bi-edges to all
+\ first-order observers.  Composite held topologically.
+\ ============================================================
+
+MARK "M" store
+"M" load 9 NSET                      \ visual marker: M is meta-tier
+
+"M" load "OA" load EDGE+
+"M" load "OB" load EDGE+
+"M" load "OC" load EDGE+
+"OA" load "M" load EDGE+
+"OB" load "M" load EDGE+
+"OC" load "M" load EDGE+
+
+"composite-held-not-yet" "event" store
+2 snap-meta
+
+\ ============================================================
+\ Add M's meta-self-loop — composite-distinction CONSTITUTED at
+\ meta level.  phi-pa(M) flips from 0 to 40000.
+\ ============================================================
+
+"M" load "M" load EDGE+
+
+"composite-held-meta-self-loop" "event" store
+3 snap-meta
+
+\ ============================================================
+\ End-state invariants
+\ ============================================================
+
+NODES 13 assert-eq
+EDGES 46 assert-eq
+"M" load OUT 4 assert-eq
+"M" load "M" load EDGE? 1 assert-eq
+"M" load phi-pa 40000 assert-eq
+
+cr
+"=== Composite-distinction visual trace ===" . cr
+"3 snapshots:  first-order  →  composite-without-self-loop  →  composite-held" . cr
+"Render with: make trace-composite-distinction" . cr
+
+REPORT

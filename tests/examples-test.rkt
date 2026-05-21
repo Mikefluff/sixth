@@ -3,7 +3,7 @@
 ;; tests/examples-test.rkt — regression gate.
 ;;
 ;; Runs each of the 54 emergence demos and asserts the cumulative
-;; ✓ pass count is unchanged at 769.  Each demo's expected pass
+;; ✓ pass count is unchanged at 795.  Each demo's expected pass
 ;; count is listed in the `expected` table below; the sum must
 ;; equal the gate constant.  Counting ✓ marks printed during the
 ;; run (engine prints ✓ for every successful ASSERT, including
@@ -88,7 +88,10 @@
     ("50-trace-pilot-e-phi-pa.6th"          9)
     ("51-trace-pilot-f1-transformer.6th"    9)
     ("52-trace-pilot-f2-brain.6th"         10)
-    ("53-trace-pilot-f4-colony.6th"         8)))
+    ("53-trace-pilot-f4-colony.6th"         8)
+    ;; Phase U — Pilot G: composite distinction via meta-self-loop
+    ("54-composite-distinction-meta-observer.6th"  21)
+    ("55-trace-composite-distinction.6th"           5)))
 
 (define (run-demo file)
   (define out
@@ -113,8 +116,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 769
-                (format "cumulative ✓ count: ~a (expected 769)" total-pass)))
+  (check-equal? total-pass 795
+                (format "cumulative ✓ count: ~a (expected 795)" total-pass)))
 
-(displayln (format "examples regression: ~a / 769 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 795 ✓ across ~a demos"
                    total-pass (length expected)))
