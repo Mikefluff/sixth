@@ -39,6 +39,7 @@ DEMOS=(
   "examples/72-trace-particle-families.6th     particle_families"
   "examples/73-trace-charge-conservation.6th   charge_conservation"
   "examples/74-trace-spontaneous-assembly.6th  spontaneous_assembly"
+  "examples/76-trace-particle-interaction.6th  particle_interaction"
 )
 
 check_one () {

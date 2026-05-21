@@ -1,9 +1,9 @@
-# `examples/` — the 74 demonstrations
+# `examples/` — the 76 demonstrations
 
 This directory holds Sixth's reproducible emergence demonstrations.
 Each file is a standalone Sixth program; `raco test
-tests/examples-test.rkt` (or `make verify`) executes all 74 and
-asserts a cumulative 1016 ✓ / 0 ✗.
+tests/examples-test.rkt` (or `make verify`) executes all 76 and
+asserts a cumulative 1049 ✓ / 0 ✗.
 
 The demos are organised in six conceptual phases.  The numbering
 goes strictly from simplest to most complex: rung 1 is the void,
@@ -23,6 +23,7 @@ higher-order composition.
 | **Pilots G–K — composite**         | 48–52 | 173 | G: composite distinction via meta-self-loop. H: mutation + substrate-readable selection → 3 particle species. I: 3-level hierarchy (instances / families / genus). J: Σ NGET Noether-style conservation under STEP-CA. K: spontaneous coalition assembly reconstructs the I-hierarchy from one rule. |
 | **Long-epoch parametric**          | 53–54 | 19  | TCO-safe runs of arbitrary cycle count; sub-cycle decay/restore snapshots (53) and visible substrate growth (54). |
 | **Visual-trace track**             | 55–74 | 131 | DOT-snapshot companion for every numerical pilot. Substrate-monism traces of Pilots D/C/F.3 (55–57), Conway/Wolfram CA traces (58–62), atomic-build traces (63–64), the PA-ontological shell decomposition (65) that unfolds the first shell of Pilot D into the same 11 events the canonical ladder realises individually as rungs 1–11, Pilots E/F.1/F.2/F.4 visual traces (66–69), and composite-pilots G–K traces (70–74). |
+| **Pilot L — particle interaction** | 75–76 | 33 | Two structurally distinct particles α (NGET=1) and β (NGET=2) interact via a substrate-readable BIND rule: mutual bi-edge + composite observer M (NGET=8) with own self-loop. Bound state carries Φ_PA = 30000; constituent flavour charges individually conserved. Substrate-native analogue of meson formation. Trace adjacent to numerical (75 + 76 instead of separated into the visual-trace track) — this becomes the pattern for future pilots beyond L. |
 
 The visual-trace pilots emit GraphViz DOT blocks on stdout that the
 companion Python renderer (`code/render_trace.py`) parses into
@@ -802,7 +803,7 @@ Register the demo in `tests/examples-test.rkt`:
     ("54-my-new-demo.6th"           N)))   ; N = expected ✓
 ```
 
-Update the cumulative gate (currently 1016) and `make verify` passes
+Update the cumulative gate (currently 1049) and `make verify` passes
 cleanly. To add a visual trace, `use dot` and emit `dot-snapshot`
 calls between substrate operations.
 

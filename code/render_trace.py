@@ -482,6 +482,7 @@ _TIER_PALETTE = {
     5: "#175555",          # family-α observer (dark teal)
     6: "#9a7012",          # family-β observer (dark amber)
     7: "#5c2f5c",          # family-γ observer (dark plum)
+    8: "#2a5f8f",          # bound-state composite marker (Pilot L)
     9: "#c43030",          # genus / meta-meta observer (bold red)
 }
 _TIER_FALLBACK = "#909090"

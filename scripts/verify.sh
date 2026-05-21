@@ -9,11 +9,11 @@
 # Output format:
 #   language tests:   ok
 #   substrate tests:  ok
-#   examples:         1016 / 1016 ✓ across 74 demos
+#   examples:         1049 / 1049 ✓ across 76 demos
 #   docs build:       ok
 #   ffi optional:     n/a   (libtorch bridges not yet shipped)
 #   renderer tests:   ok
-#   figures fresh:    ok (21 forensic JSONL traces match)
+#   figures fresh:    ok (22 forensic JSONL traces match)
 #   artifact status:  reproducible
 #
 # Any failure exits non-zero and prints "artifact status:  BROKEN".
@@ -90,7 +90,7 @@ fi
 # ---- figure freshness (committed forensic JSONL = fresh regen) ----
 if bash scripts/verify_figures.sh >/dev/null 2>&1
 then
-    report "figures fresh:" "ok (21 forensic JSONL traces match)"
+    report "figures fresh:" "ok (22 forensic JSONL traces match)"
 else
     report "figures fresh:" "STALE (run 'make forensic-all' + commit)"
     FAIL=1

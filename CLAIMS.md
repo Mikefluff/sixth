@@ -26,8 +26,8 @@ trigger F0 of the v9.0 preprint.
    `sixth/primitives/*.rkt`, the module loader resolves the stdlib,
    and a `#lang sixth` reader is registered.
 
-2. **All 74 demonstrations pass deterministically.** `examples-test.rkt`
-   asserts cumulative `pass=1016 fail=0` across 74 demos organised
+2. **All 76 demonstrations pass deterministically.** `examples-test.rkt`
+   asserts cumulative `pass=1049 fail=0` across 76 demos organised
    in six conceptual phases: the canonical Spencer-Brown ladder
    (01–11, eleven atomic rungs from void to first-Φ_PA), substrate
    applications (12–31, Peano / time / conservation / CA / Conway /
@@ -40,11 +40,15 @@ trigger F0 of the v9.0 preprint.
    hierarchy, Σ NGET Noether-style conservation under STEP-CA,
    spontaneous coalition assembly re-building the hierarchy from
    one substrate-readable rule), long-epoch parametric pilots
-   (53–54), and the full visual-trace track (55–74) which provides
+   (53–54), the full visual-trace track (55–74) which provides
    a DOT-snapshot companion for every numerical pilot — including
    the PA-ontological shell decomposition (65) that unfolds the
    first shell of Pilot D (demo 42) into the eleven Spencer-Brown
-   events realised individually by canonical-ladder rungs 1–11.
+   events realised individually by canonical-ladder rungs 1–11 —
+   and Pilot L (75–76) which demonstrates substrate-native particle
+   interaction: two structurally distinct observers bind via a BIND
+   rule, forming a composite bound state with its own Φ_PA while
+   the flavour charges of constituents are individually conserved.
 
 3. **The Φ_PA stdlib word reproduces Definition def:phi-pa.** Demo 43
    asserts `phi-pa` on three canonical observers (non-reflexive

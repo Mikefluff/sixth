@@ -1,0 +1,127 @@
+\ examples/76-trace-particle-interaction.6th
+\ Visual trace — Pilot L particle-interaction bound-state formation.
+\
+\ Three snapshots covering the BIND event:
+\
+\   #0 isolated-particles
+\       α (NGET=1, teal) and β (NGET=2, amber) sit at instance
+\       tier as separate Pilot-G clusters.  No edges between them.
+\       Φ_PA(α)=40000, Φ_PA(β)=50000, no composite exists.
+\
+\   #1 interaction-quantum
+\       α↔β mutual bi-edge added.  Particles now substrate-readable
+\       to each other.  Both phi-pa rise +10000 from the new scope.
+\       No composite yet — this is the "interaction quantum" alone.
+\
+\   #2 bound-state-formed
+\       Composite M (NGET=8, tier-3 red) spawned with bi-edges to
+\       both particles + own self-loop.  M carries its own Φ_PA =
+\       30000; α and β get one more scope bump.  Σ NGET over
+\       particles unchanged (M is a binding marker, NGET=8).
+
+use prelude
+use graph
+use phi
+use dot
+use debug
+
+0 "M" store
+
+: ring-3 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l1" load bi-edge ;
+
+: ring-4 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store  MARK "l4" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l4" load bi-edge
+  "l4" load "l1" load bi-edge ;
+
+: obs-attach-3 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge ;
+
+: obs-attach-4 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge
+  "ok" load load "l4" load bi-edge ;
+
+: snap-bind ( label-num -- )
+  "=== SNAPSHOT level=" .
+  .
+  "rule=" . "pilot-l-particle-interaction" .
+  "seed=" . "two-particles" .
+  "event=" . "event" load .
+  "nodes=" . NODES .
+  "edges=" . EDGES .
+  "phi-pa-alpha=" . "alpha" load phi-pa .
+  "phi-pa-beta="  . "beta"  load phi-pa .
+  "phi-pa-M="     . "M" load dup 0 = if drop "-" . else phi-pa . then
+  "===" . cr
+  dot-snapshot-state ;
+
+\ ============================================================
+\ Build particle α (NGET=1).
+\ ============================================================
+
+MARK "alpha" store
+"alpha" load "alpha" load EDGE+
+ring-3
+"alpha" obs-attach-3
+"alpha" load 1 NSET
+
+\ ============================================================
+\ Build particle β (NGET=2).
+\ ============================================================
+
+MARK "beta" store
+"beta" load "beta" load EDGE+
+ring-4
+"beta" obs-attach-4
+"beta" load 2 NSET
+
+"isolated-particles" "event" store
+0 snap-bind
+
+\ ============================================================
+\ Interaction quantum — mutual bi-edge between particles.
+\ ============================================================
+
+"alpha" load "beta" load bi-edge
+
+"interaction-quantum" "event" store
+1 snap-bind
+
+\ ============================================================
+\ BIND completes — composite M spawned.
+\ ============================================================
+
+MARK "M" store
+"M" load "M" load EDGE+
+"M" load "alpha" load bi-edge
+"M" load "beta"  load bi-edge
+"M" load 8 NSET
+
+"bound-state-formed" "event" store
+2 snap-bind
+
+\ End-state invariants.
+NODES 10 assert-eq
+EDGES 37 assert-eq
+"alpha" load phi-pa 60000 assert-eq
+"beta"  load phi-pa 70000 assert-eq
+"M"     load phi-pa 30000 assert-eq
+
+cr
+"=== Particle-interaction visual trace ===" . cr
+"3 snapshots:  isolated → interaction-quantum → bound-state" . cr
+"Render with: make trace-particle-interaction" . cr
+
+REPORT

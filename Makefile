@@ -24,6 +24,7 @@
         trace-particle-families forensic-particle-families \
         trace-charge-conservation forensic-charge-conservation \
         trace-spontaneous-assembly forensic-spontaneous-assembly \
+        trace-particle-interaction forensic-particle-interaction \
         foundation-gifs all-figures \
         gif-pilot-c gif-pilot-d gif-split-brain gifs
 
@@ -409,6 +410,21 @@ trace-spontaneous-assembly:
 forensic-spontaneous-assembly:
 	@bash scripts/forensic.sh examples/74-trace-spontaneous-assembly.6th spontaneous_assembly "Pilot K spontaneous assembly" tiered
 
+# Pilot L — particle interaction (bound-state formation, demo 76).
+# Two structurally different particles bind via mutual bi-edge +
+# composite meta-observer.  Σ NGET over particles preserved.
+trace-particle-interaction:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- run examples/76-trace-particle-interaction.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/particle_interaction.png \
+	      --title "Pilot L — particle interaction (bound-state formation: α + β → α↔β + composite M)" \
+	      --layout tiered
+	@echo "→ open build/figures/particle_interaction.png"
+
+forensic-particle-interaction:
+	@bash scripts/forensic.sh examples/76-trace-particle-interaction.6th particle_interaction "Pilot L particle interaction" tiered
+
 forensic-pilot-e:
 	@bash scripts/forensic.sh examples/66-trace-pilot-e-phi-pa.6th pilot_e "Pilot E"
 
@@ -472,8 +488,9 @@ forensic-all: forensic-pilot-d forensic-pilot-c forensic-split-brain \
               forensic-mutation-selection \
               forensic-particle-families \
               forensic-charge-conservation \
-              forensic-spontaneous-assembly
-	@echo "→ all 21 forensic traces rendered (PNG + JSONL + diff per demo)"
+              forensic-spontaneous-assembly \
+              forensic-particle-interaction
+	@echo "→ all 22 forensic traces rendered (PNG + JSONL + diff per demo)"
 
 # Visibly growing substrate over a long epoch (demo 41 — shell added
 # every GROW cycles; structure changes across frames).

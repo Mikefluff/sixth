@@ -1,7 +1,7 @@
 # Sixth Substrate — Foundational Pointer Architecture
 
 This document accompanies the Sixth substrate implementation in
-`sixth/primitives/substrate.rkt` and the 74 emergence demonstrations
+`sixth/primitives/substrate.rkt` and the 76 emergence demonstrations
 under `examples/`. The goal is *not* to derive physics — it is to
 build the minimum formal artifact in which structures such as
 numbers, time, space, conservation laws, particles, self-reference,
@@ -44,7 +44,7 @@ two tokens (`EDGE+`), or a transformation of those relations
 
 ## What the demos demonstrate
 
-The 74 demonstrations live in `examples/` (file-by-file index in
+The 76 demonstrations live in `examples/` (file-by-file index in
 [`examples/README.md`](./examples/README.md)). Each isolates a
 single derivation chain, organised in six conceptual phases that
 go from simplest distinction to highest-order composition:
@@ -83,6 +83,13 @@ go from simplest distinction to highest-order composition:
   conservation under STEP-CA `charge-shift`. K: spontaneous
   coalition assembly — same hierarchy as I rebuilt from scratch by
   one substrate-readable `try-spawn-coalition` rule.
+- **75–76 Pilot L — particle interaction (bound-state formation).**
+  Two structurally distinct particles (α NGET=1, β NGET=2) interact
+  via a substrate-readable BIND rule: mutual bi-edge + composite
+  observer M (NGET=8) with own self-loop. The bound state carries
+  its own Φ_PA (= 30000) while flavour charges of constituents
+  remain individually conserved (Σ NGET over particles preserved).
+  Same physics-grammar as meson = quark + antiquark + gluon binding.
 - **53–54 Long-epoch parametric pilots.** TCO-safe runs of arbitrary
   cycle count; demo 53 shows after-decay/after-restore sub-cycle
   snapshots for visible autopoiesis dynamics; demo 54 grows the
@@ -99,14 +106,14 @@ go from simplest distinction to highest-order composition:
   trace (72), charge-conservation trace (73), spontaneous-assembly
   trace (74).
 
-All 1016 assertions pass deterministically. Run the regression in
+All 1049 assertions pass deterministically. Run the regression in
 one command:
 
 ```bash
 make verify
 # language tests:    ok
 # substrate tests:   ok
-# examples:          1016 / 1016 ✓ across 74 demos
+# examples:          1049 / 1049 ✓ across 76 demos
 # docs build:        ok
 # artifact status:   reproducible
 ```
@@ -266,7 +273,7 @@ sufficient for the released demos and can be extended further.
 cd /Users/mikefluff/Documents/Programming/sixt
 raco pkg install --link .          # install the Sixth Racket collection
 
-# the whole regression — all 74 demos, all 1016 assertions
+# the whole regression — all 76 demos, all 1049 assertions
 make verify
 
 # any single demo
