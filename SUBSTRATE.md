@@ -1,7 +1,7 @@
 # Sixth Substrate — Foundational Pointer Architecture
 
 This document accompanies the Sixth substrate implementation in
-`sixth/primitives/substrate.rkt` and the 92 emergence demonstrations
+`sixth/primitives/substrate.rkt` and the 98 emergence demonstrations
 under `examples/`. The goal is *not* to derive physics — it is to
 build the minimum formal artifact in which structures such as
 numbers, time, space, conservation laws, particles, self-reference,
@@ -44,7 +44,7 @@ two tokens (`EDGE+`), or a transformation of those relations
 
 ## What the demos demonstrate
 
-The 92 demonstrations live in `examples/` (file-by-file index in
+The 98 demonstrations live in `examples/` (file-by-file index in
 [`examples/README.md`](./examples/README.md)). Each isolates a
 single derivation chain, organised in six conceptual phases that
 go from simplest distinction to highest-order composition:
@@ -167,15 +167,37 @@ go from simplest distinction to highest-order composition:
   The genuine triadic structure lives in the observer's (OUT, EDGE?)
   regime, and the philosophical anchor is Peirce's reduction thesis
   (Burch 1991; Hereth Correia & Pöschel 2006), not theology.
+- **93–98 HEDGE3 typed trivalent hyperedges.** Substrate-readable
+  realisation of Peirce's reduction thesis as a substrate primitive.
+  The HEDGE3 family (7 new primitives: HEDGE3+/-/?, HEDGES3,
+  HEDGES3-KIND, EACH-HEDGE3, EACH-HEDGE3-KIND) stores typed
+  4-tuples (kind, a, b, c) where the kind enum selects one of four
+  strict interpretations defined in `stdlib/hedge.6th`: WITNESS
+  (src, dst, witness — ground of validity), MEDIATOR (src, mid,
+  dst — topological channel), CONTEXT (in, ctx, out — rewrite-rule
+  firing with rule-as-substrate-node), SIMPLEX (a, b, c — undirected
+  triadic form).  The substrate enforces type separation (same
+  (a, b, c) under different kinds = different hyperedges); mixing
+  kinds in one rule is a programming error.  Demo 93: WITNESS
+  provenance, two observers can disagree.  Demo 94: all four kinds
+  coexisting under strict typing.  Demo 95: CONTEXT for rewrite-
+  history audit queries.  Demo 96: wobble-at-position-3 via DNA
+  codon analogy, 4× compression matches Crick's wobble degeneracy.
+  Demo 97: MEDIATOR channels with load-tracking, rerouting, fault
+  injection (binary edges never touched).  Demo 98: SIMPLEX as
+  2-cells of a simplicial complex, Euler characteristic and edge-
+  adjacency as substrate-readable queries.  The trivalent layer
+  coexists with binary edges; bootstrap claim for the original 40-
+  demo ascent (38 primitives suffice) is preserved.
 
-All 1321 assertions pass deterministically. Run the regression in
+All 1440 assertions pass deterministically. Run the regression in
 one command:
 
 ```bash
 make verify
 # language tests:    ok
 # substrate tests:   ok
-# examples:          1278 / 1321 ✓ across 92 demos
+# examples:          1440 / 1440 ✓ across 98 demos
 # docs build:        ok
 # artifact status:   reproducible
 ```
@@ -335,7 +357,7 @@ sufficient for the released demos and can be extended further.
 cd /Users/mikefluff/Documents/Programming/sixt
 raco pkg install --link .          # install the Sixth Racket collection
 
-# the whole regression — all 92 demos, all 1321 assertions
+# the whole regression — all 98 demos, all 1440 assertions
 make verify
 
 # any single demo

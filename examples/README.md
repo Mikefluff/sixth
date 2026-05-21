@@ -1,9 +1,9 @@
-# `examples/` — the 92 demonstrations
+# `examples/` — the 98 demonstrations
 
 This directory holds Sixth's reproducible emergence demonstrations.
 Each file is a standalone Sixth program; `raco test
-tests/examples-test.rkt` (or `make verify`) executes all 92 and
-asserts a cumulative 1321 ✓ / 0 ✗.
+tests/examples-test.rkt` (or `make verify`) executes all 98 and
+asserts a cumulative 1440 ✓ / 0 ✗.
 
 The demos are organised in six conceptual phases.  The numbering
 goes strictly from simplest to most complex: rung 1 is the void,
@@ -28,6 +28,7 @@ higher-order composition.
 | **Stress-test track**              | 79–84 | 59 | Parametric long-run stress tests via `-D max-cycles=N` (default 1000 in CI, scaleable to 10⁶) for EVERY dynamic pilot. Each tracks invariant at EVERY cycle and asserts max-drift = 0. Demo 79: closed-ring charge-shift conserves Σ NGET across 10⁶ STEP-CA cycles. Demo 80: bind+decay idempotence — substrate state IDENTICAL before/after 10⁶ interaction cycles. Demo 81: autopoiesis observer fully restores to NGET=10 at every one of 10⁶ phase-decay/phase-restore cycles. Demo 82: Conway blinker returns to initial state every 2 STEP-CAs across 10⁶ pairs. Demo 83: sprout rule adds exactly 1 node + 1 edge per STEP across 10⁶ STEPs. Demo 84: Wolfram Rule 184 preserves binary particle count on closed ring across 10⁶ STEP-CAs. Showcase: `make stress-test STRESS_CYCLES=1000000`. |
 | **Honest-emergence track**         | 85–89, 91–92 | 160 | Corrective to Pilots G/H/I/L/M/K which hand-place their composites. Demo 85: EACH-2PATH triangle scanner discovers triangles WITHOUT pre-knowledge and spawns composites (initial topology still hand-built). Demo 86: full emergence — 5-cell chain → close-2path (1↔3, 2↔4, 3↔5 emerge) → triangle-scanner → 3 composites spawn. Demo 87: honest Pilot H — EACH-walked selection reads phi-pa per node, attaches survivors to M (no per-candidate call). Demo 88: honest Pilot I — two-tier hierarchy from a 7-cell chain via 4 rule applications, 5 first-tier + 3 second-tier composites rule-spawned. Demo 89: honest Pilot L — nested-EACH pair scanner discovers all 9 cross-flavour bindings in a 6-particle zoo. Demo 91: honest Pilot M — substrate-walked decay (3 phases: decay-event scanner severs self-loops on NGET=8 nodes, unwind scanner removes M-incident edges, ash scanner resets NGET; 9 bound states fully decayed without name-list). Demo 92: recursive N-tier hierarchy iterated to FIXED POINT — same rules at every tier with memory-stored NGET filter, 5 first-tier / 3 second-tier / 1 third-tier composites spawned (5+3+1+0), termination is data-driven (no triangle → halt). |
 | **Peircean trit observer**         | 90    | 21 | Substrate-readable classifier tags every node into balanced trit {−1, 0, +1} corresponding to Peirce's firstness / secondness / thirdness. Trit −1: no self-reference, Φ_PA = 0. Trit 0: self-loop only, Φ_PA = L_max — the "Tao of the substrate." Trit +1: self-loop + projection, Φ_PA = OUT·L_max. The triadic structure is in the observer's (OUT, EDGE?) regime; philosophical anchor is Peirce's reduction thesis (Burch 1991; Hereth Correia & Pöschel 2006), not Trinity-rhetoric. |
+| **HEDGE3 typed trivalent hyperedges** | 93–98 | 119 | Substrate-readable typed trivalent hyperedges via the `HEDGE3` primitive family (7 new primitives) + `stdlib/hedge.6th` kind constants (WITNESS=0, MEDIATOR=1, CONTEXT=2, SIMPLEX=3). Demo 93: WITNESS — 4-node cycle + 2 observers; witness hyperedges record provenance; two observers can disagree about substrate connectivity. Demo 94: all four kinds coexisting under strict typing (same (a,b,c) under different kinds = different hyperedges). Demo 95: CONTEXT — rewrite-rule firings as substrate-readable history (input, rule-node, output); audit queries via each-context. Demo 96: wobble at position 3 via DNA codon analogy — 8 hyperedges encode 32 codons with position-3 wildcard, 4× compression matches Crick's wobble degeneracy. Demo 97: MEDIATOR — channels as substrate nodes with per-channel load tracking, rerouting, fault injection (binary edges never touched). Demo 98: SIMPLEX — substrate-readable simplicial complex with Euler characteristic χ = V−E+F computed from substrate state, per-vertex star degree, edge-adjacency between 2-cells; topology transitions (χ=2 wedge → χ=1 disk) verified. Substantive realisation of Peirce's reduction thesis at the substrate level. |
 
 The visual-trace pilots emit GraphViz DOT blocks on stdout that the
 companion Python renderer (`code/render_trace.py`) parses into
@@ -807,7 +808,7 @@ Register the demo in `tests/examples-test.rkt`:
     ("54-my-new-demo.6th"           N)))   ; N = expected ✓
 ```
 
-Update the cumulative gate (currently 1321) and `make verify` passes
+Update the cumulative gate (currently 1440) and `make verify` passes
 cleanly. To add a visual trace, `use dot` and emit `dot-snapshot`
 calls between substrate operations.
 
