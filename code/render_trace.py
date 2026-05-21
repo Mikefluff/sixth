@@ -143,7 +143,8 @@ def parse_snapshots(stream: Iterator[str]):
         yield yielded
 
 
-def render(snapshots, out_path: Path, title: str | None) -> None:
+def render(snapshots, out_path: Path, title: str | None,
+           layout: str = "auto") -> None:
     snaps = list(snapshots)
     if not snaps:
         sys.exit("no snapshots found in input")
@@ -151,16 +152,22 @@ def render(snapshots, out_path: Path, title: str | None) -> None:
     n = len(snaps)
     cols = min(n, 5)
     rows = (n + cols - 1) // cols
+    # Wider + taller panels for tiered layouts — hierarchy rows need
+    # horizontal breathing room AND vertical room for the multi-line
+    # per-panel title (which collects per-observer Φ_PA values).
+    panel_w = 5.6 if layout == "tiered" else 3.2
+    panel_h = 4.6 if layout == "tiered" else 3.2
     fig, axes = plt.subplots(
         rows, cols,
-        figsize=(3.2 * cols, 3.2 * rows),
+        figsize=(panel_w * cols, panel_h * rows),
         squeeze=False,
     )
 
     label_max = _global_label_max(snaps)
     for idx, (meta, graph) in enumerate(snaps):
         ax = axes[idx // cols][idx % cols]
-        _draw_snapshot(ax, meta, graph, idx, label_max=label_max)
+        _draw_snapshot(ax, meta, graph, idx,
+                       label_max=label_max, layout=layout)
 
     # Hide unused axes.
     for i in range(n, rows * cols):
@@ -212,16 +219,34 @@ def _panel_title(meta: dict[str, str], idx: int) -> str:
 
     # Pull PA-specific signals (Φ_PA family, NSUM target, self-ref) onto
     # their own line — these are what makes the panel substrate-monism
-    # readable rather than "yet another graph snapshot".
-    pa_line = [f"{k}={meta[k]}" for k in _PA_KEYS if k in meta]
+    # readable rather than "yet another graph snapshot".  Any key whose
+    # name STARTS with "phi-" is treated as a per-observer Φ value
+    # (e.g. phi-pa-OA, phi-pa-M2) and joins the same line so
+    # multi-observer demos don't bury them in the unstructured extras.
+    pa_keys_in_meta = [k for k in _PA_KEYS if k in meta]
+    extra_phi_keys = sorted(
+        k for k in meta
+        if k.startswith("phi-") and k not in pa_keys_in_meta
+    )
+    pa_items = [f"{k}={meta[k]}" for k in pa_keys_in_meta + extra_phi_keys]
 
-    extras = [f"{k}={v}" for k, v in meta.items() if k not in _HIDDEN_KEYS]
+    # "level" is redundant with the tier the node sits at in tiered
+    # layouts, and is already implied by frame index elsewhere — drop it
+    # to keep the title compact.
+    extras = [
+        f"{k}={v}" for k, v in meta.items()
+        if k not in _HIDDEN_KEYS
+        and not k.startswith("phi-")
+        and k != "level"
+    ]
 
     lines = ["  ·  ".join(line1)]
     if line2:
         lines.append("  ·  ".join(line2))
-    if pa_line:
-        lines.append("  ".join(pa_line))
+    # Wrap PA-line at 4 items per row so a multi-observer snapshot
+    # doesn't bleed off the panel edge.
+    for i in range(0, len(pa_items), 4):
+        lines.append("  ".join(pa_items[i:i + 4]))
     if extras:
         lines.append(" ".join(extras))
     return "\n".join(lines)
@@ -416,7 +441,80 @@ def _global_label_max(snaps) -> int:
     return g_max
 
 
-def _draw_snapshot(ax, meta, graph, idx, fixed_pos=None, label_max=None) -> None:
+def _tier_from_label(label_val: int) -> int:
+    """Map a NGET tag to a hierarchy tier.
+
+    Convention used by Pilots G/H/I and any future hierarchical demo:
+      NGET = 0              → tier 0  (substrate, limbs)
+      NGET ∈ {1, 2, 3}      → tier 1  (level-1 observers / instances /
+                                       per-species particles)
+      NGET ∈ {5, 6, 7}      → tier 2  (level-2 observers / families /
+                                       meta-observers)
+      NGET ≥ 8              → tier 3  (level-3+ meta-meta-observers)
+    Other values fall back to tier 0.  Demos opt in by tagging.
+    """
+    if label_val <= 0:
+        return 0
+    if 1 <= label_val <= 3:
+        return 1
+    if 5 <= label_val <= 7:
+        return 2
+    if label_val >= 8:
+        return 3
+    return 0
+
+
+# Species/observer hues — categorical, not gradient.  Tier 1 gets the
+# primary hue per species; tier 2 gets a darker shade of the same hue
+# so a family observer reads as "of the same kin" as its instances;
+# tier 3 gets a distinct gold.
+_TIER_PALETTE = {
+    0: "#d0d0d0",          # limbs / background
+    1: "#2b8a8a",          # species α
+    2: "#d49a1a",          # species β
+    3: "#884a8a",          # species γ
+    5: "#175555",          # family-α observer (dark teal)
+    6: "#9a7012",          # family-β observer (dark amber)
+    7: "#5c2f5c",          # family-γ observer (dark plum)
+    9: "#c43030",          # genus / meta-meta observer (bold red)
+}
+_TIER_FALLBACK = "#909090"
+
+
+def _tier_colour(label_val: int) -> str:
+    return _TIER_PALETTE.get(label_val, _TIER_FALLBACK)
+
+
+# Node sizes grow with tier so the hierarchy is unmissable.
+_TIER_SIZE = {0: 90, 1: 320, 2: 620, 3: 980}
+
+
+def _tiered_layout(graph, label_values):
+    """Multipartite layout keyed by tier — tier 0 at bottom, tier 3 at top.
+
+    Within a tier, networkx spaces nodes evenly across the band.  Members
+    of the same tier are sorted by integer node id (Sixth substrate MARKs
+    are sequential integers) so the layout is deterministic and limbs of
+    the same instance tend to cluster.
+    """
+    if graph.number_of_nodes() == 0:
+        return {}
+    tier_attr = {n: _tier_from_label(label_values.get(n, 0))
+                 for n in graph.nodes}
+    # Inject as node attribute so networkx multipartite_layout can read.
+    for n, t in tier_attr.items():
+        graph.nodes[n]["_tier"] = t
+    try:
+        pos = nx.multipartite_layout(
+            graph, subset_key="_tier", align="horizontal")
+    except Exception:
+        # Fall back gracefully if some tier is empty in a weird way.
+        pos = nx.kamada_kawai_layout(graph)
+    return pos
+
+
+def _draw_snapshot(ax, meta, graph, idx, fixed_pos=None, label_max=None,
+                   layout="auto") -> None:
     if graph.number_of_nodes() == 0:
         ax.set_axis_off()
         ax.set_title(_panel_title(meta, idx), fontsize=9)
@@ -464,14 +562,25 @@ def _draw_snapshot(ax, meta, graph, idx, fixed_pos=None, label_max=None) -> None
             return _label_colour(label_values.get(n, 0))
         return "#909090"
 
-    node_colors = [_node_colour(n) for n in graph.nodes]
-    # Observer is structurally load-bearing in PA — give it ~3× area and
-    # a thick black border so the figure encodes its role rather than
-    # treating it as one node among many.  Self-loops get extra width
-    # because the Spencer-Brown bootstrap distinction is THE visual
-    # marker of substrate-monism.
-    node_sizes = [550 if n == observer_id else 220 for n in graph.nodes]
-    node_borders = [2.2 if n == observer_id else 0.8 for n in graph.nodes]
+    if layout == "tiered" and has_labels:
+        node_colors = [_tier_colour(label_values.get(n, 0))
+                       for n in graph.nodes]
+        node_sizes = [_TIER_SIZE.get(
+                          _tier_from_label(label_values.get(n, 0)), 220)
+                      for n in graph.nodes]
+        node_borders = [
+            (2.2 if _tier_from_label(label_values.get(n, 0)) >= 2 else 0.8)
+            for n in graph.nodes
+        ]
+    else:
+        node_colors = [_node_colour(n) for n in graph.nodes]
+        # Observer is structurally load-bearing in PA — give it ~3× area
+        # and a thick black border so the figure encodes its role rather
+        # than treating it as one node among many.  Self-loops get extra
+        # width because the Spencer-Brown bootstrap distinction is THE
+        # visual marker of substrate-monism.
+        node_sizes = [550 if n == observer_id else 220 for n in graph.nodes]
+        node_borders = [2.2 if n == observer_id else 0.8 for n in graph.nodes]
     edge_colors = [
         "#c43030" if u == v else "#606060"
         for (u, v) in graph.edges
@@ -484,7 +593,11 @@ def _draw_snapshot(ax, meta, graph, idx, fixed_pos=None, label_max=None) -> None
         pos = {n: fixed_pos[n] for n in graph.nodes if n in fixed_pos}
         if len(pos) != graph.number_of_nodes():
             # Fall back if any node is missing from fixed positions.
-            pos = nx.kamada_kawai_layout(graph)
+            pos = (_tiered_layout(graph, label_values)
+                   if layout == "tiered"
+                   else nx.kamada_kawai_layout(graph))
+    elif layout == "tiered":
+        pos = _tiered_layout(graph, label_values)
     else:
         try:
             pos = nx.kamada_kawai_layout(graph)
@@ -517,16 +630,29 @@ def _draw_snapshot(ax, meta, graph, idx, fixed_pos=None, label_max=None) -> None
     ax.set_title(_panel_title(meta, idx), fontsize=9)
 
 
-def _union_layout(snaps):
+def _union_layout(snaps, layout: str = "auto"):
     """Pre-compute positions for the union of all snapshot graphs so
     a node that appears across multiple frames stays in the same
     place — eliminates the "jiggle" the user reported on early GIFs."""
     union = nx.DiGraph()
+    union_labels: dict[str, int] = {}
     for _meta, graph in snaps:
         union.add_nodes_from(graph.nodes)
         union.add_edges_from(graph.edges)
+        for n in graph.nodes:
+            try:
+                v = int(graph.nodes[n].get("label", "0") or "0")
+            except ValueError:
+                v = 0
+            # Take the max NGET seen across snapshots so an observer
+            # tagged late still anchors to its tier in earlier frames
+            # where it didn't yet exist.
+            if v > union_labels.get(n, 0):
+                union_labels[n] = v
     if union.number_of_nodes() == 0:
         return {}
+    if layout == "tiered":
+        return _tiered_layout(union, union_labels)
     try:
         return nx.kamada_kawai_layout(union)
     except Exception:
@@ -534,7 +660,7 @@ def _union_layout(snaps):
 
 
 def render_gif(snapshots, out_path: Path, title: str | None,
-               fps: int) -> None:
+               fps: int, layout: str = "auto") -> None:
     snaps = list(snapshots)
     if not snaps:
         sys.exit("no snapshots found in input")
@@ -542,10 +668,11 @@ def render_gif(snapshots, out_path: Path, title: str | None,
     # Compute layout ONCE on the union of every snapshot's graph so
     # nodes that persist across frames stay in the same place — kills
     # the layout-jiggle problem reported on early GIFs.
-    union_pos = _union_layout(snaps)
+    union_pos = _union_layout(snaps, layout=layout)
     label_max = _global_label_max(snaps)
 
-    fig, ax = plt.subplots(figsize=(6.5, 6.5))
+    fig_w = 8.5 if layout == "tiered" else 6.5
+    fig, ax = plt.subplots(figsize=(fig_w, 6.5))
     suptitle = _figure_suptitle(snaps, title)
     if suptitle:
         fig.suptitle(suptitle, fontsize=10)
@@ -553,7 +680,8 @@ def render_gif(snapshots, out_path: Path, title: str | None,
     def frame(idx):
         meta, graph = snaps[idx]
         _draw_snapshot(ax, meta, graph, idx,
-                       fixed_pos=union_pos, label_max=label_max)
+                       fixed_pos=union_pos, label_max=label_max,
+                       layout=layout)
         return []
 
     animation = anim.FuncAnimation(
@@ -598,6 +726,13 @@ def main(argv=None):
         help="also write a forensic JSONL trace to this path "
              "(one object per snapshot: metadata + edge list + "
              "per-node labels)")
+    parser.add_argument(
+        "--layout", choices=("auto", "tiered"), default="auto",
+        help="node layout strategy. 'auto' = kamada-kawai (default, "
+             "good for flat / force-directed); 'tiered' = multipartite "
+             "by NGET tier (limbs at bottom, instances → families → "
+             "genus stacking upward, categorical palette per species). "
+             "Use 'tiered' for Pilots G/H/I and any hierarchical demo.")
     args = parser.parse_args(argv)
 
     if args.input:
@@ -617,9 +752,10 @@ def main(argv=None):
     if args.diff:
         render_diff(snaps, args.out, args.title)
     elif args.gif:
-        render_gif(iter(snaps), args.out, args.title, args.fps)
+        render_gif(iter(snaps), args.out, args.title, args.fps,
+                   layout=args.layout)
     else:
-        render(iter(snaps), args.out, args.title)
+        render(iter(snaps), args.out, args.title, layout=args.layout)
 
 
 if __name__ == "__main__":

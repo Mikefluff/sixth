@@ -10,8 +10,11 @@
 \       V3: 5-limb ring + self-loop (phi-pa=60000)
 \       V4: 3-limb ring NO self-loop (phi-pa=0)         [will be pruned]
 \       V5: isolated MARK            (phi-pa=0)         [will be pruned]
-\       NGET tags: 7 = survivor-class, 5 = broken-self-ref,
-\                  3 = isolated, 9 = meta-observer.
+\       NGET tags consumed by renderer's tiered layout:
+\         5/6/7  = survivors (V1/V2/V3, family-tier hues α/β/γ)
+\         1      = broken-self-ref instance (V4, tier-1 species hue)
+\         9      = meta-observer (M, genus tier)
+\         0      = isolated raw MARK (V5, substrate-background tier)
 \
 \   2  selection-coupled
 \       Meta-observer M added.  M reads each candidate's phi-pa and
@@ -107,27 +110,27 @@ MARK "V1" store
 "V1" load "V1" load EDGE+
 ring-3
 "V1" obs-attach-3
-"V1" load 7 NSET                  \ survivor-class tag
+"V1" load 5 NSET                  \ family-α-class hue (3-limb survivor)
 
 MARK "V2" store
 "V2" load "V2" load EDGE+
 ring-4
 "V2" obs-attach-4
-"V2" load 7 NSET
+"V2" load 6 NSET                  \ family-β-class hue (4-limb survivor)
 
 MARK "V3" store
 "V3" load "V3" load EDGE+
 ring-5
 "V3" obs-attach-5
-"V3" load 7 NSET
+"V3" load 7 NSET                  \ family-γ-class hue (5-limb survivor)
 
 MARK "V4" store
 ring-3
 "V4" obs-attach-3
-"V4" load 5 NSET                  \ broken-self-ref tag
+"V4" load 1 NSET                  \ broken-self-ref instance, tier 1
 
 MARK "V5" store
-"V5" load 3 NSET                  \ isolated-MARK tag
+\ V5 stays at NGET=0 — substrate-background tier; raw isolated MARK.
 
 "mutation-pool" "event" store
 1 snap-zoo

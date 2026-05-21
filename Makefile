@@ -338,11 +338,12 @@ trace-composite-distinction:
 	racket -l sixth/cli -- run examples/55-trace-composite-distinction.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/composite_distinction.png \
-	      --title "Pilot G — composite distinction held by meta-self-loop"
+	      --title "Pilot G — composite distinction held by meta-self-loop" \
+	      --layout tiered
 	@echo "→ open build/figures/composite_distinction.png"
 
 forensic-composite-distinction:
-	@bash scripts/forensic.sh examples/55-trace-composite-distinction.6th composite_distinction "Pilot G composite distinction"
+	@bash scripts/forensic.sh examples/55-trace-composite-distinction.6th composite_distinction "Pilot G composite distinction" tiered
 
 # Pilot H — mutation + substrate-readable selection (demo 57).
 # Five variants mutated; meta-observer M selects on phi-pa>0;
@@ -352,11 +353,12 @@ trace-mutation-selection:
 	racket -l sixth/cli -- run examples/57-trace-mutation-selection.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/mutation_selection.png \
-	      --title "Pilot H — mutation + substrate-readable selection (particle zoo)"
+	      --title "Pilot H — mutation + substrate-readable selection (particle zoo)" \
+	      --layout tiered
 	@echo "→ open build/figures/mutation_selection.png"
 
 forensic-mutation-selection:
-	@bash scripts/forensic.sh examples/57-trace-mutation-selection.6th mutation_selection "Pilot H mutation+selection"
+	@bash scripts/forensic.sh examples/57-trace-mutation-selection.6th mutation_selection "Pilot H mutation+selection" tiered
 
 # Pilot I — multi-level particle hierarchy (demo 59).
 # Six instances → three family observers → one genus observer,
@@ -367,11 +369,12 @@ trace-particle-families:
 	racket -l sixth/cli -- run examples/59-trace-particle-families.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/particle_families.png \
-	      --title "Pilot I — multi-level particle hierarchy (instances / families / genus)"
+	      --title "Pilot I — multi-level particle hierarchy (instances / families / genus)" \
+	      --layout tiered
 	@echo "→ open build/figures/particle_families.png"
 
 forensic-particle-families:
-	@bash scripts/forensic.sh examples/59-trace-particle-families.6th particle_families "Pilot I particle hierarchy"
+	@bash scripts/forensic.sh examples/59-trace-particle-families.6th particle_families "Pilot I particle hierarchy" tiered
 
 forensic-pilot-e:
 	@bash scripts/forensic.sh examples/50-trace-pilot-e-phi-pa.6th pilot_e "Pilot E"
