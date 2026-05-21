@@ -39,6 +39,67 @@
   (define src (pop1 e))
   (push1 e (if (substrate-edge? (sub e) src dst) 1 0)))
 
+;; ---- typed trivalent hyperedges (HEDGE3) ----
+;;
+;; HEDGE3+/?/− take 4 stack args: kind, a, b, c (in push order).  The kind
+;; integer is enforced as the first slot but is interpreted by stdlib/hedge.6th
+;; (substrate stays semantics-neutral).
+
+(define (prim-HEDGE3+ e)
+  (define c    (pop1 e))
+  (define b    (pop1 e))
+  (define a    (pop1 e))
+  (define kind (pop1 e))
+  (substrate-hedge3+! (sub e) kind a b c))
+
+(define (prim-HEDGE3- e)
+  (define c    (pop1 e))
+  (define b    (pop1 e))
+  (define a    (pop1 e))
+  (define kind (pop1 e))
+  (substrate-hedge3-! (sub e) kind a b c))
+
+(define (prim-HEDGE3? e)
+  (define c    (pop1 e))
+  (define b    (pop1 e))
+  (define a    (pop1 e))
+  (define kind (pop1 e))
+  (push1 e (if (substrate-hedge3? (sub e) kind a b c) 1 0)))
+
+(define (prim-HEDGES3 e)
+  (push1 e (substrate-hedge3-count* (sub e))))
+
+(define (prim-HEDGES3-KIND e)
+  (define kind (pop1 e))
+  (push1 e (substrate-hedge3-kind-count* (sub e) kind)))
+
+(define (prim-EACH-HEDGE3 e)
+  ;; Iterates all hyperedges across all kinds.  Rule receives (kind a b c).
+  (define loc (current-prim-srcloc))
+  (define wname (resolve-word-name (pop1 e) loc))
+  (define s (sub e))
+  (define keys (substrate-hedges-snapshot s))
+  (for ([key (in-list keys)])
+    (push1 e (vector-ref key 0))
+    (push1 e (vector-ref key 1))
+    (push1 e (vector-ref key 2))
+    (push1 e (vector-ref key 3))
+    (call-rule! e wname loc)))
+
+(define (prim-EACH-HEDGE3-KIND e)
+  ;; ( kind rule -- ).  Iterates only hyperedges of the given kind.
+  ;; Rule receives (a b c) (the kind is implicit — it's the one popped).
+  (define loc (current-prim-srcloc))
+  (define wname (resolve-word-name (pop1 e) loc))
+  (define kind (pop1 e))
+  (define s (sub e))
+  (define keys (substrate-hedges-snapshot-kind s kind))
+  (for ([key (in-list keys)])
+    (push1 e (vector-ref key 1))
+    (push1 e (vector-ref key 2))
+    (push1 e (vector-ref key 3))
+    (call-rule! e wname loc)))
+
 ;; ---- traversal ----
 
 (define (prim-OUT e)
@@ -208,6 +269,13 @@
     (cons 'EDGE+        prim-EDGE+)
     (cons 'EDGE-        prim-EDGE-)
     (cons 'EDGE?        prim-EDGE?)
+    (cons 'HEDGE3+      prim-HEDGE3+)
+    (cons 'HEDGE3-      prim-HEDGE3-)
+    (cons 'HEDGE3?      prim-HEDGE3?)
+    (cons 'HEDGES3      prim-HEDGES3)
+    (cons 'HEDGES3-KIND prim-HEDGES3-KIND)
+    (cons 'EACH-HEDGE3  prim-EACH-HEDGE3)
+    (cons 'EACH-HEDGE3-KIND prim-EACH-HEDGE3-KIND)
     (cons 'OUT          prim-OUT)
     (cons 'IN           prim-IN)
     (cons 'NEXT         prim-NEXT)

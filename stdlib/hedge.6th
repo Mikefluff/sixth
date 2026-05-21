@@ -1,0 +1,99 @@
+\ stdlib/hedge.6th
+\ Typed trivalent hyperedges (HEDGE3) — kind constants and helpers.
+\
+\ A HEDGE3 is a 4-tuple (kind, a, b, c) where `kind` is a small integer
+\ selecting the interpretation of (a, b, c).  The substrate enforces NO
+\ semantics across kinds — kinds are strict types.  Mixing kinds in one
+\ rule is a programming error.
+\
+\ The four canonical kinds:
+\
+\   WITNESS   0   (src, dst, witness)
+\             edge src→dst grounded by witness.  third leg = ground of
+\             validity.  PA-aligned: observer/proof/measurement/cause.
+\
+\   MEDIATOR  1   (src, mid, dst)
+\             src reaches dst via channel mid.  third leg = transit /
+\             pathway / morphism.  topology-aligned: paths, flows,
+\             diffusion, geometry.
+\
+\   CONTEXT   2   (in, ctx, out)
+\             input transforms to output under context.  third leg =
+\             law / habit / rewrite condition.  computational-aligned:
+\             rewrite rules, inference, attention, environment state.
+\
+\   SIMPLEX   3   (a, b, c)
+\             undirected triadic form.  no designated head/tail/third —
+\             the triple exists as a whole.  geometry-aligned: simplices,
+\             closure motifs, 3-body relations.
+
+: WITNESS  0 ;
+: MEDIATOR 1 ;
+: CONTEXT  2 ;
+: SIMPLEX  3 ;
+
+\ Convenience constructors per kind.  Each takes the three substrate-node
+\ arguments in canonical position order and prepends the kind so the
+\ underlying HEDGE3 primitive gets (kind a b c) on the stack.
+\ Implemented via scratch memory cells hk-a/hk-b/hk-c to bring the
+\ 4th argument (kind) under the top three.
+
+: witness+  ( src dst w -- )
+  "hk-c" store  "hk-b" store  "hk-a" store
+  WITNESS "hk-a" load "hk-b" load "hk-c" load HEDGE3+ ;
+
+: witness?  ( src dst w -- 0/1 )
+  "hk-c" store  "hk-b" store  "hk-a" store
+  WITNESS "hk-a" load "hk-b" load "hk-c" load HEDGE3? ;
+
+: witness-  ( src dst w -- )
+  "hk-c" store  "hk-b" store  "hk-a" store
+  WITNESS "hk-a" load "hk-b" load "hk-c" load HEDGE3- ;
+
+: mediator+ ( src mid dst -- )
+  "hk-c" store  "hk-b" store  "hk-a" store
+  MEDIATOR "hk-a" load "hk-b" load "hk-c" load HEDGE3+ ;
+
+: mediator? ( src mid dst -- 0/1 )
+  "hk-c" store  "hk-b" store  "hk-a" store
+  MEDIATOR "hk-a" load "hk-b" load "hk-c" load HEDGE3? ;
+
+: mediator- ( src mid dst -- )
+  "hk-c" store  "hk-b" store  "hk-a" store
+  MEDIATOR "hk-a" load "hk-b" load "hk-c" load HEDGE3- ;
+
+: context+  ( in ctx out -- )
+  "hk-c" store  "hk-b" store  "hk-a" store
+  CONTEXT  "hk-a" load "hk-b" load "hk-c" load HEDGE3+ ;
+
+: context?  ( in ctx out -- 0/1 )
+  "hk-c" store  "hk-b" store  "hk-a" store
+  CONTEXT  "hk-a" load "hk-b" load "hk-c" load HEDGE3? ;
+
+: context-  ( in ctx out -- )
+  "hk-c" store  "hk-b" store  "hk-a" store
+  CONTEXT  "hk-a" load "hk-b" load "hk-c" load HEDGE3- ;
+
+: simplex+  ( a b c -- )
+  "hk-c" store  "hk-b" store  "hk-a" store
+  SIMPLEX  "hk-a" load "hk-b" load "hk-c" load HEDGE3+ ;
+
+: simplex?  ( a b c -- 0/1 )
+  "hk-c" store  "hk-b" store  "hk-a" store
+  SIMPLEX  "hk-a" load "hk-b" load "hk-c" load HEDGE3? ;
+
+: simplex-  ( a b c -- )
+  "hk-c" store  "hk-b" store  "hk-a" store
+  SIMPLEX  "hk-a" load "hk-b" load "hk-c" load HEDGE3- ;
+
+\ Per-kind iteration helpers — pass rule word; rule receives (a b c).
+: each-witness   ( rule -- ) WITNESS  swap EACH-HEDGE3-KIND ;
+: each-mediator  ( rule -- ) MEDIATOR swap EACH-HEDGE3-KIND ;
+: each-context   ( rule -- ) CONTEXT  swap EACH-HEDGE3-KIND ;
+: each-simplex   ( rule -- ) SIMPLEX  swap EACH-HEDGE3-KIND ;
+
+\ Per-kind count helpers.
+: witnesses  ( -- n ) WITNESS  HEDGES3-KIND ;
+: mediators  ( -- n ) MEDIATOR HEDGES3-KIND ;
+: contexts   ( -- n ) CONTEXT  HEDGES3-KIND ;
+: simplices  ( -- n ) SIMPLEX  HEDGES3-KIND ;

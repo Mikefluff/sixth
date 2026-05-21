@@ -1,0 +1,218 @@
+\ examples/93-hedge3-witness.6th
+\ HEDGE3 WITNESS — substrate-native ground of validity.
+\
+\ A binary edge A→B is anonymous: the substrate records "this connection
+\ exists" without anyone backing it.  A WITNESS hyperedge (A, B, W) says
+\ "the edge A→B is grounded by witness W" — a third leg that anchors the
+\ binary connection in something substrate-readable.
+\
+\ This is the strongest Pointer-Architecture-aligned use of trivalent
+\ hyperedges: observers can hold private knowledge about which edges
+\ exist, two observers can disagree about the substrate's connectivity,
+\ and provenance (which rule, which observer, which event grounded an
+\ edge) becomes a first-class substrate-readable scalar.
+\
+\ Construction:
+\
+\   1. Four substrate nodes A, B, C, D wired into binary connections
+\      A→B, B→C, C→D, D→A — the public skeleton everyone agrees on.
+\
+\   2. Two observer-nodes O1 and O2, each with own self-loop (so each
+\      qualifies as a Pilot-G observer).
+\
+\   3. O1 witnesses three of the four binary edges; O2 witnesses two,
+\      with overlap on one edge (A→B).  This sets up:
+\
+\        Edge   Public  O1 witnesses?  O2 witnesses?
+\        A→B    yes     yes            yes
+\        B→C    yes     yes            no
+\        C→D    yes     yes            no
+\        D→A    yes     no             yes
+\
+\   4. WITNESS hyperedges are the SOLE substrate-readable record of who
+\      saw what; the binary edges themselves are mute about provenance.
+\
+\ Verification:
+\   * total witness hyperedges = 5 (3 by O1 + 2 by O2)
+\   * per-observer count via EACH-WITNESS filter
+\   * consensus edges (witnessed by both) = 1 (A→B)
+\   * disagreement-detector: edges witnessed by O1 XOR O2 = 3
+
+use prelude
+use graph
+use phi
+use debug
+use hedge
+
+\ ============================================================
+\ Public skeleton — 4 nodes, 4 directed binary edges in a cycle.
+\ Edges have no provenance: they are substrate state, nothing more.
+\ ============================================================
+
+MARK "A" store
+MARK "B" store
+MARK "C" store
+MARK "D" store
+
+"A" load "B" load EDGE+
+"B" load "C" load EDGE+
+"C" load "D" load EDGE+
+"D" load "A" load EDGE+
+
+NODES 4 assert-eq
+EDGES 4 assert-eq
+HEDGES3 0 assert-eq                       \ no hyperedges yet
+
+\ ============================================================
+\ Two observers, each with own self-loop (Pilot G shape).
+\ ============================================================
+
+MARK "O1" store
+"O1" load "O1" load EDGE+
+
+MARK "O2" store
+"O2" load "O2" load EDGE+
+
+NODES 6 assert-eq
+EDGES 6 assert-eq
+
+\ ============================================================
+\ O1 witnesses A→B, B→C, C→D.
+\ ============================================================
+
+"A" load "B" load "O1" load witness+
+"B" load "C" load "O1" load witness+
+"C" load "D" load "O1" load witness+
+
+\ ============================================================
+\ O2 witnesses A→B, D→A.  (A→B is overlap with O1; D→A is unique
+\ to O2.  B→C and C→D are unique to O1.)
+\ ============================================================
+
+"A" load "B" load "O2" load witness+
+"D" load "A" load "O2" load witness+
+
+\ ============================================================
+\ Substrate-readable counts.
+\ ============================================================
+
+HEDGES3 5 assert-eq                       \ 3 by O1 + 2 by O2
+witnesses 5 assert-eq                     \ same number, kind=WITNESS only
+
+\ ============================================================
+\ Per-observer count via EACH-WITNESS filter.
+\ Rule receives (src dst witness); we count when witness matches.
+\ ============================================================
+
+0 "o1-count" store
+0 "o2-count" store
+
+: tally-by-observer ( src dst w -- )
+  "w" store  "d" store  "s" store
+  "w" load "O1" load = if
+    "o1-count" load 1 + "o1-count" store
+  then
+  "w" load "O2" load = if
+    "o2-count" load 1 + "o2-count" store
+  then ;
+
+' tally-by-observer each-witness
+
+"o1-count" load 3 assert-eq               \ O1 saw 3 edges
+"o2-count" load 2 assert-eq               \ O2 saw 2 edges
+
+\ ============================================================
+\ Consensus detector: edges witnessed by BOTH O1 and O2.
+\ For each binary edge in the substrate, check both witnesses.
+\ ============================================================
+
+0 "consensus-count" store
+
+: check-consensus ( src dst -- )
+  "ce-d" store  "ce-s" store
+  "ce-s" load "ce-d" load "O1" load witness? if
+    "ce-s" load "ce-d" load "O2" load witness? if
+      "consensus-count" load 1 + "consensus-count" store
+    then
+  then ;
+
+' check-consensus EACH-EDGE
+
+\ Skip self-loops by checking src != dst (consensus on observer self-loops
+\ is not meaningful here).  Actually the four cycle edges are all between
+\ distinct nodes, and O1/O2 self-loops are separate from the cycle.
+\ Only A→B is witnessed by both — but we also iterate over self-loops
+\ of O1, O2 (witnessed by neither), so the count is 1.
+"consensus-count" load 1 assert-eq
+
+\ ============================================================
+\ Disagreement detector: edges witnessed by O1 XOR O2.
+\ ============================================================
+
+0 "disagreement-count" store
+
+: check-disagreement ( src dst -- )
+  "cd-d" store  "cd-s" store
+  "cd-s" load "cd-d" load "O1" load witness? "cd-w1" store
+  "cd-s" load "cd-d" load "O2" load witness? "cd-w2" store
+  "cd-w1" load "cd-w2" load = not if      \ exactly one witnesses
+    "disagreement-count" load 1 + "disagreement-count" store
+  then ;
+
+' check-disagreement EACH-EDGE
+
+\ Edges in disagreement: B→C (O1 only), C→D (O1 only), D→A (O2 only) = 3.
+"disagreement-count" load 3 assert-eq
+
+\ ============================================================
+\ Provenance scalar — for any binary edge, how many witnesses does
+\ it have?  Substrate-readable scalar: count over WITNESS hyperedges
+\ with matching (src, dst).  Range: 0 (anonymous) → N (consensus).
+\ ============================================================
+
+0 "ab-witnesses" store
+
+: count-ab-witness ( src dst w -- )
+  "cw-w" store  "cw-d" store  "cw-s" store
+  "cw-s" load "A" load = if
+    "cw-d" load "B" load = if
+      "ab-witnesses" load 1 + "ab-witnesses" store
+    then
+  then ;
+
+' count-ab-witness each-witness
+
+"ab-witnesses" load 2 assert-eq           \ A→B witnessed by both observers
+
+\ ============================================================
+\ Removal — O2 retracts the A→B witness.  Binary edge A→B is
+\ unaffected; only O2's grounding for it is gone.
+\ ============================================================
+
+"A" load "B" load "O2" load witness-
+
+HEDGES3 4 assert-eq
+"A" load "B" load "O2" load witness? 0 assert-eq
+"A" load "B" load "O1" load witness? 1 assert-eq
+
+\ Binary edge A→B still in substrate.
+"A" load "B" load EDGE? 1 assert-eq
+
+cr
+"=== Demo 93 — HEDGE3 WITNESS (substrate-native provenance) ===" . cr
+"4-node cycle + 2 observers; witness hyperedges record who saw what." . cr
+cr
+"Witness counts:" . cr
+"  O1 saw" . "o1-count" load . "edges" . cr
+"  O2 saw" . "o2-count" load . "edges (after retraction of A->B: 1)" . cr
+cr
+"Consensus edges (witnessed by both): " . "consensus-count" load . cr
+"Disagreement edges (witnessed by exactly one):" . "disagreement-count" load . cr
+cr
+"Architectural significance:" . cr
+"  - binary edges are anonymous; HEDGE3 WITNESS adds provenance" . cr
+"  - two observers can disagree about substrate connectivity" . cr
+"  - retracting a witness leaves the binary edge intact" . cr
+"  - provenance is substrate-readable scalar, not host metadata" . cr
+
+REPORT

@@ -20,6 +20,13 @@
   substrate-edge+!
   substrate-edge-!
   substrate-edge?
+  substrate-hedge3+!
+  substrate-hedge3-!
+  substrate-hedge3?
+  substrate-hedge3-count*
+  substrate-hedge3-kind-count*
+  substrate-hedges-snapshot
+  substrate-hedges-snapshot-kind
   substrate-outs
   substrate-ins
   substrate-out-count
@@ -44,6 +51,9 @@
    out-edges
    in-edges
    [edge-count #:mutable]
+   hedges                          ; hash<#(kind a b c) → #t>  — typed trivalent
+   [hedge-count #:mutable]         ; total across all kinds
+   hedge-kind-counts               ; hash<kind → count>
    features
    born-at
    [step      #:mutable]
@@ -56,6 +66,9 @@
               (make-hasheqv)
               (make-hasheqv)
               0
+              (make-hash)            ; hedges keyed on vector — equal?-hash
+              0
+              (make-hasheqv)         ; hedge-kind-counts keyed on int
               (make-hasheqv)
               (make-hasheqv)
               0
@@ -65,11 +78,14 @@
 (define (substrate-reset! s)
   (set-substrate-next-id!     s 0)
   (set-substrate-edge-count!  s 0)
+  (set-substrate-hedge-count! s 0)
   (set-substrate-step!        s 0)
   (set-substrate-assert-pass! s 0)
   (set-substrate-assert-fail! s 0)
   (hash-clear! (substrate-out-edges s))
   (hash-clear! (substrate-in-edges  s))
+  (hash-clear! (substrate-hedges    s))
+  (hash-clear! (substrate-hedge-kind-counts s))
   (hash-clear! (substrate-features  s))
   (hash-clear! (substrate-born-at   s)))
 
@@ -110,6 +126,55 @@
 
 (define (substrate-edge? s src dst)
   (and (member dst (outs-of s src)) #t))
+
+;; ---- typed trivalent hyperedges (HEDGE3) ----
+;;
+;; A typed trivalent hyperedge is a 4-tuple (kind, a, b, c) where `kind` is a
+;; small integer naming the interpretation of the (a, b, c) positions.  The
+;; substrate enforces NO semantics across kinds — kinds are strict types.  The
+;; canonical kinds are defined in stdlib/hedge.6th:
+;;
+;;   0  WITNESS    (src, dst, witness)     edge src→dst grounded by witness
+;;   1  MEDIATOR   (src, mid, dst)         src reaches dst via channel mid
+;;   2  CONTEXT    (in, ctx, out)          input transforms to output under ctx
+;;   3  SIMPLEX    (a, b, c)               undirected triadic form
+;;
+;; Storage: one global hash<#(kind a b c) → #t>, set semantics (insertion
+;; idempotent).  A separate kind-count hash tracks per-kind cardinality for
+;; cheap REPORT-style summaries.
+
+(define (substrate-hedge3+! s kind a b c)
+  (define key (vector kind a b c))
+  (unless (hash-has-key? (substrate-hedges s) key)
+    (hash-set! (substrate-hedges s) key #t)
+    (set-substrate-hedge-count! s (+ 1 (substrate-hedge-count s)))
+    (define kc (substrate-hedge-kind-counts s))
+    (hash-set! kc kind (+ 1 (hash-ref kc kind 0)))))
+
+(define (substrate-hedge3-! s kind a b c)
+  (define key (vector kind a b c))
+  (when (hash-has-key? (substrate-hedges s) key)
+    (hash-remove! (substrate-hedges s) key)
+    (set-substrate-hedge-count! s (- (substrate-hedge-count s) 1))
+    (define kc (substrate-hedge-kind-counts s))
+    (hash-set! kc kind (- (hash-ref kc kind 0) 1))))
+
+(define (substrate-hedge3? s kind a b c)
+  (hash-has-key? (substrate-hedges s) (vector kind a b c)))
+
+(define (substrate-hedge3-count* s) (substrate-hedge-count s))
+
+(define (substrate-hedge3-kind-count* s kind)
+  (hash-ref (substrate-hedge-kind-counts s) kind 0))
+
+(define (substrate-hedges-snapshot s)
+  ;; List of #(kind a b c) vectors — immutable snapshot for iteration.
+  (for/list ([key (in-hash-keys (substrate-hedges s))]) key))
+
+(define (substrate-hedges-snapshot-kind s kind)
+  (for/list ([key (in-hash-keys (substrate-hedges s))]
+             #:when (= (vector-ref key 0) kind))
+    key))
 
 (define (substrate-outs s n) (outs-of s n))
 (define (substrate-ins  s n) (ins-of  s n))
@@ -163,9 +228,20 @@
 
 (define (substrate-report s)
   (display "─────────────────────────────────") (newline)
-  (display (format "REPORT  nodes=~a  edges=~a  steps=~a  pass=~a  fail=~a~n"
-                    (substrate-node-count s)
-                    (substrate-edge-count* s)
-                    (substrate-now s)
-                    (substrate-pass-count s)
-                    (substrate-fail-count s))))
+  (define hed (substrate-hedge3-count* s))
+  (cond
+    [(zero? hed)
+     (display (format "REPORT  nodes=~a  edges=~a  steps=~a  pass=~a  fail=~a~n"
+                       (substrate-node-count s)
+                       (substrate-edge-count* s)
+                       (substrate-now s)
+                       (substrate-pass-count s)
+                       (substrate-fail-count s)))]
+    [else
+     (display (format "REPORT  nodes=~a  edges=~a  hedges=~a  steps=~a  pass=~a  fail=~a~n"
+                       (substrate-node-count s)
+                       (substrate-edge-count* s)
+                       hed
+                       (substrate-now s)
+                       (substrate-pass-count s)
+                       (substrate-fail-count s)))]))

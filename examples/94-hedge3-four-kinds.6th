@@ -1,0 +1,172 @@
+\ examples/94-hedge3-four-kinds.6th
+\ HEDGE3 — all four canonical kinds in one substrate, demonstrating
+\ that the four interpretations of (a, b, c) coexist as strictly
+\ disjoint types.
+\
+\ The substrate stores typed hyperedges in a single hash keyed on
+\ (kind, a, b, c).  Identical (a, b, c) under DIFFERENT kinds are
+\ DIFFERENT hyperedges.  Mixing kinds in one rule is a programming
+\ error (the rule would conflate disjoint semantics).
+\
+\ Four canonical kinds:
+\
+\   WITNESS   (src, dst, witness)    ground of validity
+\   MEDIATOR  (src, mid, dst)        topological channel
+\   CONTEXT   (in, ctx, out)         rewrite-rule firing
+\   SIMPLEX   (a, b, c)              undirected triadic form
+\
+\ This demo builds one example of each kind on a shared substrate and
+\ verifies they coexist without interference, even when the (a, b, c)
+\ positions overlap.
+
+use prelude
+use graph
+use phi
+use debug
+use hedge
+
+\ ============================================================
+\ Substrate: 6 nodes that will play different roles in each kind.
+\ ============================================================
+
+MARK "n1" store      \ A / src / in / a
+MARK "n2" store      \ B / mid / ctx / b
+MARK "n3" store      \ W / dst / out / c
+MARK "n4" store      \ extra: second witness / second mediator endpoint
+MARK "n5" store      \ extra
+MARK "n6" store      \ extra
+
+NODES 6 assert-eq
+HEDGES3 0 assert-eq
+
+\ ============================================================
+\ WITNESS kind: substrate-native provenance.
+\ Two witnesses for the same (src, dst) pair — overlap allowed.
+\ ============================================================
+
+"n1" load "n2" load "n3" load witness+        \ (n1→n2 witnessed by n3)
+"n1" load "n2" load "n4" load witness+        \ (n1→n2 also witnessed by n4)
+
+witnesses 2 assert-eq
+
+\ ============================================================
+\ MEDIATOR kind: topological channel.
+\ Same (n1, n2) positions but now n2 is MID, not DST — completely
+\ different relation.
+\ ============================================================
+
+"n1" load "n2" load "n3" load mediator+        \ (n1 reaches n3 via n2)
+
+mediators 1 assert-eq
+
+\ Demonstrate strict typing: even though we have hyperedge
+\ (n1, n2, n3) under WITNESS and (n1, n2, n3) under MEDIATOR, they
+\ are DIFFERENT hyperedges — the kind is part of the identity.
+"n1" load "n2" load "n3" load witness?  1 assert-eq
+"n1" load "n2" load "n3" load mediator? 1 assert-eq
+
+\ Removing the WITNESS form does not touch the MEDIATOR form.
+"n1" load "n2" load "n3" load witness-
+"n1" load "n2" load "n3" load witness?  0 assert-eq
+"n1" load "n2" load "n3" load mediator? 1 assert-eq
+
+witnesses 1 assert-eq                          \ down to 1 after retraction
+mediators 1 assert-eq                          \ unchanged
+
+\ Restore for later totals.
+"n1" load "n2" load "n3" load witness+
+witnesses 2 assert-eq
+
+\ ============================================================
+\ CONTEXT kind: rewrite-rule firing.
+\ Two firings of "rule n5": input n1 produced output n3; input n2
+\ produced output n4.
+\ ============================================================
+
+"n1" load "n5" load "n3" load context+
+"n2" load "n5" load "n4" load context+
+
+contexts 2 assert-eq
+
+\ ============================================================
+\ SIMPLEX kind: undirected triadic form.
+\ Three triangles sharing vertices.
+\ ============================================================
+
+"n1" load "n2" load "n3" load simplex+
+"n2" load "n3" load "n4" load simplex+
+"n3" load "n4" load "n5" load simplex+
+
+simplices 3 assert-eq
+
+\ ============================================================
+\ Cross-kind tally — total HEDGES3.
+\ ============================================================
+
+HEDGES3 8 assert-eq                            \ 2 + 1 + 2 + 3
+
+\ ============================================================
+\ Per-kind iteration: confirm each EACH-KIND helper only sees its
+\ own kind.
+\ ============================================================
+
+0 "iter-w" store      0 "iter-m" store
+0 "iter-c" store      0 "iter-s" store
+
+: count-w ( a b c -- ) 2drop drop  "iter-w" load 1 + "iter-w" store ;
+: count-m ( a b c -- ) 2drop drop  "iter-m" load 1 + "iter-m" store ;
+: count-c ( a b c -- ) 2drop drop  "iter-c" load 1 + "iter-c" store ;
+: count-s ( a b c -- ) 2drop drop  "iter-s" load 1 + "iter-s" store ;
+
+' count-w each-witness
+' count-m each-mediator
+' count-c each-context
+' count-s each-simplex
+
+"iter-w" load 2 assert-eq
+"iter-m" load 1 assert-eq
+"iter-c" load 2 assert-eq
+"iter-s" load 3 assert-eq
+
+\ ============================================================
+\ Cross-kind disambiguation: count via the unified EACH-HEDGE3,
+\ which passes the kind as a 4th stack arg, and partition by kind.
+\ ============================================================
+
+0 "all-w" store      0 "all-m" store
+0 "all-c" store      0 "all-s" store
+
+: partition-by-kind ( kind a b c -- )
+  2drop drop                                  \ ignore (a b c) for tally
+  dup WITNESS  = if "all-w" load 1 + "all-w" store then
+  dup MEDIATOR = if "all-m" load 1 + "all-m" store then
+  dup CONTEXT  = if "all-c" load 1 + "all-c" store then
+  dup SIMPLEX  = if "all-s" load 1 + "all-s" store then
+  drop ;
+
+' partition-by-kind EACH-HEDGE3
+
+"all-w" load 2 assert-eq
+"all-m" load 1 assert-eq
+"all-c" load 2 assert-eq
+"all-s" load 3 assert-eq
+
+\ Cross-check sums.
+"all-w" load "all-m" load + "all-c" load + "all-s" load +
+8 assert-eq
+
+cr
+"=== Demo 94 — HEDGE3 typed coexistence (four kinds) ===" . cr
+"Single substrate; 8 hyperedges across 4 strictly-typed kinds." . cr
+cr
+"Per-kind counts:" . cr
+"  WITNESS  (src, dst, w  ):" . witnesses . cr
+"  MEDIATOR (src, mid, dst):" . mediators . cr
+"  CONTEXT  (in, ctx, out ):" . contexts  . cr
+"  SIMPLEX  (a, b, c      ):" . simplices . cr
+cr
+"Critical typing property:" . cr
+"  (n1, n2, n3) under WITNESS  ≠  (n1, n2, n3) under MEDIATOR" . cr
+"  removing one does not touch the other; kind is part of identity." . cr
+
+REPORT

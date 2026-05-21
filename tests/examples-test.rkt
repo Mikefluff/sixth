@@ -2,8 +2,8 @@
 
 ;; tests/examples-test.rkt — regression gate.
 ;;
-;; Runs each of the 92 emergence demos and asserts the cumulative
-;; ✓ pass count is unchanged at 1321.  Each demo's expected pass
+;; Runs each of the 96 emergence demos and asserts the cumulative
+;; ✓ pass count is unchanged at 1396.  Each demo's expected pass
 ;; count is listed in the `expected` table below; the sum must
 ;; equal the gate constant.  Counting ✓ marks printed during the
 ;; run (engine prints ✓ for every successful ASSERT, including
@@ -155,7 +155,18 @@
     ;; 91: honest Pilot M (decay scanner).  92: recursive N-tier
     ;; hierarchy iterated to fixed point.
     ("91-emergent-decay.6th"                23)
-    ("92-recursive-hierarchy-fixed-point.6th" 20)))
+    ("92-recursive-hierarchy-fixed-point.6th" 20)
+    ;; --- HEDGE3 typed trivalent hyperedges (R3 from ternary-v2) ---
+    ;; 93: WITNESS (substrate-native provenance).  94: all four kinds
+    ;; coexisting (WITNESS / MEDIATOR / CONTEXT / SIMPLEX) under strict
+    ;; type discipline.
+    ("93-hedge3-witness.6th"                16)
+    ("94-hedge3-four-kinds.6th"             23)
+    ;; --- HEDGE3 CONTEXT applications (R4 + R2 from ternary-v2) ---
+    ;; 95: rewrite-rule firings as substrate-readable history.
+    ;; 96: wobble at position 3 via codon-table CONTEXT hyperedges.
+    ("95-hedge3-context-rewrite-history.6th" 21)
+    ("96-hedge3-wobble-position3.6th"        15)))
 
 (define (run-demo file)
   (define out
@@ -180,8 +191,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1321
-                (format "cumulative ✓ count: ~a (expected 1321)" total-pass)))
+  (check-equal? total-pass 1396
+                (format "cumulative ✓ count: ~a (expected 1396)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1321 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1396 ✓ across ~a demos"
                    total-pass (length expected)))
