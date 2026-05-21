@@ -1,0 +1,30 @@
+\ examples/04-first-pointer.6th
+\ Canonical ladder, rung 4 — the first pointer.
+\
+\ Two distinct tokens, and now ONE points to the other.  The
+\ substrate's second primitive (EDGE+) makes its first appearance.
+\ The pointer is directed: A → B is not the same fact as B → A.
+\ Asymmetry of relation is substrate-readable.
+
+use prelude
+use debug
+
+MARK "A" store
+MARK "B" store
+"A" load "B" load EDGE+
+
+NODES 2 assert-eq
+EDGES 1 assert-eq
+"A" load "B" load EDGE? 1 assert-eq
+"B" load "A" load EDGE? 0 assert-eq     \ direction matters
+"A" load OUT 1 assert-eq
+"A" load IN  0 assert-eq
+"B" load OUT 0 assert-eq
+"B" load IN  1 assert-eq
+
+cr
+"=== Rung 4 — the first pointer ===" . cr
+"NODES = 2   EDGES = 1" . cr
+"A points to B; B does not point back.  Direction is real." . cr
+
+REPORT

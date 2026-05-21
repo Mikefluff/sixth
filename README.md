@@ -1,13 +1,13 @@
 # Sixth
 
 > A minimal executable substrate language —
-> 40 primitives, 64 reproducible demos, 963 ✓ across them all,
+> 40 primitives, 74 reproducible demos, 1016 ✓ across them all,
 > reference implementation for the Pointer Architecture v9.0 preprint.
 
 ```
 language tests:    ok
 substrate tests:   ok
-examples:          963 / 963 ✓ across 64 demos
+examples:          1016 / 1016 ✓ across 74 demos
 docs build:        ok
 ffi optional:      n/a
 renderer tests:    ok
@@ -54,7 +54,7 @@ raco pkg install --link .
 # Spencer-Brown's first mark — the sacred hello world
 racket -l sixth/cli -- run examples/00-first-distinction.6th
 
-# the whole regression — all 64 demos, all 963 assertions
+# the whole regression — all 74 demos, all 1016 assertions
 make verify
 ```
 
@@ -69,28 +69,28 @@ foundational demos (`01-numbers` … `20-conway-glider`, 359 ✓):
 
 | Pilot | Demos | Asserts | What |
 |-------|-------|---------|------|
-| **A** Substrate-native autopoiesis           | 21–25 | 80  | Self-producing rings; observer collapse; reflexive vs non-reflexive persistence. Operationalises Maturana–Varela on the discrete substrate. |
-| **B** Conscious evolution                    | 26–29 | 88  | Symbiosis, reproduction with mutation, observer-driven selection (Lamarck-style, not blind Darwin), goal-directed observer behaviour. |
-| **C** Cosmogenesis bootstrap                 | 30    | 21  | 13-node 48-edge substrate constructed by a substrate-resident observer from one `MARK` at `t=0`; persists under harsh autopoietic decay. |
-| **D** Substrate-internally-driven cosmogenesis | 31  | 17  | Observer establishes its own self-loop at `t=0+` (substrate-monist bootstrap), then drives further construction via `NSUM(O) ≥ target-min` — no host counter. |
-| **E** Substrate-internal Φ_PA measurement     | 32   | 12  | `stdlib/phi.6th` ships three candidate measures: `phi-pa`, `phi-integ`, `phi-bidir`. Same 40 primitives that build the substrate also compute its consciousness scalar. |
-| **F** Encoding-map demonstrations             | 33–36 | 46 | Toy substrates for PSH1–PSH5. F.1 transformer; F.2 brain; F.3 split-brain (motivates Φ_integ); F.4 ant colony. |
-| (trace) | 37–39 | 18 | DOT-rendered snapshots of Pilots D, C, F.3 via `stdlib/dot.6th` + `code/render_trace.py`. Single command `make traces`. |
-| (long)  | 40–41 | 19 | Parametric long-epoch pilots. Demo 40 = stable autopoiesis (after-decay/after-restore sub-cycle snapshots make the dynamics visible), demo 41 = growing substrate. CLI `-D max-cycles=N -D snap-every=K` drives arbitrary run lengths (TCO-safe). |
-| (foundation visual) | 42–46 | 45 | State-aware DOT traces — Conway blinker / glider, Wolfram Rule 110 / 90, Rule 184 1D glider. Per-cell NGET colours alive=red / dead=grey. Per-step rule-table assertions verify the dynamics (not just end state). `make foundation-gifs`. |
-| (atomic) | 47–48 | 10 | One snapshot per primitive operation. Demo 47 = Pilot D in 76 frames; demo 48 = sacred hello world in 7 frames (events: `void`, `first-distinction`, `observer-state`, `i-not-i`, `first-pointer`, `re-entry`, `phi-pa-measurement`). Entity-by-entity emergence. `make atomic-gifs`. |
-| (PA-ontological) | 49 | 5 | First shell of Pilot D unfolded as Spencer-Brown / PA v9.0 events: `void → first-distinction → observer-state → re-entry → second-distinction → i-not-i-relation → recognition → second-not-i → closure-of-not-i → o-other-closure → state-fill`. 11 frames. Opens the macro that demo 37 collapses into one frame. `make trace-pa-ontological-shell`. |
-| (Pilot E trace) | 50 | 9 | Three observers × Φ_PA computed substrate-internally. case 1 (non-reflexive, scope 5) → Φ_PA=0; case 2 (reflexive, scope 5) → Φ_PA=50000; case 3 (demo-31 shape, scope 13) → Φ_PA=130000. PSH1 self-reference discriminator visible. `make trace-pilot-e`. |
-| (Pilot F.1 trace) | 51 | 9 | Transformer encoding (12 heads × 4 layers). PSH1 single-pass Φ_PA=0; PSH2 KV-cache back-edge Φ_PA=40000. `make trace-pilot-f1`. |
-| (Pilot F.2 trace) | 52 | 10 | Brain encoding (DMN hub + 7 cortical areas). PSH3 waking thalamocortical loop Φ_PA=80000; in-place EDGE- decouples → Φ_PA=0. `make trace-pilot-f2`. |
-| (Pilot F.4 trace) | 53 | 8 | Ant-colony encoding (queen + 5 trail junctions). PSH5 living colony with queen-pheromone self-loop Φ_PA=60000; in-place EDGE- severs loop → Φ_PA=0. `make trace-pilot-f4`. |
-| **G** Composite distinction via meta-self-loop | 54–55 | 26 | Three first-order observers OA/OB/OC each hold their own composite (4-node cluster, Φ_PA=40000). A meta-observer M bi-edged to all three holds nothing (Φ_PA=0) until M acquires its own self-loop, at which point Φ_PA(M)=40000 and the first-order observers gain scope +1 (Φ_PA → 50000). Demonstrates that higher-order self-reference is what holds composite distinction. `make trace-composite-distinction`. |
-| **H** Mutation + substrate-readable selection | 56–57 | 33 | Five candidate first-order observers with varied topologies (3/4/5-limb rings + self-loop; 3-limb ring without self-loop; isolated MARK). Meta-observer M reads each candidate's Φ_PA and bi-edges only to those with Φ_PA > 0; M's own self-loop closes the construction. Result: diversified composite over three structurally distinct "particle species" (Φ_PA = 50000 / 60000 / 70000). Lamarck-style, observer-driven — not blind Darwin. `make trace-mutation-selection`. |
-| **I** Multi-level particle hierarchy           | 58–59 | 39 | Six instances across three species (α: 1×3-limb, β: 2×4-limb, γ: 3×5-limb), each with own self-loop. Three family observers Mα/Mβ/Mγ hold their populations (each with own self-loop, Pilot G pattern). One genus observer M2 holds the families (own self-loop). Result: three-level taxonomy with distinct Φ_PA signatures at each level — instances 50000/60000/70000, families 30000/40000/50000, genus 40000. Within-family instances are indistinguishable (substrate-native analogue of physical particle indistinguishability); cross-family + cross-level differences are substrate-readable. `make trace-particle-families`. |
-| **J** Substrate-native charge conservation     | 60–61 | 60 | 11-cell linear chain, 5 particles tagged by species (NGET=1/2/3 → α/β/γ). STEP-CA `charge-shift` rule (generalised Wolfram Rule 184 lifted from {0,1} to integer NGET) moves particles right one cell per step iff the slot is empty. Across 5 steps, total Σ NGET = 9 AND per-species count (α=2, β=2, γ=1) are conserved EXACTLY. Smallest construction exhibiting a Noether-style conservation law derived structurally from the rule, substrate-readable via `EACH` + sum. `make trace-charge-conservation`. |
-| **K** Spontaneous coalition assembly           | 62–63 | 36 | 9 first-order observers in 3 disjoint K_3 mutual-pointing triangles. A single substrate-readable rule `try-spawn-coalition` — three `EDGE?` checks → MARK new node + bi-edges + own self-loop — fires four times (3× at family tier + 1× at genus tier after sibling socialisation) and reconstructs the full Pilot I hierarchy with no hand-placed meta-observers. The rule reads substrate state, the substrate spawns the response. `make trace-spontaneous-assembly`. |
+| **A** Substrate-native autopoiesis           | 32–36 | 80  | Self-producing rings; observer collapse; reflexive vs non-reflexive persistence. Operationalises Maturana–Varela on the discrete substrate. |
+| **B** Conscious evolution                    | 37–40 | 88  | Symbiosis, reproduction with mutation, observer-driven selection (Lamarck-style, not blind Darwin), goal-directed observer behaviour. |
+| **C** Cosmogenesis bootstrap                 | 41    | 21  | 13-node 48-edge substrate constructed by a substrate-resident observer from one `MARK` at `t=0`; persists under harsh autopoietic decay. |
+| **D** Substrate-internally-driven cosmogenesis | 42  | 17  | Observer establishes its own self-loop at `t=0+` (substrate-monist bootstrap), then drives further construction via `NSUM(O) ≥ target-min` — no host counter. |
+| **E** Substrate-internal Φ_PA measurement     | 43   | 12  | `stdlib/phi.6th` ships three candidate measures: `phi-pa`, `phi-integ`, `phi-bidir`. Same 40 primitives that build the substrate also compute its consciousness scalar. |
+| **F** Encoding-map demonstrations             | 44–47 | 46 | Toy substrates for PSH1–PSH5. F.1 transformer; F.2 brain; F.3 split-brain (motivates Φ_integ); F.4 ant colony. |
+| (trace) | 55–57 | 18 | DOT-rendered snapshots of Pilots D, C, F.3 via `stdlib/dot.6th` + `code/render_trace.py`. Single command `make traces`. |
+| (long)  | 53–54 | 19 | Parametric long-epoch pilots. Demo 40 = stable autopoiesis (after-decay/after-restore sub-cycle snapshots make the dynamics visible), demo 41 = growing substrate. CLI `-D max-cycles=N -D snap-every=K` drives arbitrary run lengths (TCO-safe). |
+| (foundation visual) | 58–62 | 45 | State-aware DOT traces — Conway blinker / glider, Wolfram Rule 110 / 90, Rule 184 1D glider. Per-cell NGET colours alive=red / dead=grey. Per-step rule-table assertions verify the dynamics (not just end state). `make foundation-gifs`. |
+| (atomic) | 63–64 | 10 | One snapshot per primitive operation. Demo 47 = Pilot D in 76 frames; demo 48 = sacred hello world in 7 frames (events: `void`, `first-distinction`, `observer-state`, `i-not-i`, `first-pointer`, `re-entry`, `phi-pa-measurement`). Entity-by-entity emergence. `make atomic-gifs`. |
+| (PA-ontological) | 65 | 5 | First shell of Pilot D unfolded as Spencer-Brown / PA v9.0 events: `void → first-distinction → observer-state → re-entry → second-distinction → i-not-i-relation → recognition → second-not-i → closure-of-not-i → o-other-closure → state-fill`. 11 frames. Opens the macro that demo 37 collapses into one frame. `make trace-pa-ontological-shell`. |
+| (Pilot E trace) | 66 | 9 | Three observers × Φ_PA computed substrate-internally. case 1 (non-reflexive, scope 5) → Φ_PA=0; case 2 (reflexive, scope 5) → Φ_PA=50000; case 3 (demo-31 shape, scope 13) → Φ_PA=130000. PSH1 self-reference discriminator visible. `make trace-pilot-e`. |
+| (Pilot F.1 trace) | 67 | 9 | Transformer encoding (12 heads × 4 layers). PSH1 single-pass Φ_PA=0; PSH2 KV-cache back-edge Φ_PA=40000. `make trace-pilot-f1`. |
+| (Pilot F.2 trace) | 68 | 10 | Brain encoding (DMN hub + 7 cortical areas). PSH3 waking thalamocortical loop Φ_PA=80000; in-place EDGE- decouples → Φ_PA=0. `make trace-pilot-f2`. |
+| (Pilot F.4 trace) | 69 | 8 | Ant-colony encoding (queen + 5 trail junctions). PSH5 living colony with queen-pheromone self-loop Φ_PA=60000; in-place EDGE- severs loop → Φ_PA=0. `make trace-pilot-f4`. |
+| **G** Composite distinction via meta-self-loop | 48/70 | 26 | Three first-order observers OA/OB/OC each hold their own composite (4-node cluster, Φ_PA=40000). A meta-observer M bi-edged to all three holds nothing (Φ_PA=0) until M acquires its own self-loop, at which point Φ_PA(M)=40000 and the first-order observers gain scope +1 (Φ_PA → 50000). Demonstrates that higher-order self-reference is what holds composite distinction. `make trace-composite-distinction`. |
+| **H** Mutation + substrate-readable selection | 49/71 | 33 | Five candidate first-order observers with varied topologies (3/4/5-limb rings + self-loop; 3-limb ring without self-loop; isolated MARK). Meta-observer M reads each candidate's Φ_PA and bi-edges only to those with Φ_PA > 0; M's own self-loop closes the construction. Result: diversified composite over three structurally distinct "particle species" (Φ_PA = 50000 / 60000 / 70000). Lamarck-style, observer-driven — not blind Darwin. `make trace-mutation-selection`. |
+| **I** Multi-level particle hierarchy           | 50/72 | 39 | Six instances across three species (α: 1×3-limb, β: 2×4-limb, γ: 3×5-limb), each with own self-loop. Three family observers Mα/Mβ/Mγ hold their populations (each with own self-loop, Pilot G pattern). One genus observer M2 holds the families (own self-loop). Result: three-level taxonomy with distinct Φ_PA signatures at each level — instances 50000/60000/70000, families 30000/40000/50000, genus 40000. Within-family instances are indistinguishable (substrate-native analogue of physical particle indistinguishability); cross-family + cross-level differences are substrate-readable. `make trace-particle-families`. |
+| **J** Substrate-native charge conservation     | 51/73 | 60 | 11-cell linear chain, 5 particles tagged by species (NGET=1/2/3 → α/β/γ). STEP-CA `charge-shift` rule (generalised Wolfram Rule 184 lifted from {0,1} to integer NGET) moves particles right one cell per step iff the slot is empty. Across 5 steps, total Σ NGET = 9 AND per-species count (α=2, β=2, γ=1) are conserved EXACTLY. Smallest construction exhibiting a Noether-style conservation law derived structurally from the rule, substrate-readable via `EACH` + sum. `make trace-charge-conservation`. |
+| **K** Spontaneous coalition assembly           | 52/74 | 36 | 9 first-order observers in 3 disjoint K_3 mutual-pointing triangles. A single substrate-readable rule `try-spawn-coalition` — three `EDGE?` checks → MARK new node + bi-edges + own self-loop — fires four times (3× at family tier + 1× at genus tier after sibling socialisation) and reconstructs the full Pilot I hierarchy with no hand-placed meta-observers. The rule reads substrate state, the substrate spawns the response. `make trace-spontaneous-assembly`. |
 
-Cumulative: **963 ✓ / 0 ✗ across 64 demos** (Pilots A–F core + 3 substrate-monism trace pilots + 2 long-epoch parametric + 5 foundation visual traces (Conway blinker/glider, Rule 110/90, 1D glider) + 2 atomic-build traces showing entity-by-entity emergence + Pilot G composite distinction via meta-self-loop + Pilot H mutation + substrate-readable selection + Pilot I multi-level particle hierarchy + Pilot J substrate-native charge conservation + Pilot K spontaneous coalition assembly).
+Cumulative: **1016 ✓ / 0 ✗ across 74 demos** (Pilots A–F core + 3 substrate-monism trace pilots + 2 long-epoch parametric + 5 foundation visual traces (Conway blinker/glider, Rule 110/90, 1D glider) + 2 atomic-build traces showing entity-by-entity emergence + Pilot G composite distinction via meta-self-loop + Pilot H mutation + substrate-readable selection + Pilot I multi-level particle hierarchy + Pilot J substrate-native charge conservation + Pilot K spontaneous coalition assembly).
 
 ## Running and rendering
 
@@ -98,10 +98,10 @@ Cumulative: **963 ✓ / 0 ✗ across 64 demos** (Pilots A–F core + 3 substrate
 # one-shot artifact-status report (Tier-1 verification, see CLAIMS.md)
 make verify
 
-# any of the 64 demos
-racket -l sixth/cli -- run examples/35-phi-pa-split-brain-toy.6th
+# any of the 74 demos
+racket -l sixth/cli -- run examples/46-phi-pa-split-brain-toy.6th
 
-# all 64 demos against the rackunit regression gate
+# all 74 demos against the rackunit regression gate
 raco test tests/examples-test.rkt
 
 # render the three static trace figures (Pilots C, D, F.3)
@@ -115,7 +115,7 @@ make trace-long-epoch CYCLES=2000 SNAP=200
 
 # or directly via the CLI
 racket -l sixth/cli -- -D max-cycles=10000 -D snap-every=1000 \
-                      run examples/40-long-epoch-autopoiesis.6th
+                      run examples/53-long-epoch-autopoiesis.6th
 
 # REPL
 racket -l sixth/cli -- repl
@@ -143,7 +143,7 @@ stdlib/       Sixth-language standard library (prelude, peano,
               candidate substrate-readable observability measures;
               dot.6th emits GraphViz DOT snapshots for the
               visual-trace pilots.
-examples/     56 emergence demonstrations
+examples/     74 emergence demonstrations
               (00 hello + 01–20 foundations + 21–36 Pilots A–F +
               37–39 substrate-monism traces + 40–41 long-epoch
               parametric + 42–46 foundation visual traces +
@@ -162,7 +162,7 @@ code/         Python tooling. render_trace.py reads dot.6th
               SVG / PDF or animated GIF.
 scripts/      verify.sh (artifact-status report; backs `make verify`)
 tests/        rackunit suites — lexer, parser, VM, substrate,
-              loader, examples-test.rkt (regression gate at 963 ✓)
+              loader, examples-test.rkt (regression gate at 1016 ✓)
 docs/         Scribble manual + embedded README figure
 build/        regeneratable artefacts (raco scribble HTML, render
               outputs) — gitignored

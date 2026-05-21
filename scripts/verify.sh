@@ -9,7 +9,7 @@
 # Output format:
 #   language tests:   ok
 #   substrate tests:  ok
-#   examples:         963 / 963 ✓ across 64 demos
+#   examples:         1016 / 1016 ✓ across 74 demos
 #   docs build:       ok
 #   ffi optional:     n/a   (libtorch bridges not yet shipped)
 #   renderer tests:   ok

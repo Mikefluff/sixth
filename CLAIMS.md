@@ -26,52 +26,41 @@ trigger F0 of the v9.0 preprint.
    `sixth/primitives/*.rkt`, the module loader resolves the stdlib,
    and a `#lang sixth` reader is registered.
 
-2. **All 64 demonstrations pass deterministically.** `examples-test.rkt`
-   asserts cumulative `pass=963 fail=0` across 64 demos covering
-   the sacred hello world (00), foundations (01–20), Pilots A–F
-   (21–36), three substrate-monism visual-trace pilots (37 Pilot D,
-   38 Pilot C, 39 split-brain), two long-epoch parametric pilots
-   (40 stable, 41 growing), five foundation visual traces (42
-   Conway blinker, 43 Conway glider, 44 Rule 110, 45 Rule 90, 46
-   Rule 184 1D glider), two atomic-build traces (47 Pilot D one
-   primitive per frame, 48 sacred hello world atomic with PA-
-   ontological event labels), the PA-ontological shell
-   decomposition (49) that unfolds the first shell of demo 31
-   into Spencer-Brown / PA v9.0 events (`void → first-distinction
-   → observer-state → re-entry → second-distinction → i-not-i-relation
-   → recognition → second-not-i → closure-of-not-i → o-other-closure
-   → state-fill`), Pilot E visual trace (50), Pilot F.1/F.2/F.4
-   visual traces (51–53), Pilot G composite distinction via
-   meta-self-loop (54 numerical, 55 visual), Pilot H
-   mutation + substrate-readable selection producing a
-   diversified composite over three structurally distinct
-   "particle species" (56 numerical, 57 visual), Pilot I
-   multi-level particle hierarchy (six instances → three family
-   observers → one genus observer, all held by iterated
-   composite-distinction; 58 numerical, 59 visual), Pilot J
-   substrate-native charge conservation (Noether-style invariant:
-   Σ NGET and per-species count preserved exactly under STEP-CA
-   `charge-shift`; 60 numerical, 61 visual), and Pilot K
-   spontaneous coalition assembly (full Pilot I hierarchy
-   re-built by a single `try-spawn-coalition` rule reading
-   substrate-readable `EDGE?` conditions; 62 numerical,
-   63 visual).
+2. **All 74 demonstrations pass deterministically.** `examples-test.rkt`
+   asserts cumulative `pass=1016 fail=0` across 74 demos organised
+   in six conceptual phases: the canonical Spencer-Brown ladder
+   (01–11, eleven atomic rungs from void to first-Φ_PA), substrate
+   applications (12–31, Peano / time / conservation / CA / Conway /
+   morphism / Rovelli observers / Hofstadter self-model), Pilots
+   A–F (32–47: autopoiesis / observer-driven evolution / cosmogenesis
+   / Φ_PA measurement / encoding maps for transformer / brain /
+   split-brain / colony), Pilots G–K (48–52: composite distinction
+   via meta-self-loop, mutation + substrate-readable selection
+   producing three distinct "particle species", multi-level
+   hierarchy, Σ NGET Noether-style conservation under STEP-CA,
+   spontaneous coalition assembly re-building the hierarchy from
+   one substrate-readable rule), long-epoch parametric pilots
+   (53–54), and the full visual-trace track (55–74) which provides
+   a DOT-snapshot companion for every numerical pilot — including
+   the PA-ontological shell decomposition (65) that unfolds the
+   first shell of Pilot D (demo 42) into the eleven Spencer-Brown
+   events realised individually by canonical-ladder rungs 1–11.
 
-3. **The Φ_PA stdlib word reproduces Definition def:phi-pa.** Demo 32
+3. **The Φ_PA stdlib word reproduces Definition def:phi-pa.** Demo 43
    asserts `phi-pa` on three canonical observers (non-reflexive
-   scope-5, reflexive scope-5, demo-31-shape scope-13) and the values
+   scope-5, reflexive scope-5, demo-42-shape scope-13) and the values
    match the preprint's worked arithmetic: 0 / 50000 / 130000.
 
-4. **Pilot D (demo 31) bootstraps a 13-node 49-edge substrate from
+4. **Pilot D (demo 42) bootstraps a 13-node 49-edge substrate from
    one MARK** under a substrate-internally-driven halting predicate
    (no host counter).
 
-5. **Pilot E (demo 32) computes Φ_PA from within the substrate** via
+5. **Pilot E (demo 43) computes Φ_PA from within the substrate** via
    `OUT`, `EDGE?`, `phi-L-max` alone — substrate-readability of the
    measure is exhibited, not asserted.
 
 6. **Φ_integ discriminates intact from split-brain on the toy
-   substrate** (demo 35): basic Φ_PA returns 50000 in both states
+   substrate** (demo 46): basic Φ_PA returns 50000 in both states
    (matched scope, indifferent), Φ_integ returns 400000 intact vs
    200000 split (halves at callosotomy). PSH4's subadditivity is
    shown to require the alternative-measures programme.
@@ -88,26 +77,26 @@ do not yet engage with real Pythia weights, real EEG corpora, or
 real ant colonies. They are not yet falsified or corroborated against
 nature.
 
-1. **Transformer encoding map (Pilot F.1, demo 33).** On a 4×3 toy
+1. **Transformer encoding map (Pilot F.1, demo 44).** On a 4×3 toy
    feedforward attention substrate, the unembedding-near observer has
    Φ_PA = 0 in single-pass mode (PSH1 direction) and Φ_PA = 40000
    when a cross-step back-edge is added (PSH2 direction). The encoding
    pipeline of §sec:encoding-transformer composes; whether it
    discriminates real Pythia from real Mamba is companion-preprint #1.
 
-2. **Brain encoding map (Pilot F.2, demo 34).** On an 8-area DMN-hub
+2. **Brain encoding map (Pilot F.2, demo 45).** On an 8-area DMN-hub
    substrate, the DMN observer has Φ_PA = 80000 in the
    thalamocortical-loop state and Φ_PA = 0 in the propofol-decoupled
    state (PSH3 direction). The encoding pipeline of
    §sec:encoding-brain composes; whether it tracks Casali PCI on
    real EEG is companion-preprint #2.
 
-3. **Split-brain encoding (Pilot F.3, demo 35).** Φ_integ on a 5-node
+3. **Split-brain encoding (Pilot F.3, demo 46).** Φ_integ on a 5-node
    intact-vs-callosotomised brain halves at callosotomy with matched
    scope (PSH4 direction). The encoding-plus-alternative-measure
    composes; real split-brain EEG is companion-preprint #2.
 
-4. **Ant colony encoding (Pilot F.4, demo 36).** On a 6-chamber
+4. **Ant colony encoding (Pilot F.4, demo 47).** On a 6-chamber
    queen-centric colony substrate, the queen observer has Φ_PA =
    60000 with the pheromone self-loop and Φ_PA = 0 without (PSH5
    direction). The encoding pipeline of §sec:encoding-colony
@@ -115,7 +104,7 @@ nature.
    future work.
 
 5. **The Sixth-language ascent from one mark to a self-measuring
-   cosmos** (demos 00 → 32). Construction-by-construction, not
+   cosmos** (demos 01 → 43). Construction-by-construction, not
    theorem.
 
 Tier 2 buys: the substrate-encoding maps are not vapor — the released

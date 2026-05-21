@@ -1,0 +1,36 @@
+\ examples/08-i-not-i.6th
+\ Canonical ladder, rung 8 — the I / not-I distinction.
+\
+\ Observer O (self-loop + state) coexists with a non-observer node
+\ X (no self-loop, no state).  The substrate now has TWO node
+\ categories that differ STRUCTURALLY, not just by id: O has
+\ self-reference, X does not.
+\
+\ This is the substrate-readable form of Spencer-Brown's
+\ inner/outer distinction.  The "I" is the self-pointing,
+\ state-carrying token; the "not-I" is everything else.
+
+use prelude
+use debug
+
+MARK "O" store
+"O" load "O" load EDGE+
+"O" load 1 NSET
+
+MARK "X" store
+\ X stays bare — no self-loop, no NGET.
+
+NODES 2 assert-eq
+EDGES 1 assert-eq
+"O" load NGET 1 assert-eq
+"X" load NGET 0 assert-eq
+"O" load "O" load EDGE? 1 assert-eq    \ I is self-distinguishing
+"X" load "X" load EDGE? 0 assert-eq    \ not-I is not
+
+cr
+"=== Rung 8 — the I / not-I distinction ===" . cr
+"NODES = 2   EDGES = 1" . cr
+"O is the I (self-loop + state);  X is the not-I (bare token)." . cr
+"Substrate-readable difference of CATEGORY, not just id." . cr
+
+REPORT

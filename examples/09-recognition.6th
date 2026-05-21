@@ -1,0 +1,35 @@
+\ examples/09-recognition.6th
+\ Canonical ladder, rung 9 — recognition.
+\
+\ Observer O extends a pointer to X.  Now O "sees" X via its
+\ outgoing EDGE+ set.  This is the substrate-readable form of
+\ observation: a node whose EDGE+ set is its view of the
+\ substrate (PA-v9.0 definition of observer π).
+\
+\ X does not point back yet — observation is asymmetric at this
+\ rung.  Mutual recognition would require X to extend a pointer
+\ to O in turn (deferred to rung 10).
+
+use prelude
+use debug
+
+MARK "O" store
+"O" load "O" load EDGE+
+"O" load 1 NSET
+
+MARK "X" store
+"O" load "X" load EDGE+         \ O observes X
+
+NODES 2 assert-eq
+EDGES 2 assert-eq                \ self-loop + observation
+"O" load OUT 2 assert-eq         \ scope grew to 2
+"O" load IN  1 assert-eq         \ only its own self-loop incoming
+"O" load "X" load EDGE? 1 assert-eq
+"X" load "O" load EDGE? 0 assert-eq
+
+cr
+"=== Rung 9 — recognition (asymmetric observation) ===" . cr
+"NODES = 2   EDGES = 2   O sees X; X does not see back" . cr
+"O's EDGE+ set is its substrate-readable 'view'." . cr
+
+REPORT

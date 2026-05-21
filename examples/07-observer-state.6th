@@ -1,0 +1,28 @@
+\ examples/07-observer-state.6th
+\ Canonical ladder, rung 7 — observer state.
+\
+\ A self-pointing token gains an NGET tag — substrate-readable
+\ "state" attached to the structure.  Now the substrate carries
+\ not just topology (rung 5) but a scalar associated with the node.
+\ This is what makes the token an OBSERVER in the PA-v9.0 sense:
+\ self-reference (self-loop) plus a state to be self-referred about.
+
+use prelude
+use debug
+
+MARK "O" store
+"O" load "O" load EDGE+        \ re-entry (rung 5)
+"O" load 5 NSET                \ state attached
+
+NODES 1 assert-eq
+EDGES 1 assert-eq
+"O" load NGET 5 assert-eq      \ state readable
+"O" load OUT 1 assert-eq
+"O" load IN  1 assert-eq
+
+cr
+"=== Rung 7 — observer state ===" . cr
+"NODES = 1   EDGES = 1   NGET = 5" . cr
+"Token carries self-reference AND a substrate-readable scalar." . cr
+
+REPORT

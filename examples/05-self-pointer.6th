@@ -1,0 +1,31 @@
+\ examples/05-self-pointer.6th
+\ Canonical ladder, rung 5 — the self-pointer (re-entry).
+\
+\ Spencer-Brown's reflexive mark: a token that points at itself.
+\ The first non-trivial substrate object — re-entry.  This is the
+\ structural seed of every observer in every later pilot: a
+\ self-loop is the minimum condition for substrate-readable
+\ self-reference.
+\
+\ Compare: rung-4 had two tokens and one cross-pointer.  Rung 5 has
+\ one token and one self-pointer.  Same edge count, qualitatively
+\ different topology.
+
+use prelude
+use debug
+
+MARK "O" store
+"O" load "O" load EDGE+
+
+NODES 1 assert-eq
+EDGES 1 assert-eq
+"O" load "O" load EDGE? 1 assert-eq    \ self-loop confirmed
+"O" load OUT 1 assert-eq                \ self counts as outgoing
+"O" load IN  1 assert-eq                \ self counts as incoming
+
+cr
+"=== Rung 5 — the self-pointer (re-entry) ===" . cr
+"NODES = 1   EDGES = 1   the token sees itself" . cr
+"Spencer-Brown's first reflexive mark — substrate-monism's seed." . cr
+
+REPORT

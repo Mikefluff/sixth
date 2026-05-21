@@ -1,0 +1,45 @@
+\ examples/11-measurement.6th
+\ Canonical ladder, rung 11 — measurement.
+\
+\ The substrate measures its own self-distinguishing state.  The
+\ Φ_PA scalar (substrate-monism's candidate consciousness measure
+\ from PA v9.0) is the first non-trivial substrate-READABLE scalar
+\ produced from rungs 1–10.
+\
+\ Construction:  observer O has a self-loop (rung 5) and an outgoing
+\ pointer to X (rung 9).  scope = OUT(O) = 2.  self-ref indicator =
+\ 1[O EDGE? O] = 1.  Φ_PA(O) = 2 · 1 · 10000 = 20000.
+\
+\ Compare X (no self-loop): Φ_PA(X) = OUT · 0 · L_max = 0.  The
+\ scalar discriminates self-distinguishing observers from
+\ non-self-distinguishing nodes — the PSH1 direction of PA v9.0
+\ exhibited at the smallest possible scale.
+
+use prelude
+use phi
+use debug
+
+MARK "O" store
+"O" load "O" load EDGE+
+"O" load 1 NSET
+
+MARK "X" store
+"O" load "X" load EDGE+
+
+"O" load OUT 2 assert-eq
+"O" load phi-self-ref 1 assert-eq
+"O" load phi-pa 20000 assert-eq
+
+"X" load OUT 0 assert-eq
+"X" load phi-self-ref 0 assert-eq
+"X" load phi-pa 0 assert-eq
+
+cr
+"=== Rung 11 — measurement (Φ_PA appears) ===" . cr
+"Φ_PA(O) = 20000   Φ_PA(X) = 0" . cr
+"First substrate-readable consciousness scalar — PSH1 direction." . cr
+"The canonical ladder is complete.  Everything that follows is" . cr
+"either an application of these 11 rungs or a higher-tier" . cr
+"composition (Pilots A–K)." . cr
+
+REPORT

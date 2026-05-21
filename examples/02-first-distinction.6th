@@ -1,0 +1,26 @@
+\ examples/02-first-distinction.6th
+\ Canonical ladder, rung 2 — the first distinction.
+\
+\ Spencer-Brown, Laws of Form: "Draw a distinction."
+\ One MARK and the substrate ceases to be empty.  A single
+\ distinguishable token now exists.  No state, no relations —
+\ just the bare fact that something has been distinguished from
+\ everything else (which is still nothing).
+
+use prelude
+use debug
+
+MARK "O" store
+
+NODES 1 assert-eq
+EDGES 0 assert-eq
+"O" load NGET 0 assert-eq          \ no state tag yet
+"O" load OUT 0 assert-eq           \ no outgoing pointers
+"O" load IN  0 assert-eq           \ no incoming pointers
+
+cr
+"=== Rung 2 — the first distinction ===" . cr
+"NODES = 1   EDGES = 0" . cr
+"One token exists, distinguished from nothing else." . cr
+
+REPORT

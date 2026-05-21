@@ -56,7 +56,7 @@ docs-pdf:
 
 trace-pilot-d:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/37-trace-pilot-d.6th \
+	racket -l sixth/cli -- run examples/55-trace-pilot-d.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/pilot_d_trace.png \
 	      --title "Pilot D — substrate-internally-driven cosmogenesis"
@@ -64,7 +64,7 @@ trace-pilot-d:
 
 trace-pilot-c:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/38-trace-pilot-c.6th \
+	racket -l sixth/cli -- run examples/56-trace-pilot-c.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/pilot_c_trace.png \
 	      --title "Pilot C — cosmogenesis bootstrap"
@@ -72,7 +72,7 @@ trace-pilot-c:
 
 trace-split-brain:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/39-trace-split-brain.6th \
+	racket -l sixth/cli -- run examples/57-trace-split-brain.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/split_brain_trace.png \
 	      --title "Pilot F.3 — split-brain: intact vs callosotomy"
@@ -97,7 +97,7 @@ SNAP   ?= 100
 trace-long-epoch:
 	@mkdir -p build/figures
 	racket -l sixth/cli -- -D max-cycles=$(CYCLES) -D snap-every=$(SNAP) \
-	  run examples/40-long-epoch-autopoiesis.6th \
+	  run examples/53-long-epoch-autopoiesis.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/long_epoch_$(CYCLES).png \
 	      --title "Long-epoch autopoiesis — $(CYCLES) cycles, snap every $(SNAP)"
@@ -108,7 +108,7 @@ trace-long-epoch:
 trace-long-epoch-gif:
 	@mkdir -p build/figures
 	racket -l sixth/cli -- -D max-cycles=$(CYCLES) -D snap-every=$(SNAP) \
-	  run examples/40-long-epoch-autopoiesis.6th \
+	  run examples/53-long-epoch-autopoiesis.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/long_epoch_$(CYCLES).gif --fps 4 \
 	      --title "Long-epoch autopoiesis — $(CYCLES) cycles"
@@ -117,7 +117,7 @@ trace-long-epoch-gif:
 # Pilot D substrate growth as animated GIF (alternative to the static figure).
 gif-pilot-d:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/37-trace-pilot-d.6th \
+	racket -l sixth/cli -- run examples/55-trace-pilot-d.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/pilot_d_trace.gif --fps 2 \
 	      --title "Pilot D — substrate-internally-driven cosmogenesis"
@@ -125,7 +125,7 @@ gif-pilot-d:
 
 gif-pilot-c:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/38-trace-pilot-c.6th \
+	racket -l sixth/cli -- run examples/56-trace-pilot-c.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/pilot_c_trace.gif --fps 2 \
 	      --title "Pilot C — cosmogenesis bootstrap"
@@ -133,7 +133,7 @@ gif-pilot-c:
 
 gif-split-brain:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/39-trace-split-brain.6th \
+	racket -l sixth/cli -- run examples/57-trace-split-brain.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/split_brain_trace.gif --fps 1 \
 	      --title "Pilot F.3 — split-brain: intact vs callosotomy"
@@ -149,7 +149,7 @@ gifs: gif-pilot-c gif-pilot-d gif-split-brain \
 # cycle-by-cycle (alive/dead colouring honours dot-snapshot-state).
 trace-conway-blinker:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/42-trace-conway-blinker.6th \
+	racket -l sixth/cli -- run examples/58-trace-conway-blinker.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/conway_blinker.png \
 	      --title "Conway's Game of Life — blinker on 5×5 substrate grid"
@@ -157,7 +157,7 @@ trace-conway-blinker:
 
 gif-conway-blinker:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/42-trace-conway-blinker.6th \
+	racket -l sixth/cli -- run examples/58-trace-conway-blinker.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/conway_blinker.gif --fps 2 \
 	      --title "Conway's Game of Life — blinker on 5×5 substrate grid"
@@ -166,7 +166,7 @@ gif-conway-blinker:
 # Conway 5-cell glider (translates +1, +1 over 4 steps).
 trace-conway-glider:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/43-trace-conway-glider.6th \
+	racket -l sixth/cli -- run examples/59-trace-conway-glider.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/conway_glider.png \
 	      --title "Conway's Game of Life — 5-cell glider, 4 STEP-CA cycles"
@@ -174,7 +174,7 @@ trace-conway-glider:
 
 gif-conway-glider:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/43-trace-conway-glider.6th \
+	racket -l sixth/cli -- run examples/59-trace-conway-glider.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/conway_glider.gif --fps 2 \
 	      --title "Conway's Game of Life — 5-cell glider translating across 5×5"
@@ -183,7 +183,7 @@ gif-conway-glider:
 # Wolfram Rule 110 — universal CA, single-seed propagation.
 trace-rule110:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/44-trace-rule110.6th \
+	racket -l sixth/cli -- run examples/60-trace-rule110.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/rule110.png \
 	      --title "Wolfram Rule 110 — 11-cell chain, 8 STEP-CA cycles"
@@ -191,7 +191,7 @@ trace-rule110:
 
 gif-rule110:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/44-trace-rule110.6th \
+	racket -l sixth/cli -- run examples/60-trace-rule110.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/rule110.gif --fps 2 \
 	      --title "Wolfram Rule 110 — single-seed propagation (universal CA)"
@@ -200,7 +200,7 @@ gif-rule110:
 # Wolfram Rule 90 — Sierpinski-like fractal from single seed.
 trace-rule90:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/45-trace-rule90.6th \
+	racket -l sixth/cli -- run examples/61-trace-rule90.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/rule90.png \
 	      --title "Wolfram Rule 90 — Sierpinski-like fractal, 8 STEP-CA cycles"
@@ -208,7 +208,7 @@ trace-rule90:
 
 gif-rule90:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/45-trace-rule90.6th \
+	racket -l sixth/cli -- run examples/61-trace-rule90.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/rule90.gif --fps 2 \
 	      --title "Wolfram Rule 90 — Sierpinski fractal from a single seed"
@@ -217,7 +217,7 @@ gif-rule90:
 # Rule 184 1D glider ("car").
 trace-glider-1d:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/46-trace-glider-1d.6th \
+	racket -l sixth/cli -- run examples/62-trace-glider-1d.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/glider_1d.png \
 	      --title "Rule 184 1D glider — 5 STEP-CA cycles, car advances c3 → c7"
@@ -225,7 +225,7 @@ trace-glider-1d:
 
 gif-glider-1d:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/46-trace-glider-1d.6th \
+	racket -l sixth/cli -- run examples/62-trace-glider-1d.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/glider_1d.gif --fps 2 \
 	      --title "Rule 184 1D glider — substrate-level momentum"
@@ -240,7 +240,7 @@ foundation-gifs: gif-conway-blinker gif-conway-glider gif-rule110 \
 # shell-by-shell.  ~76 frames.
 trace-atomic-pilot-d:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/47-trace-atomic-pilot-d.6th \
+	racket -l sixth/cli -- run examples/63-trace-atomic-pilot-d.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/atomic_pilot_d.png \
 	      --title "Pilot D atomic build — one primitive per panel"
@@ -248,7 +248,7 @@ trace-atomic-pilot-d:
 
 gif-atomic-pilot-d:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/47-trace-atomic-pilot-d.6th \
+	racket -l sixth/cli -- run examples/63-trace-atomic-pilot-d.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/atomic_pilot_d.gif --fps 6 \
 	      --title "Pilot D — atomic build, one primitive per frame"
@@ -259,7 +259,7 @@ gif-atomic-pilot-d:
 # is unmissable.
 trace-atomic-hello:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/48-trace-atomic-hello.6th \
+	racket -l sixth/cli -- run examples/64-trace-atomic-hello.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/atomic_hello.png \
 	      --title "Sacred hello world — atomic, one primitive per panel"
@@ -267,7 +267,7 @@ trace-atomic-hello:
 
 gif-atomic-hello:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/48-trace-atomic-hello.6th \
+	racket -l sixth/cli -- run examples/64-trace-atomic-hello.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/atomic_hello.gif --fps 1 \
 	      --title "Sacred hello world — six moments + the measurement"
@@ -282,7 +282,7 @@ atomic-gifs: gif-atomic-hello gif-atomic-pilot-d
 # shell-formation).  Demo 49.
 trace-pa-ontological-shell:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/49-trace-pa-ontological-shell.6th \
+	racket -l sixth/cli -- run examples/65-trace-pa-ontological-shell.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/pa_ontological_shell.png \
 	      --title "PA-ontological shell — first shell of Pilot D unfolded"
@@ -290,7 +290,7 @@ trace-pa-ontological-shell:
 
 gif-pa-ontological-shell:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/49-trace-pa-ontological-shell.6th \
+	racket -l sixth/cli -- run examples/65-trace-pa-ontological-shell.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/pa_ontological_shell.gif --fps 1 \
 	      --title "PA-ontological shell — Spencer-Brown bootstrap, frame by frame"
@@ -299,7 +299,7 @@ gif-pa-ontological-shell:
 # Pilot E — substrate-internal Phi_PA measurement (3 observers).
 trace-pilot-e:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/50-trace-pilot-e-phi-pa.6th \
+	racket -l sixth/cli -- run examples/66-trace-pilot-e-phi-pa.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/pilot_e_trace.png \
 	      --title "Pilot E — substrate-internal Φ_PA measurement (3 observers)"
@@ -308,7 +308,7 @@ trace-pilot-e:
 # Pilot F.1 transformer encoding (PSH1 vs PSH2).
 trace-pilot-f1:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/51-trace-pilot-f1-transformer.6th \
+	racket -l sixth/cli -- run examples/67-trace-pilot-f1-transformer.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/pilot_f1_trace.png \
 	      --title "Pilot F.1 — transformer encoding (PSH1 single-pass vs PSH2 KV-cache)"
@@ -317,7 +317,7 @@ trace-pilot-f1:
 # Pilot F.2 brain encoding (PSH3 waking vs propofol).
 trace-pilot-f2:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/52-trace-pilot-f2-brain.6th \
+	racket -l sixth/cli -- run examples/68-trace-pilot-f2-brain.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/pilot_f2_trace.png \
 	      --title "Pilot F.2 — brain encoding (PSH3 waking thalamocortical vs propofol)"
@@ -326,7 +326,7 @@ trace-pilot-f2:
 # Pilot F.4 ant-colony encoding (PSH5 living vs dead).
 trace-pilot-f4:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/53-trace-pilot-f4-colony.6th \
+	racket -l sixth/cli -- run examples/69-trace-pilot-f4-colony.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/pilot_f4_trace.png \
 	      --title "Pilot F.4 — ant colony encoding (PSH5 living queen vs dead colony)"
@@ -337,7 +337,7 @@ trace-pilot-f4:
 # phi-pa(M) from 0 to 40000, constituting the composite distinction.
 trace-composite-distinction:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/55-trace-composite-distinction.6th \
+	racket -l sixth/cli -- run examples/70-trace-composite-distinction.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/composite_distinction.png \
 	      --title "Pilot G — composite distinction held by meta-self-loop" \
@@ -345,14 +345,14 @@ trace-composite-distinction:
 	@echo "→ open build/figures/composite_distinction.png"
 
 forensic-composite-distinction:
-	@bash scripts/forensic.sh examples/55-trace-composite-distinction.6th composite_distinction "Pilot G composite distinction" tiered
+	@bash scripts/forensic.sh examples/70-trace-composite-distinction.6th composite_distinction "Pilot G composite distinction" tiered
 
 # Pilot H — mutation + substrate-readable selection (demo 57).
 # Five variants mutated; meta-observer M selects on phi-pa>0;
 # diversified composite of three structurally distinct survivors.
 trace-mutation-selection:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/57-trace-mutation-selection.6th \
+	racket -l sixth/cli -- run examples/71-trace-mutation-selection.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/mutation_selection.png \
 	      --title "Pilot H — mutation + substrate-readable selection (particle zoo)" \
@@ -360,7 +360,7 @@ trace-mutation-selection:
 	@echo "→ open build/figures/mutation_selection.png"
 
 forensic-mutation-selection:
-	@bash scripts/forensic.sh examples/57-trace-mutation-selection.6th mutation_selection "Pilot H mutation+selection" tiered
+	@bash scripts/forensic.sh examples/71-trace-mutation-selection.6th mutation_selection "Pilot H mutation+selection" tiered
 
 # Pilot I — multi-level particle hierarchy (demo 59).
 # Six instances → three family observers → one genus observer,
@@ -368,7 +368,7 @@ forensic-mutation-selection:
 # iterated three times).
 trace-particle-families:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/59-trace-particle-families.6th \
+	racket -l sixth/cli -- run examples/72-trace-particle-families.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/particle_families.png \
 	      --title "Pilot I — multi-level particle hierarchy (instances / families / genus)" \
@@ -376,14 +376,14 @@ trace-particle-families:
 	@echo "→ open build/figures/particle_families.png"
 
 forensic-particle-families:
-	@bash scripts/forensic.sh examples/59-trace-particle-families.6th particle_families "Pilot I particle hierarchy" tiered
+	@bash scripts/forensic.sh examples/72-trace-particle-families.6th particle_families "Pilot I particle hierarchy" tiered
 
 # Pilot J — substrate-native charge conservation (demo 61).
 # 11-cell chain, 5 particles, STEP-CA charge-shift rule preserves
 # total Σ NGET and per-species count exactly across all steps.
 trace-charge-conservation:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/61-trace-charge-conservation.6th \
+	racket -l sixth/cli -- run examples/73-trace-charge-conservation.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/charge_conservation.png \
 	      --title "Pilot J — substrate-native charge conservation (Σ NGET invariant under STEP-CA)" \
@@ -391,7 +391,7 @@ trace-charge-conservation:
 	@echo "→ open build/figures/charge_conservation.png"
 
 forensic-charge-conservation:
-	@bash scripts/forensic.sh examples/61-trace-charge-conservation.6th charge_conservation "Pilot J charge conservation" chain
+	@bash scripts/forensic.sh examples/73-trace-charge-conservation.6th charge_conservation "Pilot J charge conservation" chain
 
 # Pilot K — spontaneous coalition assembly (demo 63).
 # Three-level hierarchy emerges entirely by repeated application of
@@ -399,7 +399,7 @@ forensic-charge-conservation:
 # meta-observers).
 trace-spontaneous-assembly:
 	@mkdir -p build/figures
-	racket -l sixth/cli -- run examples/63-trace-spontaneous-assembly.6th \
+	racket -l sixth/cli -- run examples/74-trace-spontaneous-assembly.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/spontaneous_assembly.png \
 	      --title "Pilot K — spontaneous coalition assembly (3-level hierarchy emerges from a single substrate-readable rule)" \
@@ -407,59 +407,59 @@ trace-spontaneous-assembly:
 	@echo "→ open build/figures/spontaneous_assembly.png"
 
 forensic-spontaneous-assembly:
-	@bash scripts/forensic.sh examples/63-trace-spontaneous-assembly.6th spontaneous_assembly "Pilot K spontaneous assembly" tiered
+	@bash scripts/forensic.sh examples/74-trace-spontaneous-assembly.6th spontaneous_assembly "Pilot K spontaneous assembly" tiered
 
 forensic-pilot-e:
-	@bash scripts/forensic.sh examples/50-trace-pilot-e-phi-pa.6th pilot_e "Pilot E"
+	@bash scripts/forensic.sh examples/66-trace-pilot-e-phi-pa.6th pilot_e "Pilot E"
 
 forensic-pilot-f1:
-	@bash scripts/forensic.sh examples/51-trace-pilot-f1-transformer.6th pilot_f1 "Pilot F.1 transformer"
+	@bash scripts/forensic.sh examples/67-trace-pilot-f1-transformer.6th pilot_f1 "Pilot F.1 transformer"
 
 forensic-pilot-f2:
-	@bash scripts/forensic.sh examples/52-trace-pilot-f2-brain.6th pilot_f2 "Pilot F.2 brain"
+	@bash scripts/forensic.sh examples/68-trace-pilot-f2-brain.6th pilot_f2 "Pilot F.2 brain"
 
 forensic-pilot-f4:
-	@bash scripts/forensic.sh examples/53-trace-pilot-f4-colony.6th pilot_f4 "Pilot F.4 colony"
+	@bash scripts/forensic.sh examples/69-trace-pilot-f4-colony.6th pilot_f4 "Pilot F.4 colony"
 
 # Forensic trace — image + JSONL evidence + per-step diff view.
 # Produces three artefacts per pilot so an external reviewer can
 # audit the substrate execution from machine-readable logs, not
 # only the rendered figure.  Backed by scripts/forensic.sh.
 forensic-pilot-d:
-	@bash scripts/forensic.sh examples/37-trace-pilot-d.6th pilot_d "Pilot D"
+	@bash scripts/forensic.sh examples/55-trace-pilot-d.6th pilot_d "Pilot D"
 
 forensic-pilot-c:
-	@bash scripts/forensic.sh examples/38-trace-pilot-c.6th pilot_c "Pilot C"
+	@bash scripts/forensic.sh examples/56-trace-pilot-c.6th pilot_c "Pilot C"
 
 forensic-split-brain:
-	@bash scripts/forensic.sh examples/39-trace-split-brain.6th split_brain "Pilot F.3 split-brain"
+	@bash scripts/forensic.sh examples/57-trace-split-brain.6th split_brain "Pilot F.3 split-brain"
 
 forensic-conway-blinker:
-	@bash scripts/forensic.sh examples/42-trace-conway-blinker.6th conway_blinker_f "Conway blinker"
+	@bash scripts/forensic.sh examples/58-trace-conway-blinker.6th conway_blinker_f "Conway blinker"
 
 forensic-conway-glider:
-	@bash scripts/forensic.sh examples/43-trace-conway-glider.6th conway_glider_f "Conway glider"
+	@bash scripts/forensic.sh examples/59-trace-conway-glider.6th conway_glider_f "Conway glider"
 
 forensic-rule110:
-	@bash scripts/forensic.sh examples/44-trace-rule110.6th rule110_f "Wolfram Rule 110"
+	@bash scripts/forensic.sh examples/60-trace-rule110.6th rule110_f "Wolfram Rule 110"
 
 forensic-rule90:
-	@bash scripts/forensic.sh examples/45-trace-rule90.6th rule90_f "Wolfram Rule 90"
+	@bash scripts/forensic.sh examples/61-trace-rule90.6th rule90_f "Wolfram Rule 90"
 
 forensic-glider-1d:
-	@bash scripts/forensic.sh examples/46-trace-glider-1d.6th glider_1d_f "Rule 184 1D glider"
+	@bash scripts/forensic.sh examples/62-trace-glider-1d.6th glider_1d_f "Rule 184 1D glider"
 
 forensic-atomic-pilot-d:
-	@bash scripts/forensic.sh examples/47-trace-atomic-pilot-d.6th atomic_pilot_d_f "Pilot D atomic"
+	@bash scripts/forensic.sh examples/63-trace-atomic-pilot-d.6th atomic_pilot_d_f "Pilot D atomic"
 
 forensic-atomic-hello:
-	@bash scripts/forensic.sh examples/48-trace-atomic-hello.6th atomic_hello_f "Sacred hello atomic"
+	@bash scripts/forensic.sh examples/64-trace-atomic-hello.6th atomic_hello_f "Sacred hello atomic"
 
 forensic-long-epoch-growth:
-	@bash scripts/forensic.sh examples/41-long-epoch-growth.6th long_epoch_growth_f "Long-epoch growth"
+	@bash scripts/forensic.sh examples/54-long-epoch-growth.6th long_epoch_growth_f "Long-epoch growth"
 
 forensic-pa-ontological-shell:
-	@bash scripts/forensic.sh examples/49-trace-pa-ontological-shell.6th pa_ontological_shell_f "PA-ontological shell"
+	@bash scripts/forensic.sh examples/65-trace-pa-ontological-shell.6th pa_ontological_shell_f "PA-ontological shell"
 
 forensic-all: forensic-pilot-d forensic-pilot-c forensic-split-brain \
               forensic-conway-blinker forensic-conway-glider \
@@ -485,7 +485,7 @@ trace-long-epoch-growth:
 	@mkdir -p build/figures
 	racket -l sixth/cli -- -D max-cycles=$(CYCLES_G) -D snap-every=$(SNAP_G) \
 	                     -D grow-every=$(GROW) \
-	  run examples/41-long-epoch-growth.6th \
+	  run examples/54-long-epoch-growth.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/long_epoch_growth.png \
 	      --title "Long-epoch growth — $(CYCLES_G) cycles, +shell every $(GROW)"
@@ -495,7 +495,7 @@ trace-long-epoch-growth-gif:
 	@mkdir -p build/figures
 	racket -l sixth/cli -- -D max-cycles=$(CYCLES_G) -D snap-every=$(SNAP_G) \
 	                     -D grow-every=$(GROW) \
-	  run examples/41-long-epoch-growth.6th \
+	  run examples/54-long-epoch-growth.6th \
 	  | python3 code/render_trace.py \
 	      --out build/figures/long_epoch_growth.gif --fps 3 \
 	      --title "Long-epoch growth — $(CYCLES_G) cycles, +shell every $(GROW)"

@@ -1,0 +1,26 @@
+\ examples/03-second-distinction.6th
+\ Canonical ladder, rung 3 — the second distinction.
+\
+\ A second MARK.  Now two distinct tokens exist.  Difference
+\ ITSELF is now substrate-readable: the substrate contains two
+\ things that are not the same thing.  Still no pointers — the
+\ tokens are not related yet, only different.
+
+use prelude
+use debug
+
+MARK "A" store
+MARK "B" store
+
+NODES 2 assert-eq
+EDGES 0 assert-eq
+"A" load "B" load = 0 assert-eq    \ A and B carry different ids
+"A" load OUT 0 assert-eq
+"B" load OUT 0 assert-eq
+
+cr
+"=== Rung 3 — the second distinction ===" . cr
+"NODES = 2   EDGES = 0" . cr
+"Difference exists between two tokens.  No relation yet." . cr
+
+REPORT

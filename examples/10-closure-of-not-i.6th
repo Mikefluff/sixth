@@ -1,0 +1,42 @@
+\ examples/10-closure-of-not-i.6th
+\ Canonical ladder, rung 10 — closure of not-I.
+\
+\ X acquires its own self-loop AND state — the not-I is now also
+\ self-distinguishing, gaining a state.  Mutual edges close between
+\ O and X.  The substrate carries TWO self-pointing observers, each
+\ with its own state, recognising each other.
+\
+\ This is the symmetric closure of the I / not-I distinction (rung 8
+\ + rung 9): both poles are now genuine observers, not "self vs
+\ undifferentiated other".  The minimum two-observer substrate that
+\ Pilot A's autopoietic ring (later) elaborates with rules.
+
+use prelude
+use graph
+use debug
+
+MARK "O" store
+"O" load "O" load EDGE+
+"O" load 1 NSET
+
+MARK "X" store
+"X" load "X" load EDGE+         \ not-I self-distinguishes
+"X" load 2 NSET
+
+"O" load "X" load bi-edge       \ mutual observation
+
+NODES 2 assert-eq
+EDGES 4 assert-eq                \ 2 self-loops + 2 cross-edges
+"O" load NGET 1 assert-eq
+"X" load NGET 2 assert-eq
+"O" load "O" load EDGE? 1 assert-eq
+"X" load "X" load EDGE? 1 assert-eq
+"O" load OUT 2 assert-eq         \ self + X
+"X" load OUT 2 assert-eq         \ self + O
+
+cr
+"=== Rung 10 — closure of the not-I ===" . cr
+"NODES = 2   EDGES = 4   two observers recognising each other" . cr
+"Symmetric closure: I and not-I both self-distinguishing." . cr
+
+REPORT

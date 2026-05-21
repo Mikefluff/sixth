@@ -1,7 +1,7 @@
 # Sixth Substrate — Foundational Pointer Architecture
 
 This document accompanies the Sixth substrate implementation in
-`sixth/primitives/substrate.rkt` and the 64 emergence demonstrations
+`sixth/primitives/substrate.rkt` and the 74 emergence demonstrations
 under `examples/`. The goal is *not* to derive physics — it is to
 build the minimum formal artifact in which structures such as
 numbers, time, space, conservation laws, particles, self-reference,
@@ -44,85 +44,69 @@ two tokens (`EDGE+`), or a transformation of those relations
 
 ## What the demos demonstrate
 
-The 64 demonstrations live in `examples/` (file-by-file index in
+The 74 demonstrations live in `examples/` (file-by-file index in
 [`examples/README.md`](./examples/README.md)). Each isolates a
-single derivation chain, organised in nineteen phases:
+single derivation chain, organised in six conceptual phases that
+go from simplest distinction to highest-order composition:
 
-- **00** — sacred hello world (Spencer-Brown's first mark)
-- **01–20** — foundations: arithmetic, time, space, conservation
-  laws, cellular automata, Conway's Life, BFS, morphism
-- **21–25** Pilot A — substrate-native autopoiesis
-- **26–29** Pilot B — conscious evolution (observer-driven, Lamarck-style)
-- **30** Pilot C — cosmogenesis bootstrap
-- **31** Pilot D — substrate-internally-driven cosmogenesis
-- **32** Pilot E — substrate-internal Φ_PA measurement
-- **33–36** Pilot F — encoding-map demonstrations (transformer / brain
-  / split-brain / colony)
-- **37–39** — substrate-monism visual traces (Pilots D, C, F.3)
-- **40–41** — long-epoch parametric pilots (40 with after-decay /
-  after-restore sub-cycle snapshots for visible autopoiesis dynamics)
-- **42–46** — foundation visual traces (Conway, Wolfram CA)
-- **47–48** — atomic-build traces (one snapshot per primitive
-  operation; 47 with PA primitive labels `distinction`/`pointer`/
-  `state-attach`; 48 with PA-ontological event labels `void`,
-  `first-distinction`, `observer-state`, `i-not-i`, `first-pointer`,
-  `re-entry`, `phi-pa-measurement`)
-- **49** — PA-ontological shell decomposition (unfolds the first
-  shell of demo 31 into 11 Spencer-Brown / PA v9.0 events: `void`,
-  `first-distinction`, `observer-state`, `re-entry`,
-  `second-distinction`, `i-not-i-relation`, `recognition`,
-  `second-not-i`, `closure-of-not-i`, `o-other-closure`, `state-fill`)
-- **50** — Pilot E visual trace (3 observers × Φ_PA)
-- **51–53** — Pilot F.1/F.2/F.4 visual traces (PSH1/PSH2/PSH3/PSH5
-  discriminators visible)
-- **54–55** Pilot G — composite distinction via meta-self-loop:
-  three first-order observers each hold their own 4-node composite
-  (Φ_PA=40000); a meta-observer M bi-edged to all three holds
-  nothing (Φ_PA=0) until M acquires its own self-loop, after which
-  Φ_PA(M)=40000 and the first-order observers gain scope +1 →
-  Φ_PA=50000. Demonstrates that holding *composite* distinction
-  requires higher-order self-reference.
-- **56–57** Pilot H — mutation + substrate-readable natural
-  selection: five candidate first-order observers with varied
-  topologies (3/4/5-limb rings + self-loop; 3-limb ring without
-  self-loop; isolated MARK); meta-observer M reads each
-  candidate's Φ_PA and bi-edges only to those with Φ_PA > 0;
-  M's own self-loop closes the construction. Result: a diversified
-  composite over three structurally distinct "particle species"
-  (surviving Φ_PA = 50000 / 60000 / 70000 after the scope bonus).
-  Lamarck-style, observer-driven — not blind Darwin.
-- **58–59** Pilot I — multi-level particle hierarchy: six
-  instances across three species (α/β/γ, 1+2+3 instances) → three
-  family observers Mα/Mβ/Mγ → one genus observer M2. The Pilot G
-  composite-distinction mechanism is re-applied at every level
-  (each observer carries its own self-loop). Result: substrate-
-  readable taxonomy with distinct Φ_PA signatures at each level
-  (instances 50000/60000/70000, families 30000/40000/50000, genus
-  40000). Within-family instances are indistinguishable —
-  substrate-native analogue of physical particle indistinguishability.
-- **60–61** Pilot J — substrate-native charge conservation: 11-cell
-  chain, 5 particles tagged by species (NGET=1/2/3). STEP-CA
-  `charge-shift` rule (Wolfram Rule 184 lifted from {0,1} to integer
-  NGET) preserves total Σ NGET AND per-species count exactly across
-  all steps. First Noether-style conservation law derived structurally
-  from the rule, substrate-readable by `EACH` + sum — no external
-  bookkeeping.
-- **62–63** Pilot K — spontaneous coalition assembly: 9 first-order
-  observers in 3 disjoint mutually-pointing triangles; a single
-  rule `try-spawn-coalition` (three `EDGE?` checks → MARK + bi-edges
-  + own self-loop) fires four times and reconstructs the full
-  Pilot I three-level hierarchy with no hand-placed meta-observers.
-  The substrate detects its own coalition conditions and spawns
-  meta-observers in response.
+- **01–11 Canonical Spencer-Brown ladder.** Eleven atomic demos,
+  each adding one rung to the substrate's self-construction:
+  void → first-distinction → second-distinction → first-pointer →
+  self-pointer → mutual-pointing → observer-state → I/not-I →
+  recognition → closure-of-not-I → measurement (first non-trivial
+  Φ_PA). Reading this phase IS reading what the substrate IS.
+- **12–31 Applications.** Reusable patterns built on the ladder:
+  Peano arithmetic (12), substrate-time via sprout rules (13),
+  fixed-point stability (14), rule conflict (15), strange-loop
+  topology (16), Rovelli-relational observers (17), Turing-
+  completeness via rewrite (18), 1D BFS (19), Rule 90 CA (20),
+  Hofstadter self-model (21), substrate energy (22), Wolfram
+  generic rules (23), ring-Noether conservation (24), 2D grid
+  (25), Rule 184 1D glider (26), Rule 110 universal CA (27),
+  relational consensus (28), morphism (29), Conway blinker (30),
+  Conway glider (31).
+- **32–36 Pilot A — substrate-native autopoiesis** (Maturana–Varela
+  on the discrete substrate).
+- **37–40 Pilot B — observer-driven conscious evolution** (Lamarck-
+  style, NOT blind Darwin).
+- **41–42 Pilots C and D — cosmogenesis.** C bootstraps a 13-node
+  48-edge cosmos from one MARK and survives harsh decay; D adds the
+  substrate-monist halting predicate (no host counter).
+- **43 Pilot E — substrate-internal Φ_PA measurement.**
+- **44–47 Pilot F — encoding-map pilots** (PSH1–PSH5 toys for
+  transformer / brain / split-brain / ant colony).
+- **48–52 Pilots G–K — composite distinction and its extensions.**
+  G: composite held by meta-self-loop. H: mutation + substrate-
+  readable selection produces three distinct surviving species.
+  I: three-level hierarchy (instances → families → genus) by
+  iterated composite-distinction. J: Σ NGET Noether-style
+  conservation under STEP-CA `charge-shift`. K: spontaneous
+  coalition assembly — same hierarchy as I rebuilt from scratch by
+  one substrate-readable `try-spawn-coalition` rule.
+- **53–54 Long-epoch parametric pilots.** TCO-safe runs of arbitrary
+  cycle count; demo 53 shows after-decay/after-restore sub-cycle
+  snapshots for visible autopoiesis dynamics; demo 54 grows the
+  substrate every K cycles.
+- **55–74 Visual-trace track.** Every numerical pilot's DOT-snapshot
+  companion, consolidated at the end of the catalogue: substrate-
+  monism traces of Pilots C/D/F.3 (55–57), foundation visual traces
+  for Conway/Wolfram CAs (58–62), atomic-build traces (63–64) where
+  every MARK/EDGE+ becomes its own frame, PA-ontological shell
+  decomposition (65) that unfolds the first shell of Pilot D into
+  the 11 events of the canonical ladder, Pilot E visual trace (66),
+  Pilot F.1/F.2/F.4 visual traces (67–69), composite distinction
+  trace (70), mutation-selection trace (71), particle-families
+  trace (72), charge-conservation trace (73), spontaneous-assembly
+  trace (74).
 
-All 963 assertions pass deterministically. Run the regression in
+All 1016 assertions pass deterministically. Run the regression in
 one command:
 
 ```bash
 make verify
 # language tests:    ok
 # substrate tests:   ok
-# examples:          963 / 963 ✓ across 64 demos
+# examples:          1016 / 1016 ✓ across 74 demos
 # docs build:        ok
 # artifact status:   reproducible
 ```
@@ -282,7 +266,7 @@ sufficient for the released demos and can be extended further.
 cd /Users/mikefluff/Documents/Programming/sixt
 raco pkg install --link .          # install the Sixth Racket collection
 
-# the whole regression — all 64 demos, all 963 assertions
+# the whole regression — all 74 demos, all 1016 assertions
 make verify
 
 # any single demo

@@ -1,0 +1,19 @@
+\ examples/01-void.6th
+\ Canonical ladder, rung 1 — the void.
+\
+\ Before any distinction is drawn the substrate exists as a
+\ possibility, not a fact.  Zero tokens, zero pointers, zero
+\ structure.  This is the empty starting position from which every
+\ subsequent demonstration grows.
+
+use prelude
+use debug
+
+NODES 0 assert-eq
+EDGES 0 assert-eq
+
+cr
+"=== Rung 1 — the void ===" . cr
+"NODES = 0   EDGES = 0   nothing distinguished yet" . cr
+
+REPORT

@@ -11,13 +11,13 @@ time, space, conservation laws, particles, observers, and universal
 computation, then ascend through substrate-native autopoiesis,
 conscious evolution, and cosmogenesis bootstrap.
 
-@bold{Status:} engine + stdlib + 64 demos (sacred hello world +
+@bold{Status:} engine + stdlib + 74 demos (sacred hello world +
 Pilots A--K + 3 substrate-monism trace pilots + 2 long-epoch
 parametric + 5 foundation visual traces + 2 atomic-build traces +
 1 PA-ontological shell decomposition + Pilot G composite distinction
 + Pilot H mutation + substrate-readable selection + Pilot I
 multi-level particle hierarchy + Pilot J substrate-native charge
-conservation + Pilot K spontaneous coalition assembly, 963 ✓) + @litchar{#lang sixth} + Racket-FFI PyTorch bridges
+conservation + Pilot K spontaneous coalition assembly, 1016 ✓) + @litchar{#lang sixth} + Racket-FFI PyTorch bridges
 (shadow / diff / nn-cl) all working.  Pilot E adds three candidate substrate-
 readable observability measures (@litchar{phi-pa},
 @litchar{phi-integ}, @litchar{phi-bidir}); Pilot F instantiates the
@@ -48,7 +48,7 @@ Install the package via @exec{raco pkg install --link .} from the repo
 root.  Run a demo:
 
 @verbatim|{
-racket -l sixth/cli -- run examples/01-numbers.6th
+racket -l sixth/cli -- run examples/12-numbers.6th
 }|
 
 Open a REPL:

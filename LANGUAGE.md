@@ -50,7 +50,7 @@ the first tier is plain stack/arithmetic/control.
 
 If you reject every interpretive claim of the v9.0 preprint, Sixth
 still gives you: a Forth-like language with `#lang sixth` integration,
-a hypergraph rewriting engine with 23 substrate primitives, 64 demos
+a hypergraph rewriting engine with 23 substrate primitives, 74 demos
 of emergence from 17+23 base operations, a Racket-FFI PyTorch bridge,
 and a Scribble-rendered manual.
 
@@ -164,7 +164,7 @@ substrate as a GraphViz DOT block on stdout. Multiple snapshots can
 be emitted between substrate operations to record the substrate's
 evolution. The companion `code/render_trace.py` parses the snapshot
 stream and produces a multi-panel matplotlib figure (PNG / SVG /
-PDF). See `examples/37-trace-pilot-d.6th` for the Pilot D evolution
+PDF). See `examples/55-trace-pilot-d.6th` for the Pilot D evolution
 rendered as five panels (shell-count 0..4); render with
 `make trace-pilot-d`.
 
@@ -172,11 +172,11 @@ rendered as five panels (shell-count 0..4); render with
 
 - 40 primitives. No promotion of stdlib to primitive without
   documented justification.
-- 963 ✓ across 64 demos. The regression gate
-  (`tests/examples-test.rkt`) enforces `pass=963 fail=0`. Single-
+- 1016 ✓ across 74 demos. The regression gate
+  (`tests/examples-test.rkt`) enforces `pass=1016 fail=0`. Single-
   command verification: `make verify`. Parametric / long-epoch
   runs via the CLI `-D KEY=VAL` flag (see `examples/40-long-epoch-
-  autopoiesis.6th` and `examples/41-long-epoch-growth.6th`).
+  autopoiesis.6th` and `examples/54-long-epoch-growth.6th`).
   Visual instrumentation via `make traces`, `make gifs`,
   `make foundation-gifs`, `make atomic-gifs`.
 - `legacy/` holds the original chibi-Scheme prototype as a parity

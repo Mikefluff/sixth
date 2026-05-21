@@ -2,12 +2,30 @@
 
 ;; tests/examples-test.rkt — regression gate.
 ;;
-;; Runs each of the 64 emergence demos and asserts the cumulative
-;; ✓ pass count is unchanged at 963.  Each demo's expected pass
+;; Runs each of the 74 emergence demos and asserts the cumulative
+;; ✓ pass count is unchanged at 1016.  Each demo's expected pass
 ;; count is listed in the `expected` table below; the sum must
 ;; equal the gate constant.  Counting ✓ marks printed during the
 ;; run (engine prints ✓ for every successful ASSERT, including
 ;; post-RESET ones the REPORT line does not cumulate).
+;;
+;; The 74 demos are organised conceptually:
+;;
+;;   01–11  Canonical Spencer-Brown ladder (void → measurement)
+;;   12–31  Applications of the substrate (Peano, time, CA, BFS,
+;;          conservation, consensus, morphism, Conway, Wolfram)
+;;   32–36  Pilot A — substrate-native autopoiesis
+;;   37–40  Pilot B — observer-driven conscious evolution
+;;   41–42  Pilots C–D — cosmogenesis (bootstrap + substrate-monist)
+;;   43     Pilot E — substrate-internal Φ_PA measurement
+;;   44–47  Pilot F — encoding-map pilots (transformer / brain /
+;;                                         split-brain / colony)
+;;   48–52  Pilots G–K — composite distinction, mutation+selection,
+;;                       multi-level hierarchy, charge conservation,
+;;                       spontaneous coalition assembly
+;;   53–54  Long-epoch parametric pilots
+;;   55–74  Visual-trace track (every numerical pilot's DOT-snapshot
+;;          companion, consolidated at the end of the catalogue)
 
 (require rackunit
          racket/file
@@ -23,87 +41,91 @@
                'up "examples")))
 
 (define expected
-  '(;; Sacred hello world — the first distinction
-    ("00-first-distinction.6th"        11)
-    ("01-numbers.6th"                  11)
-    ("02-time.6th"                     13)
-    ("03-stable.6th"                   14)
-    ("04-conflict.6th"                 12)
-    ("05-loop.6th"                     11)
-    ("06-observers.6th"                14)
-    ("07-rewrite-tc.6th"               23)
-    ("08-distance-1d.6th"              16)
-    ("09-ca-rule90.6th"                25)
-    ("10-self-model.6th"               20)
-    ("11-energy.6th"                   13)
-    ("12-wolfram.6th"                  14)
-    ("13-conservation.6th"             19)
-    ("14-grid-2d.6th"                  20)
-    ("15-glider-1d.6th"                22)
-    ("16-rule110.6th"                  22)
-    ("17-consensus.6th"                16)
-    ("18-morphism.6th"                 11)
-    ("19-conway-blinker.6th"           25)
-    ("20-conway-glider.6th"            38)
-    ;; Phase J' — substrate-native autopoiesis
-    ("21-autopoietic-ring.6th"         29)
-    ("22-observer-collapse.6th"         6)
-    ("23-self-maintaining-observer.6th" 11)
-    ("24-growing-observer.6th"         18)
-    ("25-substrate-genesis.6th"        16)
-    ;; Phase K — conscious evolution toward cosmogenesis
-    ("26-symbiosis.6th"                18)
-    ("27-reproduction.6th"             31)
-    ("28-conscious-mutation.6th"       18)
-    ("29-goal-directed-observer.6th"   23)
-    ("30-cosmogenesis-bootstrap.6th"   21)
-    ;; Phase L — observer-driven cosmogenesis (substrate-monist)
-    ("31-observer-driven-cosmogenesis.6th" 17)
-    ;; Phase M — substrate-internal Phi_PA measurement (Pilot E)
-    ("32-phi-pa-measurement.6th"           12)
-    ;; Phase N — encoding-map pilots (Pilot F)
-    ("33-phi-pa-transformer-toy.6th"       10)
-    ("34-phi-pa-brain-toy.6th"             12)
-    ("35-phi-pa-split-brain-toy.6th"       14)
-    ("36-phi-pa-ant-colony-toy.6th"        10)
-    ;; Phase O — visual trace pilots
-    ("37-trace-pilot-d.6th"                 6)
-    ("38-trace-pilot-c.6th"                 6)
-    ("39-trace-split-brain.6th"             6)
-    ;; Phase P — long-epoch / parametric (CLI --define)
-    ("40-long-epoch-autopoiesis.6th"       11)
-    ("41-long-epoch-growth.6th"             8)
-    ;; Phase Q — foundation visual traces (state-aware)
-    ("42-trace-conway-blinker.6th"         15)
-    ("43-trace-conway-glider.6th"          11)
-    ("44-trace-rule110.6th"                 6)
-    ("45-trace-rule90.6th"                  6)
-    ("46-trace-glider-1d.6th"               7)
-    ;; Phase R — atomic-build traces (one primitive per frame)
-    ("47-trace-atomic-pilot-d.6th"          5)
-    ("48-trace-atomic-hello.6th"            5)
-    ;; Phase S — PA-ontological decomposition trace
-    ("49-trace-pa-ontological-shell.6th"    5)
-    ;; Phase T — Pilot E and Pilot F.1/F.2/F.4 visual traces
-    ("50-trace-pilot-e-phi-pa.6th"          9)
-    ("51-trace-pilot-f1-transformer.6th"    9)
-    ("52-trace-pilot-f2-brain.6th"         10)
-    ("53-trace-pilot-f4-colony.6th"         8)
-    ;; Phase U — Pilot G: composite distinction via meta-self-loop
-    ("54-composite-distinction-meta-observer.6th"  21)
-    ("55-trace-composite-distinction.6th"           5)
-    ;; Phase V — Pilot H: mutation + substrate-readable selection
-    ("56-mutation-selection-particle-zoo.6th"      29)
-    ("57-trace-mutation-selection.6th"              4)
-    ;; Phase W — Pilot I: multi-level particle hierarchy
-    ("58-particle-families-hierarchy.6th"          35)
-    ("59-trace-particle-families.6th"               4)
-    ;; Phase X — Pilot J: substrate-native charge conservation
-    ("60-charge-conservation.6th"                  56)
-    ("61-trace-charge-conservation.6th"             4)
-    ;; Phase Y — Pilot K: spontaneous coalition assembly
-    ("62-spontaneous-coalition-assembly.6th"       32)
-    ("63-trace-spontaneous-assembly.6th"            4)))
+  '(;; --- Canonical Spencer-Brown ladder (11 rungs) ---
+    ("01-void.6th"                          2)
+    ("02-first-distinction.6th"             5)
+    ("03-second-distinction.6th"            5)
+    ("04-first-pointer.6th"                 8)
+    ("05-self-pointer.6th"                  5)
+    ("06-mutual-pointing.6th"               8)
+    ("07-observer-state.6th"                5)
+    ("08-i-not-i.6th"                       6)
+    ("09-recognition.6th"                   6)
+    ("10-closure-of-not-i.6th"              8)
+    ("11-measurement.6th"                   6)
+    ;; --- Applications (substrate as foundation for Peano / time /
+    ;;     CA / BFS / conservation / morphism / Conway / Wolfram) ---
+    ("12-numbers.6th"                      11)
+    ("13-time.6th"                         13)
+    ("14-stable.6th"                       14)
+    ("15-conflict.6th"                     12)
+    ("16-loop.6th"                         11)
+    ("17-observers.6th"                    14)
+    ("18-rewrite-tc.6th"                   23)
+    ("19-distance-1d.6th"                  16)
+    ("20-ca-rule90.6th"                    25)
+    ("21-self-model.6th"                   20)
+    ("22-energy.6th"                       13)
+    ("23-wolfram.6th"                      14)
+    ("24-conservation.6th"                 19)
+    ("25-grid-2d.6th"                      20)
+    ("26-glider-1d.6th"                    22)
+    ("27-rule110.6th"                      22)
+    ("28-consensus.6th"                    16)
+    ("29-morphism.6th"                     11)
+    ("30-conway-blinker.6th"               25)
+    ("31-conway-glider.6th"                38)
+    ;; --- Pilot A: substrate-native autopoiesis ---
+    ("32-autopoietic-ring.6th"             29)
+    ("33-observer-collapse.6th"             6)
+    ("34-self-maintaining-observer.6th"    11)
+    ("35-growing-observer.6th"             18)
+    ("36-substrate-genesis.6th"            16)
+    ;; --- Pilot B: observer-driven conscious evolution ---
+    ("37-symbiosis.6th"                    18)
+    ("38-reproduction.6th"                 31)
+    ("39-conscious-mutation.6th"           18)
+    ("40-goal-directed-observer.6th"       23)
+    ;; --- Pilots C–D: cosmogenesis ---
+    ("41-cosmogenesis-bootstrap.6th"       21)
+    ("42-observer-driven-cosmogenesis.6th" 17)
+    ;; --- Pilot E: substrate-internal Φ_PA measurement ---
+    ("43-phi-pa-measurement.6th"           12)
+    ;; --- Pilot F: encoding-map pilots ---
+    ("44-phi-pa-transformer-toy.6th"       10)
+    ("45-phi-pa-brain-toy.6th"             12)
+    ("46-phi-pa-split-brain-toy.6th"       14)
+    ("47-phi-pa-ant-colony-toy.6th"        10)
+    ;; --- Pilots G–K: composite distinction and its extensions ---
+    ("48-composite-distinction-meta-observer.6th"  21)
+    ("49-mutation-selection-particle-zoo.6th"      29)
+    ("50-particle-families-hierarchy.6th"          35)
+    ("51-charge-conservation.6th"                  56)
+    ("52-spontaneous-coalition-assembly.6th"       32)
+    ;; --- Long-epoch parametric pilots ---
+    ("53-long-epoch-autopoiesis.6th"       11)
+    ("54-long-epoch-growth.6th"             8)
+    ;; --- Visual-trace track (consolidated at end) ---
+    ("55-trace-pilot-d.6th"                 6)
+    ("56-trace-pilot-c.6th"                 6)
+    ("57-trace-split-brain.6th"             6)
+    ("58-trace-conway-blinker.6th"         15)
+    ("59-trace-conway-glider.6th"          11)
+    ("60-trace-rule110.6th"                 6)
+    ("61-trace-rule90.6th"                  6)
+    ("62-trace-glider-1d.6th"               7)
+    ("63-trace-atomic-pilot-d.6th"          5)
+    ("64-trace-atomic-hello.6th"            5)
+    ("65-trace-pa-ontological-shell.6th"    5)
+    ("66-trace-pilot-e-phi-pa.6th"          9)
+    ("67-trace-pilot-f1-transformer.6th"    9)
+    ("68-trace-pilot-f2-brain.6th"         10)
+    ("69-trace-pilot-f4-colony.6th"         8)
+    ("70-trace-composite-distinction.6th"   5)
+    ("71-trace-mutation-selection.6th"      4)
+    ("72-trace-particle-families.6th"       4)
+    ("73-trace-charge-conservation.6th"     4)
+    ("74-trace-spontaneous-assembly.6th"    4)))
 
 (define (run-demo file)
   (define out
@@ -128,8 +150,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 963
-                (format "cumulative ✓ count: ~a (expected 963)" total-pass)))
+  (check-equal? total-pass 1016
+                (format "cumulative ✓ count: ~a (expected 1016)" total-pass)))
 
-(displayln (format "examples regression: ~a / 963 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1016 ✓ across ~a demos"
                    total-pass (length expected)))

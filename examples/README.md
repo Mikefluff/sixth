@@ -1,34 +1,28 @@
-# `examples/` — the 64 demonstrations
+# `examples/` — the 74 demonstrations
 
 This directory holds Sixth's reproducible emergence demonstrations.
 Each file is a standalone Sixth program; `raco test
-tests/examples-test.rkt` (or `make verify`) executes all 64 and
-asserts a cumulative 963 ✓ / 0 ✗.
+tests/examples-test.rkt` (or `make verify`) executes all 74 and
+asserts a cumulative 1016 ✓ / 0 ✗.
 
-The demos are organised in nineteen phases:
+The demos are organised in six conceptual phases.  The numbering
+goes strictly from simplest to most complex: rung 1 is the void,
+rung 11 is the first non-trivial Φ_PA, and everything past that is
+either a derived application of the canonical ladder or a
+higher-order composition.
 
 | Phase | Demos | Asserts | What it shows |
 |-------|-------|---------|---------------|
-| Sacred hello world | 00 | 11 | Spencer-Brown's first mark realised in the substrate |
-| Foundations         | 01–20 | 359 | arithmetic, time, space, conservation, CA, Conway, BFS, morphism |
-| Pilot A (autopoiesis)   | 21–25 | 80 | Maturana–Varela self-production on the discrete substrate |
-| Pilot B (conscious evolution) | 26–29 | 88 | symbiosis, reproduction, Lamarck-style observer selection |
-| Pilot C (cosmogenesis)  | 30 | 21 | 13-node 48-edge cosmos from one `MARK`, surviving harsh decay |
-| Pilot D (substrate-internally-driven) | 31 | 17 | observer drives construction via its own NSUM threshold |
-| Pilot E (Φ_PA measurement)            | 32 | 12 | substrate measures its own substrate-monist scalar |
-| Pilot F (encoding maps)               | 33–36 | 46 | toy substrates for PSH1–PSH5 (transformer / brain (in-place EDGE-) / split-brain (in-place EDGE-) / colony (in-place EDGE-)) |
-| Visual traces                         | 37–39 | 18 | DOT snapshot pilots — Pilots D, C, F.3 rendered as multi-panel figures or animated GIFs |
-| Long-epoch parametric                 | 40–41 | 19 | TCO-safe long autopoiesis runs, CLI-driven cycle count; demo 40 takes sub-cycle snapshots (after-phase-decay vs after-phase-restore) so the dynamics are VISIBLE; demo 41 grows the substrate every K cycles |
-| Foundation visual traces              | 42–46 | 45 | Conway blinker / glider, Rule 110, Rule 90, Rule 184 1D glider — substrate-state-aware DOT (each cell carries `[label="NGET"]`); the renderer colours alive cells red, dead light grey, and reuses a stable layout across animation frames. Per-step rule-table and oscillation/translation invariants asserted (not just end-state). |
-| Atomic-build traces                   | 47–48 | 10 | One snapshot per **primitive operation** — every `MARK` and every `EDGE+` becomes its own frame. Demo 47 builds Pilot D in 76 atomic frames with semantic event labels (`distinction`/`pointer`/`state-attach`); demo 48 builds the sacred hello world in 7 frames with PA-ontological event labels (`void`, `first-distinction`, `observer-state`, `i-not-i`, `first-pointer`, `re-entry`, `phi-pa-measurement`). |
-| PA-ontological decomposition          | 49    |  5 | First shell of Pilot D unfolded as Spencer-Brown / PA v9.0 events — answers the reviewer question "*где различие я / не-я?*" that demo 37 hides inside a single `shell-built` macro. 11 frames: `void → first-distinction → observer-state → re-entry → second-distinction → i-not-i-relation → recognition → second-not-i → closure-of-not-i → o-other-closure → state-fill`. End-state matches demo 37 step 1 exactly (4 nodes, 13 edges, Φ_PA = 40000). |
-| Pilot E visual trace                  | 50    |  9 | Substrate-internal Φ_PA measurement on three observers. Same scope (case 1 vs case 2 both have 5 out-edges) yields Φ_PA=0 without self-loop and Φ_PA=50000 with it — PSH1 self-reference factor visible as the red self-arc on the observer node. |
-| Pilot F visual traces                 | 51–53 | 27 | F.1 transformer encoding (PSH1/PSH2); F.2 brain encoding (PSH3 waking vs propofol); F.4 ant-colony encoding (PSH5 living vs dead). Each is a side-by-side comparison where the SOLE topological difference is the observer self-loop, and Φ_PA flips between concrete values labelled in the panel title. |
-| Pilot G (composite distinction)       | 54–55 | 26 | Three first-order observers OA/OB/OC each hold their own 4-node composite (Φ_PA=40000). A meta-observer M bi-edged to all three holds nothing (Φ_PA=0) until M acquires its own self-loop, at which point Φ_PA(M)=40000 and the first-order observers gain scope +1 → Φ_PA=50000. Demonstrates that holding *composite* distinction requires higher-order self-reference. |
-| Pilot H (mutation + selection)        | 56–57 | 33 | Five candidate first-order observers with varied topologies (3/4/5-limb rings + self-loop; 3-limb ring without self-loop; isolated MARK). Meta-observer M reads each candidate's Φ_PA and bi-edges only to those with Φ_PA > 0; M's own self-loop closes the construction. Result: diversified composite over three structurally distinct "particle species" (Φ_PA = 50000 / 60000 / 70000). Substrate-readable selection criterion — Lamarck-style, not blind Darwin. |
-| Pilot I (multi-level hierarchy)       | 58–59 | 39 | Six instances across three species (α: 1×3-limb, β: 2×4-limb, γ: 3×5-limb), each with own self-loop. Three family observers Mα/Mβ/Mγ hold their populations. One genus observer M2 holds the families. Composite-distinction mechanism (Pilot G) re-applied at every level: each observer carries its own self-loop. Result: three-level substrate-readable taxonomy with distinct Φ_PA signatures at each level. Within-family particles are indistinguishable (β1==β2, γ1==γ2==γ3) — substrate-native analogue of physical particle indistinguishability. |
-| Pilot J (charge conservation)         | 60–61 | 60 | 11-cell linear chain, 5 particles tagged by species (NGET=1/2/3 → α/β/γ). STEP-CA `charge-shift` rule (Wolfram Rule 184 lifted from {0,1} to integer NGET) shifts particles right one cell per step iff the right slot is empty. Across 5 steps, total Σ NGET = 9 AND per-species counts (α=2, β=2, γ=1) preserved EXACTLY. First substrate-native Noether-style conservation law — derived structurally from the rule, substrate-readable by `EACH` + sum. |
-| Pilot K (spontaneous assembly)        | 62–63 | 36 | 9 first-order observers in 3 disjoint K_3 mutual-pointing triangles. A single rule `try-spawn-coalition` reads substrate state (three `EDGE?` checks) and, if the triangle holds, spawns a new meta-observer with bi-edges + own self-loop. Fired 4 times reconstructs the full Pilot I three-level hierarchy with no hand-placed meta-observers. Same rule used at every tier — substrate detects, substrate responds. |
+| **Canonical Spencer-Brown ladder** | 01–11 | 64  | Eleven atomic rungs: void → first-distinction → second-distinction → first-pointer → self-pointer → mutual-pointing → observer-state → I/not-I → recognition → closure-of-not-I → measurement (first Φ_PA). Reading this phase IS reading what the substrate IS. |
+| **Applications**                   | 12–31 | 363 | Reusable patterns built on the ladder: Peano arithmetic (12), substrate-time (13), fixed-point stability (14), rule conflict (15), strange-loop (16), Rovelli-relational observers (17), Turing-complete rewrite (18), 1D BFS (19), Rule 90 (20), Hofstadter self-model (21), energy (22), Wolfram generic (23), ring-Noether conservation (24), 2D grid (25), Rule 184 1D glider (26), Rule 110 (27), consensus (28), morphism (29), Conway blinker (30), Conway glider (31). |
+| **Pilot A — autopoiesis**          | 32–36 | 80  | Maturana–Varela self-production on the discrete substrate. |
+| **Pilot B — conscious evolution**  | 37–40 | 90  | Symbiosis, reproduction, observer-driven selection (Lamarck-style, not blind Darwin), goal-directed observer. |
+| **Pilots C–D — cosmogenesis**      | 41–42 | 38  | 13-node 48-edge cosmos from one `MARK`; the substrate-monist halting predicate (no host counter). |
+| **Pilot E — Φ_PA measurement**     | 43    | 12  | Substrate measures its own substrate-monist scalar. |
+| **Pilot F — encoding maps**        | 44–47 | 46  | Toy substrates for PSH1–PSH5 (transformer / brain / split-brain / colony). |
+| **Pilots G–K — composite**         | 48–52 | 173 | G: composite distinction via meta-self-loop. H: mutation + substrate-readable selection → 3 particle species. I: 3-level hierarchy (instances / families / genus). J: Σ NGET Noether-style conservation under STEP-CA. K: spontaneous coalition assembly reconstructs the I-hierarchy from one rule. |
+| **Long-epoch parametric**          | 53–54 | 19  | TCO-safe runs of arbitrary cycle count; sub-cycle decay/restore snapshots (53) and visible substrate growth (54). |
+| **Visual-trace track**             | 55–74 | 131 | DOT-snapshot companion for every numerical pilot. Substrate-monism traces of Pilots D/C/F.3 (55–57), Conway/Wolfram CA traces (58–62), atomic-build traces (63–64), the PA-ontological shell decomposition (65) that unfolds the first shell of Pilot D into the same 11 events the canonical ladder realises individually as rungs 1–11, Pilots E/F.1/F.2/F.4 visual traces (66–69), and composite-pilots G–K traces (70–74). |
 
 The visual-trace pilots emit GraphViz DOT blocks on stdout that the
 companion Python renderer (`code/render_trace.py`) parses into
@@ -148,26 +142,26 @@ adding one substrate property to the running cumulative state:
 
 | Demo | File | ✓ | Property |
 |------|------|---|----------|
-| 01 | `01-numbers.6th` | 11 | numbers as `MARK` chains |
-| 02 | `02-time.6th` | 13 | causal time via `STEP`-indexed rewrites |
-| 03 | `03-stable.6th` | 14 | fixed-point stability |
-| 04 | `04-conflict.6th` | 12 | rule-order conflict resolution |
-| 05 | `05-loop.6th` | 11 | self-reference as cyclic pointer topology |
-| 06 | `06-observers.6th` | 14 | observer-relative facts (Rovelli RQM) |
-| 07 | `07-rewrite-tc.6th` | 23 | transitive-closure rewrite |
-| 08 | `08-distance-1d.6th` | 16 | 1D BFS-derived metric (Manhattan) |
-| 09 | `09-ca-rule90.6th` | 25 | Wolfram Rule 90 fractal |
-| 10 | `10-self-model.6th` | 18 | substrate self-model (Hofstadter strange loop) |
-| 11 | `11-energy.6th` | 13 | substrate-native conservation (Noether on a ring) |
-| 12 | `12-wolfram.6th` | 14 | Wolfram hypergraph rewriting |
-| 13 | `13-conservation.6th` | 19 | conservation laws under iteration |
-| 14 | `14-grid-2d.6th` | 20 | 2D grid topology (Moore / von Neumann) |
-| 15 | `15-glider-1d.6th` | 22 | 1D glider propagation |
-| 16 | `16-rule110.6th` | 22 | Rule 110 (Turing-complete via Cook 2004) |
-| 17 | `17-consensus.6th` | 16 | intersubjective consensus across observers |
-| 18 | `18-morphism.6th` | 11 | substrate-side category-theoretic morphism |
-| 19 | `19-conway-blinker.6th` | 25 | Conway's Life — blinker on 5×5 Moore grid |
-| 20 | `20-conway-glider.6th` | 33 | Conway's Life — 5-cell glider |
+| 01 | `12-numbers.6th` | 11 | numbers as `MARK` chains |
+| 02 | `13-time.6th` | 13 | causal time via `STEP`-indexed rewrites |
+| 03 | `14-stable.6th` | 14 | fixed-point stability |
+| 04 | `15-conflict.6th` | 12 | rule-order conflict resolution |
+| 05 | `16-loop.6th` | 11 | self-reference as cyclic pointer topology |
+| 06 | `17-observers.6th` | 14 | observer-relative facts (Rovelli RQM) |
+| 07 | `18-rewrite-tc.6th` | 23 | transitive-closure rewrite |
+| 08 | `19-distance-1d.6th` | 16 | 1D BFS-derived metric (Manhattan) |
+| 09 | `20-ca-rule90.6th` | 25 | Wolfram Rule 90 fractal |
+| 10 | `21-self-model.6th` | 18 | substrate self-model (Hofstadter strange loop) |
+| 11 | `22-energy.6th` | 13 | substrate-native conservation (Noether on a ring) |
+| 12 | `23-wolfram.6th` | 14 | Wolfram hypergraph rewriting |
+| 13 | `24-conservation.6th` | 19 | conservation laws under iteration |
+| 14 | `25-grid-2d.6th` | 20 | 2D grid topology (Moore / von Neumann) |
+| 15 | `26-glider-1d.6th` | 22 | 1D glider propagation |
+| 16 | `27-rule110.6th` | 22 | Rule 110 (Turing-complete via Cook 2004) |
+| 17 | `28-consensus.6th` | 16 | intersubjective consensus across observers |
+| 18 | `29-morphism.6th` | 11 | substrate-side category-theoretic morphism |
+| 19 | `30-conway-blinker.6th` | 25 | Conway's Life — blinker on 5×5 Moore grid |
+| 20 | `31-conway-glider.6th` | 33 | Conway's Life — 5-cell glider |
 
 Cumulative for foundations: **352 ✓**.
 
@@ -180,11 +174,11 @@ decay-restore dynamics.
 
 | Demo | File | ✓ | Property |
 |------|------|---|----------|
-| 21 | `21-autopoietic-ring.6th` | 29 | self-producing ring; baseline survivability |
-| 22 | `22-observer-collapse.6th` | 6 | observer collapse via NSUM-driven CA on a single cell |
-| 23 | `23-self-maintaining-observer.6th` | 12 | reflexive vs non-reflexive comparison — reflexive observer lives indefinitely, non-reflexive dies in ≤ 6 cycles at identical scope |
-| 24 | `24-growing-observer.6th` | 18 | observer grows scope by incorporating compatible candidates |
-| 25 | `25-substrate-genesis.6th` | 16 | substrate-internal genesis of new patterns |
+| 21 | `32-autopoietic-ring.6th` | 29 | self-producing ring; baseline survivability |
+| 22 | `33-observer-collapse.6th` | 6 | observer collapse via NSUM-driven CA on a single cell |
+| 23 | `34-self-maintaining-observer.6th` | 12 | reflexive vs non-reflexive comparison — reflexive observer lives indefinitely, non-reflexive dies in ≤ 6 cycles at identical scope |
+| 24 | `35-growing-observer.6th` | 18 | observer grows scope by incorporating compatible candidates |
+| 25 | `36-substrate-genesis.6th` | 16 | substrate-internal genesis of new patterns |
 
 Cumulative for Pilot A: **81 ✓**.
 
@@ -196,10 +190,10 @@ on a substrate-readable criterion.
 
 | Demo | File | ✓ | Property |
 |------|------|---|----------|
-| 26 | `26-symbiosis.6th` | 18 | symbiotic survival — observer + symbiont substrate persists where each alone would die |
-| 27 | `27-reproduction.6th` | 31 | substrate-native reproduction with copy and inheritance |
-| 28 | `28-conscious-mutation.6th` | 18 | observer rejects an autopoietic variant on internal criterion (the Lamarck point) |
-| 29 | `29-goal-directed-observer.6th` | 21 | observer behaviour driven by a substrate-state goal |
+| 26 | `37-symbiosis.6th` | 18 | symbiotic survival — observer + symbiont substrate persists where each alone would die |
+| 27 | `38-reproduction.6th` | 31 | substrate-native reproduction with copy and inheritance |
+| 28 | `39-conscious-mutation.6th` | 18 | observer rejects an autopoietic variant on internal criterion (the Lamarck point) |
+| 29 | `40-goal-directed-observer.6th` | 21 | observer behaviour driven by a substrate-state goal |
 
 Cumulative for Pilot B: **88 ✓**.
 
@@ -212,7 +206,7 @@ harsh autopoietic dynamics (decay=8, threshold=5).
 
 | Demo | File | ✓ | Property |
 |------|------|---|----------|
-| 30 | `30-cosmogenesis-bootstrap.6th` | 21 | 3-shell construction + 10 autopoiesis cycles + 4th shell on weathered cosmos |
+| 30 | `41-cosmogenesis-bootstrap.6th` | 21 | 3-shell construction + 10 autopoiesis cycles + 4th shell on weathered cosmos |
 
 Render Pilot C evolution as a static figure or GIF:
 ```bash
@@ -230,7 +224,7 @@ programmer-chosen shell count.
 
 | Demo | File | ✓ | Property |
 |------|------|---|----------|
-| 31 | `31-observer-driven-cosmogenesis.6th` | 17 | substrate-internal halting; observer terminates its own cosmogenesis at shell-count=4 |
+| 31 | `42-observer-driven-cosmogenesis.6th` | 17 | substrate-internal halting; observer terminates its own cosmogenesis at shell-count=4 |
 
 Render Pilot D as a static figure or GIF:
 ```bash
@@ -252,7 +246,7 @@ discriminates predictions is decided by F5 against real data.
 
 | Demo | File | ✓ | Property |
 |------|------|---|----------|
-| 32 | `32-phi-pa-measurement.6th` | 12 | three observers verifying `phi-pa` against worked preprint values (0 / 50000 / 130000) |
+| 32 | `43-phi-pa-measurement.6th` | 12 | three observers verifying `phi-pa` against worked preprint values (0 / 50000 / 130000) |
 
 ## Pilot F — encoding-map demonstrations (33–36)
 
@@ -262,10 +256,10 @@ application is the companion-preprint future work.
 
 | Demo | File | ✓ | Predicates |
 |------|------|---|-----------|
-| 33 | `33-phi-pa-transformer-toy.6th` | 10 | 4×3 feedforward attention → PSH1 single-pass Φ=0; KV-cache reuse → PSH2 Φ=40000 |
-| 34 | `34-phi-pa-brain-toy.6th` | 12 | 8-area DMN-hub → PSH3 waking Φ=80000; propofol-decoupled Φ=0 |
-| 35 | `35-phi-pa-split-brain-toy.6th` | 14 | intact vs callosotomy; basic Φ_PA indifferent (50000 = 50000); Φ_integ halves (400000 → 200000) → PSH4 motivates alt-measures |
-| 36 | `36-phi-pa-ant-colony-toy.6th` | 10 | 6-chamber queen colony with pheromone self-loop → PSH5 colony-level Φ=60000 |
+| 33 | `44-phi-pa-transformer-toy.6th` | 10 | 4×3 feedforward attention → PSH1 single-pass Φ=0; KV-cache reuse → PSH2 Φ=40000 |
+| 34 | `45-phi-pa-brain-toy.6th` | 12 | 8-area DMN-hub → PSH3 waking Φ=80000; propofol-decoupled Φ=0 |
+| 35 | `46-phi-pa-split-brain-toy.6th` | 14 | intact vs callosotomy; basic Φ_PA indifferent (50000 = 50000); Φ_integ halves (400000 → 200000) → PSH4 motivates alt-measures |
+| 36 | `47-phi-pa-ant-colony-toy.6th` | 10 | 6-chamber queen colony with pheromone self-loop → PSH5 colony-level Φ=60000 |
 
 ## Visual-trace pilots (37–39)
 
@@ -277,9 +271,9 @@ panels or animation frames.
 
 | Demo | File | ✓ | Snapshots |
 |------|------|---|-----------|
-| 37 | `37-trace-pilot-d.6th` | 6 | 5 snapshots: shell-count 0 → 4 |
-| 38 | `38-trace-pilot-c.6th` | 6 | 6 snapshots: void → 3 shells → post-autopoiesis → 4th shell |
-| 39 | `39-trace-split-brain.6th` | 6 | 2 snapshots: intact then in-place `EDGE-` callosotomy |
+| 37 | `55-trace-pilot-d.6th` | 6 | 5 snapshots: shell-count 0 → 4 |
+| 38 | `56-trace-pilot-c.6th` | 6 | 6 snapshots: void → 3 shells → post-autopoiesis → 4th shell |
+| 39 | `57-trace-split-brain.6th` | 6 | 2 snapshots: intact then in-place `EDGE-` callosotomy |
 
 Render all three statics + all three GIFs:
 ```bash
@@ -298,8 +292,8 @@ make trace-split-brain gif-split-brain
 
 | Demo | File | ✓ | Property |
 |------|------|---|----------|
-| 40 | `40-long-epoch-autopoiesis.6th` | 11 | reflexive observer + 3-node ring; canonical autopoiesis for N cycles; snapshot every K cycles. **Structurally invariant** by design (NSUM > threshold → restore returns NGET to 10 every cycle); the resulting trace is the stability proof. Use this when you want to show the substrate-state space is at a fixed point. |
-| 41 | `41-long-epoch-growth.6th`     |  5 | same loop but grows the substrate by adding a 3-node shell every `grow-every` cycles. **Visibly expanding** topology across snapshots — the GIF actually moves. Use this when you want the animation to show change. |
+| 40 | `53-long-epoch-autopoiesis.6th` | 11 | reflexive observer + 3-node ring; canonical autopoiesis for N cycles; snapshot every K cycles. **Structurally invariant** by design (NSUM > threshold → restore returns NGET to 10 every cycle); the resulting trace is the stability proof. Use this when you want to show the substrate-state space is at a fixed point. |
+| 41 | `54-long-epoch-growth.6th`     |  5 | same loop but grows the substrate by adding a 3-node shell every `grow-every` cycles. **Visibly expanding** topology across snapshots — the GIF actually moves. Use this when you want the animation to show change. |
 
 Both demos read `max-cycles`, `snap-every`, and (for demo 41)
 `grow-every` from memory keys, populated via CLI `-D KEY=VAL` flags.
@@ -309,11 +303,11 @@ demonstration runs:
 ```bash
 # stable autopoiesis at 10 000 cycles (~340ms, TCO-safe)
 racket -l sixth/cli -- -D max-cycles=10000 -D snap-every=1000 \
-                      run examples/40-long-epoch-autopoiesis.6th
+                      run examples/53-long-epoch-autopoiesis.6th
 
 # growing substrate at 200 cycles, snap every 20, +shell every 40
 racket -l sixth/cli -- -D max-cycles=200 -D snap-every=20 -D grow-every=40 \
-                      run examples/41-long-epoch-growth.6th
+                      run examples/54-long-epoch-growth.6th
 
 # rendered as animated GIF (visibly expanding cosmos)
 make trace-long-epoch-growth-gif CYCLES_G=200 SNAP_G=20 GROW=40
@@ -339,11 +333,11 @@ light grey, on a stable layout fixed across animation frames.
 
 | Demo | File | ✓ | Property |
 |------|------|---|----------|
-| 42 | `42-trace-conway-blinker.6th` | 7 | Conway's Game of Life blinker (cells 8, 13, 18) on 5×5 Moore-grid substrate; 9 snapshots across 8 Conway steps; period-2 oscillation visible cycle-by-cycle. |
-| 43 | `43-trace-conway-glider.6th`  | 7 | Conway's 5-cell glider (cells 2, 8, 11, 12, 13); 5 snapshots across 4 STEP-CA cycles showing diagonal +1, +1 translation. |
-| 44 | `44-trace-rule110.6th`        | 5 | Wolfram Rule 110 (Cook 2004, universal CA); 11-cell chain, single seed at c6; 9 snapshots showing propagation. |
-| 45 | `45-trace-rule90.6th`         | 4 | Wolfram Rule 90 (Sierpinski-like fractal); 11-cell chain, single centre seed; 9 snapshots. |
-| 46 | `46-trace-glider-1d.6th`      | 7 | Wolfram Rule 184 ("traffic"); 7-cell chain, car at c3; 6 snapshots showing car advance c3 → c7 then boundary evaporation. |
+| 42 | `58-trace-conway-blinker.6th` | 7 | Conway's Game of Life blinker (cells 8, 13, 18) on 5×5 Moore-grid substrate; 9 snapshots across 8 Conway steps; period-2 oscillation visible cycle-by-cycle. |
+| 43 | `59-trace-conway-glider.6th`  | 7 | Conway's 5-cell glider (cells 2, 8, 11, 12, 13); 5 snapshots across 4 STEP-CA cycles showing diagonal +1, +1 translation. |
+| 44 | `60-trace-rule110.6th`        | 5 | Wolfram Rule 110 (Cook 2004, universal CA); 11-cell chain, single seed at c6; 9 snapshots showing propagation. |
+| 45 | `61-trace-rule90.6th`         | 4 | Wolfram Rule 90 (Sierpinski-like fractal); 11-cell chain, single centre seed; 9 snapshots. |
+| 46 | `62-trace-glider-1d.6th`      | 7 | Wolfram Rule 184 ("traffic"); 7-cell chain, car at c3; 6 snapshots showing car advance c3 → c7 then boundary evaporation. |
 
 ```bash
 make trace-conway-blinker     gif-conway-blinker
@@ -363,8 +357,8 @@ its own frame. Substrate emerges entity-by-entity through `MARK`
 
 | Demo | File | ✓ | Property |
 |------|------|---|----------|
-| 47 | `47-trace-atomic-pilot-d.6th` | 5 | Pilot D rebuilt one primitive at a time: 76 frames, each one MARK / EDGE+ / NSET operation. Substrate grows from `void` → `MARK O` → self-loop → 4 shells × 12 primitives each. |
-| 48 | `48-trace-atomic-hello.6th`   | 5 | Sacred hello world in 7 frames at 1 fps: void → MARK → NSET → MARK → EDGE+ → EDGE+ → phi-pa-measurement. The minimum executable substrate that contains every ontological moment of Sixth, one primitive per frame. |
+| 47 | `63-trace-atomic-pilot-d.6th` | 5 | Pilot D rebuilt one primitive at a time: 76 frames, each one MARK / EDGE+ / NSET operation. Substrate grows from `void` → `MARK O` → self-loop → 4 shells × 12 primitives each. |
+| 48 | `64-trace-atomic-hello.6th`   | 5 | Sacred hello world in 7 frames at 1 fps: void → MARK → NSET → MARK → EDGE+ → EDGE+ → phi-pa-measurement. The minimum executable substrate that contains every ontological moment of Sixth, one primitive per frame. |
 
 ```bash
 make trace-atomic-pilot-d     gif-atomic-pilot-d
@@ -382,7 +376,7 @@ End-state matches demo 37's step 1 (4 nodes, 13 edges, Φ_PA = 40000).
 
 | Demo | File | ✓ | Property |
 |------|------|---|----------|
-| 49 | `49-trace-pa-ontological-shell.6th` | 5 | 10 frames showing every PA-spec event of the first shell. Answers the question "*where is the I / not-I distinction?*" that the macro-level `shell-built` trace hides. |
+| 49 | `65-trace-pa-ontological-shell.6th` | 5 | 10 frames showing every PA-spec event of the first shell. Answers the question "*where is the I / not-I distinction?*" that the macro-level `shell-built` trace hides. |
 
 Sequence (preprint §sec:bootstrap, §sec:demo-31):
 
@@ -418,7 +412,7 @@ and COMPUTE), so it deserves a visible trace.
 
 | Demo | File | ✓ | Property |
 |------|------|---|----------|
-| 50 | `50-trace-pilot-e-phi-pa.6th` | 9 | Three observers × Φ_PA: case 1 non-reflexive scope-5 (Φ=0); case 2 reflexive scope-5 (Φ=50000); case 3 demo-31-shape scope-13 (Φ=130000). PSH1 self-reference discriminator visible. |
+| 50 | `66-trace-pilot-e-phi-pa.6th` | 9 | Three observers × Φ_PA: case 1 non-reflexive scope-5 (Φ=0); case 2 reflexive scope-5 (Φ=50000); case 3 demo-31-shape scope-13 (Φ=130000). PSH1 self-reference discriminator visible. |
 
 ```bash
 make trace-pilot-e
@@ -440,9 +434,9 @@ rendered side-by-side with the PSH-positive and PSH-negative cases.
 
 | Demo | File | ✓ | Property |
 |------|------|---|----------|
-| 51 | `51-trace-pilot-f1-transformer.6th` | 4 | Transformer encoding: 12 attention heads × 4 layers + KV-cache observer self-loop. PSH1 single-pass Φ_PA=0; PSH2 cache-back-edge Φ_PA=40000. |
-| 52 | `52-trace-pilot-f2-brain.6th`       | 2 | Brain encoding: DMN hub + 7 cortical areas. PSH3 waking thalamocortical loop Φ_PA=80000; propofol decoupling Φ_PA=0. |
-| 53 | `53-trace-pilot-f4-colony.6th`      | 2 | Ant-colony encoding: queen chamber + 5 trail junctions + trail triangle. PSH5 living colony (queen-pheromone self-loop) Φ_PA=60000; dead colony Φ_PA=0. |
+| 51 | `67-trace-pilot-f1-transformer.6th` | 4 | Transformer encoding: 12 attention heads × 4 layers + KV-cache observer self-loop. PSH1 single-pass Φ_PA=0; PSH2 cache-back-edge Φ_PA=40000. |
+| 52 | `68-trace-pilot-f2-brain.6th`       | 2 | Brain encoding: DMN hub + 7 cortical areas. PSH3 waking thalamocortical loop Φ_PA=80000; propofol decoupling Φ_PA=0. |
+| 53 | `69-trace-pilot-f4-colony.6th`      | 2 | Ant-colony encoding: queen chamber + 5 trail junctions + trail triangle. PSH5 living colony (queen-pheromone self-loop) Φ_PA=60000; dead colony Φ_PA=0. |
 
 ```bash
 make trace-pilot-f1 trace-pilot-f2 trace-pilot-f4
@@ -485,8 +479,8 @@ The construction:
 
 | Demo | File | ✓ | Property |
 |------|------|---|----------|
-| 54 | `54-composite-distinction-meta-observer.6th` | 21 | Numerical demonstration of the composite-distinction threshold. Without meta-self-loop Φ_PA(M)=0; with it Φ_PA(M)=40000 and first-order observers gain scope. |
-| 55 | `55-trace-composite-distinction.6th`         | 5  | Three-snapshot visual companion: three first-order clusters → meta-observer wired but no self-loop (Φ_PA(M) still 0) → meta-self-loop closes the construction. First-order observers tagged NGET=7, meta-observer NGET=9 for renderer differentiation. |
+| 54 | `48-composite-distinction-meta-observer.6th` | 21 | Numerical demonstration of the composite-distinction threshold. Without meta-self-loop Φ_PA(M)=0; with it Φ_PA(M)=40000 and first-order observers gain scope. |
+| 55 | `70-trace-composite-distinction.6th`         | 5  | Three-snapshot visual companion: three first-order clusters → meta-observer wired but no self-loop (Φ_PA(M) still 0) → meta-self-loop closes the construction. First-order observers tagged NGET=7, meta-observer NGET=9 for renderer differentiation. |
 
 ```bash
 make trace-composite-distinction
@@ -531,8 +525,8 @@ Mechanism:
 
 | Demo | File | ✓ | Property |
 |------|------|---|----------|
-| 56 | `56-mutation-selection-particle-zoo.6th` | 29 | Numerical: V1/V2/V3 (3/4/5-limb ring + self-loop) survive selection; V4 (no self-loop) and V5 (isolated) are pruned. Distinct-Φ_PA assertions confirm structural diversity. |
-| 57 | `57-trace-mutation-selection.6th`         | 4  | Visual: three snapshots (mutation-pool / selection-coupled / diversified-composite). NGET tags: 7=survivor-class, 5=broken-self-ref, 3=isolated, 9=meta-observer. |
+| 56 | `49-mutation-selection-particle-zoo.6th` | 29 | Numerical: V1/V2/V3 (3/4/5-limb ring + self-loop) survive selection; V4 (no self-loop) and V5 (isolated) are pruned. Distinct-Φ_PA assertions confirm structural diversity. |
+| 57 | `71-trace-mutation-selection.6th`         | 4  | Visual: three snapshots (mutation-pool / selection-coupled / diversified-composite). NGET tags: 7=survivor-class, 5=broken-self-ref, 3=isolated, 9=meta-observer. |
 
 ```bash
 make trace-mutation-selection
@@ -589,8 +583,8 @@ physical particle indistinguishability.
 
 | Demo | File | ✓ | Property |
 |------|------|---|----------|
-| 58 | `58-particle-families-hierarchy.6th` | 35 | Numerical: builds 6 instances + 3 family observers + 1 genus observer; asserts distinct Φ_PA at each level, within-family indistinguishability, and final inventory (NODES=36, EDGES=132). |
-| 59 | `59-trace-particle-families.6th`     | 4  | Visual: three snapshots (instances-built / families-held / genus-held) with NGET tags 1/2/3 for species, 5/6/7 for family observers, 9 for genus. |
+| 58 | `50-particle-families-hierarchy.6th` | 35 | Numerical: builds 6 instances + 3 family observers + 1 genus observer; asserts distinct Φ_PA at each level, within-family indistinguishability, and final inventory (NODES=36, EDGES=132). |
+| 59 | `72-trace-particle-families.6th`     | 4  | Visual: three snapshots (instances-built / families-held / genus-held) with NGET tags 1/2/3 for species, 5/6/7 for family observers, 9 for genus. |
 
 ```bash
 make trace-particle-families
@@ -634,8 +628,8 @@ Construction:
 
 | Demo | File | ✓ | Property |
 |------|------|---|----------|
-| 60 | `60-charge-conservation.6th`        | 56 | Numerical: 5 STEP-CA steps, asserts exact position pattern at each step AND Σ NGET = 9 + per-species counts (2,2,1) preserved across all steps. |
-| 61 | `61-trace-charge-conservation.6th`  | 4  | Visual: 6 stacked snapshots showing particles spreading from packed (1,2,3,1,2,_,_,_,_,_,_) to fully spread (_,1,_,2,_,3,_,1,_,2,_) while species colors persist. Renderer uses `--layout chain` for horizontal time-series. |
+| 60 | `51-charge-conservation.6th`        | 56 | Numerical: 5 STEP-CA steps, asserts exact position pattern at each step AND Σ NGET = 9 + per-species counts (2,2,1) preserved across all steps. |
+| 61 | `73-trace-charge-conservation.6th`  | 4  | Visual: 6 stacked snapshots showing particles spreading from packed (1,2,3,1,2,_,_,_,_,_,_) to fully spread (_,1,_,2,_,3,_,1,_,2,_) while species colors persist. Renderer uses `--layout chain` for horizontal time-series. |
 
 ```bash
 make trace-charge-conservation
@@ -683,8 +677,8 @@ responding to substrate-readable `EDGE?` conditions.
 
 | Demo | File | ✓ | Property |
 |------|------|---|----------|
-| 62 | `62-spontaneous-coalition-assembly.6th` | 32 | Numerical: seeds 3 triangles, applies `try-spawn-coalition` 4 times, asserts each spawn occurred + cross-family negative test + final Φ_PA at every tier. |
-| 63 | `63-trace-spontaneous-assembly.6th`     | 4  | Visual: 4-snapshot trace (seeded / cycle-1 / socialized / cycle-2) shows the hierarchy emerging level by level under repeated application of the same rule. |
+| 62 | `52-spontaneous-coalition-assembly.6th` | 32 | Numerical: seeds 3 triangles, applies `try-spawn-coalition` 4 times, asserts each spawn occurred + cross-family negative test + final Φ_PA at every tier. |
+| 63 | `74-trace-spontaneous-assembly.6th`     | 4  | Visual: 4-snapshot trace (seeded / cycle-1 / socialized / cycle-2) shows the hierarchy emerging level by level under repeated application of the same rule. |
 
 ```bash
 make trace-spontaneous-assembly
@@ -808,7 +802,7 @@ Register the demo in `tests/examples-test.rkt`:
     ("54-my-new-demo.6th"           N)))   ; N = expected ✓
 ```
 
-Update the cumulative gate (currently 963) and `make verify` passes
+Update the cumulative gate (currently 1016) and `make verify` passes
 cleanly. To add a visual trace, `use dot` and emit `dot-snapshot`
 calls between substrate operations.
 
