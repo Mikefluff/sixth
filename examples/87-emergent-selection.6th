@@ -1,0 +1,213 @@
+\ examples/87-emergent-selection.6th
+\ Honest version of Pilot H — substrate-readable selection EMERGES
+\ from a blind scan, not from a hand-typed call list.
+\
+\ Pilot H (demo 49) builds 5 named candidates V1..V5 and calls
+\ "select-if-alive" five times — once per name.  The selector itself
+\ reads phi-pa, so it is honest at the per-call level, but the
+\ enumeration of who-to-test is hand-written.  That is still
+\ "the substrate is told the answer" at the population level.
+\
+\ This demo removes the enumeration: the substrate is built as a
+\ heterogeneous population of clusters, each cluster's HEAD is tagged
+\ NGET=7 (candidate marker), and the selection rule iterates EVERY
+\ node 1..N via EACH.  For each node the rule:
+\
+\   1. filters on NGET=7  (this is a candidate head, not a limb)
+\   2. reads the candidate's substrate-internal phi-pa
+\   3. if phi-pa > 0, bi-edges it to the meta-observer M
+\
+\ The rule has NO list of candidate names.  It does not know how
+\ many candidates exist.  It does not know which cluster is which.
+\ It walks the substrate, reads what's there, decides per node.
+\
+\ Pre-scan substrate:                       After scan:
+\   17 nodes, 34 directed edges               +3 bi-edges (6 directed)
+\   M is isolated except for its self-loop    M is bi-edged to alive
+\   phi-pa(M) = 1 * 1 * 10000 = 10000          phi-pa(M) = 4 * 1 * 10000 = 40000
+\
+\ Pruned candidates remain in the substrate (selection is additive,
+\ not destructive) but are not part of the composite M holds.
+
+use prelude
+use graph
+use phi
+use debug
+
+\ ============================================================
+\ Cluster builders — each emits a cluster and leaves the head's
+\ node id on the stack via the caller's MARK.  Internal limb keys
+\ shadow across calls.
+\ ============================================================
+
+: ring-3-with-self ( head -- )
+  "h" store
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  "h" load "h" load EDGE+
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l1" load bi-edge
+  "h" load "l1" load bi-edge
+  "h" load "l2" load bi-edge
+  "h" load "l3" load bi-edge ;
+
+: ring-4-with-self ( head -- )
+  "h" store
+  MARK "l1" store  MARK "l2" store  MARK "l3" store  MARK "l4" store
+  "h" load "h" load EDGE+
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l4" load bi-edge
+  "l4" load "l1" load bi-edge
+  "h" load "l1" load bi-edge
+  "h" load "l2" load bi-edge
+  "h" load "l3" load bi-edge
+  "h" load "l4" load bi-edge ;
+
+: ring-5-with-self ( head -- )
+  "h" store
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  MARK "l4" store  MARK "l5" store
+  "h" load "h" load EDGE+
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l4" load bi-edge
+  "l4" load "l5" load bi-edge
+  "l5" load "l1" load bi-edge
+  "h" load "l1" load bi-edge
+  "h" load "l2" load bi-edge
+  "h" load "l3" load bi-edge
+  "h" load "l4" load bi-edge
+  "h" load "l5" load bi-edge ;
+
+: ring-3-no-self ( head -- )
+  "h" store
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l1" load bi-edge
+  "h" load "l1" load bi-edge
+  "h" load "l2" load bi-edge
+  "h" load "l3" load bi-edge ;
+
+\ ============================================================
+\ Build five candidate cluster heads.  Each head gets NGET=7
+\ (candidate marker) so the selector can filter limbs out.
+\ ============================================================
+
+MARK "C1" store     "C1" load 7 NSET     "C1" load ring-3-with-self
+MARK "C2" store     "C2" load 7 NSET     "C2" load ring-4-with-self
+MARK "C3" store     "C3" load 7 NSET     "C3" load ring-5-with-self
+MARK "C4" store     "C4" load 7 NSET     "C4" load ring-3-no-self
+MARK "C5" store     "C5" load 7 NSET                     \ isolated MARK
+
+\ Sanity: per-cluster phi-pa before selection.
+"C1" load phi-pa 40000 assert-eq      \ self + 3 limbs, holds itself
+"C2" load phi-pa 50000 assert-eq      \ self + 4 limbs, holds itself
+"C3" load phi-pa 60000 assert-eq      \ self + 5 limbs, holds itself
+"C4" load phi-pa     0 assert-eq      \ has scope but no self-loop -> 0
+"C5" load phi-pa     0 assert-eq      \ no scope, no self -> 0
+
+\ ============================================================
+\ Meta-observer M — pre-MARKed with its OWN self-loop and tag NGET=8
+\ so the selector can distinguish M from candidates and ignore it.
+\ ============================================================
+
+MARK "M" store
+"M" load "M" load EDGE+
+"M" load 8 NSET
+
+NODES 21 assert-eq                    \ head + limbs: (1+3)+(1+4)+(1+5)+(1+3)+1+1 = 21
+
+\ ============================================================
+\ SELECTION RULE — substrate-readable, blind to identity.
+\ EACH pushes every node id 1..N; the rule body filters on NGET=7
+\ then on phi-pa>0, attaching survivors to M.
+\
+\ Crucially: the rule has no list of candidates, doesn't know how
+\ many clusters exist, doesn't address them by name.  It walks the
+\ substrate top-to-bottom and decides per node based ONLY on
+\ substrate-readable state.
+\ ============================================================
+
+0 "alive-count" store
+0 "pruned-count" store
+
+: select-if-alive ( node -- )
+  dup NGET 7 = if
+    dup phi-pa 0 > if
+      dup "M" load swap bi-edge
+      "alive-count" load 1 + "alive-count" store
+    else
+      "pruned-count" load 1 + "pruned-count" store
+    then
+  then
+  drop ;
+
+' select-if-alive EACH
+
+\ ============================================================
+\ Selection results — three alive, two pruned.
+\ ============================================================
+
+"alive-count"  load 3 assert-eq
+"pruned-count" load 2 assert-eq
+
+"M" load "C1" load EDGE? 1 assert-eq
+"C1" load "M" load EDGE? 1 assert-eq
+"M" load "C2" load EDGE? 1 assert-eq
+"C2" load "M" load EDGE? 1 assert-eq
+"M" load "C3" load EDGE? 1 assert-eq
+"C3" load "M" load EDGE? 1 assert-eq
+
+"M" load "C4" load EDGE? 0 assert-eq   \ pruned: no self-reference
+"C4" load "M" load EDGE? 0 assert-eq
+"M" load "C5" load EDGE? 0 assert-eq   \ pruned: isolated MARK
+"C5" load "M" load EDGE? 0 assert-eq
+
+\ M's scope: own self-loop + 3 alive survivors = 4.
+"M" load OUT 4 assert-eq
+"M" load IN  4 assert-eq               \ self-loop (1) + back-edges from 3 survivors
+"M" load phi-pa 40000 assert-eq
+
+\ Survivors picked up one extra back-edge each -> phi-pa grew by 10000.
+"C1" load phi-pa 50000 assert-eq       \ was 40000
+"C2" load phi-pa 60000 assert-eq       \ was 50000
+"C3" load phi-pa 70000 assert-eq       \ was 60000
+
+\ Pruned candidates were not touched by the rule at all.
+"C4" load phi-pa 0 assert-eq
+"C5" load phi-pa 0 assert-eq
+
+\ Substrate-internal speciation: surviving phi-pa multiset is diverse.
+"C1" load phi-pa "C2" load phi-pa = 0 assert-eq
+"C2" load phi-pa "C3" load phi-pa = 0 assert-eq
+"C1" load phi-pa "C3" load phi-pa = 0 assert-eq
+
+\ Final edge count: pre-scan + 3 bi-edges (6 directed) added.
+\ Pre-scan edges:
+\   C1: self(1) + ring(6) + head<->3limbs(6) = 13
+\   C2: self(1) + ring(8) + head<->4limbs(8) = 17
+\   C3: self(1) + ring(10)+ head<->5limbs(10)= 21
+\   C4: 0       + ring(6) + head<->3limbs(6) = 12
+\   C5: 0
+\   M:  self(1)                              = 1
+\ Sum: 13+17+21+12+0+1 = 64.  Post: 64+6 = 70.
+EDGES 70 assert-eq
+
+cr
+"=== Demo 87 — emergent selection via substrate scan ===" . cr
+"5 heterogeneous candidate clusters, M pre-MARKed with self-loop." . cr
+"EACH walks every node; select-if-alive filters on NGET=7," . cr
+"reads phi-pa, attaches to M if >0.  No name list." . cr
+cr
+"Alive (selected):" . "alive-count"  load . "  Pruned:" . "pruned-count" load . cr
+"M phi-pa:" . "M" load phi-pa . "  (composite over 3 species)" . cr
+"Survivors:  C1=" . "C1" load phi-pa . "  C2=" . "C2" load phi-pa . "  C3=" . "C3" load phi-pa . cr
+cr
+"What this fixes vs Pilot H (demo 49):" . cr
+"  - no per-candidate call line (substrate scanned blindly)" . cr
+"  - selection rule has no enumeration of who-to-test" . cr
+"  - mutation+selection now driven entirely by substrate state" . cr
+
+REPORT

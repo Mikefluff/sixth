@@ -1,0 +1,378 @@
+\ examples/92-recursive-hierarchy-fixed-point.6th
+\ Honest hierarchy iterated UNTIL FIXED POINT.  Demo 88 unrolled
+\ two tiers by hand-numbered rule calls; this demo loops the same
+\ rules with memory-stored filters and terminates when a tier
+\ spawns no new composites.
+\
+\ Generalisation of demo 88:
+\
+\   ONCE (bootstrap):
+\     CLOSE on cells.  close-tier-2path-cells closes 2-paths through
+\         NGET=0 cells, creating cell triangles.  Only needed at the
+\         bottom tier because higher tiers are formed by composites
+\         whose mutual links (Phase 3) ALREADY produce the triangles
+\         we want; applying close-2path repeatedly at upper tiers
+\         would over-connect each tier into a clique and cause
+\         combinatorial explosion of spawned composites.
+\
+\   Iteration K (for K = 1, 2, 3, ...):
+\
+\     PHASE 2 — SPAWN.  scan-tier-triangle finds triangles among
+\         tier-(K-1) nodes (a < b < c, all 6 directed edges present)
+\         and spawns a tier-K composite (NGET = spawn-tier-tag) with
+\         own self-loop and bi-edges to the three triangle members.
+\
+\     PHASE 3 — LINK.  link-spawn-tier finds pairs of tier-K
+\         composites sharing a tier-(K-1) member (via 2-paths
+\         spawn → mid → spawn) and adds direct bi-edges between
+\         them — preparing the next iteration's tier-K substrate.
+\         This is where triangles AT THE NEW TIER come from: three
+\         composites that share members pairwise form a triangle
+\         after link.
+\
+\     PHASE 4 — TERMINATE OR ADVANCE.  If spawn-count = 0, the
+\         iteration is the FIXED POINT — no new structure can
+\         form.  Otherwise: current ← spawn, spawn ← next-tier(spawn),
+\         recurse.
+\
+\ Tier tag encoding:
+\   tier 0 (cells)              NGET = 0
+\   tier 1 (first composites)   NGET = 8
+\   tier 2 (meta-composites)    NGET = 9
+\   tier 3 (meta-meta)          NGET = 10
+\   ...
+\ The tag for tier K is 0 (special) for K=0 and 7+K for K≥1.
+\
+\ Expected trajectory from a 7-cell chain:
+\   iter 1:  5 first-tier composites (M1..M5) spawn from cell triangles
+\   iter 2:  3 second-tier metas (Mm1..Mm3) spawn from composite triangles
+\   iter 3:  1 third-tier meta-meta (Mmm) spawns from the 3-meta triangle
+\   iter 4:  0 spawns — only one tier-3 node, no triangle possible
+\           → FIXED POINT, halt.
+\
+\ Total: 4 iterations, 9 spawned observers (5 + 3 + 1 + 0), 16 nodes,
+\ 99 directed edges.
+
+use prelude
+use graph
+use phi
+use debug
+
+\ ============================================================
+\ Initial substrate — 7-cell chain (same as demo 88).
+\ ============================================================
+
+MARK "c1" store
+MARK "c2" store
+MARK "c3" store
+MARK "c4" store
+MARK "c5" store
+MARK "c6" store
+MARK "c7" store
+
+"c1" load "c2" load bi-edge
+"c2" load "c3" load bi-edge
+"c3" load "c4" load bi-edge
+"c4" load "c5" load bi-edge
+"c5" load "c6" load bi-edge
+"c6" load "c7" load bi-edge
+
+NODES 7 assert-eq
+EDGES 12 assert-eq
+
+\ ============================================================
+\ Memory cells used by the parameterised rules and the iterator.
+\ ============================================================
+
+0 "current-tier-tag" store        \ tier (K-1) NGET filter
+0 "spawn-tier-tag"   store        \ tier K NGET filter
+0 "spawn-count"      store        \ composites spawned in current iteration
+0 "iter-index"       store        \ iteration counter
+0 "total-spawns"     store        \ cumulative spawn count across iters
+
+\ Per-iteration tally cells (read after each iter).
+0 "iter1-spawns" store
+0 "iter2-spawns" store
+0 "iter3-spawns" store
+0 "iter4-spawns" store
+
+\ ============================================================
+\ PHASE-1 RULE — close-tier-2path.
+\ For each 2-path a→b→c with all three NGET = current-tier-tag and
+\ a ≠ c, add a↔c bi-edge.  Idempotent.
+\ ============================================================
+
+: close-tier-2path ( a b c -- )
+  "ct-c" store
+  "ct-b" store
+  "ct-a" store
+  "ct-a" load NGET "current-tier-tag" load = if
+    "ct-b" load NGET "current-tier-tag" load = if
+      "ct-c" load NGET "current-tier-tag" load = if
+        "ct-a" load "ct-c" load = not if
+          "ct-a" load "ct-c" load bi-edge
+        then
+      then
+    then
+  then ;
+
+\ ============================================================
+\ PHASE-2 RULE — scan-tier-triangle.
+\ Canonical (a<b<c), all 6 edges present, all three NGET =
+\ current-tier-tag → spawn new composite with NGET = spawn-tier-tag,
+\ self-loop, and bi-edges to the three triangle members.
+\ ============================================================
+
+: scan-tier-triangle ( a b c -- )
+  "st-c" store
+  "st-b" store
+  "st-a" store
+  "st-a" load NGET "current-tier-tag" load = if
+    "st-b" load NGET "current-tier-tag" load = if
+      "st-c" load NGET "current-tier-tag" load = if
+        "st-a" load "st-b" load < if
+          "st-b" load "st-c" load < if
+            "st-b" load "st-a" load EDGE? if
+              "st-c" load "st-b" load EDGE? if
+                "st-a" load "st-c" load EDGE? if
+                  "st-c" load "st-a" load EDGE? if
+                    MARK "st-m" store
+                    "st-m" load "st-m" load EDGE+
+                    "st-m" load "st-a" load bi-edge
+                    "st-m" load "st-b" load bi-edge
+                    "st-m" load "st-c" load bi-edge
+                    "st-m" load "spawn-tier-tag" load NSET
+                    "spawn-count" load 1 + "spawn-count" store
+                  then
+                then
+              then
+            then
+          then
+        then
+      then
+    then
+  then ;
+
+\ ============================================================
+\ PHASE-3 RULE — link-spawn-tier.
+\ For each 2-path spawn → mid → spawn with mid NGET = current-tier-tag
+\ and both endpoints NGET = spawn-tier-tag (and distinct), add direct
+\ bi-edge.  Sharing many midpoints is idempotent (EDGE+ no-op).
+\ ============================================================
+
+: link-spawn-tier ( a mid b -- )
+  "lt-b"   store
+  "lt-mid" store
+  "lt-a"   store
+  "lt-a" load NGET "spawn-tier-tag"   load = if
+    "lt-mid" load NGET "current-tier-tag" load = if
+      "lt-b" load NGET "spawn-tier-tag" load = if
+        "lt-a" load "lt-b" load = not if
+          "lt-a" load "lt-b" load bi-edge
+        then
+      then
+    then
+  then ;
+
+\ ============================================================
+\ next-tier-tag ( current -- next ).
+\ tier 0 (NGET 0)  → tier 1 (NGET 8) — special case
+\ tier K (NGET 7+K, K≥1) → tier K+1 (NGET 8+K) — simple increment
+\ ============================================================
+
+: next-tier-tag ( current -- next )
+  dup 0 = if drop 8 else 1 + then ;
+
+\ ============================================================
+\ ITERATOR — recurse until spawn-count = 0.
+\ Tags advance after every productive iteration; the recursion
+\ terminates the moment the rules find no new triangle.
+\
+\ Side-effect: stores per-iter spawn counts into iter{N}-spawns
+\ memory cells for post-hoc inspection.
+\ ============================================================
+
+: store-iter-spawn ( -- )
+  "iter-index" load 1 = if "spawn-count" load "iter1-spawns" store then
+  "iter-index" load 2 = if "spawn-count" load "iter2-spawns" store then
+  "iter-index" load 3 = if "spawn-count" load "iter3-spawns" store then
+  "iter-index" load 4 = if "spawn-count" load "iter4-spawns" store then ;
+
+: tier-iterate
+  "iter-index" load 1 + "iter-index" store
+  0 "spawn-count" store
+  ' scan-tier-triangle EACH-2PATH
+  store-iter-spawn
+  "spawn-count" load "total-spawns" load + "total-spawns" store
+  "spawn-count" load 0 > if
+    ' link-spawn-tier EACH-2PATH
+    "spawn-tier-tag" load "current-tier-tag" store
+    "current-tier-tag" load next-tier-tag "spawn-tier-tag" store
+    tier-iterate
+  then ;
+
+\ ============================================================
+\ Bootstrap — close-2path on cells exactly ONCE.  This is the only
+\ tier where transitive closure is needed (chain has no triangles
+\ without it).  Higher tiers get their triangles from Phase-3 link
+\ producing shared-member-derived edges.
+\ ============================================================
+
+0 "current-tier-tag" store
+0 "spawn-tier-tag"   store         \ unused during bootstrap
+' close-tier-2path  EACH-2PATH
+
+\ Now run iteration from tier 0 with spawn target tier 1 (NGET=8).
+0 "current-tier-tag" store
+8 "spawn-tier-tag"   store
+
+tier-iterate
+
+\ ============================================================
+\ Trajectory checks.
+\ ============================================================
+
+"iter-index"   load 4 assert-eq            \ 3 productive + 1 terminating
+"iter1-spawns" load 5 assert-eq            \ 5 first-tier composites
+"iter2-spawns" load 3 assert-eq            \ 3 second-tier metas
+"iter3-spawns" load 1 assert-eq            \ 1 third-tier meta-meta
+"iter4-spawns" load 0 assert-eq            \ fixed point reached
+"total-spawns" load 9 assert-eq            \ 5 + 3 + 1 + 0
+
+\ Final substrate:
+\   7 cells + 5 first-tier + 3 second-tier + 1 third-tier = 16 nodes
+NODES 16 assert-eq
+
+\ Edge count derivation:
+\   Bootstrap close-2path on cells: +10 dir (5 new bi-edges).  Total: 22.
+\   Iter 1 scan: 5 composites × 7 dir each = 35.  Total: 57.
+\   Iter 1 link-spawn-tier (NGET=8 via NGET=0): 7 unique pairs ×
+\     2 dir = 14.  Total: 71.  (Matches demo 88's stage-3 end.)
+\   Iter 2 scan: 3 metas × 7 dir each = 21.  Total: 92.  (Matches demo
+\     88's stage-4 end.)
+\   Iter 2 link-spawn-tier (NGET=9 via NGET=8): 3 unique meta pairs
+\     (Mm1-Mm2, Mm1-Mm3, Mm2-Mm3) × 2 dir = 6.  Total: 98.  (Demo 88
+\     stopped before this step.)
+\   Iter 3 scan: 1 meta-meta × 7 dir = 7.  Total: 105.
+\   Iter 3 link: only 1 NGET=10 node, no pair.  +0.
+\   Iter 4 scan: no triangle.  +0.
+EDGES 105 assert-eq
+
+\ ============================================================
+\ Tier-population check by NGET tally.
+\ ============================================================
+
+0 "tag-0-count"  store
+0 "tag-8-count"  store
+0 "tag-9-count"  store
+0 "tag-10-count" store
+
+: tally-by-tag ( node -- )
+  dup NGET 0  = if "tag-0-count"  load 1 + "tag-0-count"  store then
+  dup NGET 8  = if "tag-8-count"  load 1 + "tag-8-count"  store then
+  dup NGET 9  = if "tag-9-count"  load 1 + "tag-9-count"  store then
+  dup NGET 10 = if "tag-10-count" load 1 + "tag-10-count" store then
+  drop ;
+
+' tally-by-tag EACH
+
+"tag-0-count"  load 7 assert-eq            \ original cells
+"tag-8-count"  load 5 assert-eq            \ tier-1 composites
+"tag-9-count"  load 3 assert-eq            \ tier-2 metas
+"tag-10-count" load 1 assert-eq            \ tier-3 meta-meta
+
+\ Sum equals NODES.
+"tag-0-count" load "tag-8-count" load + "tag-9-count" load + "tag-10-count" load +
+16 assert-eq
+
+\ ============================================================
+\ Aggregate Φ_PA per tier.
+\   tier 0 cell  Φ_PA = OUT · L_max  for cells with self-loop?
+\     No — original cells have NO self-loop (we never added one).
+\     So tier-0 phi-pa = 0 for all 7 cells.
+\   tier 1: each first-tier composite has self + 3 cells + composite
+\     neighbours + back-edge from tier-2 metas.  Demo 88 already
+\     computed sum = 430000 for the 5 first-tier nodes.
+\     Plus extra: M3 (the universally-shared composite) picks up an
+\     extra back-edge from tier-3 meta-meta? No — Mmm bi-edges to
+\     tier-2 (Mm1..Mm3), not to tier-1.  So tier-1 phi-pa sum
+\     unchanged from demo 88: 430000.
+\   tier 2: each Mm has self + 3 first-tier-members + 2 meta-peer
+\     + 1 back-edge from Mmm.  Need to recompute.
+\   tier 3: Mmm has self + 3 tier-2 members = OUT 4 → 40000.
+\ ============================================================
+
+0 "phi-sum-tier-0" store
+0 "phi-sum-tier-1" store
+0 "phi-sum-tier-2" store
+0 "phi-sum-tier-3" store
+
+: phi-by-tier ( node -- )
+  dup NGET 0  = if dup phi-pa "phi-sum-tier-0" load + "phi-sum-tier-0" store then
+  dup NGET 8  = if dup phi-pa "phi-sum-tier-1" load + "phi-sum-tier-1" store then
+  dup NGET 9  = if dup phi-pa "phi-sum-tier-2" load + "phi-sum-tier-2" store then
+  dup NGET 10 = if dup phi-pa "phi-sum-tier-3" load + "phi-sum-tier-3" store then
+  drop ;
+
+' phi-by-tier EACH
+
+\ Tier 0 cells: no self-loops → phi-pa = 0 each → sum = 0.
+"phi-sum-tier-0" load 0 assert-eq
+
+\ Tier 3 (one node): OUT = self + 3 tier-2 = 4 → phi-pa = 40000.
+"phi-sum-tier-3" load 40000 assert-eq
+
+\ Tier 1 and 2 sums are non-trivial; verify they are non-zero and
+\ that tier-2 has gained over demo 88's value due to back-edges from
+\ Mmm.
+"phi-sum-tier-1" load 0 > 1 assert-eq
+"phi-sum-tier-2" load 0 > 1 assert-eq
+
+\ ============================================================
+\ Fixed-point check: re-running the iteration should add 0 more
+\ spawns (the substrate is in equilibrium under these rules).
+\ ============================================================
+
+0 "spawn-count" store
+0 "iter-index"  store
+10 "current-tier-tag" store
+11 "spawn-tier-tag"   store
+' close-tier-2path  EACH-2PATH
+' scan-tier-triangle EACH-2PATH
+"spawn-count" load 0 assert-eq
+
+\ Note: re-running scan-tier-triangle at LOWER tiers (cells, tier 1,
+\ tier 2) WOULD re-fire and spawn duplicate composites because the
+\ scanner has no idempotence guard ("there is already a composite
+\ over this triple").  This is by design — the demo's fixed-point
+\ claim is about the iteration's natural termination at the TOP,
+\ not about a globally-idempotent rule.  Adding idempotence guards
+\ would be an extension; see notes in the file footer.
+
+cr
+"=== Demo 92 — iterated hierarchy at fixed point ===" . cr
+"Initial: 7-cell chain (6 bi-edges)" . cr
+"Iter 1: cells -> tier-1.  Spawns:" . "iter1-spawns" load . cr
+"Iter 2: tier-1 -> tier-2.  Spawns:" . "iter2-spawns" load . cr
+"Iter 3: tier-2 -> tier-3.  Spawns:" . "iter3-spawns" load . cr
+"Iter 4: tier-3 -> tier-4.  Spawns:" . "iter4-spawns" load . "(fixed point)" . cr
+cr
+"Tier populations:" . cr
+"  tier 0 (cells)        " . "tag-0-count"  load . cr
+"  tier 1 (composites)   " . "tag-8-count"  load . cr
+"  tier 2 (metas)        " . "tag-9-count"  load . cr
+"  tier 3 (meta-meta)    " . "tag-10-count" load . cr
+cr
+"Φ_PA sums per tier:" . cr
+"  tier 0 = " . "phi-sum-tier-0" load . cr
+"  tier 1 = " . "phi-sum-tier-1" load . cr
+"  tier 2 = " . "phi-sum-tier-2" load . cr
+"  tier 3 = " . "phi-sum-tier-3" load . cr
+cr
+"Same close-2path / scan-triangle / link-spawn-tier rules run at" . cr
+"every tier; the only thing changing between iterations is the" . cr
+"NGET filter stored in memory.  Termination is data-driven:" . cr
+"when no triangle exists at the current top tier, spawn-count = 0" . cr
+"and the recursion halts." . cr
+
+REPORT

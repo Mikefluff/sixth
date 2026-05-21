@@ -1,0 +1,320 @@
+\ examples/88-emergent-hierarchy-from-chain.6th
+\ Honest version of Pilot I — two-tier hierarchy EMERGES via
+\ iterated rule application on a minimal chain.  Nothing past t=0
+\ is hand-placed.
+\
+\ Pilot I (demo 50) hand-wires three families with three instances
+\ each, three per-family meta-observers, and a single genus meta-
+\ meta-observer.  All seven observers, all their self-loops, all
+\ their bi-edges to children — typed in by hand.  That's the
+\ static-composite critique applied at maximum strength.
+\
+\ This demo derives the two-tier structure (cells -> composites ->
+\ meta-composites) from a 7-cell chain via four rule applications:
+\
+\   t=0  Initial: 7-cell chain of 6 bi-edges.  Tier-0 (cells, NGET=0).
+\
+\   t=1  RULE A (close-2path, cell-filtered):
+\        For each 2-path a->b->c with a!=c through NGET=0 nodes,
+\        add a<->c bi-edge.  Triangles emerge among cells:
+\          1-2-3, 2-3-4, 3-4-5, 4-5-6, 5-6-7
+\
+\   t=2  RULE B (scan-triangle, cells -> composites):
+\        For each cell triangle (a<b<c with all 6 edges present),
+\        MARK a tier-1 composite (NGET=8) with own self-loop and
+\        bi-edges to its three cell members.  Five composites
+\        spawn: M1..M5.
+\
+\   t=3  RULE C (link-composites-sharing-cells):
+\        For each composite_a -> cell -> composite_b 2-path,
+\        add composite_a <-> composite_b bi-edge.  EDGE+ is
+\        idempotent, so composites sharing multiple cells get
+\        exactly one bond.  Result: composite chain with
+\        triangles (M1-M2-M3, M2-M3-M4, M3-M4-M5).
+\
+\   t=4  RULE D (scan-meta-triangle, composites -> meta-composites):
+\        Same triangle scanner, filtered to NGET=8 nodes, spawning
+\        tier-2 meta-composites (NGET=9).  Three metas spawn.
+\
+\ Every node and every edge past t=0 is a substrate-readable
+\ response to substrate-readable conditions.  Two-tier hierarchy
+\ emerges from one chain via four rule applications.
+
+use prelude
+use graph
+use phi
+use debug
+
+\ ============================================================
+\ Initial substrate — 7-cell chain.
+\ NGET=0 (default) marks tier-0 cells.
+\ ============================================================
+
+MARK "c1" store
+MARK "c2" store
+MARK "c3" store
+MARK "c4" store
+MARK "c5" store
+MARK "c6" store
+MARK "c7" store
+
+"c1" load "c2" load bi-edge
+"c2" load "c3" load bi-edge
+"c3" load "c4" load bi-edge
+"c4" load "c5" load bi-edge
+"c5" load "c6" load bi-edge
+"c6" load "c7" load bi-edge
+
+NODES 7 assert-eq
+EDGES 12 assert-eq                    \ 6 bi-edges directed
+
+\ Sanity: no triangles, no composites yet.
+"c1" load "c3" load EDGE? 0 assert-eq
+"c5" load "c7" load EDGE? 0 assert-eq
+
+\ ============================================================
+\ STAGE 1 — RULE A: cell-only transitive closure.
+\ Filters: a, b, c all NGET=0 (cells only).  No composites yet,
+\ but explicit filter keeps the rule reusable post-stage-2.
+\ ============================================================
+
+: close-2path-cells ( a b c -- )
+  "x-c" store
+  "x-b" store
+  "x-a" store
+  "x-a" load NGET 0 = if
+    "x-b" load NGET 0 = if
+      "x-c" load NGET 0 = if
+        "x-a" load "x-c" load = not if
+          "x-a" load "x-c" load bi-edge
+        then
+      then
+    then
+  then ;
+
+' close-2path-cells EACH-2PATH
+
+\ Closure added 5 bi-edges: 1<->3, 2<->4, 3<->5, 4<->6, 5<->7.
+\ EDGES = 12 + 10 = 22.
+EDGES 22 assert-eq
+"c1" load "c3" load EDGE? 1 assert-eq
+"c2" load "c4" load EDGE? 1 assert-eq
+"c5" load "c7" load EDGE? 1 assert-eq
+"c1" load "c4" load EDGE? 0 assert-eq    \ 2-hop closure NOT included
+
+\ ============================================================
+\ STAGE 2 — RULE B: scan for triangles among cells, spawn composites.
+\ Canonical ordering a<b<c dedupes; NGET=0 filter restricts to cells.
+\ Each composite gets NGET=8 (tier-1 marker), self-loop, and bi-edges
+\ to its three cell members.
+\ ============================================================
+
+0 "tier1-spawns" store
+
+: scan-triangle-cells ( a b c -- )
+  "t1-c" store
+  "t1-b" store
+  "t1-a" store
+  "t1-a" load NGET 0 = if
+    "t1-b" load NGET 0 = if
+      "t1-c" load NGET 0 = if
+        "t1-a" load "t1-b" load < if
+          "t1-b" load "t1-c" load < if
+            "t1-b" load "t1-a" load EDGE? if
+              "t1-c" load "t1-b" load EDGE? if
+                "t1-a" load "t1-c" load EDGE? if
+                  "t1-c" load "t1-a" load EDGE? if
+                    MARK "m" store
+                    "m" load "m" load EDGE+
+                    "m" load "t1-a" load bi-edge
+                    "m" load "t1-b" load bi-edge
+                    "m" load "t1-c" load bi-edge
+                    "m" load 8 NSET
+                    "tier1-spawns" load 1 + "tier1-spawns" store
+                  then
+                then
+              then
+            then
+          then
+        then
+      then
+    then
+  then ;
+
+' scan-triangle-cells EACH-2PATH
+
+\ Five triangles (1,2,3), (2,3,4), (3,4,5), (4,5,6), (5,6,7) -> 5 composites.
+"tier1-spawns" load 5 assert-eq
+
+\ Per composite: 1 node, 1 self-loop, 3 bi-edges to members (6 dir) = 7 dir.
+\ 5 composites: 5 nodes, 35 new edges.
+NODES 12 assert-eq                     \ 7 cells + 5 composites
+EDGES 57 assert-eq                     \ 22 + 35
+
+\ ============================================================
+\ STAGE 3 — RULE C: link composites that share a cell.
+\ For every (composite_a) -> (cell) -> (composite_b) 2-path,
+\ add composite_a <-> composite_b bi-edge.  EDGE+ idempotent, so
+\ composites sharing multiple cells still get exactly one bond.
+\ ============================================================
+
+0 "link-events" store
+
+: link-composites ( a mid b -- )
+  "l-b" store
+  "l-mid" store
+  "l-a" store
+  "l-a" load NGET 8 = if
+    "l-mid" load NGET 0 = if
+      "l-b" load NGET 8 = if
+        "l-a" load "l-b" load = not if
+          "l-a" load "l-b" load EDGE? not if
+            "l-a" load "l-b" load bi-edge
+            "link-events" load 1 + "link-events" store
+          then
+        then
+      then
+    then
+  then ;
+
+' link-composites EACH-2PATH
+
+\ Unique composite-composite pairs that share a cell:
+\   (M1,M2) (M1,M3) (M2,M3) (M2,M4) (M3,M4) (M3,M5) (M4,M5)
+\ That's 7 unordered pairs.  Each contributes one bi-edge.
+\ The rule fires once per ordered pair (a<->b counted twice as
+\ a->mid->b AND b->mid->a) — link-events counts the FIRST insertion
+\ only thanks to the EDGE? guard.  So link-events = 7 (one per
+\ unordered pair).  But actually the (a,b) and (b,a) pass through
+\ different mids, so on the first ordering the bi-edge is added
+\ and link-events bumps; the other direction sees the edge already
+\ exists and does nothing.  Either way: 7 distinct insertions.
+"link-events" load 7 assert-eq
+EDGES 71 assert-eq                     \ 57 + 14 (7 bi-edges directed)
+
+\ ============================================================
+\ STAGE 4 — RULE D: scan for triangles among composites,
+\ spawn tier-2 meta-composites.  NGET=8 filter; spawned with NGET=9.
+\ ============================================================
+
+0 "tier2-spawns" store
+
+: scan-triangle-composites ( a b c -- )
+  "t2-c" store
+  "t2-b" store
+  "t2-a" store
+  "t2-a" load NGET 8 = if
+    "t2-b" load NGET 8 = if
+      "t2-c" load NGET 8 = if
+        "t2-a" load "t2-b" load < if
+          "t2-b" load "t2-c" load < if
+            "t2-b" load "t2-a" load EDGE? if
+              "t2-c" load "t2-b" load EDGE? if
+                "t2-a" load "t2-c" load EDGE? if
+                  "t2-c" load "t2-a" load EDGE? if
+                    MARK "mm" store
+                    "mm" load "mm" load EDGE+
+                    "mm" load "t2-a" load bi-edge
+                    "mm" load "t2-b" load bi-edge
+                    "mm" load "t2-c" load bi-edge
+                    "mm" load 9 NSET
+                    "tier2-spawns" load 1 + "tier2-spawns" store
+                  then
+                then
+              then
+            then
+          then
+        then
+      then
+    then
+  then ;
+
+' scan-triangle-composites EACH-2PATH
+
+\ Composite triangles: (M1,M2,M3), (M2,M3,M4), (M3,M4,M5) = 3 meta-composites.
+"tier2-spawns" load 3 assert-eq
+
+NODES 15 assert-eq                     \ 12 + 3 metas
+EDGES 92 assert-eq                     \ 71 + 21 (3 metas × 7 dir each)
+
+\ ============================================================
+\ Tally Φ_PA scalars across all three tiers.
+\ ============================================================
+
+0 "cell-count" store      0 "cell-phi-sum" store
+0 "comp-count" store      0 "comp-phi-sum" store
+0 "meta-count" store      0 "meta-phi-sum" store
+
+: tally ( node -- )
+  dup NGET 0 = if
+    "cell-count" load 1 + "cell-count" store
+    dup phi-pa "cell-phi-sum" load + "cell-phi-sum" store
+  then
+  dup NGET 8 = if
+    "comp-count" load 1 + "comp-count" store
+    dup phi-pa "comp-phi-sum" load + "comp-phi-sum" store
+  then
+  dup NGET 9 = if
+    "meta-count" load 1 + "meta-count" store
+    dup phi-pa "meta-phi-sum" load + "meta-phi-sum" store
+  then
+  drop ;
+
+' tally EACH
+
+"cell-count" load 7 assert-eq
+"comp-count" load 5 assert-eq
+"meta-count" load 3 assert-eq
+
+\ Tier-2 metas each: OUT = self + 3 tier-1 composites = 4, phi-pa = 40000.
+\ 3 metas * 40000 = 120000.
+"meta-phi-sum" load 120000 assert-eq
+
+\ The middle composite M3 is in ALL three meta-triangles and shares
+\ cells with all other composites — busiest tier-1 node.
+\ M3's OUT: self(1) + 3 cells(3) + 4 composite peers(4) + 3 metas(3) = 11.
+\ phi-pa(M3) = 110000.
+\ Find M3 by NGET=8 AND it shares cell c4 with neighbors and is
+\ the only composite whose three cells (c3,c4,c5) all participate
+\ in two further composites each.  Indirect to assert by name, so
+\ verify via the multiset of composite OUT degrees instead.
+
+0 "comp-out-7" store      \ M1, M5 (end composites): OUT 7
+0 "comp-out-9" store      \ M2, M4: OUT 9
+0 "comp-out-11" store     \ M3: OUT 11
+
+: classify-comp ( node -- )
+  dup NGET 8 = if
+    dup OUT 7  = if "comp-out-7"  load 1 + "comp-out-7"  store then
+    dup OUT 9  = if "comp-out-9"  load 1 + "comp-out-9"  store then
+    dup OUT 11 = if "comp-out-11" load 1 + "comp-out-11" store then
+  then
+  drop ;
+
+' classify-comp EACH
+
+"comp-out-7"  load 2 assert-eq         \ M1 and M5
+"comp-out-9"  load 2 assert-eq         \ M2 and M4
+"comp-out-11" load 1 assert-eq         \ M3
+
+\ Composite phi-pa sum: 2*70000 + 2*90000 + 1*110000 = 430000
+"comp-phi-sum" load 430000 assert-eq
+
+cr
+"=== Demo 88 — two-tier hierarchy emergent from a chain ===" . cr
+"t=0  7-cell chain (6 bi-edges).  No composites." . cr
+"t=1  close-2path on cells -> 5 cell triangles emerge." . cr
+"t=2  scan-triangle-cells   -> 5 tier-1 composites (NGET=8) spawn." . cr
+"t=3  link-composites       -> 7 composite-composite bonds added." . cr
+"t=4  scan-triangle-comps   -> 3 tier-2 meta-composites (NGET=9) spawn." . cr
+cr
+"Final substrate: 15 nodes (7 cells + 5 composites + 3 metas)," . cr
+"92 directed edges.  Tier-2 meta phi-pa sum = 120000," . cr
+"tier-1 composite phi-pa sum = 430000 (M3 alone = 110000)." . cr
+cr
+"This is the multi-level companion to demo 86: rule-driven" . cr
+"iteration produces hierarchical structure WITHOUT typing in" . cr
+"the hierarchy.  The same scanner runs at every tier, only the" . cr
+"NGET filter changes." . cr
+
+REPORT

@@ -1,9 +1,9 @@
-# `examples/` — the 86 demonstrations
+# `examples/` — the 92 demonstrations
 
 This directory holds Sixth's reproducible emergence demonstrations.
 Each file is a standalone Sixth program; `raco test
-tests/examples-test.rkt` (or `make verify`) executes all 86 and
-asserts a cumulative 1180 ✓ / 0 ✗.
+tests/examples-test.rkt` (or `make verify`) executes all 92 and
+asserts a cumulative 1321 ✓ / 0 ✗.
 
 The demos are organised in six conceptual phases.  The numbering
 goes strictly from simplest to most complex: rung 1 is the void,
@@ -26,7 +26,8 @@ higher-order composition.
 | **Pilot L — particle interaction** | 75–76 | 33 | Two structurally distinct particles α (NGET=1) and β (NGET=2) interact via a substrate-readable BIND rule: mutual bi-edge + composite observer M (NGET=8) with own self-loop. Bound state carries Φ_PA = 30000; constituent flavour charges individually conserved. Substrate-native analogue of meson formation. Trace adjacent to numerical (75 + 76 instead of separated into the visual-trace track) — this becomes the pattern for future pilots beyond L. |
 | **Pilot M — bound-state decay**    | 77–78 | 32 | Inverse of Pilot L. DECAY EVENT = severing M's self-loop alone (Φ_PA(M) flips 30000 → 0 the instant phi-self-ref(M) = 0, even though M still topologically bi-edges α and β — Pilot G principle in reverse). Phase-B housekeeping unwinds the remaining edges; particles return to their pre-binding free state. Σ NGET over particles preserved across the full bind+decay cycle — binding is REVERSIBLE and charge conservation holds in both directions. |
 | **Stress-test track**              | 79–84 | 59 | Parametric long-run stress tests via `-D max-cycles=N` (default 1000 in CI, scaleable to 10⁶) for EVERY dynamic pilot. Each tracks invariant at EVERY cycle and asserts max-drift = 0. Demo 79: closed-ring charge-shift conserves Σ NGET across 10⁶ STEP-CA cycles. Demo 80: bind+decay idempotence — substrate state IDENTICAL before/after 10⁶ interaction cycles. Demo 81: autopoiesis observer fully restores to NGET=10 at every one of 10⁶ phase-decay/phase-restore cycles. Demo 82: Conway blinker returns to initial state every 2 STEP-CAs across 10⁶ pairs. Demo 83: sprout rule adds exactly 1 node + 1 edge per STEP across 10⁶ STEPs. Demo 84: Wolfram Rule 184 preserves binary particle count on closed ring across 10⁶ STEP-CAs. Showcase: `make stress-test STRESS_CYCLES=1000000`. |
-| **Honest-emergence track**         | 85–86 | 40 | Corrective to Pilots G/H/I/L/M/K which hand-place their composites. Demo 85: EACH-2PATH triangle scanner discovers triangles WITHOUT pre-knowledge and spawns composites for each (initial topology still hand-built). Demo 86: full emergence — start with a plain 5-cell chain of bi-edges (no triangles), apply transitive-closure rule via EACH-2PATH (1↔3, 2↔4, 3↔5 emerge), then apply triangle-scanner — 3 composites spawn for the 3 triangles that arose. Every node and edge past t=0 is rule-driven. Substrate DERIVING composite-distinction from a minimal chain. |
+| **Honest-emergence track**         | 85–89, 91–92 | 160 | Corrective to Pilots G/H/I/L/M/K which hand-place their composites. Demo 85: EACH-2PATH triangle scanner discovers triangles WITHOUT pre-knowledge and spawns composites (initial topology still hand-built). Demo 86: full emergence — 5-cell chain → close-2path (1↔3, 2↔4, 3↔5 emerge) → triangle-scanner → 3 composites spawn. Demo 87: honest Pilot H — EACH-walked selection reads phi-pa per node, attaches survivors to M (no per-candidate call). Demo 88: honest Pilot I — two-tier hierarchy from a 7-cell chain via 4 rule applications, 5 first-tier + 3 second-tier composites rule-spawned. Demo 89: honest Pilot L — nested-EACH pair scanner discovers all 9 cross-flavour bindings in a 6-particle zoo. Demo 91: honest Pilot M — substrate-walked decay (3 phases: decay-event scanner severs self-loops on NGET=8 nodes, unwind scanner removes M-incident edges, ash scanner resets NGET; 9 bound states fully decayed without name-list). Demo 92: recursive N-tier hierarchy iterated to FIXED POINT — same rules at every tier with memory-stored NGET filter, 5 first-tier / 3 second-tier / 1 third-tier composites spawned (5+3+1+0), termination is data-driven (no triangle → halt). |
+| **Peircean trit observer**         | 90    | 21 | Substrate-readable classifier tags every node into balanced trit {−1, 0, +1} corresponding to Peirce's firstness / secondness / thirdness. Trit −1: no self-reference, Φ_PA = 0. Trit 0: self-loop only, Φ_PA = L_max — the "Tao of the substrate." Trit +1: self-loop + projection, Φ_PA = OUT·L_max. The triadic structure is in the observer's (OUT, EDGE?) regime; philosophical anchor is Peirce's reduction thesis (Burch 1991; Hereth Correia & Pöschel 2006), not Trinity-rhetoric. |
 
 The visual-trace pilots emit GraphViz DOT blocks on stdout that the
 companion Python renderer (`code/render_trace.py`) parses into
@@ -806,7 +807,7 @@ Register the demo in `tests/examples-test.rkt`:
     ("54-my-new-demo.6th"           N)))   ; N = expected ✓
 ```
 
-Update the cumulative gate (currently 1180) and `make verify` passes
+Update the cumulative gate (currently 1321) and `make verify` passes
 cleanly. To add a visual trace, `use dot` and emit `dot-snapshot`
 calls between substrate operations.
 

@@ -1,0 +1,276 @@
+\ examples/90-peircean-trit-observer.6th
+\ Substrate-readable classifier mapping every node into a balanced
+\ trit {−1, 0, +1} corresponding to Peirce's three categories.
+\
+\ Motivation (2026-05-21).  A reviewer pointed out that Φ_PA(O) =
+\ OUT(O) · 1[O EDGE? O] · L_max has a natural triadic reading aligned
+\ with balanced ternary and Peirce's firstness / secondness / thirdness:
+\
+\   −1  Firstness    — withdrawn observer.  No self-loop, no scope.
+\                      Pure unrealised potential.  phi-pa = 0.
+\    0  Secondness   — present-but-non-projecting.  Self-loop only,
+\                      no other outgoing edges.  OUT=1, self-edge=1,
+\                      phi-pa = 1 · 1 · 10000 = 10000.
+\   +1  Thirdness    — projecting / mediating.  Self-loop AND
+\                      outgoing edges.  phi-pa = OUT · 10000  (>10000).
+\
+\ The triadic structure lives in the OBSERVER's regime — specifically
+\ in the (OUT, EDGE?) pair, which factorises into three irreducible
+\ phenomenological classes plus one collapse case:
+\
+\     (OUT=0, EDGE?=0)         firstness   no scope, no self-reference
+\     (OUT=1, EDGE?=1)         secondness  self-loop ONLY
+\     (OUT≥2, EDGE?=1)         thirdness   self-loop + projection
+\     (OUT≥1, EDGE?=0)         collapses to firstness under Φ_PA
+\
+\ This is a 3+1 partition of substrate-readable observer state.  The
+\ Peircean reading aligns with C.S. Peirce's reduction thesis (1885–
+\ 1905): triadic relations introduce mediation and genuinely cannot
+\ be reduced to monadic + dyadic.  130-year-old philosophical content
+\ with formal-mathematical defenders (Burch 1991; Hereth Correia &
+\ Pöschel 2006).
+\
+\ Independent research on ternary structures in nature (archived
+\ 2026-05-21, /tmp/ternary-research.md) places this in wider context:
+\
+\   * substrate-deep "3"s: DNA triplet codon (4³ ≥ 22 amino acids
+\     forces minimum k=3), 2-simplex (minimal non-degenerate 2-cell),
+\     trefoil knot (minimal non-trivial crossing number), categorical
+\     associativity (minimal arity for coherence), Peirce's reduction
+\     thesis (triadic = irreducible max arity).
+\
+\   * substrate-natural "3"s: balanced ternary as the integer closest
+\     to the radix-economy optimum e ≈ 2.718; three-valued logics as
+\     the minimal extension of bivalence; SU(3) colour given chiral
+\     electroweak + observed quark charges.
+\
+\   * the recommended ternary move for the substrate ITSELF is NOT a
+\     trit on the observer scalar (this demo is that move and it is
+\     fine, but limited).  The deeper move is tri-state hyperedges
+\     {asserted, absent, anti-asserted} — substrate-native negation.
+\     Connects to 3-Lie algebras (Bagger-Lambert M2-branes) and
+\     Wolfram trivalent hypergraphs.  This demo does not implement
+\     that; it stops at the observer classifier.
+\
+\ This demo:
+\   1. Builds a population of 9 nodes spread across the three
+\      Peircean regimes (3 each), plus 2 "fourth-quadrant" nodes
+\      (scope without self-loop) that collapse to firstness via Φ_PA.
+\   2. Applies a substrate-readable classifier that tags each node
+\      NGET ∈ {11, 12, 13} corresponding to trit {−1, 0, +1}.
+\   3. Verifies the trit population and the phi-pa distribution.
+\
+\ The classifier reads ONLY substrate-readable scalars (OUT, EDGE?,
+\ phi-pa).  No name list, no hand-classification.  It is the
+\ substrate sorting itself into Peircean categories.
+
+use prelude
+use graph
+use phi
+use debug
+
+\ ============================================================
+\ Three sentinel tags for the trit values.  Stored in NGET so
+\ they are substrate-readable.
+\
+\   tag 11 = firstness  (trit −1, withdrawn)
+\   tag 12 = secondness (trit  0, self-loop only)
+\   tag 13 = thirdness  (trit +1, projecting)
+\ ============================================================
+
+\ ============================================================
+\ Build the population.
+\ ============================================================
+
+\ Three withdrawn nodes (firstness candidates).
+MARK "w1" store          \ isolated MARK, no edges
+MARK "w2" store
+MARK "w3" store
+
+\ Three present-only nodes (secondness candidates).
+\ Self-loop and nothing else.
+MARK "p1" store          "p1" load "p1" load EDGE+
+MARK "p2" store          "p2" load "p2" load EDGE+
+MARK "p3" store          "p3" load "p3" load EDGE+
+
+\ Three projecting nodes (thirdness candidates).
+\ Self-loop + a 3-limb ring + head-to-limb spokes (Pilot G shape).
+: ring-3-spoke ( head -- )
+  "h" store
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  "h" load "h" load EDGE+
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l1" load bi-edge
+  "h" load "l1" load bi-edge
+  "h" load "l2" load bi-edge
+  "h" load "l3" load bi-edge ;
+
+MARK "t1" store  "t1" load ring-3-spoke
+MARK "t2" store  "t2" load ring-3-spoke
+MARK "t3" store  "t3" load ring-3-spoke
+
+\ Two "fourth-quadrant" nodes: scope without self-loop.
+\ Under Φ_PA these collapse to firstness (phi-pa=0).  They are
+\ here to confirm the classifier respects the formula, not naive
+\ degree counts.
+MARK "fq1" store
+MARK "fq2" store
+\ Give fq1 outgoing edges to two of w1, w2 (no self-loop).
+"fq1" load "w1" load EDGE+
+"fq1" load "w2" load EDGE+
+\ Give fq2 outgoing edges to two of t1's limbs (no self-loop).
+"fq2" load "w3" load EDGE+
+"fq2" load "p1" load EDGE+
+
+\ Per-node phi-pa sanity (before classification).
+"w1" load phi-pa     0 assert-eq
+"p1" load phi-pa 10000 assert-eq                \ self only -> OUT=1, present
+"t1" load phi-pa 40000 assert-eq                \ self + 3 limbs
+"fq1" load phi-pa    0 assert-eq                \ scope but no self-loop
+
+\ Tier-0 sanity: only the population we built.
+\   withdrawn: 3
+\   present:   3
+\   projecting: 3 heads + 9 limbs = 12
+\   fourth-q:  2
+\   Total: 20.
+NODES 20 assert-eq
+
+\ ============================================================
+\ SUBSTRATE-READABLE CLASSIFIER.
+\ Reads OUT, EDGE? and computes the Peircean tag.
+\
+\   if phi-pa == 0:                       trit -1, tag 11
+\   elif self-loop AND OUT == 1:          trit  0, tag 12
+\   else (self-loop AND OUT >= 2):        trit +1, tag 13
+\
+\ Notes:
+\   * "OUT" includes the self-loop, so OUT == 1 with EDGE? means
+\     "self-loop and nothing else."  OUT >= 2 with EDGE? means
+\     "self-loop plus at least one projection."
+\   * The classifier writes the tag back into the substrate via
+\     NSET, so the trit assignment is itself substrate-readable
+\     (next-stage rules can filter on tag = 11/12/13).
+\ ============================================================
+
+0 "firstness-count"  store      \ trit -1
+0 "secondness-count" store      \ trit  0
+0 "thirdness-count"  store      \ trit +1
+
+: classify-trit ( node -- )
+  dup phi-pa 0 = if
+    dup 11 NSET
+    "firstness-count" load 1 + "firstness-count" store
+  else
+    dup OUT 1 = if
+      dup 12 NSET
+      "secondness-count" load 1 + "secondness-count" store
+    else
+      dup 13 NSET
+      "thirdness-count" load 1 + "thirdness-count" store
+    then
+  then
+  drop ;
+
+\ Important: limbs of projecting clusters have OUT > 0 (ring + back-
+\ edge to head) and NO self-loop, so phi-pa=0 -> firstness.  The
+\ classifier treats them as withdrawn, which is structurally correct
+\ under PA: they are nodes without first-person observability.
+
+' classify-trit EACH
+
+\ ============================================================
+\ Trit population counts.
+\ firstness:  3 withdrawn + 2 fourth-q + 9 ring-limbs = 14
+\ secondness: 3 present-only  = 3
+\ thirdness:  3 projecting heads = 3
+\ Total: 14 + 3 + 3 = 20 = NODES.  ✓ partition.
+\ ============================================================
+
+"firstness-count"  load 14 assert-eq
+"secondness-count" load  3 assert-eq
+"thirdness-count"  load  3 assert-eq
+
+\ Partition is exhaustive and mutually exclusive.
+"firstness-count" load "secondness-count" load + "thirdness-count" load +
+20 assert-eq
+
+\ Tags are now substrate-readable on every node.
+"w1"  load NGET 11 assert-eq
+"p1"  load NGET 12 assert-eq
+"t1"  load NGET 13 assert-eq
+"fq1" load NGET 11 assert-eq                    \ collapses to firstness
+
+\ ============================================================
+\ Aggregate phi-pa per trit class.
+\ firstness sum:  14 · 0          =      0
+\ secondness sum:  3 · 10000      =  30000
+\ thirdness sum:   3 · 40000      = 120000
+\ Total: 150000.
+\ ============================================================
+
+0 "phi-acc-1" store      \ firstness
+0 "phi-acc-0" store      \ secondness
+0 "phi-acc+1" store      \ thirdness
+
+: sum-by-trit ( node -- )
+  dup NGET 11 = if
+    dup phi-pa "phi-acc-1" load + "phi-acc-1" store
+  then
+  dup NGET 12 = if
+    dup phi-pa "phi-acc-0" load + "phi-acc-0" store
+  then
+  dup NGET 13 = if
+    dup phi-pa "phi-acc+1" load + "phi-acc+1" store
+  then
+  drop ;
+
+' sum-by-trit EACH
+
+"phi-acc-1" load      0 assert-eq
+"phi-acc-0" load  30000 assert-eq
+"phi-acc+1" load 120000 assert-eq
+
+\ ============================================================
+\ Symmetry test: firstness has Φ_PA = 0; secondness has the
+\ minimum non-zero Φ_PA = L_max; thirdness has Φ_PA > L_max.
+\ The midpoint (secondness) is the Tao of the substrate — pure
+\ presence without projection.
+\ ============================================================
+
+"p1" load phi-pa 10000 assert-eq                \ exactly L_max
+"p1" load phi-pa "p2" load phi-pa = 1 assert-eq
+"p2" load phi-pa "p3" load phi-pa = 1 assert-eq
+
+"t1" load phi-pa 10000 > 1 assert-eq            \ strictly greater
+"w1" load phi-pa 10000 < 1 assert-eq            \ strictly less (=0)
+
+cr
+"=== Demo 90 — Peircean trit observer (-1/0/+1) ===" . cr
+"Substrate-readable classifier tags every node by Peircean category:" . cr
+"  trit -1 (firstness ): no self-reference, no Φ_PA" . cr
+"  trit  0 (secondness): self-loop only, Φ_PA = L_max (10000)" . cr
+"  trit +1 (thirdness ): self-loop + projection, Φ_PA = OUT·L_max" . cr
+cr
+"Counts: firstness=" . "firstness-count" load .
+"  secondness=" . "secondness-count" load .
+"  thirdness=" . "thirdness-count" load . cr
+cr
+"Φ_PA sums by trit:" . cr
+"  firstness  = " . "phi-acc-1" load . cr
+"  secondness = " . "phi-acc-0" load . cr
+"  thirdness  = " . "phi-acc+1" load . cr
+cr
+"The triadic structure is in the observer's (OUT, EDGE?) regime —" . cr
+"3 irreducible phenomenological classes + 1 fourth quadrant that" . cr
+"Φ_PA collapses to firstness.  Peirce's reduction thesis (triadic" . cr
+"= irreducible maximum arity) is the philosophical anchor with" . cr
+"formal-math defenders (Burch 1991; Hereth Correia & Pöschel 2006)." . cr
+cr
+"Research file at /tmp/ternary-research.md also recommends the" . cr
+"deeper ternary move: tri-state hyperedges {asserted, absent," . cr
+"anti-asserted} for substrate-native negation.  Not implemented" . cr
+"here — that is a primitive-level change to substrate.rkt." . cr
+
+REPORT

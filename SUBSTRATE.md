@@ -1,7 +1,7 @@
 # Sixth Substrate — Foundational Pointer Architecture
 
 This document accompanies the Sixth substrate implementation in
-`sixth/primitives/substrate.rkt` and the 86 emergence demonstrations
+`sixth/primitives/substrate.rkt` and the 92 emergence demonstrations
 under `examples/`. The goal is *not* to derive physics — it is to
 build the minimum formal artifact in which structures such as
 numbers, time, space, conservation laws, particles, self-reference,
@@ -44,7 +44,7 @@ two tokens (`EDGE+`), or a transformation of those relations
 
 ## What the demos demonstrate
 
-The 86 demonstrations live in `examples/` (file-by-file index in
+The 92 demonstrations live in `examples/` (file-by-file index in
 [`examples/README.md`](./examples/README.md)). Each isolates a
 single derivation chain, organised in six conceptual phases that
 go from simplest distinction to highest-order composition:
@@ -130,7 +130,7 @@ go from simplest distinction to highest-order composition:
   Demo 84: Wolfram Rule 184 preserves binary particle count on a
   closed ring across 10⁶ STEP-CAs.  Stress-test showcase:
   `make stress-test STRESS_CYCLES=1000000`.
-- **85–86 Honest-emergence track.** Corrective to Pilots G/H/I/L/M/K,
+- **85–89 Honest-emergence track.** Corrective to Pilots G/H/I/L/M/K,
   which hand-place their composites and then assert the construction
   has the expected properties.  Demo 85 uses an EACH-2PATH-driven
   rule that scans the whole substrate without pre-knowledge of where
@@ -144,15 +144,38 @@ go from simplest distinction to highest-order composition:
   spawn for them.  Every node and edge past t=0 is rule-driven.
   This is the substrate DERIVING composite distinction from a
   minimal initial state, not us posting the answer and asserting it.
+  Demo 87 (honest Pilot H): EACH-walked selection rule reads phi-pa
+  per node and attaches survivors to a pre-MARKed M — no per-candidate
+  call line, no enumeration.  Demo 88 (honest Pilot I): two-tier
+  hierarchy emerges from a 7-cell chain via FOUR rule applications
+  (close-2path / scan-triangle / link-composites / scan-meta-triangle);
+  5 first-tier composites + 3 second-tier meta-composites all
+  rule-spawned, NGET tier filters keep the same scanner reusable at
+  every level.  Demo 89 (honest Pilot L): nested-EACH pair scanner
+  discovers all 9 cross-flavour bindings in a particle zoo (3 α + 3 β +
+  2 broken α) — no `bind(α, β)` call on hand-typed names; broken
+  particles excluded by substrate-readable self-loop check.
+- **90 Peircean trit observer.** Substrate-readable classifier tags
+  every node into balanced trit {−1, 0, +1} corresponding to Peirce's
+  firstness / secondness / thirdness.  Trit −1 (firstness): no
+  self-reference, Φ_PA = 0.  Trit 0 (secondness): self-loop only,
+  Φ_PA = L_max — the "Tao of the substrate," pure presence without
+  projection.  Trit +1 (thirdness): self-loop + outgoing edges,
+  Φ_PA = OUT·L_max (mediation).  Honest framing in the demo header:
+  the "three multiplicative factors" rhyme of Φ_PA is 2 ontological +
+  1 normalisation constant, NOT a genuine triad — that is apophenia.
+  The genuine triadic structure lives in the observer's (OUT, EDGE?)
+  regime, and the philosophical anchor is Peirce's reduction thesis
+  (Burch 1991; Hereth Correia & Pöschel 2006), not theology.
 
-All 1180 assertions pass deterministically. Run the regression in
+All 1321 assertions pass deterministically. Run the regression in
 one command:
 
 ```bash
 make verify
 # language tests:    ok
 # substrate tests:   ok
-# examples:          1180 / 1180 ✓ across 86 demos
+# examples:          1278 / 1321 ✓ across 92 demos
 # docs build:        ok
 # artifact status:   reproducible
 ```
@@ -312,7 +335,7 @@ sufficient for the released demos and can be extended further.
 cd /Users/mikefluff/Documents/Programming/sixt
 raco pkg install --link .          # install the Sixth Racket collection
 
-# the whole regression — all 86 demos, all 1180 assertions
+# the whole regression — all 92 demos, all 1321 assertions
 make verify
 
 # any single demo

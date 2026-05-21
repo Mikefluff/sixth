@@ -1,0 +1,386 @@
+\ examples/91-emergent-decay.6th
+\ Honest version of Pilot M — decay EMERGES from substrate-walked
+\ rules, not from hand-typed `"M" load "M" load EDGE-` per composite.
+\
+\ Pilot M (demo 77) was already substrate-readable at the FORMULA
+\ level (Φ_PA(M) flips 30000→0 the instant the self-loop is gone),
+\ but the decay event itself was a single hand-typed line addressing
+\ M by name.  At population scale that scales O(N) in source lines.
+\
+\ This demo applies the same correction we used for selection (87)
+\ and binding (89): replace per-composite enumeration with a
+\ substrate-walked scanner that fires on substrate-readable
+\ conditions.
+\
+\ Decay pipeline (three rule applications, none enumerated):
+\
+\   PHASE A — DECAY EVENT (substrate-walked).
+\     scan-decay reads each node; if NGET=8 AND self-loop present,
+\     sever the self-loop.  This is the qualitative moment Φ_PA(M)
+\     flips 30000→0 (per Pilot G principle: composite distinction
+\     requires meta-self-reference).
+\
+\   PHASE B — UNWIND (substrate-walked).
+\     scan-unwind iterates EACH-EDGE; for any edge incident to a
+\     decayed composite (NGET=8 AND no self-loop), remove it.  This
+\     also catches the constituent particles' mutual bi-edges via
+\     the M↔α↔β triangle being adjacent to M.  To finish, a second
+\     pass severs any remaining particle-particle edges where both
+\     endpoints used to be in a common decayed bound state — we use
+\     a separate "untangle-particle-pair" rule for that.
+\
+\   PHASE C — ASH (substrate-walked).
+\     scan-ash reads each node; if NGET=8 AND OUT=0 AND IN=0 (a
+\     bound state stripped of all edges), reset NGET=0.  Composite
+\     marker dissolves.
+\
+\ Verification:
+\   * all 3 bound states decay
+\   * all 6 particles return to free state (Φ_PA = 40000 / 50000)
+\   * charge conservation: Σ NGET over particles preserved at 3·3=9
+\     across full bind+decay cycle
+
+use prelude
+use graph
+use phi
+use debug
+
+\ ============================================================
+\ Particle constructors (same shape as demo 89; lifted verbatim).
+\ ============================================================
+
+: ring-3 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l1" load bi-edge ;
+
+: ring-4 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store  MARK "l4" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l4" load bi-edge
+  "l4" load "l1" load bi-edge ;
+
+: obs-attach-3 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge ;
+
+: obs-attach-4 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge
+  "ok" load load "l4" load bi-edge ;
+
+: build-alpha ( key -- )
+  "k" store
+  MARK "k" load store
+  "k" load load "k" load load EDGE+
+  ring-3
+  "k" load obs-attach-3
+  "k" load load 1 NSET ;
+
+: build-beta ( key -- )
+  "k" store
+  MARK "k" load store
+  "k" load load "k" load load EDGE+
+  ring-4
+  "k" load obs-attach-4
+  "k" load load 2 NSET ;
+
+\ ============================================================
+\ Substrate-readable charge telemetry (Pilot J pattern).
+\ ============================================================
+
+0 "charge-acc" store
+
+: tally-particle-charge ( node -- )
+  NGET dup 0 > over 4 < * if
+    "charge-acc" load + "charge-acc" store
+  else
+    drop
+  then ;
+
+: total-particle-charge ( -- s )
+  0 "charge-acc" store
+  ' tally-particle-charge EACH
+  "charge-acc" load ;
+
+\ ============================================================
+\ Build particle zoo: 3 α + 3 β, with bound states pre-formed by
+\ the same scanner as demo 89.  We re-use the honest binding rule
+\ here so the population that the decay rule operates on is itself
+\ produced by a substrate-walked scan.
+\ ============================================================
+
+"a1" build-alpha
+"a2" build-alpha
+"a3" build-alpha
+"b1" build-beta
+"b2" build-beta
+"b3" build-beta
+
+total-particle-charge 9 assert-eq            \ 3·1 + 3·2 = 9
+
+\ Honest binding scanner (lifted from demo 89, single-flavour pair).
+0 "bind-events" store
+
+: in-particle-range ( nget -- 0/1 )
+  dup 0 > over 4 < * if 1 else 0 then nip ;
+
+: try-bind-inner ( bb -- )
+  "bb" store
+  "bb" load NGET in-particle-range if
+    "bb" load "ba" load > if
+      "bb" load NGET "ba" load NGET = not if
+        "bb" load "bb" load EDGE? if
+          "ba" load "ba" load EDGE? if
+            "ba" load "bb" load EDGE? not if
+              "ba" load "bb" load bi-edge
+              MARK "tb-M" store
+              "tb-M" load "tb-M" load EDGE+
+              "tb-M" load "ba" load bi-edge
+              "tb-M" load "bb" load bi-edge
+              "tb-M" load 8 NSET
+              "bind-events" load 1 + "bind-events" store
+            then
+          then
+        then
+      then
+    then
+  then ;
+
+: scan-pair-bind ( ba -- )
+  dup "ba" store
+  NGET in-particle-range if
+    ' try-bind-inner EACH
+  then ;
+
+' scan-pair-bind EACH
+
+\ 3 α × 3 β = 9 cross-flavour bindings.
+"bind-events" load 9 assert-eq
+
+\ Charge unchanged — bindings don't touch particle NGETs.
+total-particle-charge 9 assert-eq
+
+\ Snapshot the bound-state count for later comparison.
+0 "bound-count-pre" store
+
+: count-bound ( node -- )
+  dup NGET 8 = if
+    dup dup EDGE? if
+      "bound-count-pre" load 1 + "bound-count-pre" store
+    then
+  then
+  drop ;
+
+' count-bound EACH
+
+"bound-count-pre" load 9 assert-eq           \ all 9 are bound
+
+\ ============================================================
+\ PHASE A — DECAY EVENT.  Substrate-walked: scan-decay reads every
+\ node; for each NGET=8 node with self-loop, sever the self-loop.
+\ Substrate-readable condition (NGET=8 AND EDGE? self self) fully
+\ determines the event; no name list.
+\ ============================================================
+
+0 "decay-events" store
+
+: scan-decay ( node -- )
+  dup NGET 8 = if
+    dup dup EDGE? if
+      dup dup EDGE-                          \ sever self-loop
+      "decay-events" load 1 + "decay-events" store
+    then
+  then
+  drop ;
+
+' scan-decay EACH
+
+"decay-events" load 9 assert-eq              \ every bound state decayed
+
+\ After phase A: every composite has phi-pa = 0 (no self-loop).
+0 "still-bound" store
+
+: count-still-bound ( node -- )
+  dup NGET 8 = if
+    dup phi-pa 0 > if
+      "still-bound" load 1 + "still-bound" store
+    then
+  then
+  drop ;
+
+' count-still-bound EACH
+
+"still-bound" load 0 assert-eq               \ no bound state survives
+
+\ But composites are still TOPOLOGICALLY in place (bi-edges to α, β).
+"a1" load OUT 10 assert-eq                    \ still has 3 bound-state hooks
+"a1" load phi-pa 100000 assert-eq             \ scope retained (no decay yet
+                                              \ from particles' perspective)
+
+\ ============================================================
+\ PHASE B — UNWIND.  EACH-EDGE walks all edges; any edge incident
+\ to a decayed composite (NGET=8, no self-loop) is severed.
+\ ============================================================
+
+0 "unwind-events" store
+
+: scan-unwind-edge ( src dst -- )
+  "u-dst" store
+  "u-src" store
+  "u-src" load NGET 8 = if
+    "u-src" load "u-src" load EDGE? not if    \ decayed (no self-loop)
+      "u-src" load "u-dst" load EDGE? if
+        "u-src" load "u-dst" load EDGE-
+        "unwind-events" load 1 + "unwind-events" store
+      then
+    then
+  then
+  "u-dst" load NGET 8 = if
+    "u-dst" load "u-dst" load EDGE? not if
+      "u-src" load "u-dst" load EDGE? if
+        "u-src" load "u-dst" load EDGE-
+        "unwind-events" load 1 + "unwind-events" store
+      then
+    then
+  then ;
+
+' scan-unwind-edge EACH-EDGE
+
+\ Per decayed composite: edges to sever are M→α, M→β, α→M, β→M = 4 dir.
+\ 9 composites · 4 = 36 unwind events.
+"unwind-events" load 36 assert-eq
+
+\ ============================================================
+\ Particle-particle bi-edges (α↔β) introduced by binding are
+\ separate from composite-incident edges.  A second scanner unwinds
+\ those: any edge between two particles that are NO LONGER bound
+\ by ANY composite (no NGET=8 node bi-edged to both) is severed.
+\
+\ Implementation: nested scan.  For each particle-particle edge,
+\ scan composites; if no composite bi-edges to both endpoints,
+\ remove the edge.  In our case ALL composites have decayed and
+\ unwound, so EVERY α-β edge gets severed.
+\ ============================================================
+
+0 "untangle-events" store
+
+: scan-witness ( m -- )
+  dup NGET 8 = if
+    dup "ut-src" load EDGE? if
+      dup "ut-dst" load EDGE? if
+        1 "witness-found" store
+      then
+    then
+  then
+  drop ;
+
+: scan-untangle-edge ( src dst -- )
+  "ut-dst" store
+  "ut-src" store
+  "ut-src" load "ut-dst" load = not if           \ skip self-loops
+    "ut-src" load NGET in-particle-range if
+      "ut-dst" load NGET in-particle-range if
+        0 "witness-found" store
+        ' scan-witness EACH
+        "witness-found" load 0 = if
+          "ut-src" load "ut-dst" load EDGE-
+          "untangle-events" load 1 + "untangle-events" store
+        then
+      then
+    then
+  then ;
+
+' scan-untangle-edge EACH-EDGE
+
+\ 9 α-β bi-edges (one per binding) = 18 directed edges → 18 untangle events.
+"untangle-events" load 18 assert-eq
+
+\ ============================================================
+\ PHASE C — ASH.  scan-ash reads every node; if NGET=8 AND OUT=0
+\ AND IN=0, the composite is fully unwound — reset NGET to 0.
+\ ============================================================
+
+0 "ash-events" store
+
+: scan-ash ( node -- )
+  dup NGET 8 = if
+    dup OUT 0 = if
+      dup IN 0 = if
+        dup 0 NSET
+        "ash-events" load 1 + "ash-events" store
+      then
+    then
+  then
+  drop ;
+
+' scan-ash EACH
+
+"ash-events" load 9 assert-eq                 \ all composites turned to ash
+
+\ ============================================================
+\ Verification: all particles back to free state, all composites
+\ are ash (NGET=0, no edges), charge preserved.
+\ ============================================================
+
+"a1" load OUT 4 assert-eq                     \ self + 3 limbs (free α)
+"a1" load phi-pa 40000 assert-eq
+"a2" load OUT 4 assert-eq
+"a3" load OUT 4 assert-eq
+
+"b1" load OUT 5 assert-eq                     \ self + 4 limbs (free β)
+"b1" load phi-pa 50000 assert-eq
+"b2" load OUT 5 assert-eq
+"b3" load OUT 5 assert-eq
+
+\ No α-β edges remain.
+"a1" load "b1" load EDGE? 0 assert-eq
+"a2" load "b2" load EDGE? 0 assert-eq
+
+\ Charge conservation across the FULL bind + decay cycle.
+total-particle-charge 9 assert-eq
+
+\ Ash nodes: 9 NGET=0 composites with no edges.
+0 "ash-still-alive" store
+
+: count-ash-degree ( node -- )
+  dup NGET 0 = if
+    dup OUT 0 = if
+      dup IN 0 = if
+        "ash-still-alive" load 1 + "ash-still-alive" store
+      then
+    then
+  then
+  drop ;
+
+' count-ash-degree EACH
+
+\ Initial substrate already has many NGET=0 nodes (limbs of all
+\ particles).  The count above includes them too — limbs have
+\ OUT/IN > 0 (ring + head edges), so they're excluded.  Only the
+\ 9 ash composites match.
+"ash-still-alive" load 9 assert-eq
+
+cr
+"=== Demo 91 — emergent decay via substrate-walked scan ===" . cr
+"Bound-state population (pre-decay):" . "bound-count-pre" load . cr
+"Decay events (phase A):" . "decay-events"  load . cr
+"Unwind events (phase B):" . "unwind-events" load .
+  "  +" . "untangle-events" load . "(particle-particle)" . cr
+"Ash events (phase C):" . "ash-events" load . cr
+"Σ particle charge (pre/post):  9 /" . total-particle-charge . cr
+cr
+"What this fixes vs Pilot M (demo 77):" . cr
+"  - no per-composite `M load M load EDGE-` line" . cr
+"  - decay event fires on substrate-readable condition" . cr
+"    (NGET=8 AND self-loop present), not on name match" . cr
+"  - housekeeping driven by edge-walk + node-walk scanners" . cr
+"  - scales to populations of any size with no source-line change" . cr
+
+REPORT

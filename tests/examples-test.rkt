@@ -2,8 +2,8 @@
 
 ;; tests/examples-test.rkt — regression gate.
 ;;
-;; Runs each of the 86 emergence demos and asserts the cumulative
-;; ✓ pass count is unchanged at 1180.  Each demo's expected pass
+;; Runs each of the 92 emergence demos and asserts the cumulative
+;; ✓ pass count is unchanged at 1321.  Each demo's expected pass
 ;; count is listed in the `expected` table below; the sum must
 ;; equal the gate constant.  Counting ✓ marks printed during the
 ;; run (engine prints ✓ for every successful ASSERT, including
@@ -142,10 +142,20 @@
     ("83-stress-sprout-linear-growth.6th"   7)
     ("84-stress-rule184-ring-conservation.6th"   8)
     ;; --- Honest emergent track — composites EMERGE from rules ---
-    ;; (corrective to G/H/I/K which hand-place the answer; here the
+    ;; (corrective to G/H/I/K/L which hand-place the answer; here the
     ;; rule SCANS the substrate and spawns composites in response)
     ("85-emergent-composite-from-scan.6th"  19)
-    ("86-emergent-composite-from-chain.6th" 21)))
+    ("86-emergent-composite-from-chain.6th" 21)
+    ("87-emergent-selection.6th"            30)
+    ("88-emergent-hierarchy-from-chain.6th" 25)
+    ("89-emergent-binding.6th"              22)
+    ;; --- Peircean trit observer (research-informed) ---
+    ("90-peircean-trit-observer.6th"        21)
+    ;; --- Honest emergent track (continued) ---
+    ;; 91: honest Pilot M (decay scanner).  92: recursive N-tier
+    ;; hierarchy iterated to fixed point.
+    ("91-emergent-decay.6th"                23)
+    ("92-recursive-hierarchy-fixed-point.6th" 20)))
 
 (define (run-demo file)
   (define out
@@ -170,8 +180,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1180
-                (format "cumulative ✓ count: ~a (expected 1180)" total-pass)))
+  (check-equal? total-pass 1321
+                (format "cumulative ✓ count: ~a (expected 1321)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1180 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1321 ✓ across ~a demos"
                    total-pass (length expected)))

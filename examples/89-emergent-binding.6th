@@ -1,0 +1,283 @@
+\ examples/89-emergent-binding.6th
+\ Honest version of Pilot L — binding EMERGES from a substrate-blind
+\ pair scan, not from `bind(alpha, beta)` called once on named args.
+\
+\ Pilot L (demo 75) calls `bind` once with hand-typed (α, β).  The
+\ bind word itself is rule-shaped (substrate writes only), but the
+\ enumeration is one-shot.  Critique: same static-composite class
+\ as G/H/I — the substrate is told who pairs with whom.
+\
+\ This demo removes the enumeration: build a heterogeneous particle
+\ zoo (multiple α-flavour and multiple β-flavour particles, plus
+\ broken candidates with missing self-loops), then apply a
+\ substrate-readable PAIR SCAN that:
+\
+\   * iterates ALL ordered pairs via nested EACH
+\   * filters: both ends are particles (NGET in 1..3 flavour range)
+\   * filters: outer.id < inner.id  (canonical, one pair fires)
+\   * filters: different flavours (NGET-outer != NGET-inner)
+\   * filters: both have self-loops (phi-pa > 0)
+\   * filters: not already bound (no existing edge between them)
+\   * spawns bound state M (Pilot G mechanism applied BY rule)
+\
+\ Every binding event is the rule reading substrate state.  The
+\ rule has no list of particles, doesn't know how many flavours
+\ exist, doesn't address them by name.
+\
+\ Expected dynamics:
+\   * 3 α-flavour particles (NGET=1) + 3 β-flavour particles (NGET=2)
+\   * cross-flavour pairs: 3*3 = 9 candidate bindings
+\   * 2 broken particles (no self-loop) — never bind
+\   * 9 bound states spawn, each with own self-loop + Φ_PA = 30000
+
+use prelude
+use graph
+use phi
+use debug
+
+\ ============================================================
+\ Particle constructors (Pilot G clusters with own self-loops).
+\ ============================================================
+
+: ring-3 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l1" load bi-edge ;
+
+: ring-4 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store  MARK "l4" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l4" load bi-edge
+  "l4" load "l1" load bi-edge ;
+
+: obs-attach-3 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge ;
+
+: obs-attach-4 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge
+  "ok" load load "l4" load bi-edge ;
+
+: build-alpha ( key -- )
+  "k" store
+  MARK "k" load store
+  "k" load load "k" load load EDGE+
+  ring-3
+  "k" load obs-attach-3
+  "k" load load 1 NSET ;
+
+: build-beta ( key -- )
+  "k" store
+  MARK "k" load store
+  "k" load load "k" load load EDGE+
+  ring-4
+  "k" load obs-attach-4
+  "k" load load 2 NSET ;
+
+: build-broken-alpha ( key -- )
+  \ alpha-flavour but missing the self-loop -> phi-pa = 0
+  "k" store
+  MARK "k" load store
+  ring-3
+  "k" load obs-attach-3
+  "k" load load 1 NSET ;
+
+\ ============================================================
+\ Particle zoo — 3 α, 3 β, 2 broken α.
+\ The binding rule will discover them by scanning, not by name.
+\ ============================================================
+
+"a1" build-alpha
+"a2" build-alpha
+"a3" build-alpha
+"b1" build-beta
+"b2" build-beta
+"b3" build-beta
+"x1" build-broken-alpha
+"x2" build-broken-alpha
+
+\ Sanity counts before scan.
+\   α clusters: 3 × (1 head + 3 limbs) = 12 nodes
+\   β clusters: 3 × (1 head + 4 limbs) = 15 nodes
+\   broken α:   2 × (1 head + 3 limbs) =  8 nodes
+\   Total: 35.
+NODES 35 assert-eq
+
+"a1" load phi-pa 40000 assert-eq
+"b1" load phi-pa 50000 assert-eq
+"x1" load phi-pa     0 assert-eq
+
+\ ============================================================
+\ Total particle-flavour charge before binding.
+\ Particle range NGET ∈ {1,2,3}.  α=1 ×5 (3 alive + 2 broken) + β=2 ×3 = 11.
+\ ============================================================
+
+0 "charge-acc" store
+
+: tally-particle-charge ( node -- )
+  NGET dup 0 > over 4 < * if
+    "charge-acc" load + "charge-acc" store
+  else
+    drop
+  then ;
+
+: total-particle-charge ( -- s )
+  0 "charge-acc" store
+  ' tally-particle-charge EACH
+  "charge-acc" load ;
+
+total-particle-charge 11 assert-eq
+
+\ ============================================================
+\ BINDING RULE — substrate-readable pair scan via nested EACH.
+\ Outer EACH selects candidate A (stored under "ba").
+\ Inner EACH selects candidate B (each node); fires only if
+\ canonical ordering ba < bb, both particles, different flavours,
+\ both alive (self-loop present), not already bound.
+\ Spawns composite M tagged NGET=8 with own self-loop.
+\ ============================================================
+
+0 "bind-events" store
+
+: in-particle-range ( nget -- 0/1 )
+  dup 0 > over 4 < * if 1 else 0 then nip ;
+
+: try-bind-inner ( bb -- )
+  "bb" store
+  \ outer-NGET in particle range was already established by outer
+  "bb" load NGET in-particle-range if
+    "bb" load "ba" load > if                            \ canonical
+      "bb" load NGET "ba" load NGET = not if            \ different flavours
+        "bb" load "bb" load EDGE? if                    \ inner has self-loop
+          "ba" load "ba" load EDGE? if                  \ outer has self-loop
+            "ba" load "bb" load EDGE? not if            \ not already bound
+              \ spawn bound state M
+              "ba" load "bb" load bi-edge               \ interaction quantum
+              MARK "tb-M" store
+              "tb-M" load "tb-M" load EDGE+             \ M self-loop
+              "tb-M" load "ba" load bi-edge
+              "tb-M" load "bb" load bi-edge
+              "tb-M" load 8 NSET                        \ composite marker
+              "bind-events" load 1 + "bind-events" store
+            then
+          then
+        then
+      then
+    then
+  then ;
+
+: scan-pair-bind ( ba -- )
+  dup "ba" store
+  NGET in-particle-range if
+    ' try-bind-inner EACH
+  then ;
+
+' scan-pair-bind EACH
+
+\ ============================================================
+\ Binding count.
+\ Cross-flavour pairs of ALIVE particles: 3 α-alive × 3 β = 9.
+\ Broken α (x1, x2) lack self-loop -> never bind.
+\ Each binding spawns 1 composite, so 9 composites.
+\ ============================================================
+
+"bind-events" load 9 assert-eq
+
+\ NODES: 35 + 9 composites = 44.
+NODES 44 assert-eq
+
+\ EDGES added per binding event:
+\   particle <-> particle bi-edge: 2 dir
+\   M self-loop:                   1 dir
+\   M <-> α bi-edge:               2 dir
+\   M <-> β bi-edge:               2 dir
+\   = 7 dir per binding.
+\
+\ Pre-scan edges per cluster:
+\   α (alive): self(1) + ring(6) + head<->3limbs(6) = 13.   × 3 = 39
+\   β (alive): self(1) + ring(8) + head<->4limbs(8) = 17.   × 3 = 51
+\   broken α: 0 + 6 + 6                              = 12.  × 2 = 24
+\   total pre: 114.
+\
+\ Post: 114 + 9*7 = 177.
+EDGES 177 assert-eq
+
+\ ============================================================
+\ Per-particle scope check.
+\ Each alive α gained +6 scope: 3 β bindings × (one back-edge to β +
+\ one back-edge to M).  Pre-scope OUT(α) = 4 (self + 3 limbs).
+\ Post-scope OUT(α) = 4 + 6 = 10.  Φ_PA(α) = 100000.
+\ Each alive β: pre-scope = 5 (self + 4 limbs).  +6 from 3 bindings.
+\ Post = 11.  Φ_PA(β) = 110000.
+\ ============================================================
+
+"a1" load OUT 10 assert-eq
+"a1" load phi-pa 100000 assert-eq
+"a2" load OUT 10 assert-eq
+"a3" load OUT 10 assert-eq
+
+"b1" load OUT 11 assert-eq
+"b1" load phi-pa 110000 assert-eq
+"b2" load OUT 11 assert-eq
+"b3" load OUT 11 assert-eq
+
+\ Broken α: untouched by binding rule.
+"x1" load OUT 3 assert-eq                  \ just 3 limbs, no self-loop
+"x1" load phi-pa 0 assert-eq
+"x2" load OUT 3 assert-eq
+
+\ ============================================================
+\ Tally composite (bound-state) Φ_PA via NGET=8 scan.
+\ Each composite: OUT = self + α + β = 3.  Φ_PA = 30000.
+\ 9 composites × 30000 = 270000.
+\ ============================================================
+
+0 "m-count"   store
+0 "m-phi-sum" store
+
+: tally-composite ( node -- )
+  dup NGET 8 = if
+    "m-count" load 1 + "m-count" store
+    dup phi-pa "m-phi-sum" load + "m-phi-sum" store
+  then
+  drop ;
+
+' tally-composite EACH
+
+"m-count"   load      9 assert-eq
+"m-phi-sum" load 270000 assert-eq
+
+\ ============================================================
+\ Charge conservation across binding.
+\ NGET=8 is outside particle range {1,2,3} — composites don't count.
+\ Σ NGET over particles remains 11 (5 α + 3 β + 0 contribution from M).
+\ ============================================================
+
+total-particle-charge 11 assert-eq
+
+cr
+"=== Demo 89 — emergent binding via substrate-blind pair scan ===" . cr
+"Zoo: 3 alive α + 3 alive β + 2 broken α." . cr
+"Pair scanner via nested EACH: canonical ordering, particle filter," . cr
+"different-flavour gate, self-loop check, not-already-bound check." . cr
+"No name list, no enumeration of who-binds-whom." . cr
+cr
+"Binding events:" . "bind-events" load . cr
+"Bound-state composites:" . "m-count"   load . cr
+"Sum of bound-state Φ_PA:" . "m-phi-sum" load . cr
+"Particle-flavour charge sum: pre=11, post=" . total-particle-charge . cr
+cr
+"What this fixes vs Pilot L (demo 75):" . cr
+"  - no `bind(alpha, beta)` call on hand-typed names" . cr
+"  - all 9 cross-flavour bindings DISCOVERED by scan" . cr
+"  - broken particles correctly excluded by substrate-readable" . cr
+"    self-loop check, not by absence from a hand-typed list" . cr
+
+REPORT

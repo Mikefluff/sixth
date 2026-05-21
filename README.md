@@ -1,13 +1,13 @@
 # Sixth
 
 > A minimal executable substrate language —
-> 40 primitives, 86 reproducible demos, 1180 ✓ across them all,
+> 40 primitives, 92 reproducible demos, 1321 ✓ across them all,
 > reference implementation for the Pointer Architecture v9.0 preprint.
 
 ```
 language tests:    ok
 substrate tests:   ok
-examples:          1180 / 1180 ✓ across 86 demos
+examples:          1321 / 1321 ✓ across 92 demos
 docs build:        ok
 ffi optional:      n/a
 renderer tests:    ok
@@ -54,7 +54,7 @@ raco pkg install --link .
 # Spencer-Brown's first mark — the second rung of the canonical ladder
 racket -l sixth/cli -- run examples/02-first-distinction.6th
 
-# the whole regression — all 86 demos, all 1180 assertions
+# the whole regression — all 92 demos, all 1321 assertions
 make verify
 ```
 
@@ -92,9 +92,10 @@ foundational demos (`01-numbers` … `20-conway-glider`, 359 ✓):
 | **L** Particle interaction (bound state)       | 75/76 | 33 | Two structurally distinct particles α (NGET=1, 3-limb cluster) and β (NGET=2, 4-limb cluster) interact via a substrate-readable BIND rule: mutual bi-edge α↔β + composite observer M (NGET=8) with own self-loop. The bound state carries its own Φ_PA = 30000; α and β gain scope +2 each → Φ_PA 60000/70000. Σ NGET over particles preserved (M is binding marker, not a particle). Same physics-grammar as meson = quark + antiquark + gluon binding. `make trace-particle-interaction`. |
 | **M** Bound-state decay (inverse of L)         | 77/78 | 32 | Reverse direction of Pilot L. The DECAY EVENT is severing M's self-loop alone — Φ_PA(M) collapses 30000 → 0 the instant phi-self-ref(M) = 0, even though M is still topologically connected to α and β (Pilot G principle in reverse). Phase B housekeeping removes M↔α/β + α↔β bi-edges; M survives as an isolated ash node (no edges, NGET=0). Σ NGET over particles preserved across the full bind+decay cycle. Binding is REVERSIBLE under EDGE-. `make trace-particle-decay`. |
 | (stress) | 79–84 | 59 | Parametric long-run stress tests for EVERY dynamic pilot: closed-ring charge conservation (79), bind+decay idempotence (80), autopoiesis stability (81), Conway blinker periodicity (82), sprout linear growth (83), Rule 184 ring conservation (84). Each tracks its invariant at EVERY cycle (not just end-state) and asserts max-drift = 0 at the end. Default CYCLES=1000 keeps the regression gate CI-fast; CLI override `-D max-cycles=N` scales to 10⁶ on the same source. Showcase: `make stress-test STRESS_CYCLES=1000000` confirms all six invariants hold exactly across one million iterations each. |
-| (honest-emergence) | 85–86 | 40 | Corrective to Pilots G/H/I/L/M/K which hand-place composites and then assert the construction has the predicted properties. Demo 85 uses an EACH-2PATH-driven triangle scanner that has NO pre-knowledge of where triangles are — composites emerge as the substrate's response to substrate-readable conditions. Demo 86 removes the last bit of "fitting to the answer": start with a plain 5-cell chain (no triangles), apply transitive-closure rule via EACH-2PATH (1↔3, 2↔4, 3↔5 emerge), then apply triangle-scanner — three composites spawn for the three triangles that arose. Every node and edge past t=0 is rule-driven. This is the substrate DERIVING composite distinction from a minimal initial state, not us posting the answer and asserting it. |
+| (honest-emergence) | 85–89, 91–92 | 160 | Corrective to Pilots G/H/I/L/M/K which hand-place composites. Demo 85: EACH-2PATH triangle scanner without pre-knowledge spawns composites for hand-wired triangles. Demo 86: full emergence — 5-cell chain → close-2path adds 1↔3, 2↔4, 3↔5 → triangle-scanner spawns 3 composites. Demo 87: honest Pilot H — EACH-walked selection rule reads phi-pa per node and attaches survivors to M. Demo 88: honest Pilot I — two-tier hierarchy from a 7-cell chain via 4 rule applications. Demo 89: honest Pilot L — nested-EACH pair scanner discovers all 9 cross-flavour bindings without a `bind(α, β)` enumeration. Demo 91: honest Pilot M — 3-phase substrate-walked decay scanner (decay-event severs self-loops on NGET=8, unwind removes incident edges, ash resets NGET) processes 9 bound states without per-composite source lines. Demo 92: recursive N-tier hierarchy iterated to FIXED POINT — same rules at every tier with memory-stored NGET filter, 5+3+1+0 spawn pattern, termination data-driven. |
+| (Peircean trit) | 90 | 21 | Substrate-readable classifier tags every node into balanced trit {−1, 0, +1} corresponding to Peirce's firstness / secondness / thirdness. Trit 0 (secondness) = self-loop only = Φ_PA = L_max — the "Tao of the substrate." Philosophical anchor: Peirce's reduction thesis (Burch 1991; Hereth Correia & Pöschel 2006), not the apparent "three multiplicands in Φ_PA" rhyme (which is a notational accident, not structural). |
 
-Cumulative: **1180 ✓ / 0 ✗ across 86 demos** (canonical Spencer-Brown ladder + substrate applications + Pilots A–F core + 3 substrate-monism trace pilots + 2 long-epoch parametric + 5 foundation visual traces + 2 atomic-build traces + Pilot G composite distinction + Pilot H mutation+selection + Pilot I multi-level hierarchy + Pilot J substrate-native charge conservation + Pilot K spontaneous coalition assembly + Pilot L particle interaction / bound-state formation + Pilot M bound-state decay / inverse of L).
+Cumulative: **1321 ✓ / 0 ✗ across 92 demos** (canonical Spencer-Brown ladder + substrate applications + Pilots A–F core + 3 substrate-monism trace pilots + 2 long-epoch parametric + 5 foundation visual traces + 2 atomic-build traces + Pilots G–M composite/particle pilots + stress-test track + honest-emergence track + Peircean trit observer).
 
 ## Running and rendering
 
@@ -102,10 +103,10 @@ Cumulative: **1180 ✓ / 0 ✗ across 86 demos** (canonical Spencer-Brown ladder
 # one-shot artifact-status report (Tier-1 verification, see CLAIMS.md)
 make verify
 
-# any of the 86 demos
+# any of the 92 demos
 racket -l sixth/cli -- run examples/46-phi-pa-split-brain-toy.6th
 
-# all 86 demos against the rackunit regression gate
+# all 92 demos against the rackunit regression gate
 raco test tests/examples-test.rkt
 
 # render the three static trace figures (Pilots C, D, F.3)
@@ -147,7 +148,7 @@ stdlib/       Sixth-language standard library (prelude, peano,
               candidate substrate-readable observability measures;
               dot.6th emits GraphViz DOT snapshots for the
               visual-trace pilots.
-examples/     86 emergence demonstrations
+examples/     92 emergence demonstrations
               (00 hello + 01–20 foundations + 21–36 Pilots A–F +
               37–39 substrate-monism traces + 40–41 long-epoch
               parametric + 42–46 foundation visual traces +
@@ -166,7 +167,7 @@ code/         Python tooling. render_trace.py reads dot.6th
               SVG / PDF or animated GIF.
 scripts/      verify.sh (artifact-status report; backs `make verify`)
 tests/        rackunit suites — lexer, parser, VM, substrate,
-              loader, examples-test.rkt (regression gate at 1180 ✓)
+              loader, examples-test.rkt (regression gate at 1321 ✓)
 docs/         Scribble manual + embedded README figure
 build/        regeneratable artefacts (raco scribble HTML, render
               outputs) — gitignored
