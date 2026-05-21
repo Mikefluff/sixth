@@ -24,11 +24,34 @@ Tracks `main@HEAD` development past v0.8.  Currently:
 - CHANGELOG.md (this file).
 
 ### Changed
+- **Primitive-count doc/code divergence fixed**: documentation
+  consistently said "40 primitives" while `sixth/primitives/*.rkt`
+  exposes 48 (17 base + 23 substrate-core + 8 HEDGE3 trivalent).
+  Updated CLAIMS.md Tier-1 statement #1 (which was mechanically
+  refutable by `grep -E "^\s*\(cons '" sixth/primitives/*.rkt`),
+  README.md (×6 mentions including layout block), SUBSTRATE.md
+  Layer 0/1/2 catalog (Layer 0 header was "(15)" but body listed
+  17 items; Layer 2 HEDGE3 was missing entirely), docs/TOUR.md,
+  examples/README.md.  CLAIMS.md Tier-1 statement #1 now carries
+  the exact grep command for reviewer fact-check.
+- **CLAIMS.md demo enumeration extended to 104**: previously
+  enumeration in Tier-1 statement #2 stopped at the stress-test
+  track (79–81) and ended mid-sentence, while the count "98
+  demonstrations pass" was correct.  Now enumerates nine tracks
+  through demo 104 (HEDGE3) and notes the intentional cuts at
+  95–97, 99, 101–102.
 - `README.md` reproducibility section: now explicitly scopes the
-  evidence as two-tier — assertion gate covers all 103 demos;
-  byte-identical forensic traces cover 23 of 103.  Previously the
-  framing implied "fully reproducible" without distinguishing
-  evidence quality.
+  evidence as two-tier — assertion gate covers all 98 demos;
+  byte-identical forensic traces cover 23 of 98 (trace block
+  55–78 + long-epoch growth 54).  Previously implied "fully
+  reproducible" without distinguishing evidence quality.
+- `README.md` repository-layout block: replaced stale demo-index
+  prose (which referenced non-existent "00 hello" / 21–63
+  numbering from a pre-reorg era) with current nine-track summary.
+- `tests/examples-test.rkt` header comment: "74 demos" → "98
+  demos" with full nine-track breakdown and gap-note.
+- `scripts/verify.sh` header sample output: "1180 / 1180 ✓ across
+  86 demos" → "1469 / 1469 ✓ across 98 demos".
 - `docs/TOUR.md`: attribution updated from "author's pick" to
   "curated pick assembled jointly by Mikhail Savchenko and the AI
   collaborator that helped write the demos"; honest AI co-authorship.
@@ -36,6 +59,25 @@ Tracks `main@HEAD` development past v0.8.  Currently:
   naming-caveat paragraph clarifying that "cosmogenesis" is a
   v9.0-era codename for substrate-construction-from-one-distinction,
   not a quantitative claim about cosmology on a 13-node graph.
+- Demo 104 (emergent causal time) prose lowered: framing was
+  "Substrate-monism extends from STATE to TIME / Wolfram-aligned
+  causal invariance"; now honestly describes the algorithm as
+  Bellman-Ford-style longest-path relaxation on a DAG, with
+  DAG-ness flagged as a precondition (cycles would diverge).
+  The substantive claim — substrate carries enough structure
+  (MEDIATOR + NGET + EACH-MEDIATOR) to compute longest-path
+  without host help — remains intact.
+- `stdlib/phi.6th`: `phi-pa-witness` retained because the PA v9.0
+  preprint references it as a fourth candidate measure, but its
+  block comment now flags Tier-3 status and notes the cut of
+  demo 102 (its only consumer) without replacement coverage.
+
+### Removed
+- Demo 104 cleanup: removed dead first definition of
+  `propagate-time` plus the theatrical `exit-when-rule-src` /
+  `exit-when-rule-dst` placeholder words that documented an
+  earlier (rejected) early-return attempt.  Single clean
+  definition with a comment explaining the nested-IF guard.
 
 ### Fixed
 - CI `raco pkg install` regression: `.` is no longer accepted as a

@@ -21,44 +21,63 @@ Statements in this tier are mechanically verified on every CI run by
 target. Failure of any one of them is an immediate falsification
 trigger F0 of the v9.0 preprint.
 
-1. **The substrate exists as a 40-primitive language.** The Sixth
-   engine compiles, the 40 primitives are exposed by
-   `sixth/primitives/*.rkt`, the module loader resolves the stdlib,
-   and a `#lang sixth` reader is registered.
+1. **The substrate exists as a 48-primitive language.** The Sixth
+   engine compiles, the 48 primitives (17 base + 23 substrate-core +
+   8 HEDGE3 trivalent) are exposed by `sixth/primitives/*.rkt`, the
+   module loader resolves the stdlib, and a `#lang sixth` reader is
+   registered.  Counted via `grep -E "^\s*\(cons '"
+   sixth/primitives/*.rkt`.
 
 2. **All 98 demonstrations pass deterministically.** `examples-test.rkt`
    asserts cumulative `pass=1469 fail=0` across 98 demos organised
-   in six conceptual phases: the canonical Spencer-Brown ladder
-   (01–11, eleven atomic rungs from void to first-Φ_PA), substrate
-   applications (12–31, Peano / time / conservation / CA / Conway /
-   morphism / Rovelli observers / Hofstadter self-model), Pilots
-   A–F (32–47: autopoiesis / observer-driven evolution / cosmogenesis
-   / Φ_PA measurement / encoding maps for transformer / brain /
-   split-brain / colony), Pilots G–K (48–52: composite distinction
-   via meta-self-loop, mutation + substrate-readable selection
-   producing three distinct "particle species", multi-level
-   hierarchy, Σ NGET Noether-style conservation under STEP-CA,
-   spontaneous coalition assembly re-building the hierarchy from
-   one substrate-readable rule), long-epoch parametric pilots
-   (53–54), the full visual-trace track (55–74) which provides
-   a DOT-snapshot companion for every numerical pilot — including
-   the PA-ontological shell decomposition (65) that unfolds the
-   first shell of Pilot D (demo 42) into the eleven Spencer-Brown
-   events realised individually by canonical-ladder rungs 1–11 —
-   Pilot L (75–76) which demonstrates substrate-native particle
-   interaction: two structurally distinct observers bind via a BIND
-   rule, forming a composite bound state with its own Φ_PA while
-   the flavour charges of constituents are individually conserved,
-   Pilot M (77–78) which exhibits the inverse process (decay when
-   M's self-loop is severed, particles return to free state with
-   charge conservation preserved), and the stress-test track
-   (79–81) which re-runs the dynamic invariants at parametric
-   depth (default 1000 cycles in CI; `-D max-cycles=N` scales to
-   10⁴/10⁵/10⁶) and asserts max-drift = 0 at every step: charge
-   conservation on a closed ring (79), bind+decay idempotence
-   (80), autopoiesis stability (81).  Showcase: `make stress-test
-   STRESS_CYCLES=1000000` confirms all three invariants hold
-   exactly across one million iterations each.
+   in nine conceptual tracks:
+   - **Canonical Spencer-Brown ladder (01–11)** — eleven atomic
+     rungs from void to first-Φ_PA.
+   - **Substrate applications (12–31)** — Peano / time / conservation
+     / CA / Conway / morphism / Rovelli observers / Hofstadter
+     self-model.
+   - **Pilots A–F (32–47)** — autopoiesis / observer-driven
+     evolution / cosmogenesis / Φ_PA measurement / encoding maps
+     for transformer / brain / split-brain / colony.
+   - **Pilots G–K (48–52)** — composite distinction via meta-self-
+     loop, mutation + substrate-readable selection producing three
+     distinct "particle species", multi-level hierarchy, Σ NGET
+     Noether-style conservation under STEP-CA, spontaneous
+     coalition assembly.
+   - **Long-epoch parametric (53–54)**.
+   - **Visual-trace track (55–74)** — DOT-snapshot companion for
+     every numerical pilot, including the PA-ontological shell
+     decomposition (65) that unfolds the first shell of Pilot D
+     (demo 42) into the eleven Spencer-Brown events realised by
+     canonical-ladder rungs 1–11.
+   - **Pilots L–M (75–78)** — particle interaction (bound-state
+     formation) and its inverse (decay when M's self-loop is
+     severed); flavour charges conserved on both paths.
+   - **Stress-test track (79–84)** — parametric long-run invariants
+     (default 1000 cycles in CI; `-D max-cycles=N` scales to
+     10⁴/10⁵/10⁶); asserts max-drift = 0 at every step for charge
+     conservation (79), bind+decay idempotence (80), autopoiesis
+     stability (81), Conway blinker periodicity (82), sprout linear
+     growth (83), Rule 184 ring conservation (84).  Showcase:
+     `make stress-test STRESS_CYCLES=1000000` confirms all six
+     invariants hold exactly across one million iterations each.
+   - **Honest-emergence track (85–89, 91–92)** — substrate-walked
+     scanner rules SPAWN composites in response to substrate state
+     rather than the demo hand-placing the answer (corrective to
+     Pilots G/H/I/L/M/K which hand-place).
+   - **Peircean trit observer (90)** — substrate-readable classifier
+     tagging every node into balanced trit {−1, 0, +1}; firstness /
+     secondness / thirdness anchored on Peirce's reduction thesis
+     (Burch 1991; Hereth Correia & Pöschel 2006).
+   - **HEDGE3 typed trivalent (93–94, 98, 100, 103–104)** — typed
+     trivalent hyperedge surface with strict structural typing
+     enforced at insertion.  Substantive applications: simplicial
+     complex with Euler χ = V−E+F (98); MEDIATOR causal hypergraph
+     with forward/backward reachability cones (100); strict-typing
+     integration check via `HEDGE3-VALID?` predicate (103);
+     substrate-derived causal time as fixpoint over MEDIATOR DAG
+     (104).  Gaps 95–97, 99, 101–102 are intentional cuts of
+     fake-deep hash-table demos (see CHANGELOG for rationale).
 
 3. **The Φ_PA stdlib word reproduces Definition def:phi-pa.** Demo 43
    asserts `phi-pa` on three canonical observers (non-reflexive

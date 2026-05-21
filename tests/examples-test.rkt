@@ -9,23 +9,27 @@
 ;; run (engine prints ✓ for every successful ASSERT, including
 ;; post-RESET ones the REPORT line does not cumulate).
 ;;
-;; The 74 demos are organised conceptually:
+;; The 98 demos are organised conceptually:
 ;;
-;;   01–11  Canonical Spencer-Brown ladder (void → measurement)
-;;   12–31  Applications of the substrate (Peano, time, CA, BFS,
-;;          conservation, consensus, morphism, Conway, Wolfram)
-;;   32–36  Pilot A — substrate-native autopoiesis
-;;   37–40  Pilot B — observer-driven conscious evolution
-;;   41–42  Pilots C–D — cosmogenesis (bootstrap + substrate-monist)
-;;   43     Pilot E — substrate-internal Φ_PA measurement
-;;   44–47  Pilot F — encoding-map pilots (transformer / brain /
-;;                                         split-brain / colony)
-;;   48–52  Pilots G–K — composite distinction, mutation+selection,
-;;                       multi-level hierarchy, charge conservation,
-;;                       spontaneous coalition assembly
-;;   53–54  Long-epoch parametric pilots
-;;   55–74  Visual-trace track (every numerical pilot's DOT-snapshot
-;;          companion, consolidated at the end of the catalogue)
+;;   01–11   Canonical Spencer-Brown ladder (void → measurement)
+;;   12–31   Applications (Peano, time, CA, BFS, conservation,
+;;           morphism, Conway, Wolfram)
+;;   32–36   Pilot A — substrate-native autopoiesis
+;;   37–40   Pilot B — observer-driven conscious evolution
+;;   41–42   Pilots C–D — cosmogenesis
+;;   43      Pilot E — substrate-internal Φ_PA measurement
+;;   44–47   Pilot F — encoding-map pilots
+;;   48–52   Pilots G–K — composite/particle pilots
+;;   53–54   Long-epoch parametric
+;;   55–74   Visual-trace track (DOT-snapshot companions)
+;;   75–78   Pilots L/M — particle interaction + decay
+;;   79–84   Stress-test track (parametric long-run invariants)
+;;   85–92   Honest-emergence track (composites EMERGE from rules)
+;;   90      Peircean trit observer
+;;   93–104  HEDGE3 typed trivalent hyperedges
+;;
+;; Gaps 95–97, 99, 101–102 are intentional cuts of fake-deep
+;; hash-table demos (see CHANGELOG.md for rationale).
 
 (require rackunit
          racket/file

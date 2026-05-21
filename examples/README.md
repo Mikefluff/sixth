@@ -418,7 +418,7 @@ realises.](../docs/figures/pa_ontological_shell.png)
 ## Pilot E visual trace (50)
 
 Demo 32 verified Φ_PA numerically but emitted no figure.  Pilot E
-is THE substrate-monism load-bearing demo (same 40 primitives BUILD
+is THE substrate-monism load-bearing demo (same primitives BUILD
 and COMPUTE), so it deserves a visible trace.
 
 | Demo | File | ✓ | Property |
@@ -785,8 +785,7 @@ build/figures/<name>.{png|gif}
 
 The pipeline is pure Sixth → text → Python. No new primitives in
 the substrate; `stdlib/dot.6th` is composed from `EACH`,
-`EACH-EDGE`, `emit`, and `.` alone. The 40-primitive count is
-preserved by L0 of the v9.0 preprint.
+`EACH-EDGE`, `emit`, and `.` alone.
 
 ## Adding your own demo
 

@@ -187,8 +187,9 @@ go from simplest distinction to highest-order composition:
   injection (binary edges never touched).  Demo 98: SIMPLEX as
   2-cells of a simplicial complex, Euler characteristic and edge-
   adjacency as substrate-readable queries.  The trivalent layer
-  coexists with binary edges; bootstrap claim for the original 40-
-  demo ascent (38 primitives suffice) is preserved.
+  coexists with binary edges; bootstrap claim for the original
+  Spencer-Brown ascent (Layer 0 + Layer 1 = 40 primitives suffice
+  for demos 01–92) is preserved.
 
 All 1469 assertions pass deterministically. Run the regression in
 one command:
@@ -205,16 +206,18 @@ make verify
 
 ## Catalog of substrate primitives
 
-### Layer 0 — base Sixth (15)
+### Layer 0 — base Sixth (17)
 
 Stack operations: `dup` `drop` `swap` `over`.
 Arithmetic: `+` `-` `*` `/` `mod`.
 Comparison: `=` `<` `>`.
 Memory: `store` `load`.
 I/O: `.` `cr` `emit`.
-Definition: `:`/`;`.
 
-### Layer 1 — substrate (23)
+(Word definition via `:` and `;` is parser syntax, not a runtime
+primitive — not counted here.)
+
+### Layer 1 — substrate core (23)
 
 ```
 Difference:        MARK
@@ -224,13 +227,29 @@ Counts:            NODES   EDGES
 Time:              STEP    NOW     BORN
 Iteration:         EACH    EACH-EDGE   EACH-2PATH   STEP-CA
 Features:          NSET    NGET    NSUM
-Syntactic:         '       (tick — push next token literal)
 Test/admin:        ASSERT  RESET   REPORT
 ```
 
-That is 38 operations total. Every demo uses only these; stdlib
-helpers (`bi-edge`, `clique`, `grid-2d`, `rule110`, `phi-pa`, …)
-are composed from the 38 in Sixth itself, under `stdlib/`.
+(Tick `'` for word-quotation is parser syntax, not a runtime
+primitive — not counted here.)
+
+### Layer 2 — HEDGE3 typed trivalent hyperedges (8)
+
+```
+Insert / remove:   HEDGE3+   HEDGE3-
+Predicates:        HEDGE3?   HEDGE3-VALID?
+Counts:            HEDGES3   HEDGES3-KIND
+Iteration:         EACH-HEDGE3   EACH-HEDGE3-KIND
+```
+
+Four canonical kinds with strict structural typing enforced at
+insertion (`exn:fail:sixth:substrate` on violation): WITNESS,
+MEDIATOR, CONTEXT, SIMPLEX.
+
+That is **48 primitives total** (17 + 23 + 8). Every demo uses
+only these; stdlib helpers (`bi-edge`, `clique`, `grid-2d`,
+`rule110`, `phi-pa`, `witness+`, `mediator+`, …) are composed
+from the 48 in Sixth itself, under `stdlib/`.
 
 
 ## Related work

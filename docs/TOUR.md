@@ -136,7 +136,7 @@ scope 13.  All three measured by the same `phi-pa` word from
 **Why it earns a tour slot.** Φ_PA is the central scalar of the
 v9.0 preprint.  This demo shows it is **substrate-readable**:
 not an external observer's annotation, but a value the substrate
-computes about itself using the same 40 primitives that built it.
+computes about itself using the same primitives that built it.
 If Φ_PA were a host-computed quantity the substrate-monist
 position would be philosophical hand-waving; because it's
 substrate-readable, it is operational.

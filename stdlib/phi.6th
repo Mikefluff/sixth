@@ -102,13 +102,15 @@
 \ Φ_PA^W while Φ_PA itself is low.
 \
 \ Reduces to phi-pa when the substrate has no WITNESS hyperedges.
-\ The trivalent extension is OPTIONAL — only loads if `use hedge`
-\ is also active, but stays callable as a stub returning the
-\ binary-only phi-pa when no witnesses exist (W(O)=0).
 \
-\ Implementation note: uses each-witness scan with scratch memory
-\ "phi-w-target" and counter "phi-w-count"; safe under nested
-\ EACH invocations.
+\ Tier-3 working candidate.  The original demo (102) that
+\ exercised this word end-to-end was cut in the critic-sweep as
+\ "hash-table dressed up as substrate emergence"; phi-pa-witness
+\ remains in stdlib because the PA v9.0 preprint references it as
+\ a fourth candidate measure (alongside phi-pa, phi-integ,
+\ phi-bidir).  Direct callable via `use phi` + `use hedge`; no
+\ dedicated demo coverage pending a substrate-substantive
+\ application.
 \ ----------------------------------------------------------------
 
 : phi-w-tally ( src dst w -- )

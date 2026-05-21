@@ -1,7 +1,8 @@
 # Sixth
 
 > A minimal executable substrate language —
-> 40 primitives, 98 reproducible demos, 1469 ✓ across them all,
+> 48 primitives (17 base + 23 substrate-core + 8 HEDGE3 trivalent),
+> 98 reproducible demos, 1469 ✓ across them all,
 > reference implementation for the Pointer Architecture v9.0 preprint.
 
 ```
@@ -21,9 +22,11 @@ artifact status:   reproducible
 - Byte-identical forensic traces (`make verify-repro`): runs
   23 of the 98 demos twice and asserts the JSONL outputs hash
   identically across runs.  Forensic-trace coverage was built
-  during the v9.0 ascent (demos 47–69ish) and has not been
-  extended to the 35 newer demos (68–103) added since;
-  `make verify-repro` is a strict subset of `make verify`.
+  during the v9.0 ascent (trace block 55–78 plus long-epoch
+  growth 54) and has not been extended to the newer tracks added
+  since (stress 79–84, honest-emergence 85–92, Peircean trit 90,
+  HEDGE3 93–104); `make verify-repro` is a strict subset of
+  `make verify`.
   Honest framing: full assertion-gate reproducibility, partial
   byte-identical-trace reproducibility.
 
@@ -86,7 +89,7 @@ foundational demos (`01-numbers` … `20-conway-glider`, 359 ✓):
 | **B** Conscious evolution                    | 37–40 | 88  | Symbiosis, reproduction with mutation, observer-driven selection (Lamarck-style, not blind Darwin), goal-directed observer behaviour. |
 | **C** Cosmogenesis bootstrap                 | 41    | 21  | 13-node 48-edge substrate constructed by a substrate-resident observer from one `MARK` at `t=0`; persists under harsh autopoietic decay. |
 | **D** Substrate-internally-driven cosmogenesis | 42  | 17  | Observer establishes its own self-loop at `t=0+` (substrate-monist bootstrap), then drives further construction via `NSUM(O) ≥ target-min` — no host counter. |
-| **E** Substrate-internal Φ_PA measurement     | 43   | 12  | `stdlib/phi.6th` ships three candidate measures: `phi-pa`, `phi-integ`, `phi-bidir`. Same 40 primitives that build the substrate also compute its consciousness scalar. |
+| **E** Substrate-internal Φ_PA measurement     | 43   | 12  | `stdlib/phi.6th` ships three candidate measures: `phi-pa`, `phi-integ`, `phi-bidir`. Same primitives that build the substrate also compute its consciousness scalar. |
 | **F** Encoding-map demonstrations             | 44–47 | 46 | Toy substrates for PSH1–PSH5. F.1 transformer; F.2 brain; F.3 split-brain (motivates Φ_integ); F.4 ant colony. |
 | (trace) | 55–57 | 18 | DOT-rendered snapshots of Pilots D, C, F.3 via `stdlib/dot.6th` + `code/render_trace.py`. Single command `make traces`. |
 | (long)  | 53–54 | 19 | Parametric long-epoch pilots. Demo 40 = stable autopoiesis (after-decay/after-restore sub-cycle snapshots make the dynamics visible), demo 41 = growing substrate. CLI `-D max-cycles=N -D snap-every=K` drives arbitrary run lengths (TCO-safe). |
@@ -107,7 +110,7 @@ foundational demos (`01-numbers` … `20-conway-glider`, 359 ✓):
 | (stress) | 79–84 | 59 | Parametric long-run stress tests for EVERY dynamic pilot: closed-ring charge conservation (79), bind+decay idempotence (80), autopoiesis stability (81), Conway blinker periodicity (82), sprout linear growth (83), Rule 184 ring conservation (84). Each tracks its invariant at EVERY cycle (not just end-state) and asserts max-drift = 0 at the end. Default CYCLES=1000 keeps the regression gate CI-fast; CLI override `-D max-cycles=N` scales to 10⁶ on the same source. Showcase: `make stress-test STRESS_CYCLES=1000000` confirms all six invariants hold exactly across one million iterations each. |
 | (honest-emergence) | 85–89, 91–92 | 160 | Corrective to Pilots G/H/I/L/M/K which hand-place composites. Demo 85: EACH-2PATH triangle scanner without pre-knowledge spawns composites for hand-wired triangles. Demo 86: full emergence — 5-cell chain → close-2path adds 1↔3, 2↔4, 3↔5 → triangle-scanner spawns 3 composites. Demo 87: honest Pilot H — EACH-walked selection rule reads phi-pa per node and attaches survivors to M. Demo 88: honest Pilot I — two-tier hierarchy from a 7-cell chain via 4 rule applications. Demo 89: honest Pilot L — nested-EACH pair scanner discovers all 9 cross-flavour bindings without a `bind(α, β)` enumeration. Demo 91: honest Pilot M — 3-phase substrate-walked decay scanner (decay-event severs self-loops on NGET=8, unwind removes incident edges, ash resets NGET) processes 9 bound states without per-composite source lines. Demo 92: recursive N-tier hierarchy iterated to FIXED POINT — same rules at every tier with memory-stored NGET filter, 5+3+1+0 spawn pattern, termination data-driven. |
 | (Peircean trit) | 90 | 21 | Substrate-readable classifier tags every node into balanced trit {−1, 0, +1} corresponding to Peirce's firstness / secondness / thirdness. Trit 0 (secondness) = self-loop only = Φ_PA = L_max — the "Tao of the substrate." Philosophical anchor: Peirce's reduction thesis (Burch 1991; Hereth Correia & Pöschel 2006), not the apparent "three multiplicands in Φ_PA" rhyme (which is a notational accident, not structural). |
-| (HEDGE3) | 93–98 | 119 | Typed trivalent hyperedge primitive family (HEDGE3+/-/?, HEDGES3, HEDGES3-KIND, EACH-HEDGE3, EACH-HEDGE3-KIND; +7 primitives) + `stdlib/hedge.6th` kind constants. Four canonical kinds with strict typing: WITNESS (src, dst, witness — substrate-native provenance; demo 93), CONTEXT (in, ctx, out — rewrite-rule firings as substrate-readable history; demo 95), MEDIATOR (src, mid, dst — channels as substrate nodes with load tracking + rerouting + fault injection; demo 97), SIMPLEX (a, b, c — undirected 2-cells of a simplicial complex with Euler characteristic χ = V−E+F computed from substrate state; demo 98). Demo 94 shows all four coexisting under strict typing. Demo 96 demonstrates wobble-at-position-3 via DNA codon analogy (8 hyperedges encode 32 codons, 4× compression matches Crick's wobble degeneracy). Substantive substrate-level realisation of Peirce's reduction thesis. Coexists with binary edges; bootstrap claim for the original 40-demo ascent preserved. |
+| (HEDGE3) | 93–94, 98, 100, 103–104 | 148 | Typed trivalent hyperedge primitive family (`HEDGE3+/-/?`, `HEDGE3-VALID?`, `HEDGES3`, `HEDGES3-KIND`, `EACH-HEDGE3`, `EACH-HEDGE3-KIND`; +8 primitives) + `stdlib/hedge.6th` kind constants. Four canonical kinds with strict structural typing enforced at insertion: WITNESS (src, dst, witness — substrate-native provenance; demo 93), MEDIATOR (src, mid, dst — causal lineage with reachability cones + fixpoint causal-time; demos 100, 104), CONTEXT (in, ctx, out — rewrite history), SIMPLEX (a, b, c — 2-cells of a simplicial complex with Euler χ = V−E+F; demo 98). Demo 94 exercises all four coexisting under strict typing; demo 103 cycles HEDGE3-VALID? through each kind's invariant. Substrate-level realisation of Peirce's reduction thesis. Coexists with binary edges. |
 
 Cumulative: **1469 ✓ / 0 ✗ across 98 demos** (canonical Spencer-Brown ladder + substrate applications + Pilots A–F core + 3 substrate-monism trace pilots + 2 long-epoch parametric + 5 foundation visual traces + 2 atomic-build traces + Pilots G–M composite/particle pilots + stress-test track + honest-emergence track + Peircean trit observer + HEDGE3 typed trivalent hyperedges).
 
@@ -152,30 +155,26 @@ racket-mode) runs `.rkt` files starting with `#lang sixth`:
 ## Repository layout
 
 ```
-sixth/        engine — lexer, parser, compiler, VM, 40 primitives
-              (17 base + 23 substrate), module loader, REPL, CLI
-              (`-D KEY=VAL` for parametric runs), `#lang sixth`
-              reader, PyTorch FFI bridges
+sixth/        engine — lexer, parser, compiler, VM, 48 primitives
+              (17 base + 23 substrate-core + 8 HEDGE3 trivalent),
+              module loader, REPL, CLI (`-D KEY=VAL` for parametric
+              runs), `#lang sixth` reader, PyTorch FFI bridges
 stdlib/       Sixth-language standard library (prelude, peano,
-              graph, bfs, debug, phi, dot) — helpers above the 40
-              primitives. phi.6th ships three
-              candidate substrate-readable observability measures;
+              graph, bfs, debug, phi, hedge, dot) — helpers
+              above the primitives. phi.6th ships three candidate
+              substrate-readable observability measures;
               dot.6th emits GraphViz DOT snapshots for the
-              visual-trace pilots.
-examples/     98 emergence demonstrations
-              (00 hello + 01–20 foundations + 21–36 Pilots A–F +
-              37–39 substrate-monism traces + 40–41 long-epoch
-              parametric + 42–46 foundation visual traces +
-              47–48 atomic-build traces + 49 PA-ontological
-              shell decomposition + 50 Pilot E visual trace +
-              51–53 Pilot F.1/F.2/F.4 visual traces +
-              54–55 Pilot G composite distinction via meta-self-loop +
-              56–57 Pilot H mutation + substrate-readable selection +
-              58–59 Pilot I multi-level particle hierarchy +
-              60–61 Pilot J charge conservation +
-              62–63 Pilot K spontaneous coalition assembly).
-              See `examples/README.md` for the full demo catalogue
-              with embedded figures and animations.
+              visual-trace pilots; hedge.6th provides HEDGE3 kind
+              constants and per-kind constructors.
+examples/     98 emergence demonstrations across six tracks:
+              01–11 Spencer-Brown ladder, 12–31 substrate
+              applications, 32–47 Pilots A–F, 48–52 Pilots G–K,
+              53–54 long-epoch parametric, 55–74 visual-trace
+              companions, 75–78 Pilots L/M, 79–84 stress tests,
+              85–92 honest-emergence, 90 Peircean trit, 93–104
+              HEDGE3 trivalent typing (gaps 95–97, 99, 101–102 are
+              cuts; see CHANGELOG).  Full catalogue with embedded
+              figures: `examples/README.md`.
 code/         Python tooling. render_trace.py reads dot.6th
               snapshots from stdin; emits static multi-panel PNG /
               SVG / PDF or animated GIF.
@@ -233,7 +232,7 @@ Sixth is the operational substrate behind:
 
 **Pointer Architecture v9.0** (preprint, pending arXiv submission).
 The paper defines `𝒮 = (G, R, C, A, π)` formally, maps it to Sixth's
-40 primitives, derives the candidate substrate-readable `Φ_PA`
+48 primitives, derives the candidate substrate-readable `Φ_PA`
 family of consciousness measures from Pilots A–F, and posits the
 substrate-monist identity thesis as a working hypothesis under the
 falsifier F5.

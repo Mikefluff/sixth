@@ -9,7 +9,7 @@
 # Output format:
 #   language tests:   ok
 #   substrate tests:  ok
-#   examples:         1180 / 1180 ✓ across 86 demos
+#   examples:         1469 / 1469 ✓ across 98 demos
 #   docs build:       ok
 #   ffi optional:     n/a   (libtorch bridges not yet shipped)
 #   renderer tests:   ok
@@ -45,7 +45,7 @@ else
     FAIL=1
 fi
 
-# ---- examples regression (867 ✓ across 60 demos style) ----
+# ---- examples regression (1469 ✓ across 98 demos style) ----
 EX_OUT=$(raco test tests/examples-test.rkt 2>&1 || true)
 EX_LINE=$(printf "%s\n" "$EX_OUT" | grep -oE 'examples regression: [0-9]+ / [0-9]+ ✓ across [0-9]+ demos' | head -1)
 if [ -n "$EX_LINE" ] && printf "%s\n" "$EX_OUT" | grep -q "tests passed"

@@ -1,50 +1,46 @@
 \ examples/104-emergent-causal-time.6th
-\ Emergent causal time — substrate-time of each event is COMPUTED
-\ by the substrate from the MEDIATOR-hypergraph structure, not
-\ assigned externally.  Time is a substrate-derived property of
-\ causal lineage, not a clock.
+\ Causal time from MEDIATOR hyperedges — longest-path on a DAG
+\ computed substrate-internally via fixpoint iteration.
 \
-\ The Wolfram physics project's central conceptual move: in a
-\ hypergraph rewriting model, *time is the partial order on the
-\ causal graph of rule firings*.  No external clock; events are
-\ ordered by which one had to happen before another for the
-\ substrate to reach its current state.
+\ Wolfram-style framing: in a hypergraph rewriting model, time is
+\ a partial order on the causal graph of rule firings.  This demo
+\ instantiates that operationally as Bellman-Ford-style relaxation
+\ on a 7-edge MEDIATOR DAG.  Substrate-internal in the sense that
+\ each event's substrate-time is stored in NGET and updated by a
+\ rule that walks EACH-MEDIATOR; no host counter participates.
 \
-\ This demo realises that operationally in Sixth:
+\ The DAG:
 \
-\   - 7 substrate-state nodes (events) and 3 rule-nodes are MARKed.
-\   - User code deposits 7 MEDIATOR hyperedges (cause, rule, effect)
-\     encoding the causal lineage of an evolution that branches
-\     once and merges once:
+\        R-A         R-B            R-A
+\     s0 ──→ s1 ──┬───→ s2 ──→ s4 ─┐  R-C
+\                 │      R-A        ├──→ s6
+\                 └───→ s3 ──→ s5 ─┘
 \
-\          R-A         R-B            R-A
-\       s0 ──→ s1 ──┬───→ s2 ──→ s4 ─┐  R-C
-\                   │      R-A        ├──→ s6
-\                   └───→ s3 ──→ s5 ─┘
+\ Substrate-state nodes carry semantic NGET payload (the causal
+\ time being computed).  Rule-nodes are tagged NGET=100 as a
+\ sentinel so the relaxation rule can skip them.
 \
-\   - Initially, every state-node carries substrate-time NGET = 0
-\     (the substrate has not computed anything yet).
-\   - A FIXPOINT RULE iterates EACH-MEDIATOR repeatedly.  For each
-\     (src, _, dst) hyperedge, dst's substrate-time is updated to
-\     max(current, src_time + 1).  Iteration continues until no
-\     state's substrate-time changes in a full pass.
+\ Fixpoint rule: for each MEDIATOR (src, _, dst), if
+\ NGET(src)+1 > NGET(dst), update NGET(dst).  Iterate until no
+\ change in a full pass.  Termination guaranteed because the DAG
+\ has finite longest-path; on a cycle the rule would diverge —
+\ MEDIATOR DAG-ness is a precondition, not a substrate-enforced
+\ invariant.
 \
-\   - The fixpoint of the rule IS the substrate's notion of causal
-\     time: longest path from any source-state to each event.
+\ Three properties verified:
 \
-\ Three properties verified that demonstrate this is a non-trivial
-\ derivation, not bookkeeping:
+\   1. Branching: s2 and s3 are concurrent events with identical
+\      substrate-time (both descend from s1 via R-B).
+\   2. Joining: s6 = max(time(s4), time(s5)) + 1, not the sum.
+\   3. Forward extension: adding s7 after s6 gives time(s7) = 5;
+\      prior times are unchanged (forward propagation on a DAG
+\      cannot perturb ancestors).
 \
-\   1. Branching: s2 and s3 have the SAME substrate-time (2),
-\      because they are concurrent products of s1's R-B branch.
-\   2. Joining: s6's substrate-time = max(time(s4), time(s5)) + 1
-\      = max(3, 3) + 1 = 4, NOT the sum of branch lengths.
-\   3. Monotonic extension: adding a NEW event s7 after s6 makes
-\      time(s7) = 5 while NO prior state's time changes.
-\
-\ The fixpoint, the longest-path computation, and the monotonic
-\ extension are all substrate-readable; no external clock or host
-\ counter participates.
+\ The longest-path-on-DAG algorithm itself is CS 101.  What the
+\ demo establishes is that the substrate carries enough structure
+\ (MEDIATOR hyperedges + NGET payload + EACH-MEDIATOR iteration)
+\ to compute it without host help — substrate-readable causal time
+\ rather than substrate-readable causal time-stamps.
 
 use prelude
 use graph
@@ -117,23 +113,8 @@ HEDGES3 7 assert-eq
 
 0 "changed" store
 
-: propagate-time ( src mid dst -- )
-  "p-dst" store  drop  "p-src" store
-  "p-src" load NGET 100 = if exit-when-rule-src then
-  "p-dst" load NGET 100 = if exit-when-rule-dst then
-  "p-src" load NGET 1 + "cand" store
-  "p-dst" load NGET "cand" load < if
-    "p-dst" load "cand" load NSET
-    "changed" load 1 + "changed" store
-  then ;
-
-: exit-when-rule-src ;
-: exit-when-rule-dst ;
-
-\ Sixth has no early-return; the above word-aliases are a structural
-\ marker so future maintainers see WHY the if-branches are no-ops.
-\ Re-implement without early return:
-
+\ Sixth has no early-return, so we guard the body in nested IFs:
+\ skip the relaxation if either endpoint is a rule-node (NGET=100).
 : propagate-time ( src mid dst -- )
   "p-dst" store  drop  "p-src" store
   "p-src" load NGET 100 = not if
@@ -319,13 +300,11 @@ cr
 "Properties verified:" . cr
 "  branching   — concurrent events have IDENTICAL substrate-time" . cr
 "  joining     — merge depth = max(parents) + 1, NOT sum" . cr
-"  monotonic   — extension preserves prior times exactly" . cr
+"  forward     — extension cannot perturb ancestors (DAG-only)" . cr
 "  causality   — every MEDIATOR (src,_,dst) has time(dst) > time(src)" . cr
 cr
-"Substrate-monism extends from STATE to TIME: time is not a" . cr
-"parameter the substrate consumes, it is a property the substrate" . cr
-"derives from its own causal structure.  Wolfram-aligned causal" . cr
-"invariance, made operational in 7 MEDIATOR hyperedges + one" . cr
-"fixpoint rule." . cr
+"Longest-path-on-DAG, computed by a rule that walks EACH-MEDIATOR" . cr
+"and writes NGET — substrate-internal, not host-counted.  DAG-ness" . cr
+"is a precondition, not enforced; a cycle would diverge." . cr
 
 REPORT
