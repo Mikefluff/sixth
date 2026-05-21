@@ -1,0 +1,174 @@
+\ examples/79-stress-charge-conservation.6th
+\ Pilot J' — million-step stress test of charge conservation.
+\
+\ Reviewer (2026-05-21): "у тебя там так мало эпох? надо гонять
+\ хотя бы миллион итераций в глубину".  Fair critique: demo 51
+\ runs 5 STEP-CA cycles, which is a smoke test, not a stress
+\ test.  This demo runs the same charge-shift rule for
+\ CLI-parametric N cycles, default 1000, scaling unchanged to
+\ 10⁶ on a single source via:
+\
+\   racket -l sixth/cli -- -D max-cycles=1000000 \\
+\                          run examples/79-stress-charge-conservation.6th
+\
+\ Key infrastructural differences from demo 51:
+\
+\   1. RING topology — cells c1..cN form a closed loop (c10→c1
+\      edge added at the end).  Particles cycle forever; no
+\      boundary evaporation.  Charge conservation is therefore
+\      meaningful across arbitrary numbers of cycles.
+\
+\   2. PER-CYCLE INVARIANT CHECK — after every STEP-CA we
+\      recompute Σ NGET over the ring and compare to the initial
+\      value.  Any drift is accumulated into "max-drift".  At end:
+\      assert max-drift = 0.  This is a stronger claim than
+\      "end-state is conserved": it asserts conservation HOLDS AT
+\      EVERY STEP across the whole run.
+\
+\   3. TCO-safe tail recursion — the epoch loop runs in constant
+\      stack depth regardless of cycle count.  Already exercised
+\      by long-epoch pilots; reused here for a different invariant.
+\
+\ Default 1000 cycles fits the CI gate without slowing it
+\ noticeably.  Showcase runs go to 10⁶ via the CLI flag.
+
+use prelude
+use peano
+use phi
+use debug
+
+\ ============================================================
+\ CLI parameters.
+\ ============================================================
+
+1000  "max-cycles-default" store
+10    "ring-size-default"  store     \ 10-cell ring is enough; larger
+                                       \ rings exercise the same rule
+                                       \ without changing the invariant.
+
+: max-cycles ( -- n )
+  "max-cycles" load dup 0 = if drop "max-cycles-default" load then ;
+
+\ ============================================================
+\ Build a 10-cell ring (cells linked by succ; closing edge added
+\ at the end so PREV/NEXT wrap around correctly).
+\ ============================================================
+
+zero "c1"  store
+"c1"  load succ "c2"  store
+"c2"  load succ "c3"  store
+"c3"  load succ "c4"  store
+"c4"  load succ "c5"  store
+"c5"  load succ "c6"  store
+"c6"  load succ "c7"  store
+"c7"  load succ "c8"  store
+"c8"  load succ "c9"  store
+"c9"  load succ "c10" store
+\ Close the ring.
+"c10" load "c1" load EDGE+
+
+NODES 10 assert-eq
+EDGES 10 assert-eq                  \ 9 succ-edges + 1 closing edge
+
+\ Initial particle distribution: 5 particles packed at c1..c5,
+\ tagged by flavour (α=1, β=2, γ=3, α=1, β=2).
+"c1" load 1 NSET
+"c2" load 2 NSET
+"c3" load 3 NSET
+"c4" load 1 NSET
+"c5" load 2 NSET
+"c6" load 0 NSET
+"c7" load 0 NSET
+"c8" load 0 NSET
+"c9" load 0 NSET
+"c10" load 0 NSET
+
+\ ============================================================
+\ Conservation telemetry.
+\ ============================================================
+
+0 "total-charge"  store
+
+: add-nget ( node -- )
+  NGET "total-charge" load + "total-charge" store ;
+
+: sum-all-nget ( -- s )
+  0 "total-charge" store
+  ' add-nget EACH
+  "total-charge" load ;
+
+\ Initial Σ NGET — the invariant value to preserve.
+sum-all-nget 9 assert-eq               \ 1+2+3+1+2
+
+\ ============================================================
+\ Charge-shift CA rule (identical to demo 51).
+\ On a ring this rule preserves both Σ NGET and per-species count
+\ exactly, AND cycles forever (no boundary loss).
+\ ============================================================
+
+: charge-shift ( node -- new-tag )
+  dup PREV NGET "csh-L" store
+  dup NGET      "csh-C" store
+       NEXT NGET "csh-R" store
+  "csh-C" load 0 = if
+    "csh-L" load
+  else
+    "csh-R" load 0 = if
+      0
+    else
+      "csh-C" load
+    then
+  then ;
+
+\ ============================================================
+\ Epoch loop — TCO-safe tail recursion.
+\ Tracks max drift = max(|Σ NGET(t) − 9|) across all cycles.
+\ ============================================================
+
+0 "epoch-i"   store
+0 "max-drift" store
+
+: drift-now ( -- d )
+  sum-all-nget 9 - dup 0 < if 0 swap - then ;
+
+: stress-step
+  "epoch-i" load max-cycles < if
+    ' charge-shift STEP-CA
+    "epoch-i" load 1 + "epoch-i" store
+    drift-now
+    "max-drift" load over < if "max-drift" store else drop then
+    stress-step
+  then ;
+
+stress-step
+
+\ ============================================================
+\ Conservation assertion.
+\ Across ALL max-cycles iterations, Σ NGET never deviated from 9.
+\ ============================================================
+
+"max-drift" load 0 assert-eq
+
+\ Sanity: end state still has 5 particles, total charge 9.
+sum-all-nget 9 assert-eq
+
+\ Ring structure unchanged.
+NODES 10 assert-eq
+EDGES 10 assert-eq
+
+\ Cycles actually executed.
+"epoch-i" load max-cycles assert-eq
+
+cr
+"=== Pilot J' — stress test: charge conservation on a ring ===" . cr
+"max-cycles =" . max-cycles . cr
+"ring size  = 10 cells, 5 particles, initial Σ NGET = 9" . cr
+"max drift  =" . "max-drift" load . cr
+"epoch-i    =" . "epoch-i" load . cr
+cr
+"Across every one of the" . max-cycles . "STEP-CA cycles," . cr
+"Σ NGET remained exactly 9 — substrate-readable conservation" . cr
+"holds at scale, not just at smoke-test depth.  Increase via" . cr
+"  -D max-cycles=1000000 to run a million-iteration showcase." . cr
+
+REPORT

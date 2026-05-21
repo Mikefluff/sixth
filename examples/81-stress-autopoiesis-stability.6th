@@ -1,0 +1,125 @@
+\ examples/81-stress-autopoiesis-stability.6th
+\ Pilot A' stress — autopoiesis stability under N cycles with
+\ per-cycle invariant check.
+\
+\ Demo 53 already runs the autopoiesis loop at parametric depth,
+\ but only asserts structural invariants at the END of the run.
+\ This demo adds the substrate-monism claim: for self-maintaining
+\ autopoiesis to be a real phenomenon (not a fluke), the observer
+\ must restore to FULL state at the end of EVERY cycle across
+\ the whole epoch.
+\
+\ The cycle = phase-decay (NGET -= 8, clamped at 0) followed by
+\ phase-restore (if NSUM > 5 → NGET = 10, else NGET unchanged).
+\ The substrate "lives" iff every restore phase brings the
+\ observer's NGET back to 10.  A single failed restore = death.
+\
+\ This stress demo runs the cycle CLI-parametric N times (default
+\ 1000), tracks the MIN observer-NGET-after-restore observed across
+\ the epoch, and asserts it equals 10.  Equivalent to: "observer
+\ never failed a single restoration, across all N cycles."
+\
+\ Showcase via:
+\   racket -l sixth/cli -- -D max-cycles=1000000 \\
+\                          run examples/81-stress-autopoiesis-stability.6th
+
+use prelude
+use graph
+use phi
+use debug
+
+1000 "max-cycles-default" store
+: max-cycles ( -- n )
+  "max-cycles" load dup 0 = if drop "max-cycles-default" load then ;
+
+\ ============================================================
+\ Substrate construction (same as demo 53: reflexive observer +
+\ 3-node maintenance ring).
+\ ============================================================
+
+MARK "O" store
+"O" load 10 NSET
+"O" load "O" load EDGE+
+
+MARK "s1" store  "s1" load 10 NSET
+MARK "s2" store  "s2" load 10 NSET
+MARK "s3" store  "s3" load 10 NSET
+
+"s1" load "s2" load bi-edge
+"s2" load "s3" load bi-edge
+"s3" load "s1" load bi-edge
+
+"O" load "s1" load bi-edge
+"O" load "s2" load bi-edge
+"O" load "s3" load bi-edge
+
+NODES 4 assert-eq
+"O" load phi-pa 40000 assert-eq
+
+\ ============================================================
+\ Autopoiesis dynamics + per-cycle telemetry.
+\ Tracks min-observed observer-NGET-after-restore.  Initialise
+\ to 10 so the assertion is "any observed value < 10 lowers it".
+\ ============================================================
+
+: phase-decay   NGET 8 - dup 0 < if drop 0 then ;
+: phase-restore dup NSUM 5 > if drop 10 else NGET then ;
+
+10 "min-restored" store
+
+: track-restored ( -- )
+  "O" load NGET                          \ post-restore obs NGET
+  "min-restored" load over < if drop else "min-restored" store then ;
+
+: cycle-with-check
+  ' phase-decay   STEP-CA
+  ' phase-restore STEP-CA
+  track-restored ;
+
+\ ============================================================
+\ Epoch loop — TCO-safe.
+\ ============================================================
+
+0 "epoch-i" store
+
+: stress-step
+  "epoch-i" load max-cycles < if
+    "epoch-i" load 1 + "epoch-i" store
+    cycle-with-check
+    stress-step
+  then ;
+
+stress-step
+
+\ ============================================================
+\ Stability assertion across the full epoch.
+\ ============================================================
+
+"min-restored" load 10 assert-eq      \ observer ALWAYS fully restored
+
+\ End-state structural invariants (same as demo 53 end-state).
+"O" load NGET 10 assert-eq
+"O" load OUT 4 assert-eq
+"O" load "O" load EDGE? 1 assert-eq
+"O" load phi-pa 40000 assert-eq
+
+\ All ring members also at full restored state.
+"s1" load NGET 10 assert-eq
+"s2" load NGET 10 assert-eq
+"s3" load NGET 10 assert-eq
+
+"epoch-i" load max-cycles assert-eq
+
+cr
+"=== Pilot A' stress — autopoiesis stability ===" . cr
+"max-cycles    =" . max-cycles . cr
+"min restored  =" . "min-restored" load . cr
+"epoch-i       =" . "epoch-i" load . cr
+"observer NGET =" . "O" load NGET . cr
+cr
+"Across every one of the" . max-cycles . "decay+restore cycles," . cr
+"the observer's NGET-after-restore was exactly 10.  Autopoiesis" . cr
+"is not a fluke that holds for the first few cycles — it is a" . cr
+"genuine fixed-point of the substrate dynamics, stable at scale." . cr
+
+REPORT

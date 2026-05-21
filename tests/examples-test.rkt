@@ -2,8 +2,8 @@
 
 ;; tests/examples-test.rkt — regression gate.
 ;;
-;; Runs each of the 78 emergence demos and asserts the cumulative
-;; ✓ pass count is unchanged at 1081.  Each demo's expected pass
+;; Runs each of the 81 emergence demos and asserts the cumulative
+;; ✓ pass count is unchanged at 1117.  Each demo's expected pass
 ;; count is listed in the `expected` table below; the sum must
 ;; equal the gate constant.  Counting ✓ marks printed during the
 ;; run (engine prints ✓ for every successful ASSERT, including
@@ -131,7 +131,13 @@
     ("76-trace-particle-interaction.6th"    5)
     ;; --- Pilot M (extension) — bound-state decay (inverse of L) ---
     ("77-particle-decay.6th"               27)
-    ("78-trace-particle-decay.6th"          5)))
+    ("78-trace-particle-decay.6th"          5)
+    ;; --- Stress-test track (parametric via -D max-cycles=N) ---
+    ;; Default N=1000 keeps the gate CI-fast; user-facing showcase
+    ;; via `make stress-test CYCLES=1000000`.
+    ("79-stress-charge-conservation.6th"    8)
+    ("80-stress-bind-decay-cycle.6th"      17)
+    ("81-stress-autopoiesis-stability.6th" 11)))
 
 (define (run-demo file)
   (define out
@@ -156,8 +162,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1081
-                (format "cumulative ✓ count: ~a (expected 1081)" total-pass)))
+  (check-equal? total-pass 1117
+                (format "cumulative ✓ count: ~a (expected 1117)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1081 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1117 ✓ across ~a demos"
                    total-pass (length expected)))

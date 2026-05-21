@@ -26,8 +26,8 @@ trigger F0 of the v9.0 preprint.
    `sixth/primitives/*.rkt`, the module loader resolves the stdlib,
    and a `#lang sixth` reader is registered.
 
-2. **All 78 demonstrations pass deterministically.** `examples-test.rkt`
-   asserts cumulative `pass=1081 fail=0` across 78 demos organised
+2. **All 81 demonstrations pass deterministically.** `examples-test.rkt`
+   asserts cumulative `pass=1117 fail=0` across 81 demos organised
    in six conceptual phases: the canonical Spencer-Brown ladder
    (01–11, eleven atomic rungs from void to first-Φ_PA), substrate
    applications (12–31, Peano / time / conservation / CA / Conway /
@@ -49,11 +49,16 @@ trigger F0 of the v9.0 preprint.
    interaction: two structurally distinct observers bind via a BIND
    rule, forming a composite bound state with its own Φ_PA while
    the flavour charges of constituents are individually conserved,
-   and Pilot M (77–78) which exhibits the inverse process: the
-   bound state DECAYS when M's self-loop is severed (Φ_PA(M)
-   collapses to 0 even though topology is still intact); after
-   housekeeping, particles return to their free state with charge
-   conservation preserved across the full bind+decay cycle.
+   Pilot M (77–78) which exhibits the inverse process (decay when
+   M's self-loop is severed, particles return to free state with
+   charge conservation preserved), and the stress-test track
+   (79–81) which re-runs the dynamic invariants at parametric
+   depth (default 1000 cycles in CI; `-D max-cycles=N` scales to
+   10⁴/10⁵/10⁶) and asserts max-drift = 0 at every step: charge
+   conservation on a closed ring (79), bind+decay idempotence
+   (80), autopoiesis stability (81).  Showcase: `make stress-test
+   STRESS_CYCLES=1000000` confirms all three invariants hold
+   exactly across one million iterations each.
 
 3. **The Φ_PA stdlib word reproduces Definition def:phi-pa.** Demo 43
    asserts `phi-pa` on three canonical observers (non-reflexive

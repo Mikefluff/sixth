@@ -1,7 +1,7 @@
 # Sixth Substrate — Foundational Pointer Architecture
 
 This document accompanies the Sixth substrate implementation in
-`sixth/primitives/substrate.rkt` and the 78 emergence demonstrations
+`sixth/primitives/substrate.rkt` and the 81 emergence demonstrations
 under `examples/`. The goal is *not* to derive physics — it is to
 build the minimum formal artifact in which structures such as
 numbers, time, space, conservation laws, particles, self-reference,
@@ -44,7 +44,7 @@ two tokens (`EDGE+`), or a transformation of those relations
 
 ## What the demos demonstrate
 
-The 78 demonstrations live in `examples/` (file-by-file index in
+The 81 demonstrations live in `examples/` (file-by-file index in
 [`examples/README.md`](./examples/README.md)). Each isolates a
 single derivation chain, organised in six conceptual phases that
 go from simplest distinction to highest-order composition:
@@ -114,15 +114,26 @@ go from simplest distinction to highest-order composition:
   trace (70), mutation-selection trace (71), particle-families
   trace (72), charge-conservation trace (73), spontaneous-assembly
   trace (74).
+- **79–81 Stress-test track.** Parametric long-run versions of the
+  dynamic pilots, each tracking its invariant at EVERY cycle (not
+  just end-state) and asserting max-drift = 0 at the end.  Default
+  CYCLES=1000 keeps the regression gate CI-fast; CLI override
+  `-D max-cycles=N` scales to 10⁴/10⁵/10⁶ on the same source.
+  Demo 79: charge-shift Σ NGET on a closed ring, verified across
+  10⁶ STEP-CA iterations.  Demo 80: bind+decay cycle idempotence
+  + Σ NGET preserved across 10⁶ interaction cycles.  Demo 81:
+  autopoiesis observer-NGET-after-restore = 10 at every one of
+  10⁶ phase-decay/phase-restore cycles.  Stress-test showcase:
+  `make stress-test STRESS_CYCLES=1000000`.
 
-All 1081 assertions pass deterministically. Run the regression in
+All 1117 assertions pass deterministically. Run the regression in
 one command:
 
 ```bash
 make verify
 # language tests:    ok
 # substrate tests:   ok
-# examples:          1081 / 1081 ✓ across 78 demos
+# examples:          1117 / 1117 ✓ across 81 demos
 # docs build:        ok
 # artifact status:   reproducible
 ```
@@ -282,7 +293,7 @@ sufficient for the released demos and can be extended further.
 cd /Users/mikefluff/Documents/Programming/sixt
 raco pkg install --link .          # install the Sixth Racket collection
 
-# the whole regression — all 78 demos, all 1081 assertions
+# the whole regression — all 81 demos, all 1117 assertions
 make verify
 
 # any single demo

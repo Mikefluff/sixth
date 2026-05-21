@@ -1,0 +1,199 @@
+\ examples/80-stress-bind-decay-cycle.6th
+\ Pilots L+M stress — repeated bind+decay over N cycles.
+\
+\ Pilots L and M individually showed binding and decay each
+\ preserve Σ NGET over particles.  This demo runs the FULL
+\ bind+decay cycle CLI-parametric N times (default 1000;
+\ 10⁴/10⁵/10⁶ via -D max-cycles=N) and tracks the conservation
+\ invariant at the end of EVERY cycle.
+\
+\ Key infrastructural point: M is MARKed ONCE outside the loop
+\ and reused as a permanent node whose edges + NGET tag are
+\ toggled by each bind/decay.  This way substrate memory does
+\ not grow with cycle count — the same 10-node substrate runs
+\ the entire epoch.
+\
+\ Two-claims this stress-tests:
+\   1. Σ NGET over particles is invariant across every bind and
+\      every decay (Pilot J's grammar holds under repeated
+\      interaction-cycles, not just one-shot).
+\   2. The bind-decay cycle is a true IDEMPOTENT loop: the
+\      substrate state after K bind+decay cycles is identical to
+\      the state after 0 cycles.  Tested by asserting structural
+\      invariants (NODES, EDGES, α.phi-pa, β.phi-pa) match the
+\      pre-loop values at the end.
+\
+\   racket -l sixth/cli -- -D max-cycles=1000000 \\
+\                          run examples/80-stress-bind-decay-cycle.6th
+
+use prelude
+use graph
+use phi
+use debug
+
+1000 "max-cycles-default" store
+: max-cycles ( -- n )
+  "max-cycles" load dup 0 = if drop "max-cycles-default" load then ;
+
+\ ============================================================
+\ Build α, β (same as Pilot L) and a permanent M (no edges yet).
+\ ============================================================
+
+: ring-3 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l1" load bi-edge ;
+
+: ring-4 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store  MARK "l4" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l4" load bi-edge
+  "l4" load "l1" load bi-edge ;
+
+: obs-attach-3 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge ;
+
+: obs-attach-4 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge
+  "ok" load load "l4" load bi-edge ;
+
+MARK "alpha" store
+"alpha" load "alpha" load EDGE+
+ring-3
+"alpha" obs-attach-3
+"alpha" load 1 NSET
+
+MARK "beta" store
+"beta" load "beta" load EDGE+
+ring-4
+"beta" obs-attach-4
+"beta" load 2 NSET
+
+\ Permanent composite slot M — sits empty between cycles, gets
+\ wired and unwired by bind/decay.
+MARK "M" store
+
+NODES 10 assert-eq
+EDGES 30 assert-eq                  \ α cluster (13) + β cluster (17)
+
+\ ============================================================
+\ Conservation telemetry (over particle flavours only: NGET ∈ {1,2,3}).
+\ ============================================================
+
+0 "particle-charge" store
+
+: add-if-particle ( node -- )
+  NGET dup 0 > over 4 < * if
+    "particle-charge" load + "particle-charge" store
+  else
+    drop
+  then ;
+
+: total-particle-charge ( -- s )
+  0 "particle-charge" store
+  ' add-if-particle EACH
+  "particle-charge" load ;
+
+\ Pre-loop initial particle charge.
+total-particle-charge 3 assert-eq
+
+\ ============================================================
+\ Bind / decay operations.  M is reused — bind wires it up,
+\ decay unwires it back to bare-node state.
+\ ============================================================
+
+: bind-cycle ( -- )
+  "alpha" load "beta"  load bi-edge
+  "M"     load "M"     load EDGE+
+  "M"     load "alpha" load bi-edge
+  "M"     load "beta"  load bi-edge
+  "M"     load 8 NSET ;
+
+: decay-cycle ( -- )
+  "M"     load "M"     load EDGE-
+  "M"     load "alpha" load EDGE-
+  "alpha" load "M"     load EDGE-
+  "M"     load "beta"  load EDGE-
+  "beta"  load "M"     load EDGE-
+  "alpha" load "beta"  load EDGE-
+  "beta"  load "alpha" load EDGE-
+  "M"     load 0 NSET ;
+
+\ ============================================================
+\ Epoch loop — TCO-safe.  Tracks max drift over the full loop;
+\ each cycle does bind, then check, then decay, then check.
+\ ============================================================
+
+0 "epoch-i"   store
+0 "max-drift" store
+
+: drift-now ( -- d )
+  total-particle-charge 3 - dup 0 < if 0 swap - then ;
+
+: update-drift
+  drift-now
+  "max-drift" load over < if "max-drift" store else drop then ;
+
+: cycle-bind-decay
+  bind-cycle    update-drift
+  decay-cycle   update-drift ;
+
+: stress-step
+  "epoch-i" load max-cycles < if
+    "epoch-i" load 1 + "epoch-i" store
+    cycle-bind-decay
+    stress-step
+  then ;
+
+stress-step
+
+\ ============================================================
+\ Conservation assertion across the full epoch.
+\ ============================================================
+
+"max-drift" load 0 assert-eq
+total-particle-charge 3 assert-eq
+
+\ ============================================================
+\ Idempotence: substrate state after max-cycles bind+decay loops
+\ matches the pre-loop state.
+\ ============================================================
+
+NODES 10 assert-eq
+EDGES 30 assert-eq
+
+"alpha" load OUT 4 assert-eq          \ back to free α
+"alpha" load phi-pa 40000 assert-eq
+"alpha" load NGET 1 assert-eq
+
+"beta"  load OUT 5 assert-eq          \ back to free β
+"beta"  load phi-pa 50000 assert-eq
+"beta"  load NGET 2 assert-eq
+
+"M" load OUT 0 assert-eq              \ M back to bare node
+"M" load IN  0 assert-eq
+"M" load NGET 0 assert-eq
+
+"epoch-i" load max-cycles assert-eq
+
+cr
+"=== Pilots L+M stress — bind+decay cycle ===" . cr
+"max-cycles =" . max-cycles . cr
+"max drift  =" . "max-drift" load . cr
+"epoch-i    =" . "epoch-i" load . cr
+cr
+"Across every one of the" . max-cycles . "bind/decay cycles," . cr
+"Σ NGET over particles never deviated from 3.  Substrate state" . cr
+"is identical before and after the full epoch — bind+decay is" . cr
+"a true idempotent loop, with charge conservation preserved at" . cr
+"every interaction step." . cr
+
+REPORT

@@ -26,6 +26,7 @@
         trace-spontaneous-assembly forensic-spontaneous-assembly \
         trace-particle-interaction forensic-particle-interaction \
         trace-particle-decay forensic-particle-decay \
+        stress-test \
         foundation-gifs all-figures \
         gif-pilot-c gif-pilot-d gif-split-brain gifs
 
@@ -440,6 +441,33 @@ trace-particle-decay:
 
 forensic-particle-decay:
 	@bash scripts/forensic.sh examples/78-trace-particle-decay.6th particle_decay "Pilot M bound-state decay" tiered
+
+# ============================================================
+# Stress-test showcase — runs all three parametric stress demos
+# at user-chosen depth.  Default 1000 (CI-fast); pass CYCLES=N
+# to push deeper, e.g.:
+#
+#   make stress-test CYCLES=1000000
+#
+# Demos 79–81 are already CI-gated at the default 1000 depth via
+# tests/examples-test.rkt; this target is for "showcase" runs that
+# go to 10⁴ / 10⁵ / 10⁶ depth without re-checking gate asserts.
+# ============================================================
+
+STRESS_CYCLES ?= 1000
+
+stress-test:
+	@echo "=== stress test: charge conservation × $(STRESS_CYCLES) ==="
+	@racket -l sixth/cli -- -D max-cycles=$(STRESS_CYCLES) \
+	  run examples/79-stress-charge-conservation.6th | tail -8
+	@echo
+	@echo "=== stress test: bind+decay cycle × $(STRESS_CYCLES) ==="
+	@racket -l sixth/cli -- -D max-cycles=$(STRESS_CYCLES) \
+	  run examples/80-stress-bind-decay-cycle.6th | tail -8
+	@echo
+	@echo "=== stress test: autopoiesis stability × $(STRESS_CYCLES) ==="
+	@racket -l sixth/cli -- -D max-cycles=$(STRESS_CYCLES) \
+	  run examples/81-stress-autopoiesis-stability.6th | tail -8
 
 forensic-pilot-e:
 	@bash scripts/forensic.sh examples/66-trace-pilot-e-phi-pa.6th pilot_e "Pilot E"
