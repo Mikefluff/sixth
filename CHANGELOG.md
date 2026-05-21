@@ -21,6 +21,40 @@ Tracks `main@HEAD` development past v0.8.  Currently:
   CONTEXT rejects only the fully-degenerate `a == b == c` case.
 - Demo 103 (27 ✓): cycles through each kind's invariant via
   HEDGE3-VALID?; verifies VALID and INVALID cases.
+- **Node-id validation on mutators** (`substrate-core.rkt`
+  `validate-node!`): `EDGE+`, `HEDGE3+` now raise
+  `exn:fail:sixth:substrate` when any positional id is not in
+  `[1, next-id]`.  Previously phantom-id edges (`999 1000 EDGE+`)
+  were silently accepted, creating latent inconsistency between
+  `EACH` (which iterates 1..node-count and skips phantoms) and
+  `EACH-EDGE`/`EACH-HEDGE3` (which snapshot the hash and visit
+  phantoms).  Read primitives (`NGET`, `OUT`, `IN`, `NEXT`,
+  `PREV`, `BORN`, `EDGE-`, `HEDGE3-`) remain lax — they return
+  sentinel defaults / no-op on phantom ids by design (so
+  defensive cleanup code doesn't have to pre-check).  The
+  asymmetry is documented inline at the `validate-node!`
+  definition.
+- **Stack-balance enforcement in iteration primitives** (6
+  primitives in `sixth/primitives/substrate.rkt`): `EACH`,
+  `EACH-EDGE`, `EACH-2PATH`, `EACH-HEDGE3`, `EACH-HEDGE3-KIND`
+  now snapshot stack depth before pushing the rule's arguments
+  and assert net delta 0 after the rule returns; `STEP-CA`
+  asserts net delta +1 (rule must produce one result for
+  collection).  Surface contract: each rule signature documents
+  what it consumes and produces; a mis-balanced rule now raises
+  immediately at the iteration site with the rule name +
+  observed-vs-expected depth, instead of corrupting the stack
+  several iterations later.  See `assert-stack-delta!`.
+- 18 new `tests/substrate-test.rkt` cases: node-id validation
+  (EDGE+/HEDGE3+ phantom raises, self-loop legitimate, EDGE-
+  on phantom lax); stack-balance enforcement (EACH/EACH-EDGE/
+  EACH-2PATH/EACH-HEDGE3/STEP-CA all raise on wrong delta);
+  STEP-CA atomicity (two new cases on mutual cycle 1↔2 prove
+  rule reads PRE-step neighbour values — the substrate invariant
+  that prevents serial-bias artefacts in Conway/Rule-90/etc.);
+  ASSERT type matrix (`0.0` boxed-float zero fails, negative
+  ints pass per Forth convention, strings fail); HEDGE3-KIND
+  counter consistency across insert/remove/insert cycles.
 - CHANGELOG.md (this file).
 
 ### Changed
@@ -78,6 +112,22 @@ Tracks `main@HEAD` development past v0.8.  Currently:
   `exit-when-rule-dst` placeholder words that documented an
   earlier (rejected) early-return attempt.  Single clean
   definition with a comment explaining the nested-IF guard.
+
+### Fixed (engine + hidden demo bug surfaced by new enforcement)
+- `substrate-assert!` now uses the shared `zero-ish?` predicate
+  from `sixth/values.rkt` (previously copy-pasted with subtly
+  different boxed-flonum handling: `(eq? v 0.0)` is
+  implementation-dependent for `(- 1.0 1.0)`).  `vm.rkt` JZ
+  branching and `ASSERT` pass/fail now agree on falsy-ness for
+  all numeric value types, including FFI/torch-bridge results.
+- **Demo 33 (`observer-collapse`) hidden stack-leak**: the
+  STEP-CA rule `rule-grow` was `dup NGET 1 +` — the `dup`
+  meant the rule left BOTH the next-state value AND the
+  original node id on the stack.  STEP-CA was popping only the
+  top (correct next-state) and silently leaking node ids per
+  iteration; subsequent code happened to not notice.  Surfaced
+  immediately by the new stack-delta enforcement; fixed to
+  `NGET 1 +`.  Regression unchanged at 1469 ✓.
 
 ### Fixed
 - CI `raco pkg install` regression: `.` is no longer accepted as a

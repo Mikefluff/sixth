@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require "../errors.rkt")
+(require "../errors.rkt"
+         "../values.rkt")
 
 ;; sixth/substrate/core.rkt — substrate state.
 ;;
@@ -108,7 +109,25 @@
 (define (ins-of s n)
   (hash-ref (substrate-in-edges s) n '()))
 
+;; Validate that `id` names a currently-allocated node (1..next-id).
+;; Reads (NGET/OUT/IN/NEXT/PREV/BORN) tolerate phantom ids and return
+;; sentinel defaults; mutators (EDGE+/HEDGE3+) raise so typos surface
+;; immediately instead of corrupting the adjacency structure.  The
+;; check is O(1): every MARK increments next-id monotonically and
+;; nodes are never deleted, so a valid id is exactly in [1, next-id].
+(define (validate-node! s id label)
+  (unless (and (exact-integer? id)
+               (>= id 1)
+               (<= id (substrate-next-id s)))
+    (raise (exn:fail:sixth:substrate
+            (format "~a: node id ~a not allocated (valid range 1..~a)"
+                    label id (substrate-next-id s))
+            (current-continuation-marks)
+            #f))))
+
 (define (substrate-edge+! s src dst)
+  (validate-node! s src "EDGE+ src")
+  (validate-node! s dst "EDGE+ dst")
   (define existing (outs-of s src))
   (unless (member dst existing)
     (hash-set! (substrate-out-edges s) src (cons dst existing))
@@ -189,6 +208,9 @@
     [else #t]))
 
 (define (substrate-hedge3+! s kind a b c)
+  (validate-node! s a "HEDGE3+ a")
+  (validate-node! s b "HEDGE3+ b")
+  (validate-node! s c "HEDGE3+ c")
   (cond
     [(= kind 0)
      (when (= a c) (hedge3-invariant-error kind a b c "WITNESS: witness must differ from src"))
@@ -275,8 +297,13 @@
 ;; ---- assertions ----
 
 (define (substrate-assert! s v)
+  ;; Forth-truthiness via shared zero-ish? (values.rkt): 0/0.0/#f
+  ;; count as fail.  Non-numbers also fail (ASSERT is defensive —
+  ;; a string or symbol on the stack is not a meaningful truth
+  ;; value, so we surface that as a failed assertion rather than
+  ;; silently passing).
   (cond
-    [(or (eq? v 0) (eq? v 0.0) (eq? v #f) (not (number? v)))
+    [(or (not (number? v)) (zero-ish? v))
      (set-substrate-assert-fail! s (+ 1 (substrate-assert-fail s)))
      #f]
     [else

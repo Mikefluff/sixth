@@ -26,7 +26,8 @@
   (struct-out edge)
   (struct-out tensor)
   value-tag
-  value->display)
+  value->display
+  zero-ish?)
 
 (struct node   (id)              #:transparent)
 (struct edge   (src dst)         #:transparent)
@@ -44,6 +45,16 @@
     [(tensor? v) 'TENSOR]
     [(list? v) 'LIST]
     [else 'UNKNOWN]))
+
+;; Falsy in Forth-truthiness: 0 (exact int), 0.0 (any boxed float zero),
+;; #f, or any non-number.  Uses (and (number? v) (zero? v)) for floats
+;; because (eq? (- 1.0 1.0) 0.0) is implementation-dependent for boxed
+;; flonums.  Shared between VM JZ branching and substrate-assert! so
+;; the two stay aligned.
+(define (zero-ish? v)
+  (or (eq? v 0)
+      (eq? v #f)
+      (and (number? v) (zero? v))))
 
 ;; How a Sixth value renders when printed via `.`
 (define (value->display v)

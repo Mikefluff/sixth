@@ -85,31 +85,38 @@
   (push1 e (substrate-hedge3-kind-count* (sub e) kind)))
 
 (define (prim-EACH-HEDGE3 e)
-  ;; Iterates all hyperedges across all kinds.  Rule receives (kind a b c).
+  ;; Iterates all hyperedges across all kinds.  Rule receives (kind a b c)
+  ;; and is expected to consume all four (net stack delta 0 from the
+  ;; pre-push depth).
   (define loc (current-prim-srcloc))
   (define wname (resolve-word-name (pop1 e) loc))
   (define s (sub e))
   (define keys (substrate-hedges-snapshot s))
   (for ([key (in-list keys)])
+    (define pre (env-stack-depth e))
     (push1 e (vector-ref key 0))
     (push1 e (vector-ref key 1))
     (push1 e (vector-ref key 2))
     (push1 e (vector-ref key 3))
-    (call-rule! e wname loc)))
+    (call-rule! e wname loc)
+    (assert-stack-delta! e pre 0 wname loc 'EACH-HEDGE3)))
 
 (define (prim-EACH-HEDGE3-KIND e)
   ;; ( kind rule -- ).  Iterates only hyperedges of the given kind.
-  ;; Rule receives (a b c) (the kind is implicit — it's the one popped).
+  ;; Rule receives (a b c) and is expected to consume all three
+  ;; (net stack delta 0 from the pre-push depth).
   (define loc (current-prim-srcloc))
   (define wname (resolve-word-name (pop1 e) loc))
   (define kind (pop1 e))
   (define s (sub e))
   (define keys (substrate-hedges-snapshot-kind s kind))
   (for ([key (in-list keys)])
+    (define pre (env-stack-depth e))
     (push1 e (vector-ref key 1))
     (push1 e (vector-ref key 2))
     (push1 e (vector-ref key 3))
-    (call-rule! e wname loc)))
+    (call-rule! e wname loc)
+    (assert-stack-delta! e pre 0 wname loc 'EACH-HEDGE3-KIND)))
 
 ;; ---- traversal ----
 
@@ -176,16 +183,42 @@
   (push-halt-frame! e)
   (run! ops e))
 
+;; Wrap a rule invocation with a stack-delta contract.  `pre-depth` is
+;; the stack depth observed BEFORE the iteration pushed the rule's
+;; arguments; `expected-delta` is the net stack effect the rule body
+;; should produce relative to pre-depth (e.g. -3 for EACH-2PATH whose
+;; rule consumes (src, mid, dst); +0 for STEP-CA whose rule consumes
+;; a node id and produces its new value).  Raises exn:fail:sixth on
+;; mismatch with rule name + observed-vs-expected depth so silently
+;; unbalanced rules surface as a clear error at the iteration site,
+;; not as cascading underflow several iterations later.
+(define (assert-stack-delta! e pre-depth expected-delta wname loc prim-name)
+  (define actual (env-stack-depth e))
+  (define expected (+ pre-depth expected-delta))
+  (unless (= actual expected)
+    (raise (exn:fail:sixth
+            (format "~a — ~a: rule `~a` left stack at depth ~a, expected ~a (delta ~a vs expected ~a)"
+                    (format-srcloc loc) prim-name wname
+                    actual expected
+                    (- actual pre-depth)
+                    expected-delta)
+            (current-continuation-marks)
+            loc))))
+
 (define (prim-EACH e)
+  ;; Rule receives ( node ) and must consume it (net delta 0 from pre).
   (define loc (current-prim-srcloc))
   (define wname (resolve-word-name (pop1 e) loc))
   (define s (sub e))
   (define max-node (substrate-node-count s))
   (for ([i (in-range 1 (+ 1 max-node))])
+    (define pre (env-stack-depth e))
     (push1 e i)
-    (call-rule! e wname loc)))
+    (call-rule! e wname loc)
+    (assert-stack-delta! e pre 0 wname loc 'EACH)))
 
 (define (prim-EACH-EDGE e)
+  ;; Rule receives ( src dst ) and must consume both (net delta 0).
   (define loc (current-prim-srcloc))
   (define wname (resolve-word-name (pop1 e) loc))
   (define s (sub e))
@@ -195,11 +228,14 @@
       (for/fold ([a acc]) ([dst (in-list dsts)])
         (cons (cons src dst) a))))
   (for ([pair (in-list edges)])
+    (define pre (env-stack-depth e))
     (push1 e (car pair))
     (push1 e (cdr pair))
-    (call-rule! e wname loc)))
+    (call-rule! e wname loc)
+    (assert-stack-delta! e pre 0 wname loc 'EACH-EDGE)))
 
 (define (prim-EACH-2PATH e)
+  ;; Rule receives ( src mid dst ) and must consume all three (net 0).
   (define loc (current-prim-srcloc))
   (define wname (resolve-word-name (pop1 e) loc))
   (define s (sub e))
@@ -209,23 +245,30 @@
         (for/fold ([a2 a1]) ([dst (in-list (substrate-outs s mid))])
           (cons (list src mid dst) a2)))))
   (for ([triple (in-list paths)])
+    (define pre (env-stack-depth e))
     (push1 e (car triple))
     (push1 e (cadr triple))
     (push1 e (caddr triple))
-    (call-rule! e wname loc)))
+    (call-rule! e wname loc)
+    (assert-stack-delta! e pre 0 wname loc 'EACH-2PATH)))
 
 (define (prim-STEP-CA e)
+  ;; Rule receives ( node ) and must produce exactly one result (net +1
+  ;; from pre-push depth), which is collected as the node's next state.
+  ;; Two-phase: collect all next states first, then commit via NSET so
+  ;; the rule body sees PRE-step values throughout — preventing
+  ;; serial-bias artefacts in CA rules.
   (define loc (current-prim-srcloc))
   (define wname (resolve-word-name (pop1 e) loc))
   (define s (sub e))
   (define max-node (substrate-node-count s))
-  ;; compute next states for all nodes
   (define next-states
     (for/list ([i (in-range 1 (+ 1 max-node))])
+      (define pre (env-stack-depth e))
       (push1 e i)
       (call-rule! e wname loc)
+      (assert-stack-delta! e pre 1 wname loc 'STEP-CA)
       (cons i (pop1 e))))
-  ;; commit atomically
   (for ([pair (in-list next-states)])
     (substrate-nset! s (car pair) (cdr pair))))
 

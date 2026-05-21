@@ -19,7 +19,8 @@
 
 (require "opcodes.rkt"
          "env.rkt"
-         "errors.rkt")
+         "errors.rkt"
+         "values.rkt")
 
 ;; Each return-stack frame stores: program (opcode vector) and pc.
 (struct frame (program pc) #:transparent)
@@ -57,13 +58,9 @@
                   (current-continuation-marks)
                   (op-srcloc instr)))])])))
 
-;; Treat false-y values as zero for branching.
-;; `(eq? 0.0 0.0)` is not guaranteed by Racket for boxed flonums,
-;; so use `zero?` with a number? guard for the float case.
-(define (zero-ish? v)
-  (or (eq? v 0)
-      (eq? v #f)
-      (and (number? v) (zero? v))))
+;; Forth-truthiness: zero-ish? from values.rkt is shared with
+;; substrate-assert!, so JZ branching and ASSERT pass/fail agree
+;; on what counts as false (incl. boxed-flonum zero).
 
 ;; ---- handling CALL with TCO ----
 

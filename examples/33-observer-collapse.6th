@@ -54,7 +54,7 @@ use debug
 \ Both rules use only OUT-direction reads, so an observer that EDGE+s
 \ TO a cell does not contaminate that cell's update.
 
-: rule-grow    dup NGET 1 + ;
+: rule-grow    NGET 1 + ;
 : rule-shift   NSUM ;
 
 \ ============================================================

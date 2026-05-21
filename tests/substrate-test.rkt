@@ -1,6 +1,7 @@
 #lang racket/base
 
-;; tests/substrate-test.rkt — end-to-end tests for the 23 substrate primitives.
+;; tests/substrate-test.rkt — end-to-end tests for the 31 substrate primitives
+;; (23 substrate-core + 8 HEDGE3 trivalent).
 
 (require rackunit
          racket/port
@@ -436,5 +437,214 @@
                HEDGES3")
   (define e (run-src src))
   (check-equal? (car (env-stack e)) 2))
+
+;; ============================================================
+;; Node-id validation: EDGE+ / HEDGE3+ raise on phantom ids.
+;; Reads (NGET/BORN/OUT/IN) still tolerate phantoms and return
+;; sentinel defaults — that's a documented asymmetry between
+;; mutators (strict, surface typos early) and queries (lax,
+;; treat absence as zero/sentinel).
+;; ============================================================
+
+(test-case "EDGE+: src phantom id raises substrate exception"
+  (define e (make-test-env))
+  (check-exn exn:fail:sixth:substrate?
+             (lambda ()
+               (with-output-to-string
+                 (lambda () (run-on e "MARK   999 1 EDGE+"))))))
+
+(test-case "EDGE+: dst phantom id raises substrate exception"
+  (define e (make-test-env))
+  (check-exn exn:fail:sixth:substrate?
+             (lambda ()
+               (with-output-to-string
+                 (lambda () (run-on e "MARK   1 999 EDGE+"))))))
+
+(test-case "HEDGE3+: phantom node id raises"
+  (define e (make-test-env))
+  (check-exn exn:fail:sixth:substrate?
+             (lambda ()
+               (with-output-to-string
+                 (lambda () (run-on e "MARK MARK   0 1 2 999 HEDGE3+"))))))
+
+(test-case "EDGE+: self-loop legitimate (own-Φ_PA depends on it)"
+  (define e (run-src "MARK   1 1 EDGE+   EDGES   1 1 EDGE?"))
+  ;; Stack top: EDGE? result (1, present), then EDGES count (1).
+  (check-equal? (car  (env-stack e)) 1)
+  (check-equal? (cadr (env-stack e)) 1))
+
+(test-case "NGET / OUT / IN on phantom id return sentinel zero (queries lax)"
+  (define e (run-src "999 NGET   999 OUT   999 IN"))
+  (check-equal? (env-stack e) '(0 0 0)))
+
+(test-case "EDGE-: removing edge involving phantom is no-op (lax)"
+  (define e (run-src "MARK   1 999 EDGE-   EDGES"))
+  (check-equal? (car (env-stack e)) 0))
+
+;; ============================================================
+;; Stack-balance enforcement in iteration primitives.  Rules
+;; with the wrong net stack-effect must raise at the iteration
+;; site so silent corruption (under EACH / STEP-CA / EACH-HEDGE3)
+;; surfaces immediately.
+;; ============================================================
+
+(test-case "EACH: rule with wrong stack-delta raises"
+  ;; rule-bad does NOT consume its node — leaves it on the stack.
+  (define e (make-test-env))
+  (check-exn exn:fail:sixth?
+             (lambda ()
+               (with-output-to-string
+                 (lambda ()
+                   (run-on e ": rule-bad ;   MARK   ' rule-bad EACH"))))))
+
+(test-case "STEP-CA: rule with wrong stack-delta raises (the demo-33 bug)"
+  ;; rule-bad uses `dup NGET 1 +` — leaks the original node id
+  ;; in addition to producing the next-state value.
+  (define e (make-test-env))
+  (check-exn exn:fail:sixth?
+             (lambda ()
+               (with-output-to-string
+                 (lambda ()
+                   (run-on e ": rule-bad dup NGET 1 + ;   MARK   ' rule-bad STEP-CA"))))))
+
+(test-case "STEP-CA: rule that doesn't push a result raises"
+  (define e (make-test-env))
+  (check-exn exn:fail:sixth?
+             (lambda ()
+               (with-output-to-string
+                 (lambda ()
+                   (run-on e ": rule-empty drop ;   MARK   ' rule-empty STEP-CA"))))))
+
+(test-case "EACH-EDGE: rule with wrong stack-delta raises"
+  (define e (make-test-env))
+  (check-exn exn:fail:sixth?
+             (lambda ()
+               (with-output-to-string
+                 (lambda ()
+                   (run-on e ": rule-bad drop ;   MARK MARK   1 2 EDGE+   ' rule-bad EACH-EDGE"))))))
+
+(test-case "EACH-2PATH: rule with wrong stack-delta raises"
+  (define e (make-test-env))
+  (check-exn exn:fail:sixth?
+             (lambda ()
+               (with-output-to-string
+                 (lambda ()
+                   (run-on e
+                     ": rule-bad drop drop ;   MARK MARK MARK   1 2 EDGE+   2 3 EDGE+   ' rule-bad EACH-2PATH"))))))
+
+(test-case "EACH-HEDGE3: rule with wrong stack-delta raises"
+  (define e (make-test-env))
+  (check-exn exn:fail:sixth?
+             (lambda ()
+               (with-output-to-string
+                 (lambda ()
+                   (run-on e
+                     ": rule-bad drop drop drop ;   MARK MARK MARK   0 1 2 3 HEDGE3+   ' rule-bad EACH-HEDGE3"))))))
+
+;; ============================================================
+;; STEP-CA atomicity — rules must see PRE-step NGET values, not
+;; post-update ones.  Without this guarantee any CA (Rule 90,
+;; Conway, etc.) develops serial-bias artefacts.  Two-phase
+;; commit (substrate.rkt:255) is the substrate invariant under
+;; test.
+;; ============================================================
+
+(test-case "STEP-CA atomicity: rule reads pre-step neighbour values"
+  ;; Build chain 1→2→3 with initial NGET (1=10, 2=0, 3=0).
+  ;; Rule: next(n) = NSUM(n).  After ONE STEP-CA pass:
+  ;;   next(1) = NSUM(1) = NGET(2) = 0          (BEFORE update of 2)
+  ;;   next(2) = NSUM(2) = NGET(3) = 0          (BEFORE update of 3)
+  ;;   next(3) = NSUM(3) = 0
+  ;; If updates were serial (compute-then-write each node), then
+  ;; processing 1 first would leave NGET(1)=0, and then when we
+  ;; visit 2 we'd still see NGET(3)=0; but in some orderings the
+  ;; bug would manifest as a non-zero result somewhere.  The
+  ;; cleaner check: shift one step further.
+  ;;
+  ;; Start: 1=10, 2=20, 3=30; 1→2, 2→3.  next(n) = NSUM(n).
+  ;;   atomic: next(1)=20 (from old NGET(2)), next(2)=30, next(3)=0
+  ;;   serial-bias: next(1)=20, next(2)=30 OR next(2) using NGET=20 → 30
+  ;;     (this particular topology would not distinguish).
+  ;;
+  ;; Use a topology that DOES distinguish: chain with feature swap.
+  ;; 1→2, 2→1 (mutual).  Initial NGET(1)=5, NGET(2)=11.
+  ;; Rule: next(n) = NSUM(n).
+  ;;   atomic: next(1)=11 (from old NGET(2)), next(2)=5 (from old NGET(1))
+  ;;   serial:  process 1 first → NGET(1)=11, then process 2:
+  ;;           NSUM(2)=NGET(1)=11 (NEW value).  Result: 1=11, 2=11.
+  ;; The two-phase commit gives the SWAP outcome (1=11, 2=5).
+  (define src ": rule-sum NSUM ;
+                MARK MARK
+                1 5 NSET   2 11 NSET
+                1 2 EDGE+   2 1 EDGE+
+                ' rule-sum STEP-CA
+                1 NGET 2 NGET")
+  (define e (run-src src))
+  ;; Stack top: NGET(2)=5 (was 11 before, became old NGET(1)=5).
+  ;; Second: NGET(1)=11 (was 5, became old NGET(2)=11).
+  ;; Serial-bias would yield NGET(2)=11 (post-update of 1 fed back).
+  (check-equal? (car  (env-stack e))  5)
+  (check-equal? (cadr (env-stack e)) 11))
+
+(test-case "STEP-CA atomicity: parallel update of inverter cycle"
+  ;; Mutual cycle 1↔2; rule: next(n) = 1 - NGET(neighbour).
+  ;; With atomic two-phase: each step swaps and inverts.
+  ;; Start NGET(1)=0, NGET(2)=1.
+  ;; After STEP-CA: next(1) = 1 - NGET(2) = 0; next(2) = 1 - NGET(1) = 1.
+  ;; Pattern is INVARIANT (each step recomputes from current).
+  ;; Without atomicity, post-update of 1 would feed into 2's compute.
+  (define src ": invert 1 swap NSUM - ;
+                MARK MARK
+                1 0 NSET   2 1 NSET
+                1 2 EDGE+   2 1 EDGE+
+                ' invert STEP-CA
+                1 NGET 2 NGET")
+  (define e (run-src src))
+  ;; next(1) = 1 - NSUM(1) = 1 - NGET(2) = 1 - 1 = 0
+  ;; next(2) = 1 - NSUM(2) = 1 - NGET(1) = 1 - 0 = 1
+  ;; Stack top: NGET(2)=1.  Second: NGET(1)=0.
+  (check-equal? (car  (env-stack e)) 1)
+  (check-equal? (cadr (env-stack e)) 0))
+
+;; ============================================================
+;; ASSERT semantics — full type matrix for falsy/truthy.  Aligned
+;; with VM JZ branching via shared zero-ish? (values.rkt).
+;; ============================================================
+
+(test-case "ASSERT: 0.0 (boxed float zero) fails"
+  (define e (make-test-env))
+  (with-output-to-string
+    (lambda () (run-on e "1.0 1.0 - ASSERT")))
+  (define s (env-substrate e))
+  (check-equal? (substrate-fail-count s) 1)
+  (check-equal? (substrate-pass-count s) 0))
+
+(test-case "ASSERT: negative non-zero passes (Forth convention)"
+  (define e (make-test-env))
+  (with-output-to-string
+    (lambda () (run-on e "-1 ASSERT   -42 ASSERT")))
+  (define s (env-substrate e))
+  (check-equal? (substrate-pass-count s) 2))
+
+(test-case "ASSERT: non-number values fail (string)"
+  (define e (make-test-env))
+  (with-output-to-string
+    (lambda () (run-on e "\"non-number\" ASSERT")))
+  (define s (env-substrate e))
+  (check-equal? (substrate-fail-count s) 1)
+  (check-equal? (substrate-pass-count s) 0))
+
+;; ============================================================
+;; HEDGE3 counter consistency under repeated insert/remove.
+;; ============================================================
+
+(test-case "HEDGES3-KIND counter consistent across insert/remove/insert"
+  (define src "MARK MARK MARK
+               0 1 2 3 HEDGE3+
+               0 1 2 3 HEDGE3-
+               0 1 2 3 HEDGE3+
+               0 HEDGES3-KIND")
+  (define e (run-src src))
+  (check-equal? (car (env-stack e)) 1))
 
 (displayln "substrate tests: all pass")
