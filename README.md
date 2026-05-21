@@ -7,7 +7,7 @@
 ```
 language tests:    ok
 substrate tests:   ok
-examples:          1535 / 1535 ✓ across 102 demos
+examples:          1562 / 1562 ✓ across 103 demos
 docs build:        ok
 ffi optional:      n/a
 renderer tests:    ok
@@ -15,9 +15,17 @@ figures fresh:     ok (23 forensic JSONL traces match)
 artifact status:   reproducible
 ```
 
-Stronger reproducibility evidence via `make verify-repro` — runs
-each forensic-trace demo twice, hashes the JSONL, asserts byte-
-identical outputs across all 23 demos × 2 runs.
+**Reproducibility scope.** Two tiers of evidence:
+- Assertion gate (`make verify`): all 103 demos pass the test
+  harness; this is the primary reproducibility claim.
+- Byte-identical forensic traces (`make verify-repro`): runs
+  23 of the 103 demos twice and asserts the JSONL outputs hash
+  identically across runs.  Forensic-trace coverage was built
+  during the v9.0 ascent (demos 47–69ish) and has not been
+  extended to the 35 newer demos (68–103) added since;
+  `make verify-repro` is a strict subset of `make verify`.
+  Honest framing: full assertion-gate reproducibility, partial
+  byte-identical-trace reproducibility.
 
 ![Pilot D evolution — substrate-internally-driven cosmogenesis,
 shell-count 0 → 4, observer node in red.](./docs/figures/pilot_d_trace.png)

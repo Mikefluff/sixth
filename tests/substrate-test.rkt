@@ -8,6 +8,7 @@
          "../sixth/compiler.rkt"
          "../sixth/vm.rkt"
          "../sixth/env.rkt"
+         "../sixth/errors.rkt"
          "../sixth/primitives/base.rkt"
          "../sixth/primitives/substrate.rkt"
          "../sixth/substrate/core.rkt")
@@ -259,5 +260,181 @@
   (define out (run-on e "MARK MARK 1 ASSERT 0 ASSERT REPORT"))
   (check-true (regexp-match? #rx"pass=" out))
   (check-true (regexp-match? #rx"fail=" out)))
+
+;; ============================================================
+;; HEDGE3 typed trivalent hyperedge primitive family — isolated
+;; unit tests (independent of demo-level integration).
+;; ============================================================
+
+(test-case "HEDGE3+: WITNESS valid tuple inserts"
+  (define src "MARK MARK MARK         0 1 2 3 HEDGE3+   HEDGES3")
+  (define e (run-src src))
+  (check-equal? (car (env-stack e)) 1))
+
+(test-case "HEDGE3+: WITNESS with w==src raises substrate exception"
+  (define e (make-test-env))
+  (check-exn exn:fail:sixth:substrate?
+             (lambda ()
+               (with-output-to-string
+                 (lambda ()
+                   (run-on e "MARK MARK         0 1 2 1 HEDGE3+"))))))
+
+(test-case "HEDGE3+: WITNESS with w==dst raises"
+  (define e (make-test-env))
+  (check-exn exn:fail:sixth:substrate?
+             (lambda ()
+               (with-output-to-string
+                 (lambda ()
+                   (run-on e "MARK MARK         0 1 2 2 HEDGE3+"))))))
+
+(test-case "HEDGE3+: MEDIATOR with mid==src raises"
+  (define e (make-test-env))
+  (check-exn exn:fail:sixth:substrate?
+             (lambda ()
+               (with-output-to-string
+                 (lambda ()
+                   (run-on e "MARK MARK         1 1 1 2 HEDGE3+"))))))
+
+(test-case "HEDGE3+: CONTEXT permits ctx==in (codon box pattern)"
+  (define src "MARK MARK MARK         2 1 1 2 HEDGE3+   HEDGES3")
+  (define e (run-src src))
+  (check-equal? (car (env-stack e)) 1))
+
+(test-case "HEDGE3+: CONTEXT rejects a==b==c degenerate"
+  (define e (make-test-env))
+  (check-exn exn:fail:sixth:substrate?
+             (lambda ()
+               (with-output-to-string
+                 (lambda ()
+                   (run-on e "MARK         2 1 1 1 HEDGE3+"))))))
+
+(test-case "HEDGE3+: SIMPLEX all-distinct requirement"
+  (define e (make-test-env))
+  (check-exn exn:fail:sixth:substrate?
+             (lambda ()
+               (with-output-to-string
+                 (lambda ()
+                   (run-on e "MARK MARK         3 1 2 1 HEDGE3+"))))))
+
+(test-case "HEDGE3+: idempotent — same (kind, a, b, c) inserts once"
+  (define src "MARK MARK MARK
+               0 1 2 3 HEDGE3+
+               0 1 2 3 HEDGE3+
+               0 1 2 3 HEDGE3+
+               HEDGES3")
+  (define e (run-src src))
+  (check-equal? (car (env-stack e)) 1))
+
+(test-case "HEDGE3?: returns 1 for present, 0 for absent"
+  (define src "MARK MARK MARK
+               0 1 2 3 HEDGE3+
+               0 1 2 3 HEDGE3?")
+  (define e (run-src src))
+  (check-equal? (car (env-stack e)) 1)
+  (define src2 "MARK MARK MARK
+                0 1 2 3 HEDGE3?")
+  (define e2 (run-src src2))
+  (check-equal? (car (env-stack e2)) 0))
+
+(test-case "HEDGE3-: removes; HEDGE3? returns 0 afterwards"
+  (define src "MARK MARK MARK
+               0 1 2 3 HEDGE3+
+               0 1 2 3 HEDGE3-
+               0 1 2 3 HEDGE3?")
+  (define e (run-src src))
+  (check-equal? (car (env-stack e)) 0))
+
+(test-case "HEDGE3-: removing absent tuple is no-op"
+  (define src "MARK MARK MARK
+               0 1 2 3 HEDGE3-
+               HEDGES3")
+  (define e (run-src src))
+  (check-equal? (car (env-stack e)) 0))
+
+(test-case "HEDGES3 totals across kinds"
+  (define src "MARK MARK MARK MARK MARK
+               0 1 2 3 HEDGE3+
+               1 1 2 3 HEDGE3+
+               2 1 2 3 HEDGE3+
+               3 1 2 3 HEDGE3+
+               HEDGES3")
+  (define e (run-src src))
+  (check-equal? (car (env-stack e)) 4))
+
+(test-case "HEDGES3-KIND counts per kind"
+  (define src "MARK MARK MARK
+               0 1 2 3 HEDGE3+
+               0 2 1 3 HEDGE3+
+               3 1 2 3 HEDGE3+
+               0 HEDGES3-KIND")
+  (define e (run-src src))
+  (check-equal? (car (env-stack e)) 2))
+
+(test-case "HEDGE3-VALID?: predicate without side effects"
+  (define src "MARK MARK MARK
+               0 1 2 3 HEDGE3-VALID?
+               HEDGES3")
+  (define e (run-src src))
+  ;; Stack: HEDGES3 result on top (0, no hedges), then validation result (1).
+  (define stack (env-stack e))
+  (check-equal? (car stack) 0)            ; HEDGES3 = 0, no insertion happened
+  (check-equal? (cadr stack) 1))          ; VALID? = 1
+
+(test-case "HEDGE3-VALID? distinguishes kinds correctly"
+  (define src "MARK MARK
+               0 1 2 1 HEDGE3-VALID?    \\ WITNESS w==src → 0
+               0 1 2 3 HEDGE3-VALID?    \\ WITNESS distinct → 1
+               2 1 1 1 HEDGE3-VALID?    \\ CONTEXT fully degenerate → 0
+               2 1 1 2 HEDGE3-VALID?    \\ CONTEXT ctx==in → 1
+               3 1 1 2 HEDGE3-VALID?    \\ SIMPLEX a==b → 0
+               3 1 2 3 HEDGE3-VALID?")  ; SIMPLEX all distinct → 1
+  (define e (run-src src))
+  (define stack (env-stack e))
+  (check-equal? (list-ref stack 0) 1)     ; SIMPLEX valid
+  (check-equal? (list-ref stack 1) 0)     ; SIMPLEX a==b
+  (check-equal? (list-ref stack 2) 1)     ; CONTEXT ctx==in
+  (check-equal? (list-ref stack 3) 0)     ; CONTEXT degenerate
+  (check-equal? (list-ref stack 4) 1)     ; WITNESS valid
+  (check-equal? (list-ref stack 5) 0))    ; WITNESS w==src
+
+(test-case "EACH-HEDGE3 iterates all kinds with kind+triple pushed"
+  ;; Tally how many hedges by kind by accumulating their kind ids.
+  (define src ": tally
+                 drop drop drop      \\ ignore (a b c)
+                 \"sum\" load + \"sum\" store ;
+               0 \"sum\" store
+               MARK MARK MARK
+               0 1 2 3 HEDGE3+
+               1 1 2 3 HEDGE3+
+               3 1 2 3 HEDGE3+
+               ' tally EACH-HEDGE3
+               \"sum\" load")
+  (define e (run-src src))
+  ;; Sum of kinds = 0 + 1 + 3 = 4.
+  (check-equal? (car (env-stack e)) 4))
+
+(test-case "EACH-HEDGE3-KIND iterates only the requested kind"
+  ;; Count tally only for kind WITNESS.
+  (define src ": tally
+                 drop drop drop
+                 \"n\" load 1 + \"n\" store ;
+               0 \"n\" store
+               MARK MARK MARK
+               0 1 2 3 HEDGE3+
+               1 1 2 3 HEDGE3+
+               0 2 1 3 HEDGE3+
+               0 ' tally EACH-HEDGE3-KIND
+               \"n\" load")
+  (define e (run-src src))
+  ;; Only WITNESS-kind hedges visited: 2.
+  (check-equal? (car (env-stack e)) 2))
+
+(test-case "Different kinds with same (a,b,c) are distinct hyperedges"
+  (define src "MARK MARK MARK
+               0 1 2 3 HEDGE3+    \\ WITNESS (1,2,3)
+               1 1 2 3 HEDGE3+    \\ MEDIATOR (1,2,3) — distinct
+               HEDGES3")
+  (define e (run-src src))
+  (check-equal? (car (env-stack e)) 2))
 
 (displayln "substrate tests: all pass")

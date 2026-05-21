@@ -8,8 +8,10 @@
 
 The full catalogue (with phase headings and every demonstration's
 assertion count) is in [`examples/README.md`](../examples/README.md).
-This document is the **author's honest pick** of which demos earn
-their place in your head.
+This document is a **curated pick** of which demos earn their
+place in your head — assembled jointly by the project author
+(Mikhail Savchenko) and the AI collaborator that helped write
+the demos; final ordering reflects the author's judgment.
 
 ---
 
@@ -99,10 +101,18 @@ the property in its most minimal form.
 **File:** `examples/41-cosmogenesis-bootstrap.6th`.
 
 A substrate-resident observer constructs a 13-node 48-edge
-"cosmos" starting from a single `MARK` at t=0.  The construction
+substrate starting from a single `MARK` at t=0.  The construction
 is observer-driven (the observer's own scope-update rule produces
 the next node and edge); it survives a harsh autopoietic decay
 phase that strips most edges; the observer rebuilds.
+
+**Naming caveat.** This pilot has carried the "cosmogenesis"
+codename since the v9.0 release.  A 13-node graph is not a
+literal cosmos.  The term is metaphorical for *substrate
+construction from a single distinction* — analogous to the shape
+of cosmogonic myths, not a claim that the resulting graph is
+a model of the actual universe.  Keep the term as a project
+landmark; do not import any quantitative cosmology from it.
 
 **Why it earns a tour slot.** Cosmogenesis from one distinction
 is the substrate-monist position made operational.  The
