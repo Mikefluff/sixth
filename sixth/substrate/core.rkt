@@ -1,5 +1,7 @@
 #lang racket/base
 
+(require "../errors.rkt")
+
 ;; sixth/substrate/core.rkt — substrate state.
 ;;
 ;; A `substrate` is a mutable record holding:
@@ -25,6 +27,7 @@
   substrate-hedge3?
   substrate-hedge3-count*
   substrate-hedge3-kind-count*
+  substrate-hedge3-valid?
   substrate-hedges-snapshot
   substrate-hedges-snapshot-kind
   substrate-outs
@@ -143,7 +146,64 @@
 ;; idempotent).  A separate kind-count hash tracks per-kind cardinality for
 ;; cheap REPORT-style summaries.
 
+;; Per-kind structural invariants enforced at insert time.  These are
+;; SUBSTRATE-level (structural distinctness), not SEMANTIC (observer
+;; tags etc., which live in stdlib).  A hedge that violates its kind's
+;; structural invariant raises exn:fail:sixth:substrate at insert.
+;;
+;;   WITNESS  (src, dst, w   ):  w distinct from BOTH src and dst
+;;                                 (self-witnessing a self-loop is degenerate)
+;;   MEDIATOR (src, mid, dst ):  mid distinct from BOTH src and dst
+;;                                 (a node mediating itself is not a channel)
+;;   CONTEXT  (in,  ctx, out ):  only the fully-degenerate a==b==c case
+;;                                 is rejected.  Symmetric ctx==in (e.g.
+;;                                 self-applying rule, or a 2-axis lookup
+;;                                 table whose two axes use the same
+;;                                 alphabet — DNA codon boxes like GGN)
+;;                                 is a legitimate use of CONTEXT.
+;;   SIMPLEX  (a,   b,   c   ):  all three pairwise distinct
+;;                                 (no degenerate simplex)
+;;
+;; Kinds outside {0,1,2,3} have no structural constraint.
+
+(define (hedge3-invariant-error kind a b c reason)
+  (raise (exn:fail:sixth:substrate
+          (format "HEDGE3: kind=~a (~a, ~a, ~a) violates ~a"
+                   kind a b c reason)
+          (current-continuation-marks)
+          #f)))
+
+;; Predicate-only check (no side effects).  Lets demos test invariants
+;; without triggering the insert-time exception.  Returns #t if the
+;; tuple would pass substrate-level structural validation.
+(define (substrate-hedge3-valid? kind a b c)
+  (cond
+    [(= kind 0)
+     (and (not (= a c)) (not (= b c)))]                ; WITNESS
+    [(= kind 1)
+     (and (not (= a b)) (not (= b c)))]                ; MEDIATOR
+    [(= kind 2)
+     (not (and (= a b) (= b c)))]                       ; CONTEXT (only reject a==b==c)
+    [(= kind 3)
+     (and (not (= a b)) (not (= b c)) (not (= a c)))]  ; SIMPLEX
+    [else #t]))
+
 (define (substrate-hedge3+! s kind a b c)
+  (cond
+    [(= kind 0)
+     (when (= a c) (hedge3-invariant-error kind a b c "WITNESS: witness must differ from src"))
+     (when (= b c) (hedge3-invariant-error kind a b c "WITNESS: witness must differ from dst"))]
+    [(= kind 1)
+     (when (= a b) (hedge3-invariant-error kind a b c "MEDIATOR: mid must differ from src"))
+     (when (= b c) (hedge3-invariant-error kind a b c "MEDIATOR: mid must differ from dst"))]
+    [(= kind 2)
+     (when (and (= a b) (= b c))
+       (hedge3-invariant-error kind a b c "CONTEXT: fully-degenerate triple (in==ctx==out)"))]
+    [(= kind 3)
+     (when (= a b) (hedge3-invariant-error kind a b c "SIMPLEX: all three must be distinct"))
+     (when (= b c) (hedge3-invariant-error kind a b c "SIMPLEX: all three must be distinct"))
+     (when (= a c) (hedge3-invariant-error kind a b c "SIMPLEX: all three must be distinct"))]
+    [else (void)])
   (define key (vector kind a b c))
   (unless (hash-has-key? (substrate-hedges s) key)
     (hash-set! (substrate-hedges s) key #t)

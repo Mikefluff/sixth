@@ -1,0 +1,183 @@
+\ examples/103-hedge3-strict-validation.6th
+\ HEDGE3 strict structural validation — substrate-enforced per-kind
+\ invariants verified via the HEDGE3-VALID? predicate.
+\
+\ Prior demos (93-98) introduced HEDGE3 as a typed primitive but the
+\ "strict typing" claim was overstated: substrate stored arbitrary
+\ (kind, a, b, c) tuples regardless of structural sense.  The
+\ substrate now enforces per-kind structural invariants at insert
+\ time, raising exn:fail:sixth:substrate when a tuple violates its
+\ kind's structural meaning.
+\
+\ Per-kind structural invariants (substrate-level):
+\
+\   WITNESS  (src, dst, w  )   w distinct from BOTH src and dst.
+\                              "Self-witnessing the self-loop" is degenerate.
+\
+\   MEDIATOR (src, mid, dst)   mid distinct from BOTH src and dst.
+\                              A node mediating itself is not a channel.
+\
+\   CONTEXT  (in,  ctx, out)   only the fully-degenerate a==b==c is
+\                              rejected.  ctx==in (self-applying rule)
+\                              and ctx==out are legitimate use.  Demo 96
+\                              uses CONTEXT(G, G, Gly) for the GGN codon
+\                              box; that pattern must remain legal.
+\
+\   SIMPLEX  (a,   b,   c  )   all three pairwise distinct.
+\                              No degenerate simplex.
+\
+\ Semantic invariants (observer-must-have-self-loop, triangle-must-
+\ exist-in-binary-edges, channel-must-be-tagged, etc.) are NOT
+\ enforced by the substrate.  Those are stdlib-level validators that
+\ users can compose; see the design note in stdlib/hedge.6th.
+\
+\ This demo verifies each kind's invariant via HEDGE3-VALID?
+\ (predicate-only check; no insertion, no exception) AND by
+\ successfully inserting valid tuples while showing that the
+\ predicate distinguishes valid from invalid.
+
+use prelude
+use graph
+use phi
+use debug
+use hedge
+
+\ ============================================================
+\ Build 5 substrate nodes for the validation tests.
+\ ============================================================
+
+MARK "n1" store
+MARK "n2" store
+MARK "n3" store
+MARK "n4" store
+MARK "n5" store
+
+NODES 5 assert-eq
+
+\ ============================================================
+\ WITNESS validation.
+\
+\ Valid:    WITNESS (n1, n2, n3)        w distinct from src AND dst
+\ Invalid:  WITNESS (n1, n2, n1)        w == src
+\           WITNESS (n1, n2, n2)        w == dst
+\           WITNESS (n1, n1, n1)        all same (a==c trivially)
+\ ============================================================
+
+\ Valid case via HEDGE3-VALID? predicate.
+WITNESS "n1" load "n2" load "n3" load HEDGE3-VALID? 1 assert-eq
+
+\ Invalid cases via HEDGE3-VALID?.
+WITNESS "n1" load "n2" load "n1" load HEDGE3-VALID? 0 assert-eq   \ w == src
+WITNESS "n1" load "n2" load "n2" load HEDGE3-VALID? 0 assert-eq   \ w == dst
+
+\ Insertion of valid tuple succeeds.
+"n1" load "n2" load "n3" load witness+
+witnesses 1 assert-eq
+
+\ Re-check: substrate has the valid hyperedge.
+"n1" load "n2" load "n3" load witness? 1 assert-eq
+
+\ ============================================================
+\ MEDIATOR validation.
+\
+\ Valid:    MEDIATOR (n1, n2, n3)       mid distinct from src AND dst
+\ Invalid:  MEDIATOR (n1, n1, n3)       mid == src
+\           MEDIATOR (n1, n2, n2)       mid == dst
+\ ============================================================
+
+MEDIATOR "n1" load "n2" load "n3" load HEDGE3-VALID? 1 assert-eq
+MEDIATOR "n1" load "n1" load "n3" load HEDGE3-VALID? 0 assert-eq
+MEDIATOR "n1" load "n2" load "n2" load HEDGE3-VALID? 0 assert-eq
+
+\ Insertion of valid tuple.
+"n1" load "n2" load "n3" load mediator+
+mediators 1 assert-eq
+
+\ ============================================================
+\ CONTEXT validation (intentionally permissive — only the fully
+\ degenerate a==b==c case is rejected).
+\
+\ Valid:    CONTEXT (n1, n2, n3)         all distinct
+\           CONTEXT (n1, n2, n1)         in==out, ctx distinct (in-place rule)
+\           CONTEXT (n1, n1, n2)         ctx==in (self-applying rule, codon box)
+\           CONTEXT (n1, n2, n2)         ctx==out (rule producing itself's tag)
+\ Invalid:  CONTEXT (n1, n1, n1)         all three identical, fully degenerate
+\ ============================================================
+
+CONTEXT "n1" load "n2" load "n3" load HEDGE3-VALID? 1 assert-eq
+CONTEXT "n1" load "n2" load "n1" load HEDGE3-VALID? 1 assert-eq   \ in == out OK
+CONTEXT "n1" load "n1" load "n2" load HEDGE3-VALID? 1 assert-eq   \ ctx == in OK
+CONTEXT "n1" load "n2" load "n2" load HEDGE3-VALID? 1 assert-eq   \ ctx == out OK
+CONTEXT "n1" load "n1" load "n1" load HEDGE3-VALID? 0 assert-eq   \ all same
+
+\ Insertions of permissive valid cases.
+"n1" load "n2" load "n3" load context+
+"n1" load "n1" load "n2" load context+     \ self-applying rule pattern
+"n1" load "n2" load "n2" load context+
+contexts 3 assert-eq
+
+\ ============================================================
+\ SIMPLEX validation.
+\
+\ Valid:    SIMPLEX (n1, n2, n3)         all three distinct
+\ Invalid:  SIMPLEX (n1, n1, n3)         a == b
+\           SIMPLEX (n1, n2, n2)         b == c
+\           SIMPLEX (n1, n2, n1)         a == c
+\ ============================================================
+
+SIMPLEX "n1" load "n2" load "n3" load HEDGE3-VALID? 1 assert-eq
+SIMPLEX "n1" load "n1" load "n3" load HEDGE3-VALID? 0 assert-eq
+SIMPLEX "n1" load "n2" load "n2" load HEDGE3-VALID? 0 assert-eq
+SIMPLEX "n1" load "n2" load "n1" load HEDGE3-VALID? 0 assert-eq
+
+"n1" load "n2" load "n3" load simplex+
+simplices 1 assert-eq
+
+\ ============================================================
+\ Final substrate state.
+\ ============================================================
+
+HEDGES3 6 assert-eq                       \ 1 WITNESS + 1 MEDIATOR + 3 CONTEXT + 1 SIMPLEX
+witnesses 1 assert-eq
+mediators 1 assert-eq
+contexts 3 assert-eq
+simplices 1 assert-eq
+
+\ ============================================================
+\ Cross-check: backward compatibility with prior demos.
+\ Demo 96's CONTEXT(G, G, Gly) pattern (ctx == in for symmetric
+\ codon box) MUST remain legal under the relaxed CONTEXT
+\ invariant.  Verify via HEDGE3-VALID?.
+\ ============================================================
+
+MARK "G" store
+MARK "Gly" store
+CONTEXT "G" load "G" load "Gly" load HEDGE3-VALID? 1 assert-eq
+
+cr
+"=== Demo 103 — HEDGE3 strict structural validation ===" . cr
+cr
+"Per-kind structural invariants enforced at substrate level:" . cr
+"  WITNESS  : w distinct from src AND dst" . cr
+"  MEDIATOR : mid distinct from src AND dst" . cr
+"  CONTEXT  : reject only fully-degenerate a==b==c" . cr
+"             (ctx==in, ctx==out, in==out are legitimate)" . cr
+"  SIMPLEX  : all three pairwise distinct" . cr
+cr
+"HEDGE3-VALID? (kind a b c -- 0/1) lets demos test invariants" . cr
+"without triggering the insert-time exception." . cr
+cr
+"Semantic invariants (observer self-loop, triangle structure," . cr
+"channel tag, rule-node tag) are NOT enforced by substrate —" . cr
+"those are convention, implementable as stdlib validators." . cr
+"This is the honest two-tier typing story:" . cr
+"  structural typing — substrate-enforced, hard error on violation;" . cr
+"  semantic   typing — stdlib convention, soft check by user." . cr
+cr
+"Total hyperedges:" . HEDGES3 .
+"  WITNESS:" . witnesses .
+"  MEDIATOR:" . mediators .
+"  CONTEXT:" . contexts .
+"  SIMPLEX:" . simplices . cr
+
+REPORT

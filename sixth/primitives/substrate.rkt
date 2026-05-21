@@ -66,6 +66,17 @@
   (define kind (pop1 e))
   (push1 e (if (substrate-hedge3? (sub e) kind a b c) 1 0)))
 
+(define (prim-HEDGE3-VALID? e)
+  ;; Predicate-only structural validation.  No insertion, no side
+  ;; effects, no exception.  Used by demos to test whether a tuple
+  ;; would pass the kind's structural invariants before risking an
+  ;; insert-time exn:fail:sixth:substrate.
+  (define c    (pop1 e))
+  (define b    (pop1 e))
+  (define a    (pop1 e))
+  (define kind (pop1 e))
+  (push1 e (if (substrate-hedge3-valid? kind a b c) 1 0)))
+
 (define (prim-HEDGES3 e)
   (push1 e (substrate-hedge3-count* (sub e))))
 
@@ -272,6 +283,7 @@
     (cons 'HEDGE3+      prim-HEDGE3+)
     (cons 'HEDGE3-      prim-HEDGE3-)
     (cons 'HEDGE3?      prim-HEDGE3?)
+    (cons 'HEDGE3-VALID? prim-HEDGE3-VALID?)
     (cons 'HEDGES3      prim-HEDGES3)
     (cons 'HEDGES3-KIND prim-HEDGES3-KIND)
     (cons 'EACH-HEDGE3  prim-EACH-HEDGE3)
