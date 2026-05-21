@@ -1,0 +1,294 @@
+\ examples/98-hedge3-simplex-complex.6th
+\ HEDGE3 SIMPLEX — substrate-readable simplicial complex.
+\
+\ A SIMPLEX hyperedge (a, b, c) is an UNDIRECTED triadic form: no
+\ source, no destination, no mediator role.  The triple exists as
+\ a 2-cell — geometrically a triangle, topologically the minimal
+\ non-degenerate 2-dimensional cell of a simplicial complex.
+\
+\ This demo builds a binary-edge graph with several triangles, then
+\ applies a rule that scans 2-paths via EACH-2PATH and asserts a
+\ SIMPLEX whenever the three nodes form a closed triangle (all six
+\ directed edges present).  The set of asserted SIMPLEXes is the
+\ substrate-readable 2-skeleton of the simplicial complex built on
+\ the binary-edge 1-skeleton.
+\
+\ Substrate-readable computations on the complex:
+\
+\   - Euler characteristic  χ = V − E_undir + F
+\     where V = nodes, E_undir = #unordered binary-edge pairs,
+\     F = #SIMPLEX hyperedges (2-cells).
+\
+\   - Per-node star degree: how many simplices contain a given node.
+\     For a simplicial complex, the "star" of a vertex is the union
+\     of simplices containing it — important in algebraic topology.
+\
+\   - Triangle community: which simplices share an edge.  Two
+\     SIMPLEXes sharing 2 nodes are "edge-adjacent" in the complex.
+\
+\ Construction: 6-node substrate, 6 directed binary edges forming a
+\ graph with exactly 2 closed triangles.  After scan: 2 SIMPLEXes.
+\ Euler characteristic computed.
+
+use prelude
+use graph
+use phi
+use debug
+use hedge
+
+\ ============================================================
+\ 6 substrate nodes — vertices of a simplicial complex.
+\ ============================================================
+
+MARK "v1" store
+MARK "v2" store
+MARK "v3" store
+MARK "v4" store
+MARK "v5" store
+MARK "v6" store
+
+NODES 6 assert-eq
+
+\ ============================================================
+\ Binary 1-skeleton: bi-edges forming two triangles + dangling node.
+\
+\   Triangle A: v1-v2-v3
+\   Triangle B: v3-v4-v5
+\   Shared vertex: v3
+\   Dangling: v6 (no edges → contributes V=1 but no 1-cell or 2-cell)
+\ ============================================================
+
+"v1" load "v2" load bi-edge
+"v2" load "v3" load bi-edge
+"v3" load "v1" load bi-edge
+
+"v3" load "v4" load bi-edge
+"v4" load "v5" load bi-edge
+"v5" load "v3" load bi-edge
+
+EDGES 12 assert-eq                          \ 6 bi-edges = 12 directed
+HEDGES3 0 assert-eq                         \ no simplices yet
+
+\ ============================================================
+\ SIMPLEX-CLOSURE RULE — scan every 2-path (a, b, c) via
+\ EACH-2PATH; if (a, b, c) is a closed triangle with canonical
+\ a < b < c ordering, assert SIMPLEX (a, b, c).
+\
+\ Canonical ordering dedupes: each triangle has 6 ordered 2-paths
+\ (a→b→c, a→c→b, b→a→c, b→c→a, c→a→b, c→b→a); only one passes
+\ the a < b < c filter.  EDGE+ idempotence and HEDGE3+ set semantics
+\ also dedupe but canonical ordering is more efficient.
+\ ============================================================
+
+0 "simplex-spawns" store
+
+: close-simplex ( a b c -- )
+  "cs-c" store  "cs-b" store  "cs-a" store
+  "cs-a" load "cs-b" load < if
+    "cs-b" load "cs-c" load < if
+      "cs-b" load "cs-a" load EDGE? if
+        "cs-c" load "cs-b" load EDGE? if
+          "cs-a" load "cs-c" load EDGE? if
+            "cs-c" load "cs-a" load EDGE? if
+              "cs-a" load "cs-b" load "cs-c" load simplex+
+              "simplex-spawns" load 1 + "simplex-spawns" store
+            then
+          then
+        then
+      then
+    then
+  then ;
+
+' close-simplex EACH-2PATH
+
+"simplex-spawns" load 2 assert-eq           \ exactly 2 triangles
+simplices 2 assert-eq
+
+\ ============================================================
+\ Verify which simplices were asserted.
+\ Note: canonical ordering means the (a,b,c) of each simplex has
+\ a < b < c in substrate-id order.  Since v1..v6 were MARKed in
+\ order, v1 has the lowest id, v6 has the highest.
+\ ============================================================
+
+\ Triangle A (v1, v2, v3): all three smaller than v4 → SIMPLEX (v1,v2,v3)
+"v1" load "v2" load "v3" load simplex? 1 assert-eq
+
+\ Triangle B (v3, v4, v5): canonical order is (v3, v4, v5)
+"v3" load "v4" load "v5" load simplex? 1 assert-eq
+
+\ Non-triangle: (v1, v2, v4) — not all three pairwise bi-edged
+"v1" load "v2" load "v4" load simplex? 0 assert-eq
+
+\ ============================================================
+\ Star-degree query: how many simplices contain a given vertex?
+\ The substrate scans EACH-SIMPLEX with a vertex-in-triple filter.
+\ ============================================================
+
+0 "v1-star" store
+0 "v3-star" store
+0 "v6-star" store
+
+: tally-vertex-star ( a b c -- )
+  "ts-c" store  "ts-b" store  "ts-a" store
+  "ts-a" load "v1" load = "ts-b" load "v1" load = + "ts-c" load "v1" load = + if
+    "v1-star" load 1 + "v1-star" store
+  then
+  "ts-a" load "v3" load = "ts-b" load "v3" load = + "ts-c" load "v3" load = + if
+    "v3-star" load 1 + "v3-star" store
+  then
+  "ts-a" load "v6" load = "ts-b" load "v6" load = + "ts-c" load "v6" load = + if
+    "v6-star" load 1 + "v6-star" store
+  then ;
+
+' tally-vertex-star each-simplex
+
+"v1-star" load 1 assert-eq                  \ v1 in (v1,v2,v3)
+"v3-star" load 2 assert-eq                  \ v3 shared between both triangles
+"v6-star" load 0 assert-eq                  \ v6 dangling, in no simplex
+
+\ ============================================================
+\ Euler characteristic χ = V − E_undir + F
+\
+\   V = 6 (substrate nodes)
+\   E_undir = 6 (bi-edges = 12 directed / 2)
+\   F = 2 (SIMPLEXes)
+\
+\   χ = 6 − 6 + 2 = 2
+\
+\ For a topological space homotopy-equivalent to a single point
+\ (or a tree, or a contractible 2-complex), χ = 1.  Two triangles
+\ glued at a vertex form a wedge of two disks; their χ = 1 + 1 = 2.
+\ The result is consistent with this topology.
+\ ============================================================
+
+\ Compute V, E_undir, F from substrate state directly.
+NODES "V" store
+EDGES 2 / "E-undir" store                   \ bi-edges: directed / 2
+simplices "F" store
+
+"V" load "E-undir" load - "F" load + "euler" store
+
+"V" load 6 assert-eq
+"E-undir" load 6 assert-eq
+"F" load 2 assert-eq
+"euler" load 2 assert-eq
+
+\ ============================================================
+\ Edge-adjacency between simplices — which pairs of SIMPLEX
+\ hyperedges share exactly 2 vertices (an "edge" in the complex)?
+\ The two triangles share only v3, so they share 1 vertex, NOT
+\ a 2-vertex edge.  Expected adjacency count: 0.
+\
+\ This demonstrates that adjacency in a simplicial complex is a
+\ substrate-readable query, not a derived property.
+\ ============================================================
+
+0 "edge-adjacent-pairs" store
+
+\ Cross-iterate simplices via nested each-simplex.  For each pair
+\ (S1, S2), count how many vertices they share; if exactly 2, count.
+
+: count-shared ( a1 b1 c1 a2 b2 c2 -- n )
+  "c2" store  "b2" store  "a2" store
+  "c1" store  "b1" store  "a1" store
+  0 "shared" store
+  "a1" load "a2" load = "a1" load "b2" load = + "a1" load "c2" load = + if
+    "shared" load 1 + "shared" store
+  then
+  "b1" load "a2" load = "b1" load "b2" load = + "b1" load "c2" load = + if
+    "shared" load 1 + "shared" store
+  then
+  "c1" load "a2" load = "c1" load "b2" load = + "c1" load "c2" load = + if
+    "shared" load 1 + "shared" store
+  then
+  "shared" load ;
+
+: inner-adj ( a2 b2 c2 -- )
+  "inner-c" store  "inner-b" store  "inner-a" store
+  \ Skip self-pair (same triple): all 3 vertices identical -> shared=3.
+  \ Count when shared == 2 (one edge).  Each unordered pair fires
+  \ twice (S1,S2 and S2,S1 both trigger); divide by 2 at end.
+  "outer-a" load "outer-b" load "outer-c" load
+  "inner-a" load "inner-b" load "inner-c" load
+  count-shared
+  2 = if
+    "edge-adjacent-pairs" load 1 + "edge-adjacent-pairs" store
+  then ;
+
+: outer-adj ( a1 b1 c1 -- )
+  "outer-c" store  "outer-b" store  "outer-a" store
+  ' inner-adj each-simplex ;
+
+' outer-adj each-simplex
+"edge-adjacent-pairs" load 2 / "edge-adjacent-pairs" store  \ unorder
+
+"edge-adjacent-pairs" load 0 assert-eq      \ two triangles share v3 only
+
+\ ============================================================
+\ Build a THIRD triangle that shares an edge with Triangle A:
+\ v1-v2-v6.  Now v1-v2 is a shared edge between Triangle A and
+\ Triangle C; edge-adjacency count = 1.
+\ ============================================================
+
+"v1" load "v6" load bi-edge
+"v2" load "v6" load bi-edge
+\ v1-v2 already exists from Triangle A
+
+\ Re-run simplex closure.  Snapshot semantics: new edges added to
+\ binary-edge layer; close-simplex re-scans EACH-2PATH.
+
+0 "simplex-spawns" store
+' close-simplex EACH-2PATH
+
+\ Original 2 simplices still present (HEDGE3+ is idempotent).
+\ Plus new (v1, v2, v6) — canonical-ordered: v1 < v2 < v6.
+"simplex-spawns" load 3 assert-eq            \ scanner finds all 3 again
+simplices 3 assert-eq                        \ but only 1 NEW one added
+
+"v1" load "v2" load "v6" load simplex? 1 assert-eq
+
+\ Re-tally edge-adjacency.
+0 "edge-adjacent-pairs" store
+' outer-adj each-simplex
+"edge-adjacent-pairs" load 2 / "edge-adjacent-pairs" store
+
+"edge-adjacent-pairs" load 1 assert-eq       \ A and C share edge v1-v2
+
+\ Updated Euler characteristic.
+NODES "V" store
+EDGES 2 / "E-undir" store
+simplices "F" store
+
+"V" load 6 assert-eq                         \ no new nodes
+"E-undir" load 8 assert-eq                   \ +2 bi-edges (v1-v6, v2-v6)
+"F" load 3 assert-eq                         \ +1 simplex
+
+"V" load "E-undir" load - "F" load + "euler" store
+"euler" load 1 assert-eq                     \ χ = 6 − 8 + 3 = 1
+
+\ Three triangles sharing pairwise edges form a topological disk
+\ (or 2-sphere with one face removed), χ = 1.  Consistent.
+
+cr
+"=== Demo 98 — HEDGE3 SIMPLEX (substrate-readable 2-cells) ===" . cr
+"6-vertex substrate, simplex-closure rule scans 2-paths and asserts" . cr
+"SIMPLEX for each closed triangle (canonical a<b<c ordering)." . cr
+cr
+"Initial state: 2 triangles sharing v3 (wedge topology)" . cr
+"  V=6 E=6 F=2 χ=2" . cr
+"After adding triangle (v1,v2,v6) sharing edge v1-v2 with v1-v2-v3:" . cr
+"  V=6 E=8 F=3 χ=1  (topological disk)" . cr
+cr
+"Per-vertex star degree:" . cr
+"  v1 in" . "v1-star" load . "simplex" . cr
+"  v3 in" . "v3-star" load . "simplices  (hub)" . cr
+"  v6 in 1 simplex  (joined by new triangle)" . cr
+cr
+"Architectural significance: SIMPLEX is the undirected triadic" . cr
+"form — no head, no tail, no third role.  The substrate carries" . cr
+"the simplicial 2-skeleton as first-class state, enabling Euler" . cr
+"characteristic, star degrees, and edge-adjacency as substrate-" . cr
+"readable queries without external topology bookkeeping." . cr
+
+REPORT

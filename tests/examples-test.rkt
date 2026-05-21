@@ -2,8 +2,8 @@
 
 ;; tests/examples-test.rkt — regression gate.
 ;;
-;; Runs each of the 96 emergence demos and asserts the cumulative
-;; ✓ pass count is unchanged at 1396.  Each demo's expected pass
+;; Runs each of the 98 emergence demos and asserts the cumulative
+;; ✓ pass count is unchanged at 1440.  Each demo's expected pass
 ;; count is listed in the `expected` table below; the sum must
 ;; equal the gate constant.  Counting ✓ marks printed during the
 ;; run (engine prints ✓ for every successful ASSERT, including
@@ -166,7 +166,13 @@
     ;; 95: rewrite-rule firings as substrate-readable history.
     ;; 96: wobble at position 3 via codon-table CONTEXT hyperedges.
     ("95-hedge3-context-rewrite-history.6th" 21)
-    ("96-hedge3-wobble-position3.6th"        15)))
+    ("96-hedge3-wobble-position3.6th"        15)
+    ;; --- HEDGE3 MEDIATOR / SIMPLEX in-depth demos ---
+    ;; 97: communication channels as substrate nodes with load tracking,
+    ;; rerouting, fault injection.  98: substrate-readable simplicial
+    ;; complex (Euler characteristic, star degree, edge-adjacency).
+    ("97-hedge3-mediator-channels.6th"       20)
+    ("98-hedge3-simplex-complex.6th"         24)))
 
 (define (run-demo file)
   (define out
@@ -191,8 +197,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1396
-                (format "cumulative ✓ count: ~a (expected 1396)" total-pass)))
+  (check-equal? total-pass 1440
+                (format "cumulative ✓ count: ~a (expected 1440)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1396 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1440 ✓ across ~a demos"
                    total-pass (length expected)))
