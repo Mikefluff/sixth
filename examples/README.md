@@ -1,9 +1,9 @@
-# `examples/` — the 102 demonstrations
+# `examples/` — the 98 demonstrations
 
 This directory holds Sixth's reproducible emergence demonstrations.
 Each file is a standalone Sixth program; `raco test
 tests/examples-test.rkt` (or `make verify`) executes all 102 and
-asserts a cumulative 1535 ✓ / 0 ✗.
+asserts a cumulative 1469 ✓ / 0 ✗.
 
 > **First-time reader?** This catalogue is exhaustive.  For a
 > curated 10-demo reading path (~40 min), see

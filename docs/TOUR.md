@@ -1,6 +1,6 @@
 # Sixth — Curated Tour
 
-> A 10-demo reading path through 102 demonstrations. Each entry is
+> A 10-demo reading path through 98 demonstrations. Each entry is
 > chosen because it shifts the mental model of what the substrate
 > IS, not because it covers a feature checkbox.  Reading these 10
 > in order takes ~40 minutes (run + read source); reading all 102

@@ -2,8 +2,8 @@
 
 ;; tests/examples-test.rkt — regression gate.
 ;;
-;; Runs each of the 103 emergence demos and asserts the cumulative
-;; ✓ pass count is unchanged at 1562.  Each demo's expected pass
+;; Runs each of the 98 emergence demos and asserts the cumulative
+;; ✓ pass count is unchanged at 1469.  Each demo's expected pass
 ;; count is listed in the `expected` table below; the sum must
 ;; equal the gate constant.  Counting ✓ marks printed during the
 ;; run (engine prints ✓ for every successful ASSERT, including
@@ -160,27 +160,32 @@
     ;; 93: WITNESS (substrate-native provenance).  94: all four kinds
     ;; coexisting (WITNESS / MEDIATOR / CONTEXT / SIMPLEX) under strict
     ;; type discipline.
+    ;; --- HEDGE3 primitive coverage (introductory) ---
+    ;; 93 (witness) + 94 (four-kinds coexistence) — exercise the
+    ;; primitive surface.  Useful for learning HEDGE3; substrate-
+    ;; emergent content is in 98/100/104 below.
     ("93-hedge3-witness.6th"                16)
     ("94-hedge3-four-kinds.6th"             23)
-    ;; --- HEDGE3 CONTEXT applications (R4 + R2 from ternary-v2) ---
-    ;; 95: rewrite-rule firings as substrate-readable history.
-    ;; 96: wobble at position 3 via codon-table CONTEXT hyperedges.
-    ("95-hedge3-context-rewrite-history.6th" 21)
-    ("96-hedge3-wobble-position3.6th"        15)
-    ;; --- HEDGE3 MEDIATOR / SIMPLEX in-depth demos ---
-    ;; 97: communication channels as substrate nodes with load tracking,
-    ;; rerouting, fault injection.  98: substrate-readable simplicial
-    ;; complex (Euler characteristic, star degree, edge-adjacency).
-    ("97-hedge3-mediator-channels.6th"       20)
+    ;; --- HEDGE3 substantive applications ---
+    ;; 98: substrate-readable simplicial complex (Euler χ = V-E+F
+    ;;     computed from substrate state, topology transitions).
+    ;; 100: MEDIATOR causal hypergraph + fixpoint reachability
+    ;;      (forward cone, backward antecedents).
+    ;; 103: strict-validation integration test.
+    ;; 104: emergent causal time from MEDIATOR DAG —
+    ;;      substrate computes substrate-time as longest-path
+    ;;      via fixpoint iteration; branching/joining/monotonic
+    ;;      extension/causality verified.
     ("98-hedge3-simplex-complex.6th"         24)
-    ;; --- HEDGE3 substantive applications (substrate-self-modification,
-    ;;     Wolfram causal graph, belief revision, Φ_PA^W extension) ---
-    ("99-self-modifying-rule-via-context.6th"   25)
-    ("100-mediator-causal-graph.6th"            24)
-    ("101-witness-belief-revision.6th"          24)
-    ("102-phi-pa-witness-extension.6th"         22)
-    ;; --- HEDGE3 strict structural validation (substrate-enforced) ---
-    ("103-hedge3-strict-validation.6th"         27)))
+    ("100-mediator-causal-graph.6th"         24)
+    ("103-hedge3-strict-validation.6th"      27)
+    ;; NOTE: demos 95, 96, 97, 99, 101, 102 were cut as fake-deep
+    ;; "hash-table dressed up as substrate emergence" per critic
+    ;; sweep — see CHANGELOG entry for cut rationale.  The HEDGE3
+    ;; primitive surface and substrate-enforced strict typing
+    ;; remain; only the storage-and-filter use-case demos were
+    ;; removed.
+    ("104-emergent-causal-time.6th"          34)))
 
 (define (run-demo file)
   (define out
@@ -205,8 +210,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1562
-                (format "cumulative ✓ count: ~a (expected 1562)" total-pass)))
+  (check-equal? total-pass 1469
+                (format "cumulative ✓ count: ~a (expected 1469)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1562 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1469 ✓ across ~a demos"
                    total-pass (length expected)))

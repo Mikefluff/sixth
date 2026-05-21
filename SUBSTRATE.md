@@ -1,7 +1,7 @@
 # Sixth Substrate — Foundational Pointer Architecture
 
 This document accompanies the Sixth substrate implementation in
-`sixth/primitives/substrate.rkt` and the 102 emergence demonstrations
+`sixth/primitives/substrate.rkt` and the 98 emergence demonstrations
 under `examples/`. The goal is *not* to derive physics — it is to
 build the minimum formal artifact in which structures such as
 numbers, time, space, conservation laws, particles, self-reference,
@@ -44,7 +44,7 @@ two tokens (`EDGE+`), or a transformation of those relations
 
 ## What the demos demonstrate
 
-The 102 demonstrations live in `examples/` (file-by-file index in
+The 98 demonstrations live in `examples/` (file-by-file index in
 [`examples/README.md`](./examples/README.md)). Each isolates a
 single derivation chain, organised in six conceptual phases that
 go from simplest distinction to highest-order composition:
@@ -190,14 +190,14 @@ go from simplest distinction to highest-order composition:
   coexists with binary edges; bootstrap claim for the original 40-
   demo ascent (38 primitives suffice) is preserved.
 
-All 1535 assertions pass deterministically. Run the regression in
+All 1469 assertions pass deterministically. Run the regression in
 one command:
 
 ```bash
 make verify
 # language tests:    ok
 # substrate tests:   ok
-# examples:          1535 / 1535 ✓ across 102 demos
+# examples:          1469 / 1469 ✓ across 98 demos
 # docs build:        ok
 # artifact status:   reproducible
 ```
@@ -357,7 +357,7 @@ sufficient for the released demos and can be extended further.
 cd /Users/mikefluff/Documents/Programming/sixt
 raco pkg install --link .          # install the Sixth Racket collection
 
-# the whole regression — all 102 demos, all 1535 assertions
+# the whole regression — all 98 demos, all 1469 assertions
 make verify
 
 # any single demo

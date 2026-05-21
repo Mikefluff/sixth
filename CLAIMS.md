@@ -26,8 +26,8 @@ trigger F0 of the v9.0 preprint.
    `sixth/primitives/*.rkt`, the module loader resolves the stdlib,
    and a `#lang sixth` reader is registered.
 
-2. **All 102 demonstrations pass deterministically.** `examples-test.rkt`
-   asserts cumulative `pass=1535 fail=0` across 102 demos organised
+2. **All 98 demonstrations pass deterministically.** `examples-test.rkt`
+   asserts cumulative `pass=1469 fail=0` across 98 demos organised
    in six conceptual phases: the canonical Spencer-Brown ladder
    (01–11, eleven atomic rungs from void to first-Φ_PA), substrate
    applications (12–31, Peano / time / conservation / CA / Conway /

@@ -1,0 +1,331 @@
+\ examples/104-emergent-causal-time.6th
+\ Emergent causal time — substrate-time of each event is COMPUTED
+\ by the substrate from the MEDIATOR-hypergraph structure, not
+\ assigned externally.  Time is a substrate-derived property of
+\ causal lineage, not a clock.
+\
+\ The Wolfram physics project's central conceptual move: in a
+\ hypergraph rewriting model, *time is the partial order on the
+\ causal graph of rule firings*.  No external clock; events are
+\ ordered by which one had to happen before another for the
+\ substrate to reach its current state.
+\
+\ This demo realises that operationally in Sixth:
+\
+\   - 7 substrate-state nodes (events) and 3 rule-nodes are MARKed.
+\   - User code deposits 7 MEDIATOR hyperedges (cause, rule, effect)
+\     encoding the causal lineage of an evolution that branches
+\     once and merges once:
+\
+\          R-A         R-B            R-A
+\       s0 ──→ s1 ──┬───→ s2 ──→ s4 ─┐  R-C
+\                   │      R-A        ├──→ s6
+\                   └───→ s3 ──→ s5 ─┘
+\
+\   - Initially, every state-node carries substrate-time NGET = 0
+\     (the substrate has not computed anything yet).
+\   - A FIXPOINT RULE iterates EACH-MEDIATOR repeatedly.  For each
+\     (src, _, dst) hyperedge, dst's substrate-time is updated to
+\     max(current, src_time + 1).  Iteration continues until no
+\     state's substrate-time changes in a full pass.
+\
+\   - The fixpoint of the rule IS the substrate's notion of causal
+\     time: longest path from any source-state to each event.
+\
+\ Three properties verified that demonstrate this is a non-trivial
+\ derivation, not bookkeeping:
+\
+\   1. Branching: s2 and s3 have the SAME substrate-time (2),
+\      because they are concurrent products of s1's R-B branch.
+\   2. Joining: s6's substrate-time = max(time(s4), time(s5)) + 1
+\      = max(3, 3) + 1 = 4, NOT the sum of branch lengths.
+\   3. Monotonic extension: adding a NEW event s7 after s6 makes
+\      time(s7) = 5 while NO prior state's time changes.
+\
+\ The fixpoint, the longest-path computation, and the monotonic
+\ extension are all substrate-readable; no external clock or host
+\ counter participates.
+
+use prelude
+use graph
+use phi
+use debug
+use hedge
+
+\ ============================================================
+\ Substrate-state nodes (events).  NGET will store substrate-time.
+\ Initial NGET = 0 (default).
+\ ============================================================
+
+MARK "s0" store
+MARK "s1" store
+MARK "s2" store
+MARK "s3" store
+MARK "s4" store
+MARK "s5" store
+MARK "s6" store
+
+\ ============================================================
+\ Rule-nodes (causal-action labels).  Tagged NGET = 100 so the
+\ time-fixpoint rule can skip them.
+\ ============================================================
+
+MARK "R-A" store   "R-A" load 100 NSET
+MARK "R-B" store   "R-B" load 100 NSET
+MARK "R-C" store   "R-C" load 100 NSET
+
+NODES 10 assert-eq
+
+\ ============================================================
+\ Causal lineage as MEDIATOR hyperedges (cause, rule, effect).
+\
+\   s0 ──R-A──→ s1
+\   s1 ──R-B──→ s2
+\   s1 ──R-B──→ s3      (parallel branch)
+\   s2 ──R-A──→ s4
+\   s3 ──R-A──→ s5      (parallel with s4)
+\   s4 ──R-C──→ s6
+\   s5 ──R-C──→ s6      (join into s6)
+\ ============================================================
+
+"s0" load "R-A" load "s1" load mediator+
+"s1" load "R-B" load "s2" load mediator+
+"s1" load "R-B" load "s3" load mediator+
+"s2" load "R-A" load "s4" load mediator+
+"s3" load "R-A" load "s5" load mediator+
+"s4" load "R-C" load "s6" load mediator+
+"s5" load "R-C" load "s6" load mediator+
+
+mediators 7 assert-eq
+HEDGES3 7 assert-eq
+
+\ Sanity: all substrate-times start at 0.
+"s0" load NGET 0 assert-eq
+"s6" load NGET 0 assert-eq
+
+\ ============================================================
+\ FIXPOINT RULE — propagate causal time.
+\
+\ For each MEDIATOR (src, _, dst):
+\   candidate = NGET(src) + 1
+\   if NGET(dst) < candidate, set NGET(dst) = candidate
+\
+\ Note: rule-nodes have NGET=100 by construction; we skip any
+\ MEDIATOR whose src or dst is a rule-node (defensive, though our
+\ deposit pattern never makes rule-nodes src or dst).
+\ ============================================================
+
+0 "changed" store
+
+: propagate-time ( src mid dst -- )
+  "p-dst" store  drop  "p-src" store
+  "p-src" load NGET 100 = if exit-when-rule-src then
+  "p-dst" load NGET 100 = if exit-when-rule-dst then
+  "p-src" load NGET 1 + "cand" store
+  "p-dst" load NGET "cand" load < if
+    "p-dst" load "cand" load NSET
+    "changed" load 1 + "changed" store
+  then ;
+
+: exit-when-rule-src ;
+: exit-when-rule-dst ;
+
+\ Sixth has no early-return; the above word-aliases are a structural
+\ marker so future maintainers see WHY the if-branches are no-ops.
+\ Re-implement without early return:
+
+: propagate-time ( src mid dst -- )
+  "p-dst" store  drop  "p-src" store
+  "p-src" load NGET 100 = not if
+    "p-dst" load NGET 100 = not if
+      "p-src" load NGET 1 + "cand" store
+      "p-dst" load NGET "cand" load < if
+        "p-dst" load "cand" load NSET
+        "changed" load 1 + "changed" store
+      then
+    then
+  then ;
+
+\ Iterate until no change in a complete pass.
+1 "changed" store
+
+: time-fixpoint
+  "changed" load 0 > if
+    0 "changed" store
+    ' propagate-time each-mediator
+    time-fixpoint
+  then ;
+
+time-fixpoint
+
+\ ============================================================
+\ Substrate-derived causal times.
+\
+\ Longest paths from any time-zero source:
+\   s0 → 0  (no incoming)
+\   s1 → 1  (s0 + 1)
+\   s2 → 2  (s1 + 1)
+\   s3 → 2  (s1 + 1, parallel to s2)
+\   s4 → 3  (s2 + 1)
+\   s5 → 3  (s3 + 1, parallel to s4)
+\   s6 → 4  (max(s4, s5) + 1 = 4, the JOIN deepens time by 1)
+\ ============================================================
+
+"s0" load NGET 0 assert-eq
+"s1" load NGET 1 assert-eq
+"s2" load NGET 2 assert-eq
+"s3" load NGET 2 assert-eq                      \ parallel with s2
+"s4" load NGET 3 assert-eq
+"s5" load NGET 3 assert-eq                      \ parallel with s4
+"s6" load NGET 4 assert-eq                      \ join: max+1
+
+\ Rule-nodes are skipped — their NGET stays 100.
+"R-A" load NGET 100 assert-eq
+"R-B" load NGET 100 assert-eq
+"R-C" load NGET 100 assert-eq
+
+\ ============================================================
+\ Property 1 (BRANCHING): s2 and s3 are CONCURRENT events with
+\ identical substrate-time.  Substrate respects the partial-order
+\ semantics of the causal hypergraph; concurrent ≠ identical.
+\ ============================================================
+
+"s2" load NGET "s3" load NGET = 1 assert-eq
+
+\ ============================================================
+\ Property 2 (JOINING): s6's time = max(s4, s5) + 1, not sum.
+\ Substrate-time is longest-path, not path-count.
+\ ============================================================
+
+"s4" load NGET "s5" load NGET max 1 + "expected-s6" store
+"s6" load NGET "expected-s6" load = 1 assert-eq
+
+\ Negative check: s6's time is NOT s4 + s5 (sum) = 6
+"s6" load NGET 6 = 0 assert-eq
+
+\ ============================================================
+\ Property 3 (MONOTONIC EXTENSION): adding a new event s7 after
+\ s6 should give s7 time=5 WITHOUT changing any prior time.
+\ ============================================================
+
+MARK "s7" store
+"s6" load "R-A" load "s7" load mediator+
+
+mediators 8 assert-eq
+
+\ Snapshot prior times so we can verify they don't move.
+"s0" load NGET "snap-s0" store
+"s1" load NGET "snap-s1" store
+"s2" load NGET "snap-s2" store
+"s3" load NGET "snap-s3" store
+"s4" load NGET "snap-s4" store
+"s5" load NGET "snap-s5" store
+"s6" load NGET "snap-s6" store
+
+\ Re-run fixpoint.
+1 "changed" store
+time-fixpoint
+
+"s7" load NGET 5 assert-eq
+
+\ Prior times monotonically preserved.
+"s0" load NGET "snap-s0" load = 1 assert-eq
+"s1" load NGET "snap-s1" load = 1 assert-eq
+"s2" load NGET "snap-s2" load = 1 assert-eq
+"s3" load NGET "snap-s3" load = 1 assert-eq
+"s4" load NGET "snap-s4" load = 1 assert-eq
+"s5" load NGET "snap-s5" load = 1 assert-eq
+"s6" load NGET "snap-s6" load = 1 assert-eq
+
+\ ============================================================
+\ Cross-check: total events tally by substrate-time bucket.
+\ Distribution of substrate-times across the 8 events:
+\   time=0:  1 event   (s0)
+\   time=1:  1 event   (s1)
+\   time=2:  2 events  (s2, s3)
+\   time=3:  2 events  (s4, s5)
+\   time=4:  1 event   (s6)
+\   time=5:  1 event   (s7)
+\
+\ This is the substrate-derived "moment population" — how many
+\ events live at each causal moment.
+\ ============================================================
+
+0 "n0" store    0 "n1" store    0 "n2" store
+0 "n3" store    0 "n4" store    0 "n5" store
+
+: tally-by-time ( node -- )
+  dup NGET 100 = if drop else        \ skip rule-nodes
+    dup NGET 0 = if "n0" load 1 + "n0" store then
+    dup NGET 1 = if "n1" load 1 + "n1" store then
+    dup NGET 2 = if "n2" load 1 + "n2" store then
+    dup NGET 3 = if "n3" load 1 + "n3" store then
+    dup NGET 4 = if "n4" load 1 + "n4" store then
+    dup NGET 5 = if "n5" load 1 + "n5" store then
+    drop
+  then ;
+
+' tally-by-time EACH
+
+"n0" load 1 assert-eq
+"n1" load 1 assert-eq
+"n2" load 2 assert-eq                       \ branching at moment 2
+"n3" load 2 assert-eq                       \ parallel events at moment 3
+"n4" load 1 assert-eq                       \ join at moment 4
+"n5" load 1 assert-eq                       \ extension at moment 5
+
+\ ============================================================
+\ Substrate-readable check that time RESPECTS causality:
+\ for every MEDIATOR (src, _, dst), NGET(dst) > NGET(src).
+\ This is the substrate's verification that causal time agrees
+\ with the directed structure of the hypergraph.
+\ ============================================================
+
+0 "causal-violations" store
+
+: check-causality ( src mid dst -- )
+  "cc-dst" store  drop  "cc-src" store
+  "cc-src" load NGET 100 = not if
+    "cc-dst" load NGET 100 = not if
+      "cc-dst" load NGET "cc-src" load NGET > not if
+        "causal-violations" load 1 + "causal-violations" store
+      then
+    then
+  then ;
+
+' check-causality each-mediator
+
+"causal-violations" load 0 assert-eq        \ time respects causality
+
+cr
+"=== Demo 104 — emergent causal time from MEDIATOR DAG ===" . cr
+cr
+"Substrate computed substrate-time per event via fixpoint" . cr
+"iteration over MEDIATOR causal hyperedges; no external clock." . cr
+cr
+"Causal lineage:" . cr
+"  s0 → s1 → {s2, s3} → {s4, s5} → s6 → s7" . cr
+cr
+"Substrate-derived times (longest-path from initial):" . cr
+"  s0=" . "s0" load NGET .
+"  s1=" . "s1" load NGET .
+"  s2=" . "s2" load NGET .
+"  s3=" . "s3" load NGET .
+"  s4=" . "s4" load NGET .
+"  s5=" . "s5" load NGET .
+"  s6=" . "s6" load NGET .
+"  s7=" . "s7" load NGET . cr
+cr
+"Properties verified:" . cr
+"  branching   — concurrent events have IDENTICAL substrate-time" . cr
+"  joining     — merge depth = max(parents) + 1, NOT sum" . cr
+"  monotonic   — extension preserves prior times exactly" . cr
+"  causality   — every MEDIATOR (src,_,dst) has time(dst) > time(src)" . cr
+cr
+"Substrate-monism extends from STATE to TIME: time is not a" . cr
+"parameter the substrate consumes, it is a property the substrate" . cr
+"derives from its own causal structure.  Wolfram-aligned causal" . cr
+"invariance, made operational in 7 MEDIATOR hyperedges + one" . cr
+"fixpoint rule." . cr
+
+REPORT
