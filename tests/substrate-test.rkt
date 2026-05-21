@@ -647,4 +647,42 @@
   (define e (run-src src))
   (check-equal? (car (env-stack e)) 1))
 
+;; ============================================================
+;; Self-loop and EACH-2PATH self-cycle semantics — document
+;; design choices via test.  These are not arbitrary; demos
+;; rely on them (own-Φ_PA via self-loop indicator; recursive
+;; hierarchy fixed point via 2-path scan that includes cycles).
+;; ============================================================
+
+(test-case "NSUM with self-loop includes the self-feature"
+  ;; Node with self-loop is its own out-neighbour, so NSUM(n) = NGET(n).
+  (define e (run-src "MARK   1 1 EDGE+   1 42 NSET   1 NSUM"))
+  (check-equal? (car (env-stack e)) 42))
+
+(test-case "EACH-2PATH visits length-2 cycles (src=dst when present)"
+  ;; Mutual cycle 1↔2 gives 2-paths (1,2,1) and (2,1,2).
+  (define src ": tally drop drop drop
+                  \"n\" load 1 + \"n\" store ;
+                0 \"n\" store
+                MARK MARK   1 2 EDGE+   2 1 EDGE+
+                ' tally EACH-2PATH
+                \"n\" load")
+  (define e (run-src src))
+  (check-equal? (car (env-stack e)) 2))
+
+;; ============================================================
+;; REPORT output contract: always emits hedges= column.
+;; ============================================================
+
+(test-case "REPORT always emits hedges= column even when zero"
+  (define e (make-test-env))
+  (define out (run-on e "MARK MARK 1 ASSERT REPORT"))
+  (check-true (regexp-match? #rx"hedges=0" out))
+  (check-true (regexp-match? #rx"nodes=2" out)))
+
+(test-case "REPORT hedges= column updates after HEDGE3+"
+  (define e (make-test-env))
+  (define out (run-on e "MARK MARK MARK   0 1 2 3 HEDGE3+   REPORT"))
+  (check-true (regexp-match? #rx"hedges=1" out)))
+
 (displayln "substrate tests: all pass")

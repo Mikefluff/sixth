@@ -115,6 +115,18 @@
   ;; If non-TCO, 500 frames may be OK but the principle holds
   (check-equal? (stack-of src) '(0)))
 
+(test-case "TCO through if-branch: 100000-deep recursion completes"
+  ;; The recursive call lives inside the THEN branch; the compiler
+  ;; emits CALL followed by JMP-to-RET (jumping over the empty/short
+  ;; ELSE body to the trailing RET).  Without two-step JMP-to-RET
+  ;; tail-call detection, rstack grows linearly in depth and this
+  ;; would crash with stack overflow around 10⁴–10⁵ on default
+  ;; Racket configuration.  Depth 100000 is a strong signal that TCO
+  ;; really fires through if-branches.
+  (define src ": cd dup 0 > if 1 - cd else drop 0 then ;
+                100000 cd")
+  (check-equal? (stack-of src) '(0)))
+
 ;; -----------------------------------------------------------------
 ;; Store / load
 ;; -----------------------------------------------------------------

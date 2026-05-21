@@ -164,6 +164,17 @@
 ;; Storage: one global hash<#(kind a b c) → #t>, set semantics (insertion
 ;; idempotent).  A separate kind-count hash tracks per-kind cardinality for
 ;; cheap REPORT-style summaries.
+;;
+;; DESIGN ASYMMETRY: binary edges accept all four "degenerate" configurations
+;; (including self-loops `EDGE+ n n` which carry semantic weight in the
+;; substrate-monism programme — own-Φ_PA depends on the self-loop indicator).
+;; Trivalent HEDGE3 enforces Peirce-style strict distinctness on three of the
+;; four kinds (WITNESS / MEDIATOR / SIMPLEX) at insertion time; only CONTEXT
+;; allows the symmetric ctx==in / ctx==out cases needed for codon-box lookup
+;; patterns.  This asymmetry is intentional: the binary layer is a 1-skeleton
+;; carrying first/second distinction; the trivalent layer is the Peirce-
+;; thirdness layer where degeneracy collapses the irreducibly-triadic mediation
+;; the kind is meant to encode.  See SUBSTRATE.md Layer 2 catalog.
 
 ;; Per-kind structural invariants enforced at insert time.  These are
 ;; SUBSTRATE-level (structural distinctness), not SEMANTIC (observer
@@ -314,21 +325,16 @@
 (define (substrate-fail-count s) (substrate-assert-fail s))
 
 (define (substrate-report s)
+  ;; One stable output line shape — always include hedges=N so external
+  ;; parsers don't have to handle two formats.  Previously the line
+  ;; collapsed the hedges= column when zero, which silently changed the
+  ;; column count whenever a demo's HEDGE3 usage went from zero to
+  ;; non-zero, breaking grep-based test harnesses.
   (display "─────────────────────────────────") (newline)
-  (define hed (substrate-hedge3-count* s))
-  (cond
-    [(zero? hed)
-     (display (format "REPORT  nodes=~a  edges=~a  steps=~a  pass=~a  fail=~a~n"
-                       (substrate-node-count s)
-                       (substrate-edge-count* s)
-                       (substrate-now s)
-                       (substrate-pass-count s)
-                       (substrate-fail-count s)))]
-    [else
-     (display (format "REPORT  nodes=~a  edges=~a  hedges=~a  steps=~a  pass=~a  fail=~a~n"
-                       (substrate-node-count s)
-                       (substrate-edge-count* s)
-                       hed
-                       (substrate-now s)
-                       (substrate-pass-count s)
-                       (substrate-fail-count s)))]))
+  (display (format "REPORT  nodes=~a  edges=~a  hedges=~a  steps=~a  pass=~a  fail=~a~n"
+                    (substrate-node-count s)
+                    (substrate-edge-count* s)
+                    (substrate-hedge3-count* s)
+                    (substrate-now s)
+                    (substrate-pass-count s)
+                    (substrate-fail-count s))))

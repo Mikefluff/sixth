@@ -94,10 +94,30 @@
            (push-return-frame! e (frame prog (+ pc 1)))
            (loop (word-opcodes w) 0)])])]))
 
+;; Tail-call detection.  A CALL is in tail position if the next opcode
+;; is RET *or* an unconditional JMP whose target is RET.  The second
+;; case covers tail recursion through an if/else branch: the compiler
+;; emits CALL-followed-by-JMP at the end of the THEN body, where JMP
+;; jumps over the ELSE body to the trailing RET.  Without this two-
+;; step recognition, recursive words with their tail call inside an
+;; if-branch (peano-add, peano-mul, countdown, anything matching the
+;; pattern `if ... rec then`) silently fall back to non-TCO and grow
+;; the rstack linearly in recursion depth.
 (define (tail-call? prog pc)
+  (define n (vector-length prog))
   (define next-pc (+ pc 1))
-  (and (< next-pc (vector-length prog))
-       (= (op-code (vector-ref prog next-pc)) op-RET)))
+  (and (< next-pc n)
+       (let ([instr (vector-ref prog next-pc)])
+         (define code (op-code instr))
+         (cond
+           [(= code op-RET) #t]
+           [(= code op-JMP)
+            (define target (op-arg instr))
+            (and (exact-integer? target)
+                 (<= 0 target)
+                 (< target n)
+                 (= (op-code (vector-ref prog target)) op-RET))]
+           [else #f]))))
 
 (define (push-return-frame! e frm)
   (set-env-rstack! e (cons frm (env-rstack e))))

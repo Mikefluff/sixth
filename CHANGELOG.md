@@ -45,16 +45,26 @@ Tracks `main@HEAD` development past v0.8.  Currently:
   immediately at the iteration site with the rule name +
   observed-vs-expected depth, instead of corrupting the stack
   several iterations later.  See `assert-stack-delta!`.
-- 18 new `tests/substrate-test.rkt` cases: node-id validation
-  (EDGE+/HEDGE3+ phantom raises, self-loop legitimate, EDGE-
-  on phantom lax); stack-balance enforcement (EACH/EACH-EDGE/
-  EACH-2PATH/EACH-HEDGE3/STEP-CA all raise on wrong delta);
-  STEP-CA atomicity (two new cases on mutual cycle 1↔2 prove
-  rule reads PRE-step neighbour values — the substrate invariant
-  that prevents serial-bias artefacts in Conway/Rule-90/etc.);
-  ASSERT type matrix (`0.0` boxed-float zero fails, negative
-  ints pass per Forth convention, strings fail); HEDGE3-KIND
-  counter consistency across insert/remove/insert cycles.
+- **Inline design-asymmetry note** at `substrate-core.rkt` HEDGE3
+  block (line ~135): explains why binary edges accept all four
+  "degenerate" configurations (self-loops are semantically
+  load-bearing for own-Φ_PA) while three of four HEDGE3 kinds
+  enforce Peirce-style strict distinctness.  Was an implicit
+  inconsistency; now documented design choice.
+- 23 new `tests/substrate-test.rkt` / `tests/vm-test.rkt` cases:
+  node-id validation (EDGE+/HEDGE3+ phantom raises, self-loop
+  legitimate, EDGE- on phantom lax); stack-balance enforcement
+  (EACH/EACH-EDGE/EACH-2PATH/EACH-HEDGE3/STEP-CA all raise on
+  wrong delta); STEP-CA atomicity (two new cases on mutual
+  cycle 1↔2 prove rule reads PRE-step neighbour values — the
+  substrate invariant that prevents serial-bias artefacts in
+  Conway/Rule-90/etc.); ASSERT type matrix (`0.0` boxed-float
+  zero fails, negative ints pass per Forth convention, strings
+  fail); HEDGE3-KIND counter consistency across insert/remove/
+  insert cycles; self-loop NSUM semantics (own-feature included);
+  EACH-2PATH self-cycle visits (mutual 1↔2 yields two 2-paths);
+  REPORT output contract (always emits hedges= column); VM TCO
+  through if-branch (100 000-deep recursion completes).
 - CHANGELOG.md (this file).
 
 ### Changed
@@ -112,6 +122,26 @@ Tracks `main@HEAD` development past v0.8.  Currently:
   `exit-when-rule-dst` placeholder words that documented an
   earlier (rejected) early-return attempt.  Single clean
   definition with a comment explaining the nested-IF guard.
+
+### Fixed (engine — VM TCO defect + REPORT output contract)
+- **VM tail-call detection now sees through JMP-to-RET** (`vm.rkt`
+  `tail-call?`).  Previously only the exact pattern `CALL ... RET`
+  was TCO'd; the more common pattern `CALL ... JMP target ...
+  target: RET` (a tail call inside an `if/then/else` branch, where
+  the compiler emits a JMP over the alternative branch to the
+  trailing RET) silently fell through to non-TCO and grew the
+  rstack linearly in recursion depth.  Every recursive Sixth word
+  whose recursion lives inside an `if`-branch — `peano-add`,
+  `peano-mul`, `countdown`, anything matching `if ... rec then` —
+  was affected; the manual claim "recursive Sixth words run
+  arbitrarily deep" was effectively false.  Now passes a 100 000-
+  deep `countdown` test (was previously bounded by host stack
+  size, typically ≤10⁴–10⁵).
+- `substrate-report` now always emits the `hedges=N` column, even
+  when zero.  Previously the column collapsed when no HEDGE3s
+  existed, so the REPORT line shape silently changed the day a
+  demo started using HEDGE3 — breaking any grep-based external
+  parser.  Stable output contract.
 
 ### Fixed (engine + hidden demo bug surfaced by new enforcement)
 - `substrate-assert!` now uses the shared `zero-ish?` predicate
