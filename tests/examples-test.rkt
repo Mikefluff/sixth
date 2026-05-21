@@ -2,8 +2,8 @@
 
 ;; tests/examples-test.rkt — regression gate.
 ;;
-;; Runs each of the 98 emergence demos and asserts the cumulative
-;; ✓ pass count is unchanged at 1440.  Each demo's expected pass
+;; Runs each of the 102 emergence demos and asserts the cumulative
+;; ✓ pass count is unchanged at 1535.  Each demo's expected pass
 ;; count is listed in the `expected` table below; the sum must
 ;; equal the gate constant.  Counting ✓ marks printed during the
 ;; run (engine prints ✓ for every successful ASSERT, including
@@ -172,7 +172,13 @@
     ;; rerouting, fault injection.  98: substrate-readable simplicial
     ;; complex (Euler characteristic, star degree, edge-adjacency).
     ("97-hedge3-mediator-channels.6th"       20)
-    ("98-hedge3-simplex-complex.6th"         24)))
+    ("98-hedge3-simplex-complex.6th"         24)
+    ;; --- HEDGE3 substantive applications (substrate-self-modification,
+    ;;     Wolfram causal graph, belief revision, Φ_PA^W extension) ---
+    ("99-self-modifying-rule-via-context.6th"   25)
+    ("100-mediator-causal-graph.6th"            24)
+    ("101-witness-belief-revision.6th"          24)
+    ("102-phi-pa-witness-extension.6th"         22)))
 
 (define (run-demo file)
   (define out
@@ -197,8 +203,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1440
-                (format "cumulative ✓ count: ~a (expected 1440)" total-pass)))
+  (check-equal? total-pass 1535
+                (format "cumulative ✓ count: ~a (expected 1535)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1440 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1535 ✓ across ~a demos"
                    total-pass (length expected)))

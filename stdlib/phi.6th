@@ -10,12 +10,17 @@
 \ itself does not depend on a unique measure.
 \
 \ Measures provided:
-\   phi-pa     ( O -- phi ) : OUT(O) · 1[O EDGE? O] · L_max
-\   phi-integ  ( O -- phi ) : phi-pa · NSUM(O)
-\                              integration-weighted; requires nodes
-\                              to have feature-loaded NGET
-\   phi-bidir  ( O -- phi ) : (OUT(O)+IN(O)) · 1[O EDGE? O] · L_max
-\                              symmetric bidirectional scope
+\   phi-pa         ( O -- phi ) : OUT(O) · 1[O EDGE? O] · L_max
+\   phi-integ      ( O -- phi ) : phi-pa · NSUM(O)
+\                                  integration-weighted; requires nodes
+\                                  to have feature-loaded NGET
+\   phi-bidir      ( O -- phi ) : (OUT(O)+IN(O)) · 1[O EDGE? O] · L_max
+\                                  symmetric bidirectional scope
+\   phi-pa-witness ( O -- phi ) : (OUT(O) + W(O)) · 1[O EDGE? O] · L_max
+\                                  where W(O) = #WITNESS hyperedges with
+\                                  O as third leg; counts an observer's
+\                                  ground-of-validity contributions as
+\                                  scope (HEDGE3 extension)
 \
 \ All three reduce to 0 for non-reflexive observers (self-reference
 \ indicator factors through every measure).
@@ -82,4 +87,45 @@
   OUT                                 \ ( out )
   "phi-tmp-O" load IN +               \ ( out+in )
   "phi-tmp-O" load phi-self-ref *     \ ( scope*indicator )
+  "phi-L-max" load * ;                \ ( phi )
+
+\ ----------------------------------------------------------------
+\ phi-pa-witness — HEDGE3 WITNESS extension to phi-pa
+\
+\ Φ_PA^W = (OUT(O) + W(O)) · self-ref · L_max
+\
+\ where W(O) = count of WITNESS hyperedges (kind 0) having O as
+\ the third leg (witness position).  Intuition: an observer's
+\ scope is not only the edges it directly points at, but also the
+\ edges it grounds as witness.  An adjudicator-style observer with
+\ small binary scope but many witnessing assertions has non-trivial
+\ Φ_PA^W while Φ_PA itself is low.
+\
+\ Reduces to phi-pa when the substrate has no WITNESS hyperedges.
+\ The trivalent extension is OPTIONAL — only loads if `use hedge`
+\ is also active, but stays callable as a stub returning the
+\ binary-only phi-pa when no witnesses exist (W(O)=0).
+\
+\ Implementation note: uses each-witness scan with scratch memory
+\ "phi-w-target" and counter "phi-w-count"; safe under nested
+\ EACH invocations.
+\ ----------------------------------------------------------------
+
+: phi-w-tally ( src dst w -- )
+  "phi-w-w" store  "phi-w-d" store  "phi-w-s" store
+  "phi-w-w" load "phi-w-target" load = if
+    "phi-w-count" load 1 + "phi-w-count" store
+  then ;
+
+: witness-scope ( O -- W )
+  "phi-w-target" store
+  0 "phi-w-count" store
+  ' phi-w-tally each-witness
+  "phi-w-count" load ;
+
+: phi-pa-witness ( O -- phi )
+  dup "phi-tmp-O" store
+  OUT                                 \ ( out )
+  "phi-tmp-O" load witness-scope +    \ ( out + W )
+  "phi-tmp-O" load phi-self-ref *     \ ( (out+W)*indicator )
   "phi-L-max" load * ;                \ ( phi )

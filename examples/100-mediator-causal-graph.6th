@@ -1,0 +1,297 @@
+\ examples/100-mediator-causal-graph.6th
+\ MEDIATOR as Wolfram-style causal hypergraph — substrate-readable
+\ causal lineage from rule firings, with time emerging as the
+\ partial order over events.
+\
+\ In a Wolfram-style hypergraph rewriting model, each rule firing
+\ is a CAUSAL EVENT linking the input pattern, the rule, and the
+\ output pattern.  The collection of causal events forms a DAG;
+\ time is the partial order on this DAG.  Sixth's HEDGE3 MEDIATOR
+\ primitive (src, mid, dst) is the substrate-readable realisation:
+\ src = the input substrate-state, mid = the rule node, dst = the
+\ output substrate-state.  Substrate-monism: the substrate carries
+\ its own causal history.
+\
+\ This demo builds a small causal DAG:
+\
+\       R-a               R-a
+\   s0 ────→ s1 ────────→ s2
+\            │ R-b         │ R-a
+\            ↓             ↓
+\            s3 ──R-a──→  s4 ──R-b──→ s6
+\            │
+\            ↓ (s3 only branches one way; via R-a → s5)
+\            s5
+\
+\ (substrate-state nodes s0..s6 = 7; mediator hyperedges = 6;
+\ rule nodes R-a, R-b = 2)
+\
+\ Substrate-readable queries on the causal graph:
+\
+\   - Direct descendants of s1 (via any rule) — answers via
+\     EACH-MEDIATOR with src=s1.
+\
+\   - Antecedent of s6 — substrate-readable by EACH-MEDIATOR with
+\     dst=s6; single answer (s4) here because the DAG has no
+\     causally-redundant paths.
+\
+\   - "Which rule produced this state?" — EACH-MEDIATOR with dst=s6
+\     returns (s4, R-b, s6); answer is R-b.
+\
+\   - Causal cone forward — iterative reachability (substrate-monist
+\     fixpoint).  We compute by tagging cone nodes via NGET and
+\     iterating until no new tagging.
+
+use prelude
+use graph
+use phi
+use debug
+use hedge
+
+\ ============================================================
+\ Substrate-state nodes s0..s6 (tag NGET=10 to mark them as
+\ states), and rule-nodes R-a, R-b (tag NGET=100 — rule-marker).
+\ ============================================================
+
+MARK "s0" store   "s0" load 10 NSET
+MARK "s1" store   "s1" load 10 NSET
+MARK "s2" store   "s2" load 10 NSET
+MARK "s3" store   "s3" load 10 NSET
+MARK "s4" store   "s4" load 10 NSET
+MARK "s5" store   "s5" load 10 NSET
+MARK "s6" store   "s6" load 10 NSET
+
+MARK "R-a" store   "R-a" load 100 NSET
+MARK "R-b" store   "R-b" load 100 NSET
+
+NODES 9 assert-eq
+
+\ ============================================================
+\ Deposit causal-event hyperedges as MEDIATOR triples.
+\ Six firings; six MEDIATOR hyperedges.
+\ ============================================================
+
+"s0" load "R-a" load "s1" load mediator+
+"s1" load "R-a" load "s2" load mediator+
+"s1" load "R-b" load "s3" load mediator+
+"s2" load "R-a" load "s4" load mediator+
+"s3" load "R-a" load "s5" load mediator+
+"s4" load "R-b" load "s6" load mediator+
+
+mediators 6 assert-eq
+HEDGES3 6 assert-eq
+
+\ ============================================================
+\ Query 1: direct descendants of s1.
+\ Filter EACH-MEDIATOR for src = s1.
+\ Expected: {s2 (via R-a), s3 (via R-b)} = 2.
+\ ============================================================
+
+0 "s1-direct" store
+
+: tally-s1-direct ( src mid dst -- )
+  "td-dst" store  "td-mid" store  "td-src" store
+  "td-src" load "s1" load = if
+    "s1-direct" load 1 + "s1-direct" store
+  then ;
+
+' tally-s1-direct each-mediator
+
+"s1-direct" load 2 assert-eq
+
+\ ============================================================
+\ Query 2: which rule produced s6?
+\ Filter EACH-MEDIATOR for dst = s6, record the mid.
+\ Expected: R-b (single answer; substrate DAG has no redundancy).
+\ ============================================================
+
+0 "s6-rule" store
+
+: find-s6-rule ( src mid dst -- )
+  "fs-dst" store  "fs-mid" store  "fs-src" store
+  "fs-dst" load "s6" load = if
+    "fs-mid" load "s6-rule" store
+  then ;
+
+' find-s6-rule each-mediator
+
+"s6-rule" load "R-b" load = 1 assert-eq
+
+\ ============================================================
+\ Query 3: who is the direct antecedent of s6?
+\ Filter EACH-MEDIATOR for dst = s6, record the src.
+\ Expected: s4.
+\ ============================================================
+
+0 "s6-ancestor" store
+
+: find-s6-ancestor ( src mid dst -- )
+  "fa-dst" store  "fa-mid" store  "fa-src" store
+  "fa-dst" load "s6" load = if
+    "fa-src" load "s6-ancestor" store
+  then ;
+
+' find-s6-ancestor each-mediator
+
+"s6-ancestor" load "s4" load = 1 assert-eq
+
+\ ============================================================
+\ Query 4: forward causal cone of s1 — set of all states reachable
+\ from s1 via 1 or more MEDIATOR hops.
+\
+\ Algorithm (substrate-readable fixpoint):
+\   1. Tag s1 with cone-marker NGET=11.
+\   2. Iterate EACH-MEDIATOR.  For each (src, mid, dst):
+\        if NGET(src) = 11 and NGET(dst) = 10 (state, not yet in cone),
+\        retag dst as 11 (added to cone).  Record "new addition".
+\   3. Repeat until an iteration produces no new additions.
+\
+\ Cone of s1 should be {s1, s2, s3, s4, s5, s6} — 6 nodes total.
+\ Notice s0 is NOT in the cone (it's an ancestor of s1, not a
+\ descendant).
+\ ============================================================
+
+"s1" load 11 NSET                            \ seed
+
+: cone-step ( src mid dst -- )
+  "cs-dst" store  "cs-mid" store  "cs-src" store
+  "cs-src" load NGET 11 = if
+    "cs-dst" load NGET 10 = if               \ state, not in cone
+      "cs-dst" load 11 NSET
+      "added-this-pass" load 1 + "added-this-pass" store
+    then
+  then ;
+
+\ Iterate until fixpoint (no new additions in a pass).
+1 "added-this-pass" store                    \ seed loop entry
+: cone-iterate
+  "added-this-pass" load 0 > if
+    0 "added-this-pass" store
+    ' cone-step each-mediator
+    cone-iterate
+  then ;
+
+cone-iterate
+
+\ Count states tagged 11 = cone size.
+0 "cone-size" store
+
+: tally-cone ( node -- )
+  dup NGET 11 = if
+    "cone-size" load 1 + "cone-size" store
+  then
+  drop ;
+
+' tally-cone EACH
+
+"cone-size" load 6 assert-eq                 \ {s1..s6}
+
+\ Verify cone membership directly.
+"s1" load NGET 11 assert-eq
+"s2" load NGET 11 assert-eq
+"s3" load NGET 11 assert-eq
+"s4" load NGET 11 assert-eq
+"s5" load NGET 11 assert-eq
+"s6" load NGET 11 assert-eq
+
+\ s0 is NOT in s1's forward cone (it's an ancestor).
+"s0" load NGET 10 assert-eq
+
+\ ============================================================
+\ Query 5: ancestral chain of s6 — set of all states from which
+\ s6 is reachable.  Same algorithm, backward direction.
+\
+\ Reset state NGETs back to 10 first (clear forward cone), then
+\ run backward fixpoint seeded at s6 with marker 12.
+\ ============================================================
+
+"s1" load 10 NSET   "s2" load 10 NSET   "s3" load 10 NSET
+"s4" load 10 NSET   "s5" load 10 NSET   "s6" load 10 NSET
+
+"s6" load 12 NSET                            \ seed backward cone
+
+: backward-cone-step ( src mid dst -- )
+  "bs-dst" store  "bs-mid" store  "bs-src" store
+  "bs-dst" load NGET 12 = if                 \ dst is in backward cone
+    "bs-src" load NGET 10 = if               \ src is a state, not in cone yet
+      "bs-src" load 12 NSET
+      "added-this-pass" load 1 + "added-this-pass" store
+    then
+  then ;
+
+1 "added-this-pass" store
+: backward-iterate
+  "added-this-pass" load 0 > if
+    0 "added-this-pass" store
+    ' backward-cone-step each-mediator
+    backward-iterate
+  then ;
+
+backward-iterate
+
+0 "anc-size" store
+: tally-anc ( node -- )
+  dup NGET 12 = if
+    "anc-size" load 1 + "anc-size" store
+  then
+  drop ;
+
+' tally-anc EACH
+
+\ Ancestors of s6: {s6, s4, s2, s1, s0} = 5.
+"anc-size" load 5 assert-eq
+
+"s0" load NGET 12 assert-eq
+"s1" load NGET 12 assert-eq
+"s2" load NGET 12 assert-eq
+"s4" load NGET 12 assert-eq
+"s6" load NGET 12 assert-eq
+
+\ s3 and s5 are NOT ancestors of s6 (they branch off elsewhere).
+"s3" load NGET 10 assert-eq
+"s5" load NGET 10 assert-eq
+
+\ ============================================================
+\ Causal-graph statistics.
+\ ============================================================
+
+\ Number of distinct rules fired:  2 (R-a, R-b).
+\ Number of firings via R-a: 4 (s0→s1, s1→s2, s2→s4, s3→s5).
+\ Number of firings via R-b: 2 (s1→s3, s4→s6).
+
+0 "r-a-firings" store
+0 "r-b-firings" store
+
+: tally-rule-firings ( src mid dst -- )
+  "trf-dst" store  "trf-mid" store  "trf-src" store
+  "trf-mid" load "R-a" load = if
+    "r-a-firings" load 1 + "r-a-firings" store
+  then
+  "trf-mid" load "R-b" load = if
+    "r-b-firings" load 1 + "r-b-firings" store
+  then ;
+
+' tally-rule-firings each-mediator
+
+"r-a-firings" load 4 assert-eq
+"r-b-firings" load 2 assert-eq
+
+cr
+"=== Demo 100 — MEDIATOR causal graph (Wolfram-aligned) ===" . cr
+"7 substrate-states + 2 rule-nodes; 6 MEDIATOR causal-event" . cr
+"hyperedges record the rule firings as a substrate-readable DAG." . cr
+cr
+"Substrate-readable causal queries (all via EACH-MEDIATOR + NGET):" . cr
+"  direct descendants of s1:      2 (s2 via R-a, s3 via R-b)" . cr
+"  rule that produced s6:         R-b" . cr
+"  direct antecedent of s6:       s4" . cr
+"  forward cone size from s1:     6 (s1..s6)" . cr
+"  backward ancestor set of s6:   5 (s0,s1,s2,s4,s6)" . cr
+"  R-a firings: 4    R-b firings: 2" . cr
+cr
+"Architectural significance: substrate carries its own causal" . cr
+"history as first-class hyperedges; time emerges as the partial" . cr
+"order on the DAG.  No external bookkeeping; substrate-monism" . cr
+"applies to causal structure exactly as it applies to state." . cr
+
+REPORT
