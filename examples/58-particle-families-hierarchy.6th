@@ -1,0 +1,270 @@
+\ examples/58-particle-families-hierarchy.6th
+\ Pilot I — epoch 3: multi-level particle hierarchy.
+\
+\ Pilot G (54-55) established composite-distinction by meta-self-loop.
+\ Pilot H (56-57) added mutation + substrate-readable selection,
+\ producing three structurally distinct "species" of first-order
+\ observers held by a single meta-observer.
+\
+\ Pilot I iterates the same mechanism one level further: each
+\ species now has MULTIPLE INSTANCES, a per-family meta-observer
+\ holds its instances, and a genus-level meta-meta-observer holds
+\ the family observers.  Substrate-native taxonomy emerges in
+\ three readable layers:
+\
+\   Level 0 (instances/particles):
+\     α-family: 1 instance  (3-limb ring + self-loop)   phi-pa=50000
+\     β-family: 2 instances (4-limb ring + self-loop)   phi-pa=60000
+\     γ-family: 3 instances (5-limb ring + self-loop)   phi-pa=70000
+\
+\   Level 1 (family observers):
+\     Mα bi-edges all α-instances + self-loop           phi-pa=30000
+\     Mβ bi-edges all β-instances + self-loop           phi-pa=40000
+\     Mγ bi-edges all γ-instances + self-loop           phi-pa=50000
+\
+\   Level 2 (genus observer):
+\     M2 bi-edges Mα, Mβ, Mγ + self-loop                phi-pa=40000
+\
+\ All level-0, level-1, and level-2 observers carry their OWN
+\ self-loop — the substrate-monism principle (a held composite
+\ requires meta-self-reference at its level) is re-applied at
+\ every level.  No host-side hierarchy enforcement.
+\
+\ The result is a 6-instance / 3-family / 1-genus structure
+\ where every observer at every level has a substrate-readable
+\ phi-pa scalar, and the three "particle masses" (50000 / 60000 /
+\ 70000) coexist with three "family scalars" (30000 / 40000 /
+\ 50000) under one genus scalar.  This is the smallest construction
+\ that exhibits the iterated composite-distinction pattern that
+\ scales to arbitrary depth.
+
+use prelude
+use graph
+use phi
+use debug
+
+\ ============================================================
+\ Cluster builders (limb keys shadow across calls — only the
+\ observer key persists in memory).
+\ ============================================================
+
+: ring-3 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l1" load bi-edge ;
+
+: ring-4 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store  MARK "l4" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l4" load bi-edge
+  "l4" load "l1" load bi-edge ;
+
+: ring-5 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  MARK "l4" store  MARK "l5" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l4" load bi-edge
+  "l4" load "l5" load bi-edge
+  "l5" load "l1" load bi-edge ;
+
+: obs-attach-3 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge ;
+
+: obs-attach-4 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge
+  "ok" load load "l4" load bi-edge ;
+
+: obs-attach-5 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge
+  "ok" load load "l4" load bi-edge
+  "ok" load load "l5" load bi-edge ;
+
+\ ============================================================
+\ Level 0 — instances.
+\ NGET tag = species (1, 2, 3) for visual differentiation
+\ when rendered by the trace companion (demo 59).
+\ ============================================================
+
+\ α-family: 1 instance
+MARK "A1" store
+"A1" load "A1" load EDGE+
+ring-3
+"A1" obs-attach-3
+"A1" load 1 NSET
+
+\ β-family: 2 instances
+MARK "B1" store
+"B1" load "B1" load EDGE+
+ring-4
+"B1" obs-attach-4
+"B1" load 2 NSET
+
+MARK "B2" store
+"B2" load "B2" load EDGE+
+ring-4
+"B2" obs-attach-4
+"B2" load 2 NSET
+
+\ γ-family: 3 instances
+MARK "G1" store
+"G1" load "G1" load EDGE+
+ring-5
+"G1" obs-attach-5
+"G1" load 3 NSET
+
+MARK "G2" store
+"G2" load "G2" load EDGE+
+ring-5
+"G2" obs-attach-5
+"G2" load 3 NSET
+
+MARK "G3" store
+"G3" load "G3" load EDGE+
+ring-5
+"G3" obs-attach-5
+"G3" load 3 NSET
+
+\ ---- phi-pa BEFORE family attachment ----
+"A1" load phi-pa 40000 assert-eq      \ self + 3 limbs
+"B1" load phi-pa 50000 assert-eq      \ self + 4 limbs
+"B2" load phi-pa 50000 assert-eq
+"G1" load phi-pa 60000 assert-eq      \ self + 5 limbs
+"G2" load phi-pa 60000 assert-eq
+"G3" load phi-pa 60000 assert-eq
+
+\ ============================================================
+\ Level 1 — family observers (one per species).
+\ Each Mx has its OWN self-loop (Pilot G mechanism re-applied).
+\ ============================================================
+
+MARK "MA" store
+"MA" load "MA" load EDGE+
+"MA" load "A1" load bi-edge
+"MA" load 5 NSET                      \ family-α observer
+
+MARK "MB" store
+"MB" load "MB" load EDGE+
+"MB" load "B1" load bi-edge
+"MB" load "B2" load bi-edge
+"MB" load 6 NSET                      \ family-β observer
+
+MARK "MG" store
+"MG" load "MG" load EDGE+
+"MG" load "G1" load bi-edge
+"MG" load "G2" load bi-edge
+"MG" load "G3" load bi-edge
+"MG" load 7 NSET                      \ family-γ observer
+
+\ ---- phi-pa BEFORE genus attachment ----
+"MA" load phi-pa 20000 assert-eq      \ self + 1 instance = OUT 2
+"MB" load phi-pa 30000 assert-eq      \ self + 2 instances = OUT 3
+"MG" load phi-pa 40000 assert-eq      \ self + 3 instances = OUT 4
+
+\ Instances gained scope +1 from back-edge to their family observer.
+"A1" load phi-pa 50000 assert-eq      \ was 40000
+"B1" load phi-pa 60000 assert-eq      \ was 50000
+"B2" load phi-pa 60000 assert-eq
+"G1" load phi-pa 70000 assert-eq      \ was 60000
+"G2" load phi-pa 70000 assert-eq
+"G3" load phi-pa 70000 assert-eq
+
+\ ============================================================
+\ Level 2 — genus observer holds the family observers.
+\ ============================================================
+
+MARK "M2" store
+"M2" load "M2" load EDGE+
+"M2" load "MA" load bi-edge
+"M2" load "MB" load bi-edge
+"M2" load "MG" load bi-edge
+"M2" load 9 NSET                      \ genus observer
+
+\ Family observers gain scope +1 from M2 back-edge.
+"MA" load phi-pa 30000 assert-eq      \ was 20000
+"MB" load phi-pa 40000 assert-eq      \ was 30000
+"MG" load phi-pa 50000 assert-eq      \ was 40000
+
+\ Genus observer.
+"M2" load OUT 4 assert-eq             \ self + 3 family observers
+"M2" load "M2" load EDGE? 1 assert-eq
+"M2" load phi-pa 40000 assert-eq
+
+\ Instances are unchanged — they are not directly edged to M2.
+"A1" load phi-pa 50000 assert-eq
+"B1" load phi-pa 60000 assert-eq
+"G1" load phi-pa 70000 assert-eq
+
+\ ============================================================
+\ Substrate-readable taxonomy: distinct phi-pa signatures at
+\ each level (no two instances/families collide within a level).
+\ ============================================================
+
+\ Level 0: three distinct "particle masses".
+"A1" load phi-pa "B1" load phi-pa = 0 assert-eq
+"B1" load phi-pa "G1" load phi-pa = 0 assert-eq
+"A1" load phi-pa "G1" load phi-pa = 0 assert-eq
+
+\ Level 1: three distinct "family scalars".
+"MA" load phi-pa "MB" load phi-pa = 0 assert-eq
+"MB" load phi-pa "MG" load phi-pa = 0 assert-eq
+"MA" load phi-pa "MG" load phi-pa = 0 assert-eq
+
+\ Cross-level: within-family instances are identical (β1==β2,
+\ γ1==γ2==γ3), confirming the hierarchy distinguishes families
+\ from each other but NOT instances within a family — which is
+\ what physical "indistinguishable particles" look like.
+"B1" load phi-pa "B2" load phi-pa = 1 assert-eq
+"G1" load phi-pa "G2" load phi-pa = 1 assert-eq
+"G2" load phi-pa "G3" load phi-pa = 1 assert-eq
+
+\ ============================================================
+\ Final inventory.
+\ ============================================================
+
+\ Nodes:
+\   α: 1 obs + 3 limbs                  =  4
+\   β: 2 × (1 obs + 4 limbs)            = 10
+\   γ: 3 × (1 obs + 5 limbs)            = 18
+\   Family observers MA, MB, MG         =  3
+\   Genus observer M2                   =  1
+\   Total                                = 36
+NODES 36 assert-eq
+
+\ Edges (each bi-edge = 2 directed):
+\   α-instance: self(1) + ring-3 (6) + obs<->3 limbs (6) = 13
+\   β-instance: self(1) + ring-4 (8) + obs<->4 limbs (8) = 17 × 2 = 34
+\   γ-instance: self(1) + ring-5(10) + obs<->5 limbs(10) = 21 × 3 = 63
+\   Family Mx: 3 self-loops + 6 bi-edges to instances (12)= 15
+\   Genus M2:  1 self-loop + 3 bi-edges to families  (6) =  7
+\   Total: 13 + 34 + 63 + 15 + 7                         = 132
+EDGES 132 assert-eq
+
+cr
+"=== Pilot I — multi-level particle hierarchy ===" . cr
+"Level 0 (6 instances, 3 species):" . cr
+"  α (1 instance):  phi-pa = 50000" . cr
+"  β (2 instances): phi-pa = 60000" . cr
+"  γ (3 instances): phi-pa = 70000" . cr
+"Level 1 (family observers):" . cr
+"  MA phi-pa = 30000   MB phi-pa = 40000   MG phi-pa = 50000" . cr
+"Level 2 (genus observer):" . cr
+"  M2 phi-pa = 40000  (holds 3 families as one composite)" . cr
+cr
+"Within-family instances are indistinguishable (β1==β2, γ1==γ2==γ3)" . cr
+"— substrate-native analogue of physical particle indistinguishability." . cr
+"Cross-family particles AND cross-level observers are distinguishable" . cr
+"by phi-pa scalar — substrate-readable taxonomy." . cr
+
+REPORT

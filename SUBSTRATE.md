@@ -1,7 +1,7 @@
 # Sixth Substrate — Foundational Pointer Architecture
 
 This document accompanies the Sixth substrate implementation in
-`sixth/primitives/substrate.rkt` and the 58 emergence demonstrations
+`sixth/primitives/substrate.rkt` and the 60 emergence demonstrations
 under `examples/`. The goal is *not* to derive physics — it is to
 build the minimum formal artifact in which structures such as
 numbers, time, space, conservation laws, particles, self-reference,
@@ -44,7 +44,7 @@ two tokens (`EDGE+`), or a transformation of those relations
 
 ## What the demos demonstrate
 
-The 58 demonstrations live in `examples/` (file-by-file index in
+The 60 demonstrations live in `examples/` (file-by-file index in
 [`examples/README.md`](./examples/README.md)). Each isolates a
 single derivation chain, organised in sixteen phases:
 
@@ -91,15 +91,24 @@ single derivation chain, organised in sixteen phases:
   composite over three structurally distinct "particle species"
   (surviving Φ_PA = 50000 / 60000 / 70000 after the scope bonus).
   Lamarck-style, observer-driven — not blind Darwin.
+- **58–59** Pilot I — multi-level particle hierarchy: six
+  instances across three species (α/β/γ, 1+2+3 instances) → three
+  family observers Mα/Mβ/Mγ → one genus observer M2. The Pilot G
+  composite-distinction mechanism is re-applied at every level
+  (each observer carries its own self-loop). Result: substrate-
+  readable taxonomy with distinct Φ_PA signatures at each level
+  (instances 50000/60000/70000, families 30000/40000/50000, genus
+  40000). Within-family instances are indistinguishable —
+  substrate-native analogue of physical particle indistinguishability.
 
-All 828 assertions pass deterministically. Run the regression in
+All 867 assertions pass deterministically. Run the regression in
 one command:
 
 ```bash
 make verify
 # language tests:    ok
 # substrate tests:   ok
-# examples:          828 / 828 ✓ across 58 demos
+# examples:          867 / 867 ✓ across 60 demos
 # docs build:        ok
 # artifact status:   reproducible
 ```
@@ -259,7 +268,7 @@ sufficient for the released demos and can be extended further.
 cd /Users/mikefluff/Documents/Programming/sixt
 raco pkg install --link .          # install the Sixth Racket collection
 
-# the whole regression — all 58 demos, all 828 assertions
+# the whole regression — all 60 demos, all 867 assertions
 make verify
 
 # any single demo

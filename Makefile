@@ -21,6 +21,7 @@
         trace-pilot-e trace-pilot-f1 trace-pilot-f2 trace-pilot-f4 \
         trace-composite-distinction forensic-composite-distinction \
         trace-mutation-selection forensic-mutation-selection \
+        trace-particle-families forensic-particle-families \
         foundation-gifs all-figures \
         gif-pilot-c gif-pilot-d gif-split-brain gifs
 
@@ -357,6 +358,21 @@ trace-mutation-selection:
 forensic-mutation-selection:
 	@bash scripts/forensic.sh examples/57-trace-mutation-selection.6th mutation_selection "Pilot H mutation+selection"
 
+# Pilot I — multi-level particle hierarchy (demo 59).
+# Six instances → three family observers → one genus observer,
+# each level held by composite-distinction (Pilot G mechanism
+# iterated three times).
+trace-particle-families:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- run examples/59-trace-particle-families.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/particle_families.png \
+	      --title "Pilot I — multi-level particle hierarchy (instances / families / genus)"
+	@echo "→ open build/figures/particle_families.png"
+
+forensic-particle-families:
+	@bash scripts/forensic.sh examples/59-trace-particle-families.6th particle_families "Pilot I particle hierarchy"
+
 forensic-pilot-e:
 	@bash scripts/forensic.sh examples/50-trace-pilot-e-phi-pa.6th pilot_e "Pilot E"
 
@@ -417,8 +433,9 @@ forensic-all: forensic-pilot-d forensic-pilot-c forensic-split-brain \
               forensic-pilot-e forensic-pilot-f1 \
               forensic-pilot-f2 forensic-pilot-f4 \
               forensic-composite-distinction \
-              forensic-mutation-selection
-	@echo "→ all 18 forensic traces rendered (PNG + JSONL + diff per demo)"
+              forensic-mutation-selection \
+              forensic-particle-families
+	@echo "→ all 19 forensic traces rendered (PNG + JSONL + diff per demo)"
 
 # Visibly growing substrate over a long epoch (demo 41 — shell added
 # every GROW cycles; structure changes across frames).

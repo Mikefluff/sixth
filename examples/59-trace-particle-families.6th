@@ -1,0 +1,195 @@
+\ examples/59-trace-particle-families.6th
+\ Visual trace — Pilot I multi-level particle hierarchy.
+\
+\ Three snapshots covering the iterated composite-distinction
+\ construction:
+\
+\   1  instances-built
+\       6 first-order observers exist independently across 3
+\       species:  α (1 instance), β (2 instances), γ (3 instances).
+\       Each has its own self-loop.  NGET tags: 1/2/3 = species,
+\       0 = limbs.
+\
+\   2  families-held
+\       Three family observers Mα, Mβ, Mγ added.  Each bi-edges
+\       all instances of its species AND carries its own self-loop
+\       (Pilot G mechanism).  NGET tags: 5/6/7 = family observers.
+\
+\   3  genus-held
+\       Genus observer M2 added.  Bi-edges to Mα, Mβ, Mγ + own
+\       self-loop.  Multi-level hierarchy complete.  NGET tag
+\       9 = genus observer.
+
+use prelude
+use graph
+use phi
+use dot
+use debug
+
+: snap-hier ( label-num -- )
+  "=== SNAPSHOT level=" .
+  .
+  "rule=" . "pilot-i-particle-hierarchy" .
+  "seed=" . "particle-families" .
+  "event=" . "event" load .
+  "observer=" . "M2" load dup 0 = if drop "-" . else . then
+  "nodes=" . NODES .
+  "edges=" . EDGES .
+  "phi-pa-A1=" . "A1" load phi-pa .
+  "phi-pa-B1=" . "B1" load phi-pa .
+  "phi-pa-G1=" . "G1" load phi-pa .
+  "phi-pa-MA=" . "MA" load dup 0 = if drop "-" . else phi-pa . then
+  "phi-pa-MG=" . "MG" load dup 0 = if drop "-" . else phi-pa . then
+  "phi-pa-M2=" . "M2" load dup 0 = if drop "-" . else phi-pa . then
+  "===" . cr
+  dot-snapshot-state ;
+
+0 "MA" store
+0 "MB" store
+0 "MG" store
+0 "M2" store
+
+\ ============================================================
+\ Cluster builders.
+\ ============================================================
+
+: ring-3 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l1" load bi-edge ;
+
+: ring-4 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store  MARK "l4" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l4" load bi-edge
+  "l4" load "l1" load bi-edge ;
+
+: ring-5 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  MARK "l4" store  MARK "l5" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l4" load bi-edge
+  "l4" load "l5" load bi-edge
+  "l5" load "l1" load bi-edge ;
+
+: obs-attach-3 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge ;
+
+: obs-attach-4 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge
+  "ok" load load "l4" load bi-edge ;
+
+: obs-attach-5 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge
+  "ok" load load "l4" load bi-edge
+  "ok" load load "l5" load bi-edge ;
+
+\ ============================================================
+\ Level 0 — instances.
+\ ============================================================
+
+MARK "A1" store
+"A1" load "A1" load EDGE+
+ring-3
+"A1" obs-attach-3
+"A1" load 1 NSET
+
+MARK "B1" store
+"B1" load "B1" load EDGE+
+ring-4
+"B1" obs-attach-4
+"B1" load 2 NSET
+
+MARK "B2" store
+"B2" load "B2" load EDGE+
+ring-4
+"B2" obs-attach-4
+"B2" load 2 NSET
+
+MARK "G1" store
+"G1" load "G1" load EDGE+
+ring-5
+"G1" obs-attach-5
+"G1" load 3 NSET
+
+MARK "G2" store
+"G2" load "G2" load EDGE+
+ring-5
+"G2" obs-attach-5
+"G2" load 3 NSET
+
+MARK "G3" store
+"G3" load "G3" load EDGE+
+ring-5
+"G3" obs-attach-5
+"G3" load 3 NSET
+
+"instances-built" "event" store
+1 snap-hier
+
+\ ============================================================
+\ Level 1 — family observers added (each with own self-loop).
+\ ============================================================
+
+MARK "MA" store
+"MA" load "MA" load EDGE+
+"MA" load "A1" load bi-edge
+"MA" load 5 NSET
+
+MARK "MB" store
+"MB" load "MB" load EDGE+
+"MB" load "B1" load bi-edge
+"MB" load "B2" load bi-edge
+"MB" load 6 NSET
+
+MARK "MG" store
+"MG" load "MG" load EDGE+
+"MG" load "G1" load bi-edge
+"MG" load "G2" load bi-edge
+"MG" load "G3" load bi-edge
+"MG" load 7 NSET
+
+"families-held" "event" store
+2 snap-hier
+
+\ ============================================================
+\ Level 2 — genus observer added.
+\ ============================================================
+
+MARK "M2" store
+"M2" load "M2" load EDGE+
+"M2" load "MA" load bi-edge
+"M2" load "MB" load bi-edge
+"M2" load "MG" load bi-edge
+"M2" load 9 NSET
+
+"genus-held" "event" store
+3 snap-hier
+
+\ ============================================================
+\ End-state invariants.
+\ ============================================================
+
+NODES 36 assert-eq
+EDGES 132 assert-eq
+"M2" load phi-pa 40000 assert-eq
+"MG" load phi-pa 50000 assert-eq
+
+cr
+"=== Particle-families visual trace ===" . cr
+"3 snapshots:  instances → families → genus" . cr
+"Render with: make trace-particle-families" . cr
+
+REPORT

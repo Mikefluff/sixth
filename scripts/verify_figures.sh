@@ -36,6 +36,7 @@ DEMOS=(
   "examples/53-trace-pilot-f4-colony.6th       pilot_f4"
   "examples/55-trace-composite-distinction.6th composite_distinction"
   "examples/57-trace-mutation-selection.6th    mutation_selection"
+  "examples/59-trace-particle-families.6th     particle_families"
 )
 
 check_one () {

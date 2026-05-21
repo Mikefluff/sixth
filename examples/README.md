@@ -1,11 +1,11 @@
-# `examples/` — the 58 demonstrations
+# `examples/` — the 60 demonstrations
 
 This directory holds Sixth's reproducible emergence demonstrations.
 Each file is a standalone Sixth program; `raco test
-tests/examples-test.rkt` (or `make verify`) executes all 58 and
-asserts a cumulative 828 ✓ / 0 ✗.
+tests/examples-test.rkt` (or `make verify`) executes all 60 and
+asserts a cumulative 867 ✓ / 0 ✗.
 
-The demos are organised in sixteen phases:
+The demos are organised in seventeen phases:
 
 | Phase | Demos | Asserts | What it shows |
 |-------|-------|---------|---------------|
@@ -26,6 +26,7 @@ The demos are organised in sixteen phases:
 | Pilot F visual traces                 | 51–53 | 27 | F.1 transformer encoding (PSH1/PSH2); F.2 brain encoding (PSH3 waking vs propofol); F.4 ant-colony encoding (PSH5 living vs dead). Each is a side-by-side comparison where the SOLE topological difference is the observer self-loop, and Φ_PA flips between concrete values labelled in the panel title. |
 | Pilot G (composite distinction)       | 54–55 | 26 | Three first-order observers OA/OB/OC each hold their own 4-node composite (Φ_PA=40000). A meta-observer M bi-edged to all three holds nothing (Φ_PA=0) until M acquires its own self-loop, at which point Φ_PA(M)=40000 and the first-order observers gain scope +1 → Φ_PA=50000. Demonstrates that holding *composite* distinction requires higher-order self-reference. |
 | Pilot H (mutation + selection)        | 56–57 | 33 | Five candidate first-order observers with varied topologies (3/4/5-limb rings + self-loop; 3-limb ring without self-loop; isolated MARK). Meta-observer M reads each candidate's Φ_PA and bi-edges only to those with Φ_PA > 0; M's own self-loop closes the construction. Result: diversified composite over three structurally distinct "particle species" (Φ_PA = 50000 / 60000 / 70000). Substrate-readable selection criterion — Lamarck-style, not blind Darwin. |
+| Pilot I (multi-level hierarchy)       | 58–59 | 39 | Six instances across three species (α: 1×3-limb, β: 2×4-limb, γ: 3×5-limb), each with own self-loop. Three family observers Mα/Mβ/Mγ hold their populations. One genus observer M2 holds the families. Composite-distinction mechanism (Pilot G) re-applied at every level: each observer carries its own self-loop. Result: three-level substrate-readable taxonomy with distinct Φ_PA signatures at each level. Within-family particles are indistinguishable (β1==β2, γ1==γ2==γ3) — substrate-native analogue of physical particle indistinguishability. |
 
 The visual-trace pilots emit GraphViz DOT blocks on stdout that the
 companion Python renderer (`code/render_trace.py`) parses into
@@ -548,6 +549,64 @@ selection authority.  Further epochs would iterate the same
 mechanism — mutate the survivors, re-select via meta-observation,
 build M2 over multiple M's.
 
+## Pilot I — multi-level particle hierarchy (58–59)
+
+Pilot G held a composite over three identical observers; Pilot H
+introduced structural diversity via mutation and substrate-readable
+selection.  Pilot I iterates the same mechanism one level further:
+each species now has MULTIPLE INSTANCES, a family observer holds
+its instances, and a genus-level observer holds the families.
+
+Three levels of self-reference, each constructed by the same
+Pilot G pattern (bi-edges to substructures + own self-loop):
+
+```
+Level 2 (genus):    M2 ──self
+                    │
+            ┌───────┼───────┐
+Level 1     Mα    Mβ      Mγ    (each with own self-loop)
+(families)  │     │ │      │ │ │
+            α1   β1 β2    γ1 γ2 γ3   (each with own self-loop)
+Level 0
+(instances) └─ ring-3 ─┘ └─ ring-4 ─┘ └─ ring-5 ─┘
+            (limbs not shown — see figure)
+```
+
+Substrate-readable taxonomy emerges naturally:
+
+| Level | Members | Φ_PA signature |
+|-------|---------|----------------|
+| 0 (instances) | α (1) / β (2) / γ (3) | 50000 / 60000 / 70000 |
+| 1 (families)  | Mα / Mβ / Mγ          | 30000 / 40000 / 50000 |
+| 2 (genus)     | M2                     | 40000                 |
+
+Distinct Φ_PA signatures at each level make the hierarchy
+substrate-readable.  Within-family instances (β1 vs β2, γ1 vs γ2
+vs γ3) have identical Φ_PA — the substrate-native analogue of
+physical particle indistinguishability.
+
+| Demo | File | ✓ | Property |
+|------|------|---|----------|
+| 58 | `58-particle-families-hierarchy.6th` | 35 | Numerical: builds 6 instances + 3 family observers + 1 genus observer; asserts distinct Φ_PA at each level, within-family indistinguishability, and final inventory (NODES=36, EDGES=132). |
+| 59 | `59-trace-particle-families.6th`     | 4  | Visual: three snapshots (instances-built / families-held / genus-held) with NGET tags 1/2/3 for species, 5/6/7 for family observers, 9 for genus. |
+
+```bash
+make trace-particle-families
+make forensic-particle-families
+```
+
+![Pilot I — multi-level particle hierarchy.  Three panels showing
+six independent instances → three family observers wired in with
+own self-loops → one genus observer holding the families with its
+own self-loop.](../docs/figures/particle_families.png)
+
+The corollary for the v9.0 cosmology: the same composite-distinction
+mechanism scales to arbitrary depth.  Each new level requires only
+that the higher-order observer (a) bi-edges its substructures and
+(b) carries its own self-loop — the same two-ingredient recipe that
+constituted distinction at level 0.  No fundamentally new substrate
+machinery is needed to climb the ladder.
+
 ## Forensic trace mode
 
 The renderer can do more than draw pictures. Three additional artefacts
@@ -653,7 +712,7 @@ Register the demo in `tests/examples-test.rkt`:
     ("54-my-new-demo.6th"           N)))   ; N = expected ✓
 ```
 
-Update the cumulative gate (currently 828) and `make verify` passes
+Update the cumulative gate (currently 867) and `make verify` passes
 cleanly. To add a visual trace, `use dot` and emit `dot-snapshot`
 calls between substrate operations.
 

@@ -35,6 +35,7 @@ DEMOS=(
   "examples/53-trace-pilot-f4-colony.6th       pilot_f4"
   "examples/55-trace-composite-distinction.6th composite_distinction"
   "examples/57-trace-mutation-selection.6th    mutation_selection"
+  "examples/59-trace-particle-families.6th     particle_families"
 )
 
 hash_cmd() {
@@ -83,7 +84,7 @@ done
 
 echo
 if [ "$FAIL" -eq 0 ]; then
-    printf "%-18s %s\n" "repro status:" "deterministic (18 demos × 2 runs identical)"
+    printf "%-18s %s\n" "repro status:" "deterministic (19 demos × 2 runs identical)"
     exit 0
 else
     printf "%-18s %s\n" "repro status:" "NON-DETERMINISTIC"
