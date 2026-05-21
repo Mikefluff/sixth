@@ -1,23 +1,23 @@
 # Sixth
 
 > A minimal executable substrate language —
-> 40 primitives, 56 reproducible demos, 795 ✓ across them all,
+> 40 primitives, 58 reproducible demos, 828 ✓ across them all,
 > reference implementation for the Pointer Architecture v9.0 preprint.
 
 ```
 language tests:    ok
 substrate tests:   ok
-examples:          795 / 795 ✓ across 56 demos
+examples:          828 / 828 ✓ across 58 demos
 docs build:        ok
 ffi optional:      n/a
 renderer tests:    ok
-figures fresh:     ok (17 forensic JSONL traces match)
+figures fresh:     ok (18 forensic JSONL traces match)
 artifact status:   reproducible
 ```
 
 Stronger reproducibility evidence via `make verify-repro` — runs
 each forensic-trace demo twice, hashes the JSONL, asserts byte-
-identical outputs across all 17 demos × 2 runs.
+identical outputs across all 18 demos × 2 runs.
 
 ![Pilot D evolution — substrate-internally-driven cosmogenesis,
 shell-count 0 → 4, observer node in red.](./docs/figures/pilot_d_trace.png)
@@ -54,7 +54,7 @@ raco pkg install --link .
 # Spencer-Brown's first mark — the sacred hello world
 racket -l sixth/cli -- run examples/00-first-distinction.6th
 
-# the whole regression — all 56 demos, all 795 assertions
+# the whole regression — all 58 demos, all 828 assertions
 make verify
 ```
 
@@ -85,8 +85,9 @@ foundational demos (`01-numbers` … `20-conway-glider`, 359 ✓):
 | (Pilot F.2 trace) | 52 | 10 | Brain encoding (DMN hub + 7 cortical areas). PSH3 waking thalamocortical loop Φ_PA=80000; in-place EDGE- decouples → Φ_PA=0. `make trace-pilot-f2`. |
 | (Pilot F.4 trace) | 53 | 8 | Ant-colony encoding (queen + 5 trail junctions). PSH5 living colony with queen-pheromone self-loop Φ_PA=60000; in-place EDGE- severs loop → Φ_PA=0. `make trace-pilot-f4`. |
 | **G** Composite distinction via meta-self-loop | 54–55 | 26 | Three first-order observers OA/OB/OC each hold their own composite (4-node cluster, Φ_PA=40000). A meta-observer M bi-edged to all three holds nothing (Φ_PA=0) until M acquires its own self-loop, at which point Φ_PA(M)=40000 and the first-order observers gain scope +1 (Φ_PA → 50000). Demonstrates that higher-order self-reference is what holds composite distinction. `make trace-composite-distinction`. |
+| **H** Mutation + substrate-readable selection | 56–57 | 33 | Five candidate first-order observers with varied topologies (3/4/5-limb rings + self-loop; 3-limb ring without self-loop; isolated MARK). Meta-observer M reads each candidate's Φ_PA and bi-edges only to those with Φ_PA > 0; M's own self-loop closes the construction. Result: diversified composite over three structurally distinct "particle species" (Φ_PA = 50000 / 60000 / 70000). Lamarck-style, observer-driven — not blind Darwin. `make trace-mutation-selection`. |
 
-Cumulative: **795 ✓ / 0 ✗ across 56 demos** (Pilots A–F core + 3 substrate-monism trace pilots + 2 long-epoch parametric + 5 foundation visual traces (Conway blinker/glider, Rule 110/90, 1D glider) + 2 atomic-build traces showing entity-by-entity emergence + Pilot G composite distinction via meta-self-loop).
+Cumulative: **828 ✓ / 0 ✗ across 58 demos** (Pilots A–F core + 3 substrate-monism trace pilots + 2 long-epoch parametric + 5 foundation visual traces (Conway blinker/glider, Rule 110/90, 1D glider) + 2 atomic-build traces showing entity-by-entity emergence + Pilot G composite distinction via meta-self-loop + Pilot H mutation + substrate-readable selection).
 
 ## Running and rendering
 
@@ -94,10 +95,10 @@ Cumulative: **795 ✓ / 0 ✗ across 56 demos** (Pilots A–F core + 3 substrate
 # one-shot artifact-status report (Tier-1 verification, see CLAIMS.md)
 make verify
 
-# any of the 56 demos
+# any of the 58 demos
 racket -l sixth/cli -- run examples/35-phi-pa-split-brain-toy.6th
 
-# all 56 demos against the rackunit regression gate
+# all 58 demos against the rackunit regression gate
 raco test tests/examples-test.rkt
 
 # render the three static trace figures (Pilots C, D, F.3)
@@ -146,7 +147,8 @@ examples/     56 emergence demonstrations
               47–48 atomic-build traces + 49 PA-ontological
               shell decomposition + 50 Pilot E visual trace +
               51–53 Pilot F.1/F.2/F.4 visual traces +
-              54–55 Pilot G composite distinction via meta-self-loop).
+              54–55 Pilot G composite distinction via meta-self-loop +
+              56–57 Pilot H mutation + substrate-readable selection).
               See `examples/README.md` for the full demo catalogue
               with embedded figures and animations.
 code/         Python tooling. render_trace.py reads dot.6th
@@ -154,7 +156,7 @@ code/         Python tooling. render_trace.py reads dot.6th
               SVG / PDF or animated GIF.
 scripts/      verify.sh (artifact-status report; backs `make verify`)
 tests/        rackunit suites — lexer, parser, VM, substrate,
-              loader, examples-test.rkt (regression gate at 795 ✓)
+              loader, examples-test.rkt (regression gate at 828 ✓)
 docs/         Scribble manual + embedded README figure
 build/        regeneratable artefacts (raco scribble HTML, render
               outputs) — gitignored

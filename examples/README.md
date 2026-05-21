@@ -1,11 +1,11 @@
-# `examples/` — the 56 demonstrations
+# `examples/` — the 58 demonstrations
 
 This directory holds Sixth's reproducible emergence demonstrations.
 Each file is a standalone Sixth program; `raco test
-tests/examples-test.rkt` (or `make verify`) executes all 56 and
-asserts a cumulative 795 ✓ / 0 ✗.
+tests/examples-test.rkt` (or `make verify`) executes all 58 and
+asserts a cumulative 828 ✓ / 0 ✗.
 
-The demos are organised in fifteen phases:
+The demos are organised in sixteen phases:
 
 | Phase | Demos | Asserts | What it shows |
 |-------|-------|---------|---------------|
@@ -25,6 +25,7 @@ The demos are organised in fifteen phases:
 | Pilot E visual trace                  | 50    |  9 | Substrate-internal Φ_PA measurement on three observers. Same scope (case 1 vs case 2 both have 5 out-edges) yields Φ_PA=0 without self-loop and Φ_PA=50000 with it — PSH1 self-reference factor visible as the red self-arc on the observer node. |
 | Pilot F visual traces                 | 51–53 | 27 | F.1 transformer encoding (PSH1/PSH2); F.2 brain encoding (PSH3 waking vs propofol); F.4 ant-colony encoding (PSH5 living vs dead). Each is a side-by-side comparison where the SOLE topological difference is the observer self-loop, and Φ_PA flips between concrete values labelled in the panel title. |
 | Pilot G (composite distinction)       | 54–55 | 26 | Three first-order observers OA/OB/OC each hold their own 4-node composite (Φ_PA=40000). A meta-observer M bi-edged to all three holds nothing (Φ_PA=0) until M acquires its own self-loop, at which point Φ_PA(M)=40000 and the first-order observers gain scope +1 → Φ_PA=50000. Demonstrates that holding *composite* distinction requires higher-order self-reference. |
+| Pilot H (mutation + selection)        | 56–57 | 33 | Five candidate first-order observers with varied topologies (3/4/5-limb rings + self-loop; 3-limb ring without self-loop; isolated MARK). Meta-observer M reads each candidate's Φ_PA and bi-edges only to those with Φ_PA > 0; M's own self-loop closes the construction. Result: diversified composite over three structurally distinct "particle species" (Φ_PA = 50000 / 60000 / 70000). Substrate-readable selection criterion — Lamarck-style, not blind Darwin. |
 
 The visual-trace pilots emit GraphViz DOT blocks on stdout that the
 companion Python renderer (`code/render_trace.py`) parses into
@@ -500,6 +501,53 @@ the necessary structural ingredient for any larger cluster to be
 Pilot G is the smallest construction that exhibits the
 recursion explicitly.
 
+## Pilot H — mutation + substrate-readable selection (56–57)
+
+Pilot G's composite was held over three *identical* first-order
+observers.  Pilot H is the next epoch: substrate-native mutation
+generates structural diversity, the meta-observer's substrate-
+readable Φ_PA measurement provides the selection pressure, and
+the surviving multiset is intrinsically distinguishable — three
+"particle species" rather than three copies of one.
+
+Mechanism:
+
+- **Mutation.**  Five candidate first-order observers with varied
+  topologies are hand-built; they span the structural space that an
+  actual mutation operator would sample (different ring sizes,
+  missing self-loop, isolated MARK).
+- **Selection.**  Meta-observer M reads each candidate's Φ_PA and
+  bi-edges only to candidates with Φ_PA > 0.  Pure substrate-
+  readable criterion — no host annotation, no global oracle, no
+  blind-Darwin fitness function outside the substrate.
+- **Diversified composite.**  M acquires its own self-loop after
+  selection.  Φ_PA(M) = 40000.  The three survivors gain scope +1
+  from the back-edge to M and end at distinct Φ_PA signatures
+  (50000 / 60000 / 70000) — substrate-native speciation in one
+  epoch.
+
+| Demo | File | ✓ | Property |
+|------|------|---|----------|
+| 56 | `56-mutation-selection-particle-zoo.6th` | 29 | Numerical: V1/V2/V3 (3/4/5-limb ring + self-loop) survive selection; V4 (no self-loop) and V5 (isolated) are pruned. Distinct-Φ_PA assertions confirm structural diversity. |
+| 57 | `57-trace-mutation-selection.6th`         | 4  | Visual: three snapshots (mutation-pool / selection-coupled / diversified-composite). NGET tags: 7=survivor-class, 5=broken-self-ref, 3=isolated, 9=meta-observer. |
+
+```bash
+make trace-mutation-selection
+make forensic-mutation-selection
+```
+
+![Pilot H — mutation + substrate-readable natural selection.
+Three panels: five candidate variants → meta-observer couples
+only to those with Φ_PA > 0 → meta-self-loop closes the
+diversified composite.](../docs/figures/mutation_selection.png)
+
+The corollary for the v9.0 cosmology: distinguishable persistent
+self-referential units ("particles") arise from variation +
+substrate-internal observation without needing an external
+selection authority.  Further epochs would iterate the same
+mechanism — mutate the survivors, re-select via meta-observation,
+build M2 over multiple M's.
+
 ## Forensic trace mode
 
 The renderer can do more than draw pictures. Three additional artefacts
@@ -605,7 +653,7 @@ Register the demo in `tests/examples-test.rkt`:
     ("54-my-new-demo.6th"           N)))   ; N = expected ✓
 ```
 
-Update the cumulative gate (currently 795) and `make verify` passes
+Update the cumulative gate (currently 828) and `make verify` passes
 cleanly. To add a visual trace, `use dot` and emit `dot-snapshot`
 calls between substrate operations.
 

@@ -1,0 +1,182 @@
+\ examples/57-trace-mutation-selection.6th
+\ Visual trace — Pilot H mutation + substrate-readable selection.
+\
+\ Companion to demo 56.  Three snapshots covering the epoch:
+\
+\   1  mutation-pool
+\       Five candidate first-order observers exist independently.
+\       V1: 3-limb ring + self-loop (phi-pa=40000)
+\       V2: 4-limb ring + self-loop (phi-pa=50000)
+\       V3: 5-limb ring + self-loop (phi-pa=60000)
+\       V4: 3-limb ring NO self-loop (phi-pa=0)         [will be pruned]
+\       V5: isolated MARK            (phi-pa=0)         [will be pruned]
+\       NGET tags: 7 = survivor-class, 5 = broken-self-ref,
+\                  3 = isolated, 9 = meta-observer.
+\
+\   2  selection-coupled
+\       Meta-observer M added.  M reads each candidate's phi-pa and
+\       bi-edges only to those with phi-pa > 0.  Result: M↔V1,
+\       M↔V2, M↔V3.  V4 and V5 remain in the substrate but are NOT
+\       part of the composite.  phi-pa(M) still 0 — meta-self-loop
+\       not yet added.
+\
+\   3  diversified-composite
+\       M acquires its own self-loop.  phi-pa(M) = 40000.  The
+\       composite is held over THREE STRUCTURALLY DISTINCT survivors
+\       — substrate-native speciation in one epoch.
+
+use prelude
+use graph
+use phi
+use dot
+use debug
+
+: snap-zoo ( label-num -- )
+  "=== SNAPSHOT level=" .
+  .
+  "rule=" . "pilot-h-mutation-selection" .
+  "seed=" . "particle-zoo" .
+  "event=" . "event" load .
+  "observer=" . "M" load dup 0 = if drop "-" . else . then
+  "nodes=" . NODES .
+  "edges=" . EDGES .
+  "phi-pa-V1=" . "V1" load phi-pa .
+  "phi-pa-V2=" . "V2" load phi-pa .
+  "phi-pa-V3=" . "V3" load phi-pa .
+  "phi-pa-M="  . "M" load dup 0 = if drop "-" . else phi-pa . then
+  "===" . cr
+  dot-snapshot-state ;
+
+0 "M" store
+0 "V1" store
+0 "V2" store
+0 "V3" store
+
+\ ============================================================
+\ Variant builders (same as demo 56) — limb keys shadowed.
+\ ============================================================
+
+: ring-3 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l1" load bi-edge ;
+
+: ring-4 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store  MARK "l4" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l4" load bi-edge
+  "l4" load "l1" load bi-edge ;
+
+: ring-5 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  MARK "l4" store  MARK "l5" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l4" load bi-edge
+  "l4" load "l5" load bi-edge
+  "l5" load "l1" load bi-edge ;
+
+: obs-attach-3 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge ;
+
+: obs-attach-4 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge
+  "ok" load load "l4" load bi-edge ;
+
+: obs-attach-5 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge
+  "ok" load load "l4" load bi-edge
+  "ok" load load "l5" load bi-edge ;
+
+\ ============================================================
+\ MUTATION pool — five candidates with varied topologies.
+\ ============================================================
+
+MARK "V1" store
+"V1" load "V1" load EDGE+
+ring-3
+"V1" obs-attach-3
+"V1" load 7 NSET                  \ survivor-class tag
+
+MARK "V2" store
+"V2" load "V2" load EDGE+
+ring-4
+"V2" obs-attach-4
+"V2" load 7 NSET
+
+MARK "V3" store
+"V3" load "V3" load EDGE+
+ring-5
+"V3" obs-attach-5
+"V3" load 7 NSET
+
+MARK "V4" store
+ring-3
+"V4" obs-attach-3
+"V4" load 5 NSET                  \ broken-self-ref tag
+
+MARK "V5" store
+"V5" load 3 NSET                  \ isolated-MARK tag
+
+"mutation-pool" "event" store
+1 snap-zoo
+
+\ ============================================================
+\ SELECTION — M reads phi-pa, couples only to survivors.
+\ ============================================================
+
+MARK "M" store
+"M" load 9 NSET
+
+: select-if-alive ( meta variant -- )
+  dup phi-pa 0 > if
+    swap over bi-edge
+    drop
+  else
+    2drop
+  then ;
+
+"M" load "V1" load select-if-alive
+"M" load "V2" load select-if-alive
+"M" load "V3" load select-if-alive
+"M" load "V4" load select-if-alive
+"M" load "V5" load select-if-alive
+
+"selection-coupled" "event" store
+2 snap-zoo
+
+\ ============================================================
+\ DIVERSIFIED COMPOSITE — meta-self-loop closes.
+\ ============================================================
+
+"M" load "M" load EDGE+
+
+"diversified-composite" "event" store
+3 snap-zoo
+
+\ ============================================================
+\ End-state invariants
+\ ============================================================
+
+NODES 21 assert-eq
+EDGES 70 assert-eq
+"M" load phi-pa 40000 assert-eq
+"V1" load phi-pa 50000 assert-eq
+
+cr
+"=== Mutation + selection visual trace ===" . cr
+"3 snapshots:  pool  →  selection-coupled  →  diversified-composite" . cr
+"Render with: make trace-mutation-selection" . cr
+
+REPORT

@@ -1,7 +1,7 @@
 # Sixth Substrate — Foundational Pointer Architecture
 
 This document accompanies the Sixth substrate implementation in
-`sixth/primitives/substrate.rkt` and the 56 emergence demonstrations
+`sixth/primitives/substrate.rkt` and the 58 emergence demonstrations
 under `examples/`. The goal is *not* to derive physics — it is to
 build the minimum formal artifact in which structures such as
 numbers, time, space, conservation laws, particles, self-reference,
@@ -44,9 +44,9 @@ two tokens (`EDGE+`), or a transformation of those relations
 
 ## What the demos demonstrate
 
-The 56 demonstrations live in `examples/` (file-by-file index in
+The 58 demonstrations live in `examples/` (file-by-file index in
 [`examples/README.md`](./examples/README.md)). Each isolates a
-single derivation chain, organised in fifteen phases:
+single derivation chain, organised in sixteen phases:
 
 - **00** — sacred hello world (Spencer-Brown's first mark)
 - **01–20** — foundations: arithmetic, time, space, conservation
@@ -82,15 +82,24 @@ single derivation chain, organised in fifteen phases:
   Φ_PA(M)=40000 and the first-order observers gain scope +1 →
   Φ_PA=50000. Demonstrates that holding *composite* distinction
   requires higher-order self-reference.
+- **56–57** Pilot H — mutation + substrate-readable natural
+  selection: five candidate first-order observers with varied
+  topologies (3/4/5-limb rings + self-loop; 3-limb ring without
+  self-loop; isolated MARK); meta-observer M reads each
+  candidate's Φ_PA and bi-edges only to those with Φ_PA > 0;
+  M's own self-loop closes the construction. Result: a diversified
+  composite over three structurally distinct "particle species"
+  (surviving Φ_PA = 50000 / 60000 / 70000 after the scope bonus).
+  Lamarck-style, observer-driven — not blind Darwin.
 
-All 795 assertions pass deterministically. Run the regression in
+All 828 assertions pass deterministically. Run the regression in
 one command:
 
 ```bash
 make verify
 # language tests:    ok
 # substrate tests:   ok
-# examples:          795 / 795 ✓ across 56 demos
+# examples:          828 / 828 ✓ across 58 demos
 # docs build:        ok
 # artifact status:   reproducible
 ```
@@ -250,7 +259,7 @@ sufficient for the released demos and can be extended further.
 cd /Users/mikefluff/Documents/Programming/sixt
 raco pkg install --link .          # install the Sixth Racket collection
 
-# the whole regression — all 56 demos, all 795 assertions
+# the whole regression — all 58 demos, all 828 assertions
 make verify
 
 # any single demo

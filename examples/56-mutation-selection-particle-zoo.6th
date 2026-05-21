@@ -1,0 +1,238 @@
+\ examples/56-mutation-selection-particle-zoo.6th
+\ Pilot H — epoch 2: mutation + substrate-readable natural selection
+\ on top of Pilot G's composite distinction.
+\
+\ Reviewer (2026-05-20): "первую эпоху мы сделали, и то там все
+\ участники одинаковые, а следующую — а мутации через естественный
+\ отбор (нам же до субатомных частиц, разных, надо докрутить)".
+\
+\ Pilot G (demos 54-55) established that a meta-observer M with its
+\ own self-loop holds a COMPOSITE distinction over three IDENTICAL
+\ first-order observers (each phi-pa = 40000).  The next epoch must
+\ produce structurally DISTINGUISHABLE survivors — "particle types"
+\ that the composite ranges over.
+\
+\ Mechanism (Lamarck-style, NOT blind Darwin — the selection
+\ criterion is substrate-internal, read by the observer that
+\ chooses what to couple to):
+\
+\   1. MUTATION.  Build 5 candidate first-order observers with
+\      varied topologies (different ring sizes, missing self-loop,
+\      isolated MARK).  No host-side random oracle — each variant
+\      is hand-constructed but they exhibit the structural space
+\      that an actual mutation operator would sample.
+\
+\   2. SELECTION.  Meta-observer M reads phi-pa of each candidate.
+\      Candidates with phi-pa > 0 (i.e., possessing first-order
+\      self-reference) get bi-edged to M.  Candidates with
+\      phi-pa = 0 (broken self-reference, isolated MARK) are
+\      excluded from the composite.  The criterion is purely
+\      substrate-readable: no host annotation, no "fitness" function
+\      outside the substrate's own measurement machinery.
+\
+\   3. DIVERSIFIED COMPOSITE.  M acquires its own self-loop after
+\      selecting survivors.  The held composite is now structurally
+\      HETEROGENEOUS: three distinct phi-pa signatures
+\      (40000 / 50000 / 60000) coexist under one meta-observer.
+\      Each survivor is a "particle type" — a stable, substrate-
+\      distinguishable self-referential cluster.
+\
+\ This is the smallest construction that exhibits substrate-native
+\ speciation: mutation provides structural variation, the substrate-
+\ readable phi-pa scalar provides the selection pressure, and the
+\ surviving multiset is intrinsically distinguishable (each
+\ phi-pa value is a different "species").  Further epochs would
+\ iterate: mutate the survivors, re-select via meta-observation,
+\ build M2 over multiple M's, etc.
+
+use prelude
+use graph
+use phi
+use debug
+
+\ ============================================================
+\ Variant builders — each leaves the variant's observer id stored
+\ under the given memory key.  Internal limb keys (l1..l5) are
+\ shadowed across calls; only the observer key persists.
+\ ============================================================
+
+: ring-3 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l1" load bi-edge ;
+
+: ring-4 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store  MARK "l4" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l4" load bi-edge
+  "l4" load "l1" load bi-edge ;
+
+: ring-5 ( -- )
+  MARK "l1" store  MARK "l2" store  MARK "l3" store
+  MARK "l4" store  MARK "l5" store
+  "l1" load "l2" load bi-edge
+  "l2" load "l3" load bi-edge
+  "l3" load "l4" load bi-edge
+  "l4" load "l5" load bi-edge
+  "l5" load "l1" load bi-edge ;
+
+: obs-attach-3 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge ;
+
+: obs-attach-4 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge
+  "ok" load load "l4" load bi-edge ;
+
+: obs-attach-5 ( obs-key -- )
+  "ok" store
+  "ok" load load "l1" load bi-edge
+  "ok" load load "l2" load bi-edge
+  "ok" load load "l3" load bi-edge
+  "ok" load load "l4" load bi-edge
+  "ok" load load "l5" load bi-edge ;
+
+\ ============================================================
+\ MUTATION — five candidate variants.
+\ ============================================================
+
+\ V1: 3-limb ring + self-loop  -> phi-pa = 40000  (fittest-class A)
+MARK "V1" store
+"V1" load "V1" load EDGE+
+ring-3
+"V1" obs-attach-3
+"V1" load phi-pa 40000 assert-eq
+
+\ V2: 4-limb ring + self-loop  -> phi-pa = 50000  (class B)
+MARK "V2" store
+"V2" load "V2" load EDGE+
+ring-4
+"V2" obs-attach-4
+"V2" load phi-pa 50000 assert-eq
+
+\ V3: 5-limb ring + self-loop  -> phi-pa = 60000  (class C)
+MARK "V3" store
+"V3" load "V3" load EDGE+
+ring-5
+"V3" obs-attach-5
+"V3" load phi-pa 60000 assert-eq
+
+\ V4: 3-limb ring + NO self-loop  -> phi-pa = 0  (broken — pruned by M)
+MARK "V4" store
+ring-3
+"V4" obs-attach-3
+"V4" load OUT 3 assert-eq         \ scope is fine but no self-reference
+"V4" load phi-self-ref 0 assert-eq
+"V4" load phi-pa 0 assert-eq
+
+\ V5: isolated MARK  -> phi-pa = 0  (no scope, no self-reference)
+MARK "V5" store
+"V5" load OUT 0 assert-eq
+"V5" load phi-pa 0 assert-eq
+
+\ Inventory after mutation:
+\   V1: 1 obs + 3 limbs = 4
+\   V2: 1 obs + 4 limbs = 5
+\   V3: 1 obs + 5 limbs = 6
+\   V4: 1 obs + 3 limbs = 4
+\   V5: 1 obs                       = 1
+NODES 20 assert-eq
+
+\ ============================================================
+\ SELECTION — substrate-readable: only phi-pa>0 couples to M.
+\ "select-if-alive" reads the candidate's substrate-internal
+\ phi-pa scalar and decides whether to add the bi-edge.  No host
+\ annotation, no global oracle.
+\ ============================================================
+
+MARK "M" store
+
+: select-if-alive ( meta variant -- )
+  dup phi-pa 0 > if
+    swap over bi-edge        \ ( meta variant -- )
+    drop
+  else
+    2drop
+  then ;
+
+"M" load "V1" load select-if-alive    \ alive
+"M" load "V2" load select-if-alive    \ alive
+"M" load "V3" load select-if-alive    \ alive
+"M" load "V4" load select-if-alive    \ pruned
+"M" load "V5" load select-if-alive    \ pruned
+
+\ After selection, before meta-self-loop:
+\   M has 3 bi-edges (to V1, V2, V3) -> OUT 3, IN 3
+"M" load OUT 3 assert-eq
+"M" load IN  3 assert-eq
+"M" load "V4" load EDGE? 0 assert-eq  \ V4 was pruned
+"V4" load "M" load EDGE? 0 assert-eq
+"M" load "V5" load EDGE? 0 assert-eq  \ V5 was pruned
+"V5" load "M" load EDGE? 0 assert-eq
+
+\ Without M's self-loop the composite is held topologically but
+\ phi-pa(M) = 0 (Pilot G principle).
+"M" load phi-pa 0 assert-eq
+
+\ ============================================================
+\ DIVERSIFIED COMPOSITE — meta-self-loop closes the construction.
+\ ============================================================
+
+"M" load "M" load EDGE+
+
+"M" load OUT 4 assert-eq
+"M" load "M" load EDGE? 1 assert-eq
+"M" load phi-pa 40000 assert-eq
+
+\ Each survivor's scope grew by 1 (back-edge to M).  Their distinct
+\ phi-pa signatures persist — the composite is HETEROGENEOUS.
+"V1" load phi-pa 50000 assert-eq    \ was 40000
+"V2" load phi-pa 60000 assert-eq    \ was 50000
+"V3" load phi-pa 70000 assert-eq    \ was 60000
+
+\ Pruned variants are untouched by selection — they remain in the
+\ substrate but are not part of the meta-observer's composite.
+"V4" load phi-pa 0 assert-eq
+"V5" load phi-pa 0 assert-eq
+
+\ ============================================================
+\ Substrate-internal speciation check: the multiset of surviving
+\ phi-pa values is genuinely diverse — three distinct signatures,
+\ not three copies of one number.
+\ ============================================================
+
+"V1" load phi-pa "V2" load phi-pa = 0 assert-eq    \ V1 != V2
+"V2" load phi-pa "V3" load phi-pa = 0 assert-eq    \ V2 != V3
+"V1" load phi-pa "V3" load phi-pa = 0 assert-eq    \ V1 != V3
+
+\ ============================================================
+\ Final substrate inventory.
+\ ============================================================
+
+NODES 21 assert-eq                  \ 20 variants + M
+
+\ Edges:
+\   V1 cluster: self(1) + ring-3 (6 dir) + obs<->3 limbs (6 dir) = 13
+\   V2 cluster: self(1) + ring-4 (8 dir) + obs<->4 limbs (8 dir) = 17
+\   V3 cluster: self(1) + ring-5 (10 dir)+ obs<->5 limbs (10 dir)= 21
+\   V4 cluster:        0 + ring-3 (6 dir) + obs<->3 limbs (6 dir)= 12
+\   V5:        0
+\   Meta:   M-self(1) + 3 bi-edges M<->Vi (6 dir)                = 7
+\ Total: 13+17+21+12+0+7 = 70
+EDGES 70 assert-eq
+
+cr
+"=== Pilot H — mutation + substrate-readable selection ===" . cr
+"5 variants mutated; M selects on phi-pa > 0; 3 survive." . cr
+"Survivors' phi-pa: V1=50000  V2=60000  V3=70000  (distinct)" . cr
+"Meta-observer M phi-pa: 40000 (composite held over 3 species)" . cr
+"Pruned (phi-pa = 0): V4 (no self-loop), V5 (isolated MARK)" . cr
+
+REPORT

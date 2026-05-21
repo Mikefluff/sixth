@@ -9,11 +9,11 @@
 # Output format:
 #   language tests:   ok
 #   substrate tests:  ok
-#   examples:         769 / 769 ✓ across 54 demos
+#   examples:         828 / 828 ✓ across 58 demos
 #   docs build:       ok
 #   ffi optional:     n/a   (libtorch bridges not yet shipped)
 #   renderer tests:   ok
-#   figures fresh:    ok (16 forensic JSONL traces match)
+#   figures fresh:    ok (18 forensic JSONL traces match)
 #   artifact status:  reproducible
 #
 # Any failure exits non-zero and prints "artifact status:  BROKEN".
@@ -45,7 +45,7 @@ else
     FAIL=1
 fi
 
-# ---- examples regression (769 ✓ across 54 demos style) ----
+# ---- examples regression (828 ✓ across 58 demos style) ----
 EX_OUT=$(raco test tests/examples-test.rkt 2>&1 || true)
 EX_LINE=$(printf "%s\n" "$EX_OUT" | grep -oE 'examples regression: [0-9]+ / [0-9]+ ✓ across [0-9]+ demos' | head -1)
 if [ -n "$EX_LINE" ] && printf "%s\n" "$EX_OUT" | grep -q "tests passed"
@@ -90,7 +90,7 @@ fi
 # ---- figure freshness (committed forensic JSONL = fresh regen) ----
 if bash scripts/verify_figures.sh >/dev/null 2>&1
 then
-    report "figures fresh:" "ok (17 forensic JSONL traces match)"
+    report "figures fresh:" "ok (18 forensic JSONL traces match)"
 else
     report "figures fresh:" "STALE (run 'make forensic-all' + commit)"
     FAIL=1

@@ -19,6 +19,8 @@
         forensic-pilot-e forensic-pilot-f1 forensic-pilot-f2 forensic-pilot-f4 \
         trace-pa-ontological-shell gif-pa-ontological-shell \
         trace-pilot-e trace-pilot-f1 trace-pilot-f2 trace-pilot-f4 \
+        trace-composite-distinction forensic-composite-distinction \
+        trace-mutation-selection forensic-mutation-selection \
         foundation-gifs all-figures \
         gif-pilot-c gif-pilot-d gif-split-brain gifs
 
@@ -341,6 +343,20 @@ trace-composite-distinction:
 forensic-composite-distinction:
 	@bash scripts/forensic.sh examples/55-trace-composite-distinction.6th composite_distinction "Pilot G composite distinction"
 
+# Pilot H — mutation + substrate-readable selection (demo 57).
+# Five variants mutated; meta-observer M selects on phi-pa>0;
+# diversified composite of three structurally distinct survivors.
+trace-mutation-selection:
+	@mkdir -p build/figures
+	racket -l sixth/cli -- run examples/57-trace-mutation-selection.6th \
+	  | python3 code/render_trace.py \
+	      --out build/figures/mutation_selection.png \
+	      --title "Pilot H — mutation + substrate-readable selection (particle zoo)"
+	@echo "→ open build/figures/mutation_selection.png"
+
+forensic-mutation-selection:
+	@bash scripts/forensic.sh examples/57-trace-mutation-selection.6th mutation_selection "Pilot H mutation+selection"
+
 forensic-pilot-e:
 	@bash scripts/forensic.sh examples/50-trace-pilot-e-phi-pa.6th pilot_e "Pilot E"
 
@@ -400,8 +416,9 @@ forensic-all: forensic-pilot-d forensic-pilot-c forensic-split-brain \
               forensic-long-epoch-growth forensic-pa-ontological-shell \
               forensic-pilot-e forensic-pilot-f1 \
               forensic-pilot-f2 forensic-pilot-f4 \
-              forensic-composite-distinction
-	@echo "→ all 17 forensic traces rendered (PNG + JSONL + diff per demo)"
+              forensic-composite-distinction \
+              forensic-mutation-selection
+	@echo "→ all 18 forensic traces rendered (PNG + JSONL + diff per demo)"
 
 # Visibly growing substrate over a long epoch (demo 41 — shell added
 # every GROW cycles; structure changes across frames).
