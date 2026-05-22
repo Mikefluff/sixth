@@ -352,10 +352,22 @@
     ;;      threshold 5,000 → REGIME F' (substrate deviates).
     ;;      |ref - analytic| = 7,177 ≤ 9,000 → analytic OK.
     ;;      Per pre-reg PREDICTIONS-128.md (commit 6a1fd73): cycle
-    ;;      10C TECHNICALLY RETRACTED.  Honesty: deviation is 1.26σ
-    ;;      combined SEM, may be sampling artifact.  Cycle 11A.1
-    ;;      (substrate M=10000) resolves.
-    ("128-phi-integ-ref-crosscheck.6th"           7)))
+    ;;      10C TECHNICALLY RETRACTED.  Cycle 11A.1 (demo 129)
+    ;;      shows the deviation was MOSTLY sampling (halved at
+    ;;      M=10000); residual ~2% remains within combined 1.29σ.
+    ("128-phi-integ-ref-crosscheck.6th"           7)
+    ;; --- Cycle 11A.1: substrate M=10000 resolves F' (regime I) ---
+    ;; 129: substrate phi-integ M=500 × K=20 = 10000 graphs.
+    ;;      Mean 304,701 ± SEM 3,165 vs ref 310,577 ± SEM 3,275.
+    ;;      |diff| = 5,876 → REGIME I (just over H=5000 boundary,
+    ;;      well under J=12000).  Cycle 11A regime F' was MOSTLY
+    ;;      sampling artifact (M=1000 diff 12,927 → M=10000 diff
+    ;;      5,876 = halved).  Residual ~2% may be small real bias
+    ;;      worth cycle 12 investigation, but within combined
+    ;;      1.29σ — not significant.  Substrate APPROXIMATELY
+    ;;      faithful at second-moment level.
+    ;;      Pre-registered: PREDICTIONS-129.md (commit c0ee1a8).
+    ("129-substrate-phi-integ-m10k.6th"          12)))
 
 (define (run-demo file)
   (define out
@@ -380,8 +392,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1889
-                (format "cumulative ✓ count: ~a (expected 1889)" total-pass)))
+  (check-equal? total-pass 1901
+                (format "cumulative ✓ count: ~a (expected 1901)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1889 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1901 ✓ across ~a demos"
                    total-pass (length expected)))

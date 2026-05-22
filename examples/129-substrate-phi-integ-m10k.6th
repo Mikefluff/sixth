@@ -186,8 +186,17 @@ cr
 "phi-stddev" load 0 > 1 assert-eq
 
 \ ============================================================
-\ Regression pins (filled in measurement commit; placeholders
-\ omitted from source-only commit per Rule 1 discipline).
+\ Regression pins (cycle 11A.1 measurement, seeds 1..500).
 \ ============================================================
+
+"phi-mean"        load 304701 assert-eq
+"phi-stddev"      load 316517 assert-eq
+"phi-sem"         load   3165 assert-eq    \ ≈ stddev/100
+"diff"            load   5876 assert-eq    \ |304701 - 310577|
+"regime-H?"       load      0 assert-eq    \ NOT sampling artifact
+"regime-I?"       load      1 assert-eq    \ small real bias ≤2%
+"regime-J?"       load      0 assert-eq    \ NOT confirmed ≥4%
+"regime-count"    load      1 assert-eq    \ partition holds
+"stddev-sub-ok?"  load      1 assert-eq    \ sub-pred passes
 
 REPORT
