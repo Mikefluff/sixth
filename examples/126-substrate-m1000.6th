@@ -191,11 +191,17 @@ cr
 "diff-abs" load 0 >= 1 assert-eq
 
 \ ============================================================
-\ Regression pins to be filled in measurement commit (next).
-\ Placeholder asserts deliberately omitted from source-only
-\ commit so 'racket -l sixth/cli run' produces clean output
-\ without parse failure.  See measurement commit for pinned
-\ values.
+\ Regression pins (cycle 10A measurement, seeds 1..50).
 \ ============================================================
+
+"m1000"              load 125120 assert-eq
+"s1000"              load 67282  assert-eq
+"sem-1000"           load 2170   assert-eq    \ ≈ 67282/31
+"diff-abs"           load 1429   assert-eq    \ |125120 - 126549|
+"regime-D?"          load 1      assert-eq    \ substrate FAITHFUL
+"regime-E?"          load 0      assert-eq
+"regime-F?"          load 0      assert-eq
+"regime-count"       load 1      assert-eq    \ partition fires once
+"stddev-consistent?" load 1      assert-eq    \ sub-pred passes
 
 REPORT

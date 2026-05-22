@@ -323,7 +323,17 @@
     ;;      RETRACTED as theory-side error.  Substrate phi-perc tracks
     ;;      true classical ER faithfully at finite n=20.
     ;;      Pre-registered: PREDICTIONS-125.md (commit 99f33f0).
-    ("125-classical-ref-vs-formula.6th"          11)))
+    ("125-classical-ref-vs-formula.6th"          11)
+    ;; --- Cycle 10A: substrate M=1000 cross-validates cycle-9 claim ---
+    ;; 126: M=50 × K=20 = 1000 graphs at n=20, p=10%.  Substrate
+    ;;      mean 125,120 ± SEM 2,170 vs reference 126,549.
+    ;;      |diff| = 1,429 = 0.66σ_1000.  REGIME D fired
+    ;;      (faithful within ±1σ of reference).  Cycle 9 weak claim
+    ;;      ("within 1σ at M=100") cross-validated at 10× tighter
+    ;;      precision; substrate IS a faithful classical-ER
+    ;;      reachability implementation at n=20 p=10%.
+    ;;      Pre-registered: PREDICTIONS-126.md (commit f31ba43).
+    ("126-substrate-m1000.6th"                   13)))
 
 (define (run-demo file)
   (define out
@@ -348,8 +358,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1855
-                (format "cumulative ✓ count: ~a (expected 1855)" total-pass)))
+  (check-equal? total-pass 1868
+                (format "cumulative ✓ count: ~a (expected 1868)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1855 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1868 ✓ across ~a demos"
                    total-pass (length expected)))
