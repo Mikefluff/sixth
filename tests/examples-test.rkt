@@ -378,11 +378,24 @@
     ;;      integration" axiom: monotone non-decreasing toward λ₁).
     ;;      Measurement: r10=3.05 (in bound), r21=3.02 < r10 →
     ;;      REGIME L (axiom FALSIFIED per pre-reg rule).
-    ;;      Honestly: difference 3 units in scaled×100 form is
-    ;;      within sampling SEM (~5).  Either reading is real
-    ;;      substrate finding: substrate equilibrates rapidly
-    ;;      (~mean-degree ratio) rather than slow power-iteration.
-    ("130-iterated-nsum-dynamics.6th"            13)))
+    ;;      RETRACTED in cycle 12A: coin-flip pre-reg rule, strawman
+    ;;      axiom, 1% effect within sampling SEM.  See demo header.
+    ("130-iterated-nsum-dynamics.6th"            13)
+    ;; --- Cycle 12C: HEDGE3 storage counter-example search ---
+    ;; 131: enumeration of n=3..6 HEDGE3 configurations (99,497 configs).
+    ;;      max R(S) = HEDGE3-cost / min-binary-cost = 1.500
+    ;;      min R(S) = 1.000; mean R decreases 1.231→1.137 with n.
+    ;;      Pre-registered regime O fires (R_max ∈ [1.5, 2.0]).
+    ;;      HONEST interpretation: R > 1 means HEDGE3 takes MORE
+    ;;      storage than optimized binary (formula direction).  Pre-
+    ;;      reg prose labels were inverted; threshold classification
+    ;;      correct.  Substrate finding (NEGATIVE direction): HEDGE3
+    ;;      has NO storage advantage at n=3..6; on average 13-23%
+    ;;      MORE storage than optimized binary baseline.  Demo 105's
+    ;;      "5× storage advantage" was measured against a sub-optimal
+    ;;      binary baseline; RETRACTED here.
+    ;;      Pre-registered: PREDICTIONS-131.md (commit 8adbdee).
+    ("131-hedge3-storage-counterexample.6th"     11)))
 
 (define (run-demo file)
   (define out
@@ -407,8 +420,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1914
-                (format "cumulative ✓ count: ~a (expected 1914)" total-pass)))
+  (check-equal? total-pass 1925
+                (format "cumulative ✓ count: ~a (expected 1925)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1914 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1925 ✓ across ~a demos"
                    total-pass (length expected)))
