@@ -87,9 +87,17 @@
   (push1 e (remainder a b)))
 
 (define (prim-= e)
+  ;; Numeric `=` when both operands are numbers — so `1 1.0 =` returns
+  ;; 1 (numerically equal, surprising-otherwise).  Structural `equal?`
+  ;; for everything else (symbols, strings, nodes, etc.).  Previously
+  ;; used `equal?` unconditionally, so mixed INT/FLOAT comparisons —
+  ;; common from FFI/torch-bridge results — silently returned 0.
   (define b (pop1 e))
   (define a (pop1 e))
-  (push1 e (bool->int (equal? a b))))
+  (push1 e (bool->int
+            (cond
+              [(and (number? a) (number? b)) (= a b)]
+              [else (equal? a b)]))))
 (define (prim-< e)
   (define b (expect-num (pop1 e) '<))
   (define a (expect-num (pop1 e) '<))

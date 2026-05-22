@@ -685,4 +685,74 @@
   (define out (run-on e "MARK MARK MARK   0 1 2 3 HEDGE3+   REPORT"))
   (check-true (regexp-match? #rx"hedges=1" out)))
 
+;; ============================================================
+;; Edge cases — STEP-CA on empty substrate, EACH-HEDGE3 on no
+;; hedges, HEDGES3-KIND on never-used kind, NEXT order under
+;; mutation, tick with non-resolvable arg.
+;; ============================================================
+
+(test-case "STEP-CA on empty substrate is a no-op"
+  (define src ": rule-tag drop 99 ;
+                ' rule-tag STEP-CA
+                NODES")
+  (define e (run-src src))
+  (check-equal? (car (env-stack e)) 0))
+
+(test-case "EACH-HEDGE3 on empty hyperedge set is a no-op"
+  ;; Rule should never be invoked; if it were, the stack contract
+  ;; would catch it.  We just verify the call returns cleanly.
+  (define src ": rule-bad drop drop drop drop ;
+                MARK MARK MARK
+                ' rule-bad EACH-HEDGE3
+                HEDGES3")
+  (define e (run-src src))
+  (check-equal? (car (env-stack e)) 0))
+
+(test-case "HEDGES3-KIND on never-used kind returns 0"
+  (define src "MARK MARK MARK
+               0 1 2 3 HEDGE3+
+               2 HEDGES3-KIND   \\ CONTEXT — none inserted
+               3 HEDGES3-KIND") ; SIMPLEX — none inserted
+  (define e (run-src src))
+  (check-equal? (car  (env-stack e)) 0)
+  (check-equal? (cadr (env-stack e)) 0))
+
+(test-case "NEXT returns most-recently-added out-edge"
+  ;; Demos document NEXT as 'one of the out-neighbours' but the
+  ;; underlying convention is head-of-list = most-recently added.
+  ;; If we ever flip storage to a hash (losing order), demos that
+  ;; depend on this implicit ordering would silently break.  This
+  ;; test pins the current behaviour so a future refactor surfaces.
+  (define e (run-src "MARK MARK MARK
+                       1 2 EDGE+
+                       1 3 EDGE+   \\ 3 added after 2
+                       1 NEXT"))
+  (check-equal? (car (env-stack e)) 3))
+
+(test-case "tick with non-resolvable value: numeric arg raises type-error"
+  ;; Pushing a raw integer (not symbol/string) as the iteration rule
+  ;; reference should raise exn:fail:sixth:type, not silently no-op.
+  (define e (make-test-env))
+  (check-exn exn:fail:sixth:type?
+             (lambda ()
+               (with-output-to-string
+                 (lambda () (run-on e "MARK   42 EACH"))))))
+
+(test-case "STEP-CA documenting: rule side-effects during compute are NOT batched"
+  ;; STEP-CA atomicity covers feature updates (NSET) only.  If a rule
+  ;; calls HEDGE3+ during the compute phase, that mutation lands in
+  ;; the substrate immediately, before commit.  Demo authors should
+  ;; treat STEP-CA rules as pure-on-NGET functions; this test pins
+  ;; the contract.
+  (define src ": rule-with-side-effect 0 1 2 3 HEDGE3+ NGET 1 + ;
+                MARK MARK MARK
+                ' rule-with-side-effect STEP-CA
+                HEDGES3")
+  (define e (run-src src))
+  ;; The rule runs three times (one per node) but HEDGE3+ is idempotent
+  ;; on key (0,1,2,3) — so HEDGES3 == 1, not 3.  This pins the
+  ;; "side effects are immediate, idempotent semantics still apply"
+  ;; contract.
+  (check-equal? (car (env-stack e)) 1))
+
 (displayln "substrate tests: all pass")

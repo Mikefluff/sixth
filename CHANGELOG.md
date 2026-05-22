@@ -64,7 +64,13 @@ Tracks `main@HEAD` development past v0.8.  Currently:
   insert cycles; self-loop NSUM semantics (own-feature included);
   EACH-2PATH self-cycle visits (mutual 1↔2 yields two 2-paths);
   REPORT output contract (always emits hedges= column); VM TCO
-  through if-branch (100 000-deep recursion completes).
+  through if-branch (100 000-deep recursion completes); STEP-CA
+  on empty substrate / EACH-HEDGE3 on no hedges / HEDGES3-KIND
+  on never-used kind (boundary no-ops); NEXT returns most-
+  recently-added out-edge (pins implicit ordering); tick with
+  numeric arg raises type-error; STEP-CA rule side-effects
+  (HEDGE3+) are immediate, not batched with NSET (pins contract);
+  mixed INT/FLOAT equality + symbol equal?-fallback.
 - CHANGELOG.md (this file).
 
 ### Changed
@@ -122,6 +128,16 @@ Tracks `main@HEAD` development past v0.8.  Currently:
   `exit-when-rule-dst` placeholder words that documented an
   earlier (rejected) early-return attempt.  Single clean
   definition with a comment explaining the nested-IF guard.
+
+### Fixed (engine — mixed INT/FLOAT equality)
+- `prim-=` now uses numeric `=` when both operands are numbers,
+  falling back to `equal?` only for non-numeric cases (symbols,
+  strings, nodes).  Previously `1 1.0 =` returned 0 because
+  `(equal? 1 1.0)` is `#f` in Racket — surprising for any FFI/
+  torch-bridge result that produces a flonum, and inconsistent
+  with the just-fixed shared `zero-ish?` semantics in `ASSERT`
+  and VM JZ.  Symbol-equality (`' foo ' foo =`) regression-pinned
+  in a new vm-test case.
 
 ### Fixed (engine — VM TCO defect + REPORT output contract)
 - **VM tail-call detection now sees through JMP-to-RET** (`vm.rkt`

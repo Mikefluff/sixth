@@ -65,6 +65,22 @@
   (check-equal? (stack-of "1 2 <")  '(1))
   (check-equal? (stack-of "5 2 >")  '(1)))
 
+(test-case "= treats mixed INT/FLOAT as numerically equal"
+  ;; Previously `1 1.0 =` returned 0 (equal? semantics) — surprising
+  ;; for any FFI/torch-bridge result that produces a flonum.  Now
+  ;; numeric `=` for two-number operands.
+  (check-equal? (stack-of "1 1.0 =")           '(1))
+  (check-equal? (stack-of "1.0 1 =")           '(1))
+  (check-equal? (stack-of "5 5 =")             '(1))
+  (check-equal? (stack-of "0 0.0 =")           '(1))
+  (check-equal? (stack-of "2.0 1.0 1.0 + =")   '(1)))
+
+(test-case "= falls back to equal? for non-numeric comparisons"
+  ;; Symbols (from tick) still use structural equality so existing
+  ;; demo code that compares quoted-word names doesn't regress.
+  (check-equal? (stack-of "' foo ' foo =") '(1))
+  (check-equal? (stack-of "' foo ' bar =") '(0)))
+
 ;; -----------------------------------------------------------------
 ;; Word definition + invocation
 ;; -----------------------------------------------------------------
