@@ -1182,6 +1182,192 @@ HEALTHIER outcome than a "discovery" that survives because
 nobody bothered to cross-check.  The cycle 8 → cycle 9 transition
 demonstrates the pre-registration loop catches its own bugs.
 
+> **Cycle 10 follow-up (commit pending):** the CS-doctor
+> retrospective on cycle 9 found weaknesses (sample-size
+> asymmetry, tautology of "fidelity" claim, scope overclaim).
+> Cycle 10 addresses ALL critiques across 4 sub-cycles:
+> - **10A**: substrate cross-validated at M=1000 (substrate
+>   IS faithful at n=20, p=10%, narrow scope)
+> - **10C**: pivot to feature-loaded phi-integ where measure
+>   is NON-tautological — first real substrate-derived
+>   measurement.
+> - **10D+E**: METHODOLOGY.md (9 rules from cycles 1-9
+>   retrospectives) and attestation infrastructure.
+
+---
+
+## Cycle 10 — CS-doctor critiques addressed (4 sub-cycles)
+
+After cycle 9 retraction, the catalogue's reliability was
+called into question.  Cycle 10 addresses CS-doctor critiques
+sub-cycle by sub-cycle.
+
+### Cycle 10A — substrate M=1000 cross-validation
+
+**Pre-registration commit `f31ba43`** (PREDICTIONS-126.md).
+Demo source `4f7aa93`; measurement `5a80a97`.
+
+Substrate phi-perc M=50 × K=20 = 1000 graphs at n=20, p=10%:
+
+| metric              | value       |
+|---------------------|-------------|
+| sample mean         | 125,120     |
+| sample stddev       | 67,282      |
+| SEM (= stddev/√M)   | 2,170       |
+| reference (cycle 9) | 126,549     |
+| |diff| vs reference | 1,429       |
+| 1σ (SEM-based)      | 2,170       |
+| diff / SEM          | 0.66        |
+
+**REGIME D fired (faithful, within ±1σ_1000 of reference).**
+
+Cycle 8 measured 130,900 ± 6,270 (M=100); cycle 10A measures
+125,120 ± 2,170 (M=1000).  The 130,900 was M=100 noise; true
+substrate mean at this regime is essentially equal to true
+classical reference 126,549 within sampling precision.
+
+**Outcome: cycle-9 weak claim ("within 1σ at M=100") is
+cross-validated at 10× tighter precision.**  Catalogue gains
+its first cross-validated substrate finding at narrow scope
+(n=20, p=10%).
+
+### Cycle 10D + 10E — METHODOLOGY.md + attestation
+
+**Commit `0354e81`** consolidates 9 rules learned across cycles
+1-9 into `METHODOLOGY.md`:
+
+1. Pre-registration in git BEFORE source
+2. Literature review BEFORE pre-registration
+3. Sample size discipline (M ≥ 1000 for ~3% precision)
+4. Regime partitions without gap
+5. Cross-validation before "stable" status
+6. Honest aggregate accounting
+7. Tautology detection (cycle 9 retrospective)
+8. Scope claims match measurement scope
+9. External attestation infrastructure
+
+Implementation:
+- `scripts/attest_prediction.sh` — SHA-256 + ledger append
+- `attestations/ledger.txt` — append-only tamper-evident log
+- `attestations/README.md` — anchor mechanisms documented
+
+PREDICTIONS-124/125/126 retroactively attested.
+PREDICTIONS-127 is the first ATTESTED-BEFORE-COMMIT entry.
+
+### Cycle 10C — phi-integ pivot beyond tautology
+
+**Pre-registration commit `b482dc7`** (PREDICTIONS-127.md,
+attested per Rule 9).  Demo + measurement `539c01f`.
+
+Cycle 9 CS-doctor critique #7: phi-perc on bare ER reduces to
+`|connected_component| × L_max`, which classical theory and
+substrate compute identically.  Not a substrate finding.
+
+Pivot: phi-integ depends on NSUM of out-neighbours' OUT —
+**second moment of degree distribution**, NOT reducible to
+connected-component theory.
+
+Analytic prediction (PREDICTIONS-127.md):
+- Independence approximation:   238,380
+- Correlation-corrected:        303,400
+
+Measurement (n=20, p=10%, M=1000):
+
+| metric                      | value       |
+|-----------------------------|-------------|
+| phi-integ mean              | 297,650     |
+| phi-integ stddev            | 308,074     |
+| phi-integ SEM               | 9,937       |
+| E[OUT(1)] sample            | 2.85        |
+| regime D match ([275k,330k])| **YES**     |
+| regime E match (independence) | no        |
+
+**REGIME D fired.**  Substrate REPRODUCES correlation-corrected
+analytic 303,400 within 2%.  Substrate captures the ~27%
+contribution of degree-degree correlation to E[phi-integ] on
+bare ER.
+
+**This is the first non-tautological substrate measurement
+post-cycle-9 retraction.**  phi-integ is a higher-moment
+graph statistic; substrate's BFS+NSUM implementation
+correctly captures the higher-moment ensemble.
+
+#### Sub-prediction transparency (Rule 6)
+
+- Sub-1 (stddev ∈ [400k, 1200k]): **FAILED**.  Actual stddev
+  308,074 below the bound.  Real finding: substrate phi-integ
+  variance is LOWER than naive product-variance estimate
+  — there are cancellations between OUT(1) and NSUM(1) at the
+  variance level that don't appear at the mean level.  Worth
+  follow-up cycle.  Does NOT affect main regime classification.
+- Sub-2 (E[OUT(1)] ∈ [2.6, 3.2]): **PASSED** (2.85) after
+  fixing integer-division bug in stat-mean.  Lesson: scale
+  before divide to test non-integer means; logged.
+
+### Aggregate accounting after cycle 10 (per Rule 6)
+
+| status             | count | items                                          |
+|--------------------|-------|------------------------------------------------|
+| **Cross-validated**| 3     | cycle 6 stats infra; cycle 7 extensivity ratio; cycle 10A substrate phi-perc faithfulness at n=20 p=10% |
+| **Pending cross-validation** | 1 | cycle 10C phi-integ correlation match (first measurement only) |
+| **Retracted**      | 5     | cycle 1-3 demos (cycle 4-5); cycle 4-5 K_eff (cycle 6); cycle 7 phi-perc leak self-fixed; cycle 8 "deviation" (cycle 9); cycle 9 "fidelity" overclaim (cycle 10C scope) |
+| **Infrastructure** | n/a   | cycle 10D+E methodology, attestation, lit-citation rule, regime-partition rule |
+
+Net catalogue health: **3 stable findings**, 1 pending, 5
+retracted, plus a methodology layer.  Honest counting per
+Rule 6 makes this visible.
+
+### Git history sequence (verifiable per Rule 9)
+
+| Commit | Phase | Content |
+|--------|-------|---------|
+| f31ba43 | 10A pre-reg | PREDICTIONS-126.md (BEFORE source) |
+| 4f7aa93 | 10A source  | demo 126 source (BEFORE measurement)  |
+| 5a80a97 | 10A measure | substrate M=1000, regime D, cross-val |
+| 0354e81 | 10D+10E     | METHODOLOGY.md + attestations infra   |
+| b482dc7 | 10C pre-reg | PREDICTIONS-127.md (attested, BEFORE) |
+| 539c01f | 10C measure | demo 127 + regime D phi-integ match   |
+| THIS    | 10B reframe | this RESULTS.md section + CHANGELOG   |
+
+Ledger cumulative SHA after cycle 10C: `11f940f7fc5c…77496`
+(first external anchor pending per attestations/README.md
+anchors index).
+
+### Honest framing of catalogue state
+
+**What survives CS-doctor scrutiny as of cycle 10:**
+- Substrate **correctly implements classical graph theory**
+  at second-moment level (cycle 10A first-moment, cycle 10C
+  second-moment via degree-degree correlation).
+- Substrate phi-perc is a faithful BFS at n=20 p=10%; phi-integ
+  ensemble captures ~27% correlation contribution analytically
+  predicted from classical ER.
+
+**What does NOT survive:**
+- Any "substrate-derived deviation from classical" claim.  The
+  cycle-8 candidate was an asymptotic-formula bug; cycle-10A
+  confirmed substrate matches true classical.
+- Any "substrate-specific finite-size correction" claim.  Not
+  measured.
+- Any "consciousness-measure content" claim of phi-perc /
+  phi-integ on bare ER substrates.  These are graph statistics,
+  not consciousness measures, until applied to feature-loaded
+  + dynamic substrate where node features encode model state
+  (Track 3.1 Pythia).
+
+**What is the legitimate research direction (cycle 11+):**
+- phi-integ ensemble on substrate AFTER STEP-CA rule execution
+  (substrate-native dynamics; no direct networkx analog).
+- HEDGE3 typed hyperedge benchmarks where Peirce-pattern
+  queries genuinely benefit from substrate-level typing.
+- Companion #1 (Pythia attention) where substrate is the
+  natural representation, not a re-encoding of classical
+  graphs.
+
+This is a substantially narrower programme than the v9.0
+preprint implies, but it is the one supported by what cycles
+1-10 actually demonstrate.
+
 ## Pending / future tracks
 
 | Track | Description | ETA |

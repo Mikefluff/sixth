@@ -11,7 +11,68 @@ release with a maintained changelog from the next version forward.
 
 Tracks `main@HEAD` development past v0.8.  Currently:
 
-### Added (cycle 9 — independent classical reference retracts cycle-8 finding)
+### Added (cycle 10 — 4 sub-cycles addressing CS-doctor critique of cycle 9)
+
+Four sub-cycles A/C/D/E, each addressing a specific critique.
+B is the final reframe (this changelog + RESULTS.md update).
+
+#### 10A: substrate M=1000 cross-validation
+
+- **`examples/PREDICTIONS-126.md`** (commit `f31ba43`) —
+  pre-registered substrate M=1000 ensemble to discriminate
+  faithful vs systematic bias.
+- **`examples/126-substrate-m1000.6th`** (13 ✓) — M=50 × K=20
+  = 1000 graphs at n=20, p=10%.  Substrate mean 125,120 ± SEM
+  2,170 vs reference 126,549.  REGIME D fired (|diff|=1,429 =
+  0.66σ_1000).  Substrate cross-validated.
+
+#### 10C: phi-integ pivot beyond tautology
+
+- **`examples/PREDICTIONS-127.md`** (commit `b482dc7`,
+  attested ledger 11f940f7…77496) — first cycle authored
+  under METHODOLOGY.md; pivot from phi-perc (cycle 9 tautology)
+  to phi-integ which depends on second-moment of degree
+  distribution (degree-degree correlation).
+- **`examples/127-feature-loaded-phi-integ.6th`** (14 ✓) —
+  M=1000 ensemble.  REGIME D fired (mean 297,650 matches
+  correlation-corrected analytic 303,400 within 2%).
+  Substrate REPRODUCES second-moment ER theory.  First
+  non-tautological substrate measurement post-cycle-9 retract.
+  Sub-pred 1 (stddev) failed honestly (logged); does not
+  affect main regime classification.
+
+#### 10D + 10E: METHODOLOGY.md + external attestation
+
+- **`METHODOLOGY.md`** (commit `0354e81`) — 9 binding rules
+  consolidated from cycles 1-9 retrospectives:
+  - Rule 1 git-pre-reg-before-source
+  - Rule 2 lit-review-before-pre-reg (cycle 8 failure)
+  - Rule 3 sample-size discipline (M ≥ 1000)
+  - Rule 4 regime-partitions-without-gap
+  - Rule 5 cross-validation before "stable"
+  - Rule 6 honest aggregate accounting
+  - Rule 7 tautology detection (cycle 9 retro)
+  - Rule 8 scope claims match measurement
+  - Rule 9 external attestation
+- **`scripts/attest_prediction.sh`** — SHA-256 ledger append
+- **`attestations/ledger.txt`** — append-only ledger, retroactively
+  attests cycles 8/9/10A; PREDICTIONS-127 first attested-before-commit.
+- **`attestations/README.md`** — anchor mechanisms (OTS, tweet,
+  GitHub tag) documented.
+
+#### Aggregate cycle-10 outcome (Rule 6 honest accounting)
+
+- Cross-validated stable findings: **3** (cycle 6 infra, cycle
+  7 extensivity, cycle 10A substrate faithfulness at narrow scope)
+- Pending cross-validation: **1** (cycle 10C phi-integ correlation
+  match)
+- Retracted across cycles: **5** (cycle 1-3, 4-5, 7-self, 8, 9-scope)
+- Plus methodology + attestation layer.
+
+Catalogue narrows to genuine claims; broad "substrate-derived
+finding" rhetoric retracted via cycle 10C scope-reframing.
+
+### Retracted (cycle 8 "substrate-derived deviation" claim)
 
 - **`examples/PREDICTIONS-125.md`** (commit `99f33f0`,
   pre-registered BEFORE reference script) — three mutually
