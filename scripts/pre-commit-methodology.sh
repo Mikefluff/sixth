@@ -47,10 +47,11 @@ for FILE in $STAGED_PREDS; do
 
     # --- Rule 2: lit-review ---
     # Heuristic: file should contain at least one of:
-    #   - a year in parentheses like "(1999)" or "(2001, 2nd ed.)"
-    #   - an author surname pattern "Author Name (Year)"
-    #   - a book/paper title pattern "*italics*" or `code`
-    if ! grep -E -q '\([12][0-9]{3}(,| [a-z])|cf\. [A-Z]|see [A-Z][a-z]+|, [A-Z][a-z]+ [12][0-9]{3}' "$FULL"; then
+    #   - a year in parentheses like "(1999)", "(2001)", "(2001, 2nd ed.)"
+    #   - "cf. Author" or "see Author" citation marker
+    #   - ", Author Year" comma-author-year reference
+    #   - "Author (YYYY)" — author followed by year in parens
+    if ! grep -E -q '\([12][0-9]{3}(\)|,| [a-z])|cf\. [A-Z]|see [A-Z][a-z]+|, [A-Z][a-z]+[ -][A-Z][a-z]+ [12][0-9]{3}|[A-Z][a-z]+(-[A-Z][a-z]+)? \([12][0-9]{3}\)' "$FULL"; then
         FAILURES+=("$FILE: Rule 2 — no citation marker found (need year-in-parens or author-year reference)")
         EXIT_CODE=1
     fi
