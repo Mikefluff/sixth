@@ -33,6 +33,15 @@
 install:
 	raco pkg install --link --auto .
 
+# Install METHODOLOGY.md pre-commit hook.  Idempotent: safe to
+# re-run; uses symlink so updates to scripts/pre-commit-methodology.sh
+# are picked up automatically.
+install-hooks:
+	@mkdir -p .git/hooks
+	@ln -sf ../../scripts/pre-commit-methodology.sh .git/hooks/pre-commit
+	@echo "Installed .git/hooks/pre-commit → scripts/pre-commit-methodology.sh"
+	@echo "Hook checks PREDICTIONS-N.md files for METHODOLOGY.md Rules 2/4/9 compliance."
+
 test: test-unit test-examples
 
 test-unit:
