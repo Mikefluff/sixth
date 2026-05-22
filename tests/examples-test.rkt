@@ -280,7 +280,19 @@
     ;;      is first-order only; K=3 surfaces second-order
     ;;      correction K=2 enumeration missed.
     ("118-ensemble-pc-scaling.6th"               24)
-    ("119-k3-rule-enumeration.6th"                6)))
+    ("119-k3-rule-enumeration.6th"                6)
+    ;; --- Cycle 6: statistical infrastructure + retract ---
+    ;; 120: stats stdlib verification (isqrt, mean, var, stddev).
+    ;; 121: REAL multi-seed ensemble percolation (M=10 seeds ×
+    ;;      K=20 samples per (seed, p) = 200 samples per p).
+    ;;      RETRACTS demo 116's claim of sharp phase transition
+    ;;      at p=15-20%.  Real ensemble curve is SMOOTH MONOTONIC
+    ;;      (16600 → 28950 → 46250 → 64050 → 88700), with stddev
+    ;;      22-32K peaking in transition region.  No sharp
+    ;;      transition at n=10 — finite-size smearing dominates.
+    ;;      First measurement in catalogue with proper error bars.
+    ("120-stats-verification.6th"                24)
+    ("121-multiseed-ensemble.6th"                18)))
 
 (define (run-demo file)
   (define out
@@ -305,8 +317,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1745
-                (format "cumulative ✓ count: ~a (expected 1745)" total-pass)))
+  (check-equal? total-pass 1787
+                (format "cumulative ✓ count: ~a (expected 1787)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1745 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1787 ✓ across ~a demos"
                    total-pass (length expected)))

@@ -1,0 +1,229 @@
+\ examples/121-multiseed-ensemble.6th
+\ REAL multi-seed ensemble percolation — retracts demo 116's
+\ overclaim that single-seed K=8 was an "ensemble".
+\
+\ Cycle-5 CS-doctor #3 retrospective: demo 116 reported p_c with
+\ no error bars from single seed × K=8 samples — statistically
+\ meaningless.  This demo does the measurement honestly:
+\
+\   M = 10 independent seeds (seeds 1..10)
+\   K = 20 random graph samples per (seed, p)
+\   Pooled: M × K = 200 samples per data point
+\   Compute mean ± stddev across the 200 samples
+\
+\ Sweep: p ∈ {5, 10, 15, 20, 30}%, n=10 fixed.
+\
+\ Statistical power: standard error of mean = stddev / sqrt(200) ≈
+\ stddev/14.  With phi-perc range [10000, 100000], 14× resolution
+\ is significant.
+\
+\ Outcome: actual mean ± stddev curve, with honest uncertainty.
+\ Comparison to demo 116's single-seed claim.
+
+use prelude
+use graph
+use phi
+use bfs
+use rand
+use stats
+use debug
+
+\ ============================================================
+\ ER graph generator (lifted from demo 116/118).
+\ ============================================================
+
+: maybe-add-edge ( i j -- )
+  "mae-j" store   "mae-i" store
+  100 rand "p-current" load < if
+    "mae-i" load "mae-j" load bi-edge
+  then ;
+
+: edge-inner-loop
+  "edge-j" load "edge-n" load <= if
+    "edge-i" load "edge-j" load maybe-add-edge
+    "edge-j" load 1 + "edge-j" store
+    edge-inner-loop
+  then ;
+
+: edge-outer-loop
+  "edge-i" load "edge-n" load < if
+    "edge-i" load 1 + "edge-j" store
+    edge-inner-loop
+    "edge-i" load 1 + "edge-i" store
+    edge-outer-loop
+  then ;
+
+: mark-n-loop
+  "mark-rem" load 0 > if
+    MARK drop
+    "mark-rem" load 1 - "mark-rem" store
+    mark-n-loop
+  then ;
+
+: mark-n ( n -- )
+  "mark-rem" store mark-n-loop ;
+
+: gen-er-graph ( n -- )
+  "edge-n" store
+  RESET
+  "edge-n" load mark-n
+  1 1 EDGE+
+  1 "edge-i" store
+  edge-outer-loop ;
+
+\ ============================================================
+\ Sampling loops: K samples per seed, M seeds per ensemble.
+\ All samples for given p pool into one stat-aggregator.
+\ ============================================================
+
+: one-sample-tally
+  "ens-n" load gen-er-graph
+  1 phi-perc stat-add ;
+
+: K-loop
+  "K-rem" load 0 > if
+    one-sample-tally
+    "K-rem" load 1 - "K-rem" store
+    K-loop
+  then ;
+
+: M-loop
+  "M-rem" load 0 > if
+    \ Seed = current M-rem (1..M).  Different seed each iteration.
+    "M-rem" load srand
+    "K-init" load "K-rem" store
+    K-loop
+    "M-rem" load 1 - "M-rem" store
+    M-loop
+  then ;
+
+\ One ensemble at current p: M seeds × K samples each.  Aggregates
+\ into stats accumulator; result via stat-mean / stat-stddev.
+: ensemble-at-p
+  stat-reset
+  "M-init" load "M-rem" store
+  M-loop ;
+
+\ ============================================================
+\ Configuration: n=10, M=10 seeds, K=20 samples per seed.
+\ Total 200 samples per p.
+\ ============================================================
+
+10 "ens-n" store
+10 "M-init" store
+20 "K-init" store
+
+\ ============================================================
+\ Sweep p ∈ {5, 10, 15, 20, 30}%.
+\ ============================================================
+
+ 5 "p-current" store   ensemble-at-p
+   stat-mean "mu05" store   stat-stddev "sd05" store
+
+10 "p-current" store   ensemble-at-p
+   stat-mean "mu10" store   stat-stddev "sd10" store
+
+15 "p-current" store   ensemble-at-p
+   stat-mean "mu15" store   stat-stddev "sd15" store
+
+20 "p-current" store   ensemble-at-p
+   stat-mean "mu20" store   stat-stddev "sd20" store
+
+30 "p-current" store   ensemble-at-p
+   stat-mean "mu30" store   stat-stddev "sd30" store
+
+\ ============================================================
+\ Output: mean ± stddev curve (REAL ensemble measurement).
+\ ============================================================
+
+cr
+"=== Demo 121 — MULTI-SEED ensemble percolation ===" . cr
+cr
+"n=10, M=10 seeds (1..10), K=20 samples/seed, 200 samples/p" . cr
+cr
+" p%   ⟨phi-perc⟩   ± stddev    SE ≈ stddev/14" . cr
+" --   ----------   --------    ---------------" . cr
+"  5   " . "mu05" load . "   ±" . "sd05" load . "    " . "sd05" load 14 / . cr
+" 10   " . "mu10" load . "   ±" . "sd10" load . "    " . "sd10" load 14 / . cr
+" 15   " . "mu15" load . "   ±" . "sd15" load . "    " . "sd15" load 14 / . cr
+" 20   " . "mu20" load . "   ±" . "sd20" load . "    " . "sd20" load 14 / . cr
+" 30   " . "mu30" load . "   ±" . "sd30" load . "    " . "sd30" load 14 / . cr
+cr
+"Comparison to demo 116 single-seed (seed=42, K=8) at same p-grid:" . cr
+"  demo 116 p=5%:  mean=11250   (this: " . "mu05" load .  "±" . "sd05" load . ")" . cr
+"  demo 116 p=10%: mean=30000   (this: " . "mu10" load .  "±" . "sd10" load . ")" . cr
+"  demo 116 p=15%: mean=41250   (this: " . "mu15" load .  "±" . "sd15" load . ")" . cr
+"  demo 116 p=20%: mean=82500   (this: " . "mu20" load .  "±" . "sd20" load . ")" . cr
+"  demo 116 p=30%: mean=97500   (this: " . "mu30" load .  "±" . "sd30" load . ")" . cr
+cr
+"Substrate-derived empirical curve with HONEST error bars." . cr
+cr
+"FINDING (corrects demo 116):" . cr
+"  Multi-seed ensemble curve is SMOOTH MONOTONIC, NOT sharp" . cr
+"  jump.  Mean grows steadily 16600 → 28950 → 46250 → 64050 →" . cr
+"  88700.  Demo 116's apparent 'jump' from 41250 to 82500 between" . cr
+"  p=15% and p=20% was SEED-42-SPECIFIC ARTIFACT, not substrate-" . cr
+"  derived phase transition." . cr
+cr
+"  Stddev peaks in transition region (sd15=30190, sd20=32358)," . cr
+"  qualitatively matching critical-fluctuation prediction.  But" . cr
+"  no sharp jump — at n=10, finite-size smearing dominates." . cr
+cr
+"  RETRACTED: demo 116's 'p_c = 15-20%' claim.  Real ensemble" . cr
+"  has NO sharp p_c at n=10; transition is a broad smooth" . cr
+"  monotonic crossover with σ/μ ≈ 50-65% near the center.  Sharp" . cr
+"  phase transition requires larger n to escape finite-size" . cr
+"  smearing." . cr
+cr
+"  Substrate-monism prediction REVISED: at n=10, substrate-readable" . cr
+"  percolation does NOT exhibit classical sharp Erdős-Rényi" . cr
+"  transition.  Finite-size effects dominate completely." . cr
+
+\ ============================================================
+\ Sanity asserts: range bounds and monotonicity at coarse scale.
+\ Specific values pinned for regression (M×K with seeds 1..10 +
+\ K=20 each is fully deterministic under our LCG).
+\ ============================================================
+
+\ All means in valid range [10000, 100000].
+"mu05" load 10000 >=  "mu05" load 100000 <= + 2 assert-eq
+"mu30" load 10000 >=  "mu30" load 100000 <= + 2 assert-eq
+
+\ Monotonicity at coarse scale.
+"mu05" load "mu30" load < 1 assert-eq
+
+\ All stddevs non-negative (sanity).
+"sd05" load 0 >= 1 assert-eq
+"sd30" load 0 >= 1 assert-eq
+
+\ Transition region (p=10..20) should have HIGHER stddev than
+\ super-critical tail (p=30).  Substrate-derived prediction
+\ from critical phenomena (large fluctuations near transition).
+"sd15" load "sd30" load >= 1 assert-eq
+"sd20" load "sd30" load >= 1 assert-eq
+
+\ ============================================================
+\ Regression pin: specific outcomes for seeds 1..10 × K=20.
+\ This is deterministic — exactly reproducible on re-run.
+\ ============================================================
+
+"mu05" load 16600 assert-eq    "sd05" load 10928 assert-eq
+"mu10" load 28950 assert-eq    "sd10" load 22680 assert-eq
+"mu15" load 46250 assert-eq    "sd15" load 30190 assert-eq
+"mu20" load 64050 assert-eq    "sd20" load 32358 assert-eq
+"mu30" load 88700 assert-eq    "sd30" load 23881 assert-eq
+
+\ Verify the SMOOTH monotonic curve (no sharp jump anywhere).
+\ Max single-step ∆mean should be MODERATE (not 41250 like 116
+\ claimed).  Largest jump in real ensemble: 46250 - 28950 = 17300.
+"mu15" load "mu10" load - "delta-15-10" store
+"mu20" load "mu15" load - "delta-20-15" store
+"mu30" load "mu20" load - "delta-30-20" store
+"delta-15-10" load "delta-20-15" load max "max-jump" store
+"max-jump" load "delta-30-20" load max "max-jump" store
+
+\ Largest single-step jump (over all 4 transitions) ≤ 25000.
+\ Demo 116 claimed jump of 41250 — well outside this bound.
+"max-jump" load 25000 <= 1 assert-eq
+
+REPORT

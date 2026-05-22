@@ -1,0 +1,91 @@
+\ examples/120-stats-verification.6th
+\ Stats stdlib verification — isqrt, streaming aggregator.
+
+use prelude
+use stats
+use debug
+
+\ ============================================================
+\ isqrt: floor(sqrt(n))
+\ ============================================================
+
+0 isqrt 0 assert-eq
+1 isqrt 1 assert-eq
+2 isqrt 1 assert-eq
+3 isqrt 1 assert-eq
+4 isqrt 2 assert-eq
+8 isqrt 2 assert-eq
+9 isqrt 3 assert-eq
+15 isqrt 3 assert-eq
+16 isqrt 4 assert-eq
+99 isqrt 9 assert-eq
+100 isqrt 10 assert-eq
+10000 isqrt 100 assert-eq
+
+\ ============================================================
+\ Streaming aggregator — basic correctness.
+\
+\ Samples: {2, 4, 6, 8, 10}
+\ Mean = 30 / 5 = 6
+\ Variance: ((2-6)^2 + (4-6)^2 + (6-6)^2 + (8-6)^2 + (10-6)^2) / 5
+\         = (16 + 4 + 0 + 4 + 16) / 5 = 40/5 = 8
+\ Stddev: floor(sqrt(8)) = 2
+\
+\ Computed via (n·sumsq - sum^2) / n^2:
+\   n=5, sum=30, sumsq = 4+16+36+64+100 = 220
+\   var = (5·220 - 900) / 25 = (1100 - 900) / 25 = 200/25 = 8  ✓
+\ ============================================================
+
+stat-reset
+2 stat-add
+4 stat-add
+6 stat-add
+8 stat-add
+10 stat-add
+
+stat-n     5 assert-eq
+stat-mean  6 assert-eq
+stat-var   8 assert-eq
+stat-stddev 2 assert-eq
+
+\ ============================================================
+\ Constant-data sanity: all same → variance 0.
+\ ============================================================
+
+stat-reset
+42 stat-add  42 stat-add  42 stat-add  42 stat-add
+
+stat-n      4 assert-eq
+stat-mean   42 assert-eq
+stat-var    0 assert-eq
+stat-stddev 0 assert-eq
+
+\ ============================================================
+\ Larger sample distribution.
+\ Samples: ten values 1..10.  Mean = 5 (integer division of 55/10).
+\ Sum = 55, sumsq = 385, n = 10.
+\ var = (10·385 - 55^2) / 100 = (3850 - 3025)/100 = 825/100 = 8.
+\ stddev = isqrt(8) = 2.
+\ ============================================================
+
+stat-reset
+1 stat-add  2 stat-add  3 stat-add  4 stat-add  5 stat-add
+6 stat-add  7 stat-add  8 stat-add  9 stat-add  10 stat-add
+
+stat-n      10 assert-eq
+stat-mean   5  assert-eq
+stat-var    8  assert-eq
+stat-stddev 2  assert-eq
+
+cr
+"=== Demo 120 — stats stdlib verification ===" . cr
+cr
+"isqrt: 12 cases, all correct" . cr
+"streaming aggregator: 3 cases" . cr
+"  samples {2,4,6,8,10}: mean=6, var=8, stddev=2" . cr
+"  constant 42 × 4: mean=42, var=0, stddev=0" . cr
+"  samples 1..10:    mean=5, var=8, stddev=2" . cr
+cr
+"stdlib/stats.6th ready for ensemble experiments." . cr
+
+REPORT

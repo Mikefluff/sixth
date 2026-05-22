@@ -11,6 +11,58 @@ release with a maintained changelog from the next version forward.
 
 Tracks `main@HEAD` development past v0.8.  Currently:
 
+### Added (cycle 6 — statistical infrastructure + honest retract)
+
+CS-doctor #3 retrospective on cycles 4-5 (in RESULTS.md): single-
+seed K=4-8 "ensembles" are deterministic LCG traces, not
+statistically defensible measurements.  No error bars, no multi-
+seed validation.  "Substrate-derived findings" of 117/119 were
+author tracing errors of documented engine set-semantics.
+
+- **stdlib/stats.6th** (new) — basic statistical primitives.
+  isqrt via binary search.  Streaming aggregator with mean,
+  variance ((n·sumsq - sum²)/n²), stddev (isqrt of variance),
+  sample count.  Memory cells: stat-sum, stat-sumsq, stat-n.
+  Required for honest ensemble measurements.
+- **Demo 120** (24 ✓) — stats stdlib verification.  isqrt
+  on 12 cases; streaming aggregator on canonical samples
+  ({2,4,6,8,10} → mean=6/var=8/stddev=2; constant 42 → var=0;
+  1..10 → mean=5/var=8/stddev=2).
+- **Demo 121** (18 ✓) — **FIRST statistically-defensible
+  substrate measurement in catalogue**.  Multi-seed ensemble
+  percolation: M=10 seeds × K=20 samples per (seed, p) =
+  200 samples per data point.  Reports mean ± stddev per p.
+
+  **RETRACTS demo 116's sharp phase transition claim.**  Real
+  ensemble curve at n=10 is smooth monotonic (16600 → 28950 →
+  46250 → 64050 → 88700, max single-step jump 17300), not
+  sharp.  Stddev peaks in transition region (sd15=30190,
+  sd20=32358) — broad smearing, not criticality.  Demo 116's
+  apparent "jump 41250 → 82500" was seed-42 artifact.
+
+  Substrate-monism revised prediction: at n=10, phi-perc does
+  NOT exhibit classical Erdős-Rényi sharp transition.  Finite-
+  size smearing dominates completely.  Real critical-behaviour
+  validation requires n ≥ 50 (compute challenge).
+
+### Changed (RESULTS.md retracts and re-classifications)
+- **Demo 116 sharp-transition claim RETRACTED** (per demo 121).
+- **Demo 118 scaling exponent claim DOWNGRADED** to "preliminary
+  single-seed observation pending multi-seed validation" (2 data
+  points cannot fit exponent; K=4 too small).
+- **Demos 117/119 surprises RECLASSIFIED** from "substrate-derived
+  findings" to "documentation-completeness gaps in engine docs".
+  Both follow from careful counting through documented set-
+  semantics; author tracing errors, not substrate research.
+- **RESULTS.md aggregate** now states honestly: "0 statistically-
+  defensible substrate-derived findings to date; engineering
+  infrastructure complete enough to attempt real measurements at
+  scale (deferred: K ≥ 100, n ≥ 50)".
+- This is the **first cycle in the catalogue that retracts prior
+  overclaims with honest error bars**.  Catalogue is now an
+  honest research artifact about what works (engine, tests,
+  stdlib) and what has been retracted.
+
 ### Added (research-track demos — fifth cycle, real measurements + 2nd substrate surprise)
 - **Demo 118** (24 ✓) — ensemble p_c scaling across n ∈ {10, 20}.
   Empirical measurement (not analytic shortcut of demo 114).

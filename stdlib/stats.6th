@@ -1,0 +1,91 @@
+\ stdlib/stats.6th — basic statistical primitives.
+\
+\ Required for honest ensemble measurements with error bars.
+\ Cycle 4-5 demos reported means with no variance — making
+\ those "measurements" statistically meaningless.  This stdlib
+\ enables proper sample-statistics computation in Sixth.
+\
+\ Words provided:
+\
+\   isqrt    ( n -- root )         floor(sqrt(n)), via binary search
+\
+\   Streaming aggregator (state in memory cells "stat-sum",
+\   "stat-sumsq", "stat-n"):
+\
+\   stat-reset                     zero the aggregator
+\   stat-add ( x -- )              accumulate one sample
+\   stat-mean ( -- mean )          sum / n (integer division)
+\   stat-var ( -- var )            E[X^2] - E[X]^2 (integer)
+\   stat-stddev ( -- stddev )      isqrt of variance
+\   stat-n ( -- count )            number of samples so far
+\
+\ All arithmetic is integer.  For floating-point precision use
+\ scaled integers (multiply by 10000 then divide later).
+
+\ ----------------------------------------------------------------
+\ Integer square root: floor(sqrt(n)) via binary search.
+\ ----------------------------------------------------------------
+
+: isqrt-step
+  "isqrt-low" load 1 + "isqrt-hi" load < if
+    "isqrt-low" load "isqrt-hi" load + 2 / "isqrt-mid" store
+    "isqrt-mid" load "isqrt-mid" load * "isqrt-n" load > if
+      "isqrt-mid" load "isqrt-hi" store
+    else
+      "isqrt-mid" load "isqrt-low" store
+    then
+    isqrt-step
+  then ;
+
+: isqrt ( n -- root )
+  dup "isqrt-n" store
+  0 < if 0 else
+    "isqrt-n" load 0 = if 0 else
+      0 "isqrt-low" store
+      "isqrt-n" load 1 + "isqrt-hi" store
+      isqrt-step
+      "isqrt-low" load
+    then
+  then ;
+
+\ ----------------------------------------------------------------
+\ Streaming aggregator.
+\
+\ Uses three memory cells:
+\   stat-sum   : sum of samples
+\   stat-sumsq : sum of squared samples
+\   stat-n     : number of samples
+\
+\ Mean = sum / n
+\ Variance = sumsq/n - (sum/n)^2  =  (n·sumsq - sum^2) / n^2
+\
+\ The latter form keeps integer precision better; we use it.
+\ ----------------------------------------------------------------
+
+: stat-reset
+  0 "stat-sum" store
+  0 "stat-sumsq" store
+  0 "stat-n" store ;
+
+: stat-add ( x -- )
+  dup "stat-sum" load + "stat-sum" store
+  dup * "stat-sumsq" load + "stat-sumsq" store
+  "stat-n" load 1 + "stat-n" store ;
+
+: stat-mean ( -- mean )
+  "stat-sum" load "stat-n" load / ;
+
+\ Variance: (n·sumsq - sum^2) / n^2.
+\ Returns integer (truncation may underestimate); for small
+\ samples and small means this is fine for order-of-magnitude
+\ error bars.
+: stat-var ( -- var )
+  "stat-n" load "stat-sumsq" load *
+  "stat-sum" load "stat-sum" load * -
+  "stat-n" load "stat-n" load * / ;
+
+: stat-stddev ( -- stddev )
+  stat-var isqrt ;
+
+: stat-n ( -- count )
+  "stat-n" load ;

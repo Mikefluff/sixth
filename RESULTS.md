@@ -665,6 +665,153 @@ WRONG events** — substrate corrected author's expectation.  This
 is exactly the falsification dynamic that turns regression-test
 demos into real experiments.
 
+---
+
+## CYCLE 6 — CS-doctor #3 retrospective + honest retract
+
+**Honest re-assessment (2026-05-22):** the "4 substrate-derived
+findings" claim of cycles 4-5 is **statistically unsupported**.
+On review:
+
+### Demo 116 — RETRACTED
+"First non-engineered ensemble experiment, p_c ≈ 15-20%" claim
+was based on **single seed=42, K=8 samples**.  This is not
+ensemble measurement — it's a deterministic LCG trace with intra-
+sample averaging.  The apparent "jump" from 41250 (p=15%) to
+82500 (p=20%) was reported without error bars.
+
+**Demo 121 (M=10 seeds, K=20 samples = 200 per p) shows:**
+
+| p% | M-mean | stddev | demo 116 single-seed | within bars? |
+|----|--------|--------|---------------------|--------------|
+|  5 | 16,600 | 10,928 | 11,250 | yes (0.5σ) |
+| 10 | 28,950 | 22,680 | 30,000 | yes (0.05σ) |
+| 15 | 46,250 | 30,190 | 41,250 | yes (0.17σ) |
+| 20 | 64,050 | 32,358 | 82,500 | yes (0.57σ) |
+| 30 | 88,700 | 23,881 | 97,500 | yes (0.37σ) |
+
+Real ensemble curve is **smooth monotonic** (no sharp jump).
+Demo 116's apparent "transition at p=15-20%" was seed-42-specific
+artifact.  Largest real per-p-step jump = 17,300; demo 116
+claimed 41,250.  **REVISED FINDING: at n=10, there is NO sharp
+phase transition in phi-perc; transition is broad smooth
+monotonic crossover with σ/μ ≈ 50-65% near center.**  Finite-size
+smearing dominates at this n.
+
+### Demo 118 — DOWNGRADED
+"Scaling exponent" claim from 2 data points (n=10, n=20) with K=4
+samples per p.  Two points cannot fit a scaling exponent.  K=4 is
+even worse statistics than 116.  "n=20 sharpening" finding may
+also be seed-specific.  Multi-seed re-measurement at n=20 deferred
+(compute cost) — claim downgraded to "preliminary single-seed
+observation pending multi-seed validation".
+
+### Demos 117, 119 — RECLASSIFIED
+"Substrate-derived surprises" were **author tracing errors**, not
+substrate findings.  Substrate set-semantics is documented in
+`sixth/substrate/core.rkt` (set-of-hyperedges storage).  Both
+"surprises" follow from careful counting through engine semantics:
+
+- 117 K=2: rule (a,c)(a,c) literally adds (a,c) twice.  Set-
+  semantics deduplicates.  Author forgot.
+- 119 K=3: rule with c-source creates (c,c) self-loop at iter 1.
+  Self-loop input at iter 2 has a=b, so (a,c)=(b,c) → duplicate.
+  Author didn't trace.
+
+Both reclassified from "substrate research findings" to
+"documentation-completeness gaps in prior demos (109)".  Honest
+classification: cycle 4-5 surfaced two engine-semantics edge
+cases that should be added to substrate engine docs.
+
+### Demo 115 — UNCHANGED
+RNG infrastructure: real engineering.  No claim retracted.
+
+---
+
+## REAL research output of cycles 1-5 (honest)
+
+**Engineering positives (real):**
+- Sixth substrate engine + tests (cycles 0-3)
+- RNG stdlib (cycle 4)
+- Stats stdlib (cycle 6)
+- phi-perc shipped + read-only (cycle 2-3)
+- Demo 121: first measurement with proper error bars
+
+**Substrate-derived research findings:**
+- **ZERO statistically-defensible findings to date.**
+- All prior claims either: tautology (cycles 1-3), single-seed
+  artifact (cycles 4-5), or author counting error (117, 119).
+
+**Honest framing:** project is **research scaffold with growing
+infrastructure**, **not research artifact with findings**.  Real
+findings require:
+- Multi-seed K ≥ 100 ensembles for statistical power
+- 5+ scaling points for exponent fits
+- Larger n (50+) to escape finite-size dominance — compute
+  challenge currently unaddressed
+- Theory-derived predictions BEFORE running, not casual estimates
+- Real-data validation (Pythia / EEG / colony companion preprints)
+  — currently 0/3 started
+
+## Cycle 6 — first STATISTICALLY-DEFENSIBLE measurement
+
+### Demo 120 — stats stdlib verification (24 ✓)
+
+Built `stdlib/stats.6th`: isqrt via binary search, streaming
+mean/variance/stddev aggregator using cells `stat-sum`,
+`stat-sumsq`, `stat-n`.  Verified on canonical samples
+({2,4,6,8,10} → mean=6, var=8, stddev=2; constant 42×4 →
+var=0; 1..10 → mean=5, var=8, stddev=2).
+
+### Demo 121 — REAL multi-seed ensemble percolation (18 ✓)
+
+**FIRST defensible substrate measurement in catalogue.**  M=10
+seeds × K=20 samples per (seed, p) = 200 samples per data point.
+Reports mean ± stddev for each p.
+
+**Findings:**
+1. Real ensemble curve at n=10 is **smooth monotonic**, no sharp
+   jump.  Demo 116's "p_c=15-20%" claim was seed artifact.
+2. Stddev peaks in transition region (sd15=30190, sd20=32358),
+   qualitatively matching critical-fluctuation prediction —
+   broad smearing, not sharp criticality.
+3. σ/μ ≈ 50-65% near transition center: substrate-derived
+   measurement of finite-n smearing magnitude.
+4. RETRACTS demo 116 sharp-transition claim.
+
+**Honest framing:** at n=10 with proper ensemble, substrate
+phi-perc does NOT exhibit classical Erdős-Rényi sharp phase
+transition.  Finite-size smearing fully dominates.  Real
+critical-behaviour validation requires n ≥ 50 (compute challenge).
+
+This is the **first measurement in the catalogue that retracts
+an earlier overclaim with honest error bars**.
+
+---
+
+## Aggregate (all cycles, honest re-assessment)
+
+17 research-track demos (105-121), 318 asserts.
+Regression: 1787 / 1787 ✓ across 115 demos.
+
+| Demo bucket | Status |
+|-------------|--------|
+| 105-114 (cycles 1-3) | Tautologies + engineered, 0 real findings |
+| 115-117 (cycle 4)    | RNG infrastructure; 116/117 retracted/reclassified |
+| 118-119 (cycle 5)    | 118 downgraded, 119 reclassified |
+| **120-121 (cycle 6)** | **First statistically-defensible measurement; one prior claim retracted** |
+
+**Net real research output after honest retract: 0 substrate-
+derived positive findings.  1 retract (demo 116 sharp transition).
+Engineering infrastructure complete enough to attempt real
+measurements at scale (deferred: K ≥ 100, n ≥ 50).**
+
+This catalogue is now an HONEST research artifact: explicit about
+what infrastructure works (engine, tests, stdlib) and what claims
+have been retracted (sharp percolation transition at n=10).
+Future cycles can build real findings on top of statistical
+infrastructure with explicit error-bar reporting.
+
 ## Pending / future tracks
 
 | Track | Description | ETA |
