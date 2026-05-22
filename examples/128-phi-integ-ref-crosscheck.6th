@@ -1,0 +1,137 @@
+\ examples/128-phi-integ-ref-crosscheck.6th
+\ Cycle 11A — phi-integ reference cross-check (regime F' fired).
+\ Pre-registered in PREDICTIONS-128.md (commit 6a1fd73);
+\ reference scripts/ref_phi_integ_128.py committed a9ef2fc.
+\
+\ === REGIME F' FIRED — cycle 10C TECHNICALLY RETRACTED ===
+\
+\ Reference (networkx, M=10000, MT seed 1..10000):  310,577
+\ Substrate (cycle 10C, M=1000, LCG seed 1..50):    297,650
+\ My analytic (PREDICTIONS-127.md):                 303,400
+\
+\ |ref - substrate| = 12,927  > pre-reg threshold 5,000  → F'
+\ |ref - analytic|  =  7,177  ≤ pre-reg threshold 9,000  → analytic OK
+\
+\ Per pre-registration: regime F' = "substrate DEVIATES from
+\ ref; cycle 10C RETRACTED; FIRST substrate-derived deviation".
+\
+\ HONESTY NOTE: the 12,927 deviation is only ~1.33σ combined
+\ (substrate SEM=9737 at M=1000, ref SEM=3275 at M=10000;
+\ combined ≈ 10,259).  My pre-reg threshold 5000 was tighter
+\ than the natural 2σ test 19,500.  Strictly the pre-reg rule
+\ fires F'; statistically the deviation is marginal.
+\
+\ Cycle 11A.1 (separate pre-registration) will run substrate at
+\ M=10000 to discriminate sampling-artifact vs real deviation.
+
+use prelude
+use debug
+
+\ ============================================================
+\ Pinned reference values from scripts/ref_phi_integ_128.py.
+\ M=10000 networkx Monte Carlo, Mersenne Twister seeds 1..10000.
+\ ============================================================
+
+310577 "ref-mean"        store
+327463 "ref-stddev"      store
+  3275 "ref-sem"         store
+297650 "sub-mean-cyc10c" store
+303400 "analytic-mean"   store
+
+\ Diffs.
+"ref-mean" load "sub-mean-cyc10c" load - "raw1" store
+"raw1" load 0 < if "raw1" load -1 * else "raw1" load then "diff-sub-ref" store
+
+"ref-mean" load "analytic-mean" load - "raw2" store
+"raw2" load 0 < if "raw2" load -1 * else "raw2" load then "diff-ana-ref" store
+
+\ Regime classification per PREDICTIONS-128.md.
+"diff-sub-ref" load 5000 <= "sub-match?" store
+"diff-ana-ref" load 9000 <= "ana-match?" store
+
+\ Regimes:
+\   D' = sub-match AND ana-match
+\   E' = sub-match AND NOT ana-match
+\   F' = NOT sub-match AND ana-match
+\   G' = NOT sub-match AND NOT ana-match
+"sub-match?" load "ana-match?" load * "regime-Dp?" store
+"sub-match?" load "ana-match?" load 1 - -1 * * "regime-Ep?" store
+"sub-match?" load 1 - -1 * "ana-match?" load * "regime-Fp?" store
+"sub-match?" load 1 - -1 * "ana-match?" load 1 - -1 * * "regime-Gp?" store
+
+"regime-Dp?" load "regime-Ep?" load + "regime-Fp?" load + "regime-Gp?" load + "regime-count" store
+
+\ Sub-prediction: ref stddev in [240000, 380000].
+"ref-stddev" load 240000 >= "ref-stddev" load 380000 <= * "stddev-sub-ok?" store
+
+\ Combined SEM check: 1.33σ marginal deviation.
+\ Combined SEM ≈ sqrt(sub-SEM² + ref-SEM²) at M=1000 vs M=10000.
+\ Substrate SEM at M=1000 ≈ 9737, ref SEM=3275.
+\ Combined ≈ sqrt(94808969 + 10725625) ≈ sqrt(105534594) ≈ 10273.
+\ Diff/combined-SEM = 12927/10273 ≈ 1.26σ.
+9737 9737 * 3275 3275 * + "combined-var" store
+\ Use stat-like isqrt? No, simpler: combined SEM ≈ 10273 (hard-coded).
+10273 "combined-sem" store
+"diff-sub-ref" load "combined-sem" load / "z-score" store
+
+cr
+"=== Demo 128 — phi-integ reference cross-check (cycle 11A) ===" . cr
+cr
+"Pre-reg: PREDICTIONS-128.md (commit 6a1fd73)" . cr
+"Ref:     scripts/ref_phi_integ_128.py (commit a9ef2fc)" . cr
+cr
+"Reference (M=10000, MT):    " . "ref-mean"        load . cr
+"Substrate (cycle 10C M=1000): " . "sub-mean-cyc10c" load . cr
+"My analytic (cycle 10C):     " . "analytic-mean"   load . cr
+cr
+"|ref - substrate|: " . "diff-sub-ref" load . "  (threshold 5000)" . cr
+"|ref - analytic|:  " . "diff-ana-ref" load . "  (threshold 9000)" . cr
+cr
+"Regime D' (both match):       " . "regime-Dp?" load . cr
+"Regime E' (sub OK, ana off):  " . "regime-Ep?" load . cr
+"Regime F' (sub off, ana OK):  " . "regime-Fp?" load . cr
+"Regime G' (neither):           " . "regime-Gp?" load . cr
+cr
+
+"regime-Dp?" load 1 = if
+  ">>> REGIME D' — cycle 10C STANDS, substrate AND analytic confirmed." . cr
+else "regime-Fp?" load 1 = if
+  ">>> REGIME F' — substrate DEVIATES from independent ref by 12927." . cr
+  "    Per pre-registration: cycle 10C TECHNICALLY RETRACTED." . cr
+  "    HONESTY NOTE: deviation is 1.26σ combined SEM; may be" . cr
+  "    sampling artifact.  Cycle 11A.1 (substrate at M=10000)" . cr
+  "    needed to discriminate sampling vs systematic." . cr
+else "regime-Ep?" load 1 = if
+  ">>> REGIME E' — substrate OK, my analytic was off." . cr
+else
+  ">>> REGIME G' — neither matches; investigate both." . cr
+then then then
+cr
+"Combined sampling SEM (substrate M=1000 ⊕ ref M=10000):  " . "combined-sem" load . cr
+"Z-score of deviation:  " . "z-score" load . " (likely 1 = marginal)" . cr
+cr
+"Sub-pred (ref stddev ∈ [240k, 380k]): " . "stddev-sub-ok?" load . cr
+cr
+
+\ ============================================================
+\ Sanity asserts.
+\ ============================================================
+
+\ Exactly one regime fires (partition check).
+"regime-count" load 1 assert-eq
+
+\ Regime F' is what fired per pre-registration.
+"regime-Fp?" load 1 assert-eq
+"regime-Dp?" load 0 assert-eq
+
+\ Sub-pred passed (ref stddev close to substrate stddev).
+"stddev-sub-ok?" load 1 assert-eq
+
+\ Z-score 1 (integer division: 12927/10273 = 1).
+"z-score" load 1 assert-eq
+
+\ Diffs pinned for regression.
+"diff-sub-ref" load 12927 assert-eq
+"diff-ana-ref" load  7177 assert-eq
+
+REPORT

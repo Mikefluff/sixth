@@ -342,13 +342,20 @@
     ;;      303,400; regime E means substrate misses correlation.
     ;;      Measurement: 297,650 → REGIME D (correlation-corrected
     ;;      match within 2%).  Substrate validates classical
-    ;;      second-moment ER theory.
-    ;;      Sub-pred 1 (stddev) FAILED — substrate variance 308,074
-    ;;      below naive product-variance bound [400k, 1200k].
-    ;;      Documented as honest sub-prediction miss; main regime
-    ;;      classification stands.  First non-tautological substrate
-    ;;      measurement post-cycle-9 retraction.
-    ("127-feature-loaded-phi-integ.6th"          14)))
+    ;;      second-moment ER theory — BUT see demo 128 for cycle
+    ;;      11A networkx cross-check which fires regime F'.
+    ("127-feature-loaded-phi-integ.6th"          14)
+    ;; --- Cycle 11A: phi-integ ref cross-check (regime F' fires) ---
+    ;; 128: networkx M=10000 reference for phi-integ semantics.
+    ;;      Reference 310,577 vs substrate cycle 10C 297,650 vs
+    ;;      analytic 303,400.  |ref - substrate| = 12,927 > pre-reg
+    ;;      threshold 5,000 → REGIME F' (substrate deviates).
+    ;;      |ref - analytic| = 7,177 ≤ 9,000 → analytic OK.
+    ;;      Per pre-reg PREDICTIONS-128.md (commit 6a1fd73): cycle
+    ;;      10C TECHNICALLY RETRACTED.  Honesty: deviation is 1.26σ
+    ;;      combined SEM, may be sampling artifact.  Cycle 11A.1
+    ;;      (substrate M=10000) resolves.
+    ("128-phi-integ-ref-crosscheck.6th"           7)))
 
 (define (run-demo file)
   (define out
@@ -373,8 +380,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1882
-                (format "cumulative ✓ count: ~a (expected 1882)" total-pass)))
+  (check-equal? total-pass 1889
+                (format "cumulative ✓ count: ~a (expected 1889)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1882 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1889 ✓ across ~a demos"
                    total-pass (length expected)))
