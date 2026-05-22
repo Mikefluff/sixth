@@ -1368,6 +1368,103 @@ This is a substantially narrower programme than the v9.0
 preprint implies, but it is the one supported by what cycles
 1-10 actually demonstrate.
 
+---
+
+## Cycle 11 — substrate vs independent ref + first attempted falsification
+
+### 11A (commits `6a1fd73` / `a9ef2fc` / `308fbe3`)
+
+Networkx Monte Carlo M=10000 reference for phi-integ semantics.
+Reference 310,577 vs substrate cycle 10C 297,650 — regime F'
+fired (substrate deviates from ref by 12,927 = 1.26σ combined).
+
+### 11A.1 (commits `c0ee1a8` / `dd8c938` / `bad2ae0`)
+
+Substrate M=10000 to resolve F'.  Mean 304,701 → diff 5,876 =
+1.29σ combined.  Regime I (small possible bias).  Statistically
+not significant — substrate consistent with ref to within
+precision.
+
+### 11B (commits `618c618` / `a84ea95`) — **RETRACTED in cycle 12A**
+
+Iterated NSUM dynamics: r10=305, r21=302.  Regime L "fired"
+per pre-reg strict inequality.  See Cycle 12A below for full
+retraction.
+
+### 11C (commit `c0de275`)
+
+First external ledger anchor: git tag `attest-2026-05-22-cycle11`
+pushed to GitHub.  Ledger SHA `77e0a79c…ab116`.  Closes Rule 9
+violation from cycle 10D.
+
+### 11D (commits `a86686d` / `618c618`)
+
+Pre-commit hook `scripts/pre-commit-methodology.sh` enforces
+Rules 2/4/9.  Fired on own first commit; regex fixed and
+re-committed.
+
+---
+
+## Cycle 12 — Counter-example methodology (Option I pivot)
+
+### Strategic pivot
+
+After 11 cycles producing ZERO substrate-derived findings
+beyond classical theory, the catalogue methodology was
+re-evaluated.  Inspired by OpenAI's recent autonomous
+disproof of Erdős's 1946 unit-distance hypothesis via
+counter-example search (Habr 1037534, 2026-05-22): switch
+from **validation** ("test substrate ≡ classical and confirm
+within precision") to **counter-example search** ("formal
+conjecture substrate ≡ classical; SEARCH configuration space
+for a counter-example; one suffices to disprove").
+
+### 12A — Cycle 11B RETRACTION (6th retract in catalogue)
+
+Cycle 11B's "regime L — substrate-axiom FALSIFIED" claim is
+**RETRACTED** for the reasons:
+
+1. **Coin-flip pre-reg rule.** Pre-registered rule was
+   `r21 ≥ r10` (strict inequality, no tolerance).  Under null
+   hypothesis (substrate satisfies axiom), `P(r21_meas < r10_meas) ≈ 0.5`
+   by sampling symmetry.  Pre-reg was a coin flip masquerading
+   as a falsification test.
+2. **Effect within sampling.** 3-unit difference in scaled×100
+   units at M=100 is within sampling SEM (~5).  Statistically
+   consistent with null.
+3. **Strawman axiom.** "PA feature-integration axiom"
+   attributed to Pointer Architecture was standard power-
+   iteration theorem from linear algebra.  Falsifying it
+   doesn't disprove PA — disproves the axiom-labeling.
+4. **r ≈ mean-degree confirms substrate ≡ power-iteration.**
+   For ER with self-loops, λ₁ ≈ mean degree ≈ 2.9.  Substrate
+   ratios 3.05 and 3.02 are at λ₁.  Substrate correctly
+   implements matrix power iteration; no anomaly.
+
+Demo 130 retained in regression gate with explicit RETRACT
+NOTICE at the top.  Pins unchanged; interpretation downgraded
+from "axiom falsified" to "substrate correctly implements
+spectral power iteration".
+
+### Aggregate accounting (post-cycle-12A, honest)
+
+| status | count | items |
+|--------|-------|-------|
+| **Substrate-derived findings** | **0** | cycle 11B retracted; no substrate-distinguishing behaviour ever observed |
+| Substrate ≈ classical (within precision) | 2 | cycle 10A phi-perc; cycle 11A.1 phi-integ |
+| Pending real substrate-distinguishing test | n/a | requires Option I search (12B/12C) |
+| Retracted | 6 | cycles 1-3, 4-5, 7-self, 8, 9-scope, **11B** |
+| Infrastructure | live | methodology + pre-commit hook + attestation + first external anchor |
+
+The catalogue is honest:
+- Substrate is a correct hypergraph rewriting engine.
+- Substrate-derived findings beyond classical theory: **none**.
+- Methodology infrastructure is real and enforces itself.
+
+### 12B (next) — Formal SUBSTRATE-EQUIV conjecture + counter-example search
+
+Coming in next commits.
+
 ## Pending / future tracks
 
 | Track | Description | ETA |

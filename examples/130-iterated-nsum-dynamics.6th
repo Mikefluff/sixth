@@ -2,6 +2,40 @@
 \ Cycle 11B — iterated NSUM dynamics on ER substrate.
 \ Pre-registered: PREDICTIONS-130.md (attested, sha a1c48cc…b510).
 \
+\ ============================================================
+\ RETRACT NOTICE (cycle 12A, 2026-05-22)
+\ ============================================================
+\ Cycle 11B's "regime L — substrate-axiom FALSIFIED" claim is
+\ RETRACTED.  CS-doctor critique of cycle 11 (RESULTS.md §"Cycle 12"):
+\
+\   1. The pre-registered rule "r21 ≥ r10" was strict inequality
+\      with NO sampling tolerance.  Under null hypothesis (substrate
+\      perfectly satisfies axiom), P(r21_measured < r10_measured) =
+\      50% by sampling symmetry.  Pre-reg rule was a coin flip.
+\
+\   2. The 3-unit difference (305 → 302 in scaled×100 form) is
+\      within sampling SEM at M=100 (≈5 units).  Statistically
+\      consistent with null.
+\
+\   3. The "PA feature-integration axiom" attributed to Pointer
+\      Architecture was actually standard power-iteration theorem
+\      from linear algebra.  Falsifying it does not disprove PA;
+\      it disproves my axiom-labeling.
+\
+\   4. r10 ≈ 3.05 ≈ mean-degree (1 + 19·0.10 = 2.9) is consistent
+\      with substrate doing power iteration correctly: λ₁ for ER
+\      with self-loops ≈ mean degree, so ratio stabilizes
+\      immediately at λ₁.  Substrate ≡ standard spectral theory.
+\
+\ Honest reading: cycle 11B demonstrates substrate correctly
+\ implements matrix-power-iteration semantics (one more conformance
+\ test).  NOT a substrate-derived finding.
+\
+\ Demo retained in regression gate for reproducibility; pins
+\ unchanged; interpretation downgraded from "axiom falsified" to
+\ "substrate equivalent to spectral power iteration".
+\ ============================================================
+\
 \ Substrate-axiomatic experiment: iterate NSET v ← NSUM(v) (i.e.
 \ matrix power iteration on adjacency).  Predict per spectral
 \ theory + PA "feature integration" axiom:
