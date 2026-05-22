@@ -1461,9 +1461,119 @@ The catalogue is honest:
 - Substrate-derived findings beyond classical theory: **none**.
 - Methodology infrastructure is real and enforces itself.
 
-### 12B (next) — Formal SUBSTRATE-EQUIV conjecture + counter-example search
+### 12B (commit `8adbdee`) — Formal conjecture document
 
-Coming in next commits.
+`docs/SUBSTRATE-EQUIV-CONJECTURE.md` formalizes three conjectures:
+1. Φ-family computational equivalence: TRUE by inspection
+2. HEDGE3 storage advantage bound: UNKNOWN (cycle 12C target)
+3. Computational ergonomics: TRUE by inspection
+
+PREDICTIONS-131.md attested + committed BEFORE search script.
+
+### 12C (commit `0beac84`) — Counter-example search result
+
+Exhaustive enumeration n=3..6, 99,497 configurations.  Max
+R(S) = 1.500, min R(S) = 1.000.  **REGIME O fires per
+pre-registered threshold; pre-registration's prose labels were
+inverted (R > 1 means HEDGE3 takes MORE storage, not advantage).**
+
+**Substrate-derived finding (NEGATIVE direction)**: HEDGE3 has
+NO storage advantage at n=3..6.  At worst 1.5× more; mean
+1.13-1.23× more.  Demo 105's "5× storage advantage" was against
+naive binary; against shared-aux-node binary, HEDGE3 is parity-
+or-worse.
+
+Updated aggregate (per Rule 6 honest accounting):
+- Substrate-derived findings (pre-registered, surviving scrutiny): **1** (cycle 12C HEDGE3 storage NULL)
+- Substrate ≈ classical: 2
+- Retracted: 7 (cycles 1-3, 4-5, 7-self, 8, 9-scope, 11B, demo 105 storage advantage)
+- Infrastructure: live
+
+---
+
+## Cycle 13 — Strategic refresh after external research
+
+### Strategic context (commits `c0de275`+deep research 2026-05-22)
+
+After 12 cycles producing one substrate-derived finding (negative)
+and seven retractions, three parallel deep-research agents were
+launched on 2026-05-22:
+
+1. **PA v9.0 external existence** — confirmed PA v9.0 has **NO
+   public preprint, peer-reviewed paper, or third-party citation**.
+   All definitions (`(G, R, C, A, π)` tuple, Φ_PA, substrate-monist
+   halting, PSH1-5 maps) exist only inside `/sixt`.  The theory
+   IS the codebase; there is no external axiomatic foundation to
+   align to.
+
+2. **Wolfram Physics Project status** — Wolfram Physics Project
+   is **in the same trap as Sixth**.  Aaronson and Harlow
+   (Scientific American): "infinitely flexible philosophy, no
+   concrete new predictions."  Wolfram himself: "not directly
+   amenable to experimental falsification."  Sixth is not
+   isolated — the entire hypergraph-rewriting-substrate-research
+   programme has this challenge.
+
+3. **Positive escape exists**: Causal Sets (Sorkin) demonstrated
+   how to escape via discreteness × symmetry binding.  Sorkin's
+   1987 prediction of Λ ~ √N from spacetime discreteness was
+   confirmed by 1998 dark-energy discovery — substrate-essential
+   because the prediction comes from discreteness × Lorentz-
+   invariance × Poisson sprinkling specifically.
+
+4. **One concrete published methodology not yet applied to
+   hypergraph substrates**: Krasnovsky's EICS (Effective Information
+   Consistency Score, arXiv 2509.07149, Sept 2025).  Sheaf-cohomology
+   inconsistency × Gaussian effective-information proxy.  White-box,
+   single-pass, dimensionless — cross-substrate comparable.  Has
+   been applied to transformer circuits but never to hypergraph
+   rewriting substrates.  Could be Sixth's first SUBSTRATE-
+   DISTINGUISHING measurement.
+
+### 13A — Honest reframe (this commit)
+
+The catalogue's honest current state:
+
+| claim | evidence |
+|-------|----------|
+| Sixth is a working hypergraph rewriting engine | YES — 1925 ✓ across 125 demos |
+| Sixth implements PA v9.0 | UNTESTABLE — PA v9.0 has no public formalization |
+| Sixth's Φ-family measures consciousness | NO — measures are classical graph statistics |
+| Sixth's HEDGE3 has storage advantage | NO — cycle 12C shows parity-or-worse vs optimized binary |
+| Substrate-monism is supported by measurements | NO — substrate ≡ classical at every tested observable |
+| Methodology infrastructure is solid | YES — pre-reg + attestation + hook + anchor |
+| Negative-result catalogue is publishable | YES — Koch 2026 + Cogitate 2025 + AlphaEvolve provide receptive context |
+
+**Therefore**: Sixth's claim space is downgraded to:
+
+- **Engineering**: Sixth is a Racket-hosted reference implementation
+  of typed-hypergraph rewriting, with methodology infrastructure
+  (pre-reg, attestation, enforcement hook) usable for
+  substrate-research community.
+- **Negative results**: Sixth has been systematically tested via
+  pre-registered cycles and consistently shows substrate ≡ classical
+  for all currently-defined Φ measures.  This is itself a research
+  contribution (negative-result paper).
+- **Consciousness measures**: NOT supported by current measurements.
+  Φ-family naming retained for codebase continuity but reframed
+  in stdlib comments as "candidate observables" not "consciousness
+  measures".
+
+The "Pointer Architecture v9.0" framing is suspended pending either:
+(a) author publishes formal axioms externally, OR
+(b) cycle 13B+ produces a substrate-distinguishing measurement that
+    falls out of a specific PA axiom not reducible to classical.
+
+### 13B (next) — EICS application as cycle's final attempt
+
+If EICS_substrate ≈ EICS_random_baseline at matched size, cycle
+13 reports null and Sixth is finalized as engineering/methodology
+contribution.  If EICS shows substrate-distinguishing signal
+(unexpected), cycle 14+ investigates.
+
+Pre-registration commit pending.  Companion #1 Pythia (long-term)
+remains the future site where EICS could be applied to real LLM
+substrates.
 
 ## Pending / future tracks
 

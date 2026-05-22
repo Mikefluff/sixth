@@ -1,13 +1,25 @@
-\ stdlib/phi.6th — candidate substrate-readable observability measures.
+\ stdlib/phi.6th — candidate observability measures on substrate.
 \
-\ This file provides a family of substrate-readable scalars that
-\ summarise an observer's structural relation to the substrate it
-\ inhabits.  Φ_PA (the basic measure) is the working hypothesis of
-\ the v9.0 preprint.  It is NOT the unique choice — the substrate
-\ supports many candidate measures, of which we ship three.  The
-\ empirical question of which discriminates predictions P1–P5 best
-\ is decided by F5 against real-data application; the substrate
-\ itself does not depend on a unique measure.
+\ === Cycle 13A scope downgrade (2026-05-22) ===
+\ Through cycles 1-12 these Φ-family measures were framed as
+\ "candidate consciousness measures".  After 12 pre-registered
+\ cycles + cross-validation with networkx independent reference,
+\ NONE of these measures showed substrate-distinguishing behavior
+\ vs classical graph statistics.  By construction (see
+\ docs/SUBSTRATE-EQUIV-CONJECTURE.md Conjecture 1) every Φ in
+\ this file is a finite composition of classical graph operations.
+\
+\ HONEST FRAMING: these are classical graph statistics presented
+\ as candidate observables for substrate research.  They are NOT
+\ consciousness measures in any empirically-validated sense.  The
+\ "Pointer Architecture v9.0" connection to consciousness is
+\ author's framework and not externally validated (no public
+\ preprint as of 2026-05-22).
+\
+\ Cycle 13C (planned) applies EICS (Krasnovsky 2509.07149) to
+\ Sixth substrate as final attempt to find a substrate-
+\ distinguishing measurement.  If EICS also reduces to classical,
+\ this Φ-family stays as classical-graph-statistic library.
 \
 \ Measures provided:
 \   phi-pa         ( O -- phi ) : OUT(O) · 1[O EDGE? O] · L_max
