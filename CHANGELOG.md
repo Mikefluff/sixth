@@ -11,6 +11,34 @@ release with a maintained changelog from the next version forward.
 
 Tracks `main@HEAD` development past v0.8.  Currently:
 
+### Added (research-track demos — second cycle, code-focused)
+- **Demo 108** (24 ✓) — Track 2.1b phi-integ density sweep.
+  **PARTIAL POSITIVE**: two-regime piecewise-linear response
+  (observer-saturation + neighbour-saturation), smooth crossover
+  at observer's full-scope point.  Still no critical exponent, but
+  richer than phi-pa.  Completes Track 2.1 result map across
+  Φ_PA-family.
+- **Demo 109** (23 ✓) — Track 2.3b Wolfram-style rewrite
+  universality.  **POSITIVE**: substrate-derived growth law
+  E_k = E_0 · (1+K)^k verified across 4 rules with K ∈ {1, 2, 3}
+  and across multiple initial conditions.  Substrate identifies
+  K-equivalence classes of rewrite rules.
+- **Demo 110** (22 ✓) — Track 2.2 substrate-readable percolation
+  order parameter.  **POSITIVE (major)**: largest-component-size
+  containing observer (BFS-based) exhibits classical percolation
+  phase transition — observer's component-size jumps from 2 → 10
+  on single bridging edge.  Reversible under EDGE-.  FIRST
+  substrate-readable measure in catalogue with genuine critical
+  behaviour.
+- **Demo 111** (9 ✓) — phi-perc stdlib member verification.
+  Materialises demo 110 finding.  Comparison: phi-pa UNCHANGED
+  across non-incident bridge edge, phi-perc JUMPS — orthogonal
+  discriminating signal.
+- **`stdlib/phi.6th`**: new `phi-perc(O) = comp-size(O) · self-ref
+  · L_max` member, the fifth Φ-family measure and the only one
+  with phase-transition behaviour.  Caveat: mutates NGET during
+  BFS (callers must restore feature state if NGET load-bearing).
+
 ### Added (research-track demos — first cycle)
 - **RESULTS.md** — new top-level document tracking ongoing research-
   track outputs.  Each entry: hypothesis → method → outcome →

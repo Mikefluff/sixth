@@ -1,0 +1,139 @@
+\ examples/111-phi-perc-verification.6th
+\ Track 2.2 follow-up — phi-perc stdlib member verification.
+\
+\ Demo 110 demonstrated substrate-readable percolation order parameter
+\ via inline BFS.  This demo verifies that the now-shipped
+\ `stdlib/phi.6th` member `phi-perc` correctly computes
+\
+\   Φ_perc(O) = comp-size(O) · 1[O EDGE? O] · L_max
+\
+\ on a battery of test substrates, and confirms its phase-transition
+\ signature is reproducible through the stdlib interface.
+
+use prelude
+use graph
+use phi
+use debug
+
+\ ============================================================
+\ Case 1: isolated observer, no self-loop → Φ_perc = 0
+\ ============================================================
+RESET
+MARK "obs" store
+"obs" load phi-perc 0 assert-eq
+
+\ ============================================================
+\ Case 2: observer with self-loop only → comp-size = 1, Φ_perc = 10000
+\ ============================================================
+RESET
+MARK "obs" store
+"obs" load "obs" load EDGE+
+"obs" load phi-perc 10000 assert-eq
+
+\ ============================================================
+\ Case 3: observer + self-loop + 4 disconnected nodes →
+\        comp-size = 1 (observer alone reachable), Φ_perc = 10000
+\ ============================================================
+RESET
+MARK "obs" store
+MARK drop  MARK drop  MARK drop  MARK drop
+"obs" load "obs" load EDGE+
+"obs" load phi-perc 10000 assert-eq
+
+\ ============================================================
+\ Case 4: observer + self-loop + 4-chain through observer →
+\        comp-size = 5 (observer + 4 reachable), Φ_perc = 50000
+\ ============================================================
+RESET
+MARK "obs" store
+MARK "n1" store   MARK "n2" store   MARK "n3" store   MARK "n4" store
+"obs" load "obs" load EDGE+
+"obs" load "n1" load EDGE+
+"n1" load "n2" load EDGE+
+"n2" load "n3" load EDGE+
+"n3" load "n4" load EDGE+
+"obs" load phi-perc 50000 assert-eq
+
+\ ============================================================
+\ Case 5: phase transition through stdlib interface.
+\
+\ Build observer's small component {obs, helper} disconnected from
+\ a giant {a, b, c, d, e, f, g, h} (using bi-edges for symmetry).
+\ Measure Φ_perc, then add bridge, measure again.
+\
+\ Expected:
+\   Before bridge:  observer reaches {obs, helper} → comp-size = 2,
+\                   Φ_perc = 20000
+\   After bridge:   observer reaches all 10 → comp-size = 10,
+\                   Φ_perc = 100000
+\ ============================================================
+RESET
+MARK "obs" store     MARK "hlp" store
+MARK "a" store       MARK "b" store
+MARK "c" store       MARK "d" store
+MARK "e" store       MARK "f" store
+MARK "g" store       MARK "h" store
+
+\ Observer's self-loop.
+"obs" load "obs" load EDGE+
+
+\ Observer's small component.
+"obs" load "hlp" load bi-edge
+
+\ Giant component (8 nodes connected as a chain via bi-edge).
+"a" load "b" load bi-edge
+"b" load "c" load bi-edge
+"c" load "d" load bi-edge
+"d" load "e" load bi-edge
+"e" load "f" load bi-edge
+"f" load "g" load bi-edge
+"g" load "h" load bi-edge
+
+\ Pre-bridge: observer reaches only obs + hlp = 2 nodes.
+"obs" load phi-perc 20000 assert-eq
+
+\ Add bridge from hlp to giant component.
+"hlp" load "a" load bi-edge
+
+\ Post-bridge: observer reaches all 10.  Φ_perc JUMPS from 20000 → 100000.
+"obs" load phi-perc 100000 assert-eq
+
+\ Reversibility check: remove bridge, Φ_perc returns to 20000.
+"hlp" load "a" load EDGE-
+"a" load "hlp" load EDGE-
+"obs" load phi-perc 20000 assert-eq
+
+\ ============================================================
+\ Comparison: phi-pa (degree-based) does NOT detect the bridge —
+\ observer's OUT does not change because hlp's bridge does not
+\ touch observer directly.
+\ ============================================================
+"obs" load phi-pa "phi-pa-before" store     \ remember pre-bridge value
+
+"hlp" load "a" load bi-edge                  \ re-add bridge
+
+"obs" load phi-pa "phi-pa-after" store
+"phi-pa-before" load "phi-pa-after" load = 1 assert-eq
+
+\ phi-pa unchanged.  phi-perc jumped from 20000 → 100000.
+"obs" load phi-perc 100000 assert-eq
+
+cr
+"=== Demo 111 — phi-perc stdlib verification ===" . cr
+cr
+"Verified through stdlib interface:" . cr
+"  Φ_perc(no-self-loop)     = 0" . cr
+"  Φ_perc(isolated)         = 10000" . cr
+"  Φ_perc(chain-of-5)       = 50000" . cr
+"  Φ_perc(pre-bridge, n=10) = 20000" . cr
+"  Φ_perc(post-bridge)      = 100000  (JUMP × 5 from one edge)" . cr
+cr
+"Comparison: phi-pa UNCHANGED across bridge — observer's OUT" . cr
+"does not detect non-incident bridge edge.  phi-perc DOES detect" . cr
+"it through BFS-reachability." . cr
+cr
+"phi-perc materialises the percolation phase-transition result of" . cr
+"demo 110 into the Φ-family stdlib.  First measure in the family" . cr
+"with critical behaviour." . cr
+
+REPORT

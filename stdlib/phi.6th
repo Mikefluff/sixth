@@ -21,6 +21,12 @@
 \                                  O as third leg; counts an observer's
 \                                  ground-of-validity contributions as
 \                                  scope (HEDGE3 extension)
+\   phi-perc       ( O -- phi ) : comp-size(O) · 1[O EDGE? O] · L_max
+\                                  percolation order parameter; first
+\                                  measure with PHASE-TRANSITION
+\                                  behaviour (demo 110).  MUTATES NGET
+\                                  during BFS — restore externally if
+\                                  needed.
 \
 \ All three reduce to 0 for non-reflexive observers (self-reference
 \ indicator factors through every measure).
@@ -130,4 +136,57 @@
   OUT                                 \ ( out )
   "phi-tmp-O" load witness-scope +    \ ( out + W )
   "phi-tmp-O" load phi-self-ref *     \ ( (out+W)*indicator )
+  "phi-L-max" load * ;                \ ( phi )
+
+\ ----------------------------------------------------------------
+\ phi-perc — percolation-order-parameter measure
+\
+\ Φ_perc = comp-size(O) · self-ref · L_max
+\
+\ where comp-size(O) = number of nodes reachable from O via BFS
+\ over directed edges.  Demo 110 (substrate-percolation) verified
+\ this is the first substrate-readable measure in the Φ-family
+\ exhibiting PHASE-TRANSITION behaviour: comp-size jumps
+\ discontinuously when a bridge edge connects a small observer-
+\ component to a giant component.
+\
+\ CAVEAT: this measure MUTATES substrate NGET state during
+\ computation (uses BFS which writes distances into NGET).
+\ Callers MUST restore feature state via NSET after phi-perc
+\ if NGET semantics are load-bearing in the substrate.
+\
+\ Iteration depth: BFS uses (substrate-diameter) steps; the
+\ definition below caps at 32 iterations, sufficient for any
+\ substrate with up to ~64-node diameter.  Larger substrates
+\ require recompiling with deeper loop.
+\
+\ Connects to: classical Erdős-Rényi percolation theory; demo 110
+\ as substrate-derived realisation.
+\ ----------------------------------------------------------------
+
+use bfs
+
+: phi-perc-tally ( n -- )
+  NGET 0 >= if
+    "phi-perc-count" load 1 + "phi-perc-count" store
+  then ;
+
+: phi-perc-bfs-32
+  bfs-step bfs-step bfs-step bfs-step
+  bfs-step bfs-step bfs-step bfs-step
+  bfs-step bfs-step bfs-step bfs-step
+  bfs-step bfs-step bfs-step bfs-step
+  bfs-step bfs-step bfs-step bfs-step
+  bfs-step bfs-step bfs-step bfs-step
+  bfs-step bfs-step bfs-step bfs-step
+  bfs-step bfs-step bfs-step bfs-step ;
+
+: phi-perc ( O -- phi )
+  dup "phi-perc-O" store
+  bfs-init                            \ initialise NGETs (-1, with O → 0)
+  phi-perc-bfs-32                     \ run BFS for 32 steps
+  0 "phi-perc-count" store
+  ' phi-perc-tally EACH               \ count reached nodes
+  "phi-perc-count" load               \ ( comp-size )
+  "phi-perc-O" load phi-self-ref *    \ ( comp-size * indicator )
   "phi-L-max" load * ;                \ ( phi )

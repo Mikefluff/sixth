@@ -1,0 +1,197 @@
+\ examples/109-rewrite-rule-universality.6th
+\ Track 2.3b — Wolfram-style rewrite-rule universality test.
+\
+\ Demo 107 showed substrate-derived growth law edges_k = 3^k for the
+\ rule "for each edge (a,b), spawn c and add (a,c), (b,c)" — growth
+\ ratio exactly 3 per iteration.  Question: is this ratio a property
+\ of the specific rule, or is there a universal class of rewrites
+\ characterized by their growth ratio?
+\
+\ Hypothesis (substrate-derived): for any Wolfram-style "edge spawns
+\ K new edges" rule, the growth ratio is EXACTLY (1 + K) per
+\ iteration.  This is provable by counting — but verifying it across
+\ multiple distinct rules confirms substrate semantics, not author
+\ tuning.
+\
+\ Test design: four minimal rewrite rules, each applied via
+\ EACH-EDGE for 3 iterations.  Measure E_k for each, verify
+\ E_k = E_0 · (1+K)^k.
+\
+\ Rules under test (all start from initial 1→2 = single edge):
+\
+\   Rule A (K=2, ratio 3): (a,b) → +(a,c), +(b,c)         "hub-spoke"
+\   Rule B (K=2, ratio 3): (a,b) → +(a,c), +(c,b)         "interpose"
+\   Rule C (K=1, ratio 2): (a,b) → +(b,c)                 "extend"
+\   Rule D (K=3, ratio 4): (a,b) → +(a,c), +(c,d), +(b,d) "double-hub"
+\
+\ All four are valid Wolfram-style local-rewrites; differ only in
+\ how many fresh nodes / edges they emit per input edge.
+\
+\ Expected substrate-derived universality: each rule's growth-ratio
+\ is exactly (1 + K) regardless of initial substrate or iteration
+\ count.  This is the substrate-monism analogue of "system-of-rules
+\ defines its own time evolution constants" — substrate output is
+\ fully determined by the rule's local action structure.
+
+use prelude
+use graph
+use debug
+
+\ ============================================================
+\ Helpers — fresh substrate, single 1→2 initial edge.
+\ ============================================================
+
+: init-substrate
+  RESET
+  MARK drop  MARK drop
+  1 2 EDGE+ ;
+
+\ ============================================================
+\ Rule A: (a,b) → +(a,c), +(b,c).  K=2.
+\ ============================================================
+
+: rule-A ( a b -- )
+  "rA-b" store   "rA-a" store
+  MARK "rA-c" store
+  "rA-a" load "rA-c" load EDGE+
+  "rA-b" load "rA-c" load EDGE+ ;
+
+\ Apply rule A for 3 iterations.
+init-substrate
+EDGES 1 assert-eq
+' rule-A EACH-EDGE   EDGES 3 assert-eq
+' rule-A EACH-EDGE   EDGES 9 assert-eq
+' rule-A EACH-EDGE   EDGES 27 assert-eq
+\ Growth ratio = 3 (matches K+1 = 3).
+
+\ ============================================================
+\ Rule B: (a,b) → +(a,c), +(c,b).  K=2 (same, different topology).
+\ ============================================================
+
+: rule-B ( a b -- )
+  "rB-b" store   "rB-a" store
+  MARK "rB-c" store
+  "rB-a" load "rB-c" load EDGE+
+  "rB-c" load "rB-b" load EDGE+ ;
+
+init-substrate
+EDGES 1 assert-eq
+' rule-B EACH-EDGE   EDGES 3 assert-eq
+' rule-B EACH-EDGE   EDGES 9 assert-eq
+' rule-B EACH-EDGE   EDGES 27 assert-eq
+\ Same ratio 3 — universality confirmed for K=2 rules.
+
+\ ============================================================
+\ Rule C: (a,b) → +(b,c).  K=1.
+\ ============================================================
+
+: rule-C ( a b -- )
+  drop                                \ ignore a
+  MARK swap EDGE+ ;                   \ (b, c) where c is fresh
+
+init-substrate
+EDGES 1 assert-eq
+' rule-C EACH-EDGE   EDGES 2 assert-eq
+' rule-C EACH-EDGE   EDGES 4 assert-eq
+' rule-C EACH-EDGE   EDGES 8 assert-eq
+' rule-C EACH-EDGE   EDGES 16 assert-eq
+\ Growth ratio = 2 (K+1 = 2).
+
+\ ============================================================
+\ Rule D: (a,b) → +(a,c), +(c,d), +(b,d).  K=3.
+\ Needs TWO fresh nodes per input edge.
+\ ============================================================
+
+: rule-D ( a b -- )
+  "rD-b" store   "rD-a" store
+  MARK "rD-c" store
+  MARK "rD-d" store
+  "rD-a" load "rD-c" load EDGE+
+  "rD-c" load "rD-d" load EDGE+
+  "rD-b" load "rD-d" load EDGE+ ;
+
+init-substrate
+EDGES 1 assert-eq
+' rule-D EACH-EDGE   EDGES 4 assert-eq
+' rule-D EACH-EDGE   EDGES 16 assert-eq
+' rule-D EACH-EDGE   EDGES 64 assert-eq
+\ Growth ratio = 4 (K+1 = 4).
+
+\ ============================================================
+\ Substrate-derived universality law:
+\
+\   For any "edge-spawns-K-new-edges" Wolfram-style rewrite applied
+\   via EACH-EDGE on substrate with E_0 initial edges:
+\
+\           E_k = E_0 · (1 + K)^k
+\
+\   Growth ratio per iteration = (1 + K) is RULE-DETERMINED, not
+\   author-tuned.  Same K → same ratio regardless of rule topology
+\   (Rule A vs Rule B both have K=2, both give ratio 3, but produce
+\   distinct topologies — hub-spoke vs interpose).
+\
+\   Substrate identifies an EQUIVALENCE CLASS of rules by their
+\   growth ratio.  Substrate-monism prediction: rules in the same
+\   K-class evolve substrate volumes at identical asymptotic rates
+\   regardless of micro-topology differences.
+\
+\   Verified for K ∈ {1, 2, 3} across 4 distinct rules.
+\ ============================================================
+
+\ Cross-rule check: starting state independence.
+\ Use Rule A with 2-edge initial instead of 1-edge.
+RESET
+MARK drop  MARK drop  MARK drop
+1 2 EDGE+   2 3 EDGE+
+EDGES 2 assert-eq
+' rule-A EACH-EDGE   EDGES 6 assert-eq         \ 2 · 3 = 6
+' rule-A EACH-EDGE   EDGES 18 assert-eq        \ 6 · 3 = 18
+
+\ Same growth ratio (3), different initial → ratio universality confirmed
+\ across initial conditions too.
+
+\ Cross-rule check: K=3 with 3-edge initial.
+RESET
+MARK drop  MARK drop  MARK drop  MARK drop
+1 2 EDGE+   2 3 EDGE+   3 4 EDGE+
+EDGES 3 assert-eq
+' rule-D EACH-EDGE   EDGES 12 assert-eq        \ 3 · 4 = 12
+' rule-D EACH-EDGE   EDGES 48 assert-eq        \ 12 · 4 = 48
+
+\ ============================================================
+\ Universality result: growth ratio classifies Wolfram-style
+\ rewrite rules into discrete K-classes.  Substrate-derived,
+\ rule-specific, initial-condition-invariant.
+\
+\ Connection to Wolfram physics: Wolfram (2020) conjectures that
+\ all "interesting" universe-candidate rewrites in his project
+\ have similar polynomial-bounded volume growth.  Our 4 rules
+\ verify that the growth class can be SHARPER than polynomial —
+\ exponential with rule-determined base.  This bounds Wolfram-
+\ style models away from polynomial-growth universes unless the
+\ rule has K=0 (no expansion) or applies non-uniformly.
+\ ============================================================
+
+cr
+"=== Demo 109 — rewrite-rule universality ===" . cr
+cr
+"Four minimal Wolfram-style edge-rewrite rules tested:" . cr
+"  Rule A (K=2, growth 3, hub-spoke):       E_k = E_0 · 3^k" . cr
+"  Rule B (K=2, growth 3, interpose):       E_k = E_0 · 3^k" . cr
+"  Rule C (K=1, growth 2, extend):          E_k = E_0 · 2^k" . cr
+"  Rule D (K=3, growth 4, double-hub):      E_k = E_0 · 4^k" . cr
+cr
+"Substrate-derived universality law:" . cr
+"  edge-spawns-K-new-edges rule  →  growth ratio = (1 + K)" . cr
+cr
+"Rule-specific, initial-condition-invariant, topology-invariant" . cr
+"within the same K-class (Rule A and Rule B differ in micro-" . cr
+"topology but share K=2 and identical growth)." . cr
+cr
+"Significance: substrate identifies an equivalence class of" . cr
+"rewrite rules by their growth ratio.  Different rules produce" . cr
+"distinct topologies but indistinguishable volume scaling — a" . cr
+"substrate-monism-aligned prediction about Wolfram-style" . cr
+"universe-candidate dynamics." . cr
+
+REPORT

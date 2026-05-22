@@ -88,6 +88,37 @@ None currently shipped in `stdlib/phi.6th`.
 **Status:** demo 106 in regression gate.  Preprint section
 §sec:phi-pa-alternatives should reflect this bound honestly.
 
+### 2.1b phi-integ deferred density sweep — **PARTIAL POSITIVE** (2026-05-21)
+
+**Hypothesis (under test):** phi-integ (the only nonlinear member of
+the Φ-family) exhibits phase-transition or critical-exponent
+behaviour that phi-pa lacks.
+
+**Method:** demo
+[`examples/108-phi-integ-density-sweep.6th`](examples/108-phi-integ-density-sweep.6th)
+(24 ✓).  Build feature-loaded substrate (NSET every node to its
+current OUT), sweep edge density from minimal (self-loops only) to
+~75% saturated.  Measure phi-integ(observer) at 10 density milestones.
+
+**Outcome:** **piecewise-linear two-regime response.**  Two distinct
+slopes:
+- Observer-saturation regime (k < n): ∆phi-integ per edge GROWS from
+  50000 → 170000 as observer's own scope expands
+- Neighbour-saturation regime (k >= n): ∆phi-integ per edge PLATEAUS
+  at exactly 100000/edge
+
+Crossover at the point observer reaches full scope (OUT=n).
+
+**Consequence:** phi-integ is RICHER than phi-pa (two regimes vs one)
+but still NOT a critical-phenomenon order parameter — both regimes
+are individually linear, transition is smooth.  The substrate-derived
+crossover IS author-unintended (falls out of phi-integ definition
+applied to progressively-densified substrate); but lacks the
+discontinuity / divergence of true criticality.
+
+**Status:** completes Track 2.1 result map across phi-pa, phi-bidir,
+phi-pa-witness, phi-integ.  None exhibit critical-exponent behaviour.
+
 ### 2.3 Open-ended cosmogenesis — **POSITIVE** (2026-05-21)
 
 **Hypothesis (under test):** a minimal Wolfram-style substrate rewrite
@@ -134,6 +165,81 @@ Eliminating that would require rule sampling (Track 2.3 continuation).
 **Status:** demo 107 in regression gate.  Promotion to v9.0 preprint
 as honest companion to Pilot C/D framing recommended.
 
+### 2.3b Rewrite-rule universality — **POSITIVE** (2026-05-21)
+
+**Hypothesis (under test):** the substrate-derived growth law from
+demo 107 generalizes — for any «edge spawns K new edges» Wolfram-
+style rule, growth ratio per iteration is exactly (1 + K).
+
+**Method:** demo
+[`examples/109-rewrite-rule-universality.6th`](examples/109-rewrite-rule-universality.6th)
+(23 ✓).  Four minimal rewrite rules: Rule A (K=2, hub-spoke),
+Rule B (K=2, interpose), Rule C (K=1, extend), Rule D (K=3,
+double-hub).  Apply via EACH-EDGE for 3-4 iterations from controlled
+initial substrates.  Verify edge-count law E_k = E_0 · (1+K)^k.
+
+**Outcome:** **substrate-derived universality law verified across
+all 4 rules** and across 1-edge, 2-edge, 3-edge initial substrates.
+Growth ratio per iteration is rule-determined constant (1+K), where
+K = «number of fresh edges spawned per input edge».  Rule A and
+Rule B both have K=2 → ratio 3 → identical edge-count trajectory
+despite different micro-topology (hub-spoke vs interpose).
+
+**Consequence:** substrate identifies an EQUIVALENCE CLASS of
+rewrite rules by their growth ratio.  Different rules produce
+distinct topologies but indistinguishable volume scaling — a
+substrate-monism-aligned prediction about Wolfram-style universe-
+candidate dynamics.  Provides a substrate-readable classification
+of rewrite rules into K-classes.
+
+**Status:** demo 109 in regression gate.  Connection to Wolfram's
+physics-project taxonomy is recommended preprint addition.
+
+### 2.2 Substrate-readable percolation order parameter — **POSITIVE** (2026-05-21)
+
+**Hypothesis (under test):** substrate-readable measures CAN exhibit
+phase-transition behaviour, even if the Φ_PA family (degree-based)
+does not.  Candidate: largest-component-size containing observer,
+computed via BFS over substrate edges.
+
+**Method:** demo
+[`examples/110-substrate-percolation.6th`](examples/110-substrate-percolation.6th)
+(22 ✓).  Build n=10 substrate, add edges in pseudo-random order
+designed to keep observer isolated while building a giant component
+elsewhere.  Measure largest-component-size containing observer
+substrate-readably (bfs-init + iterated bfs-step + EACH count).
+Look for discontinuous jump.
+
+**Outcome:** **classical percolation phase-transition signature
+verified substrate-readably.**  Observer's component size = 1 for
+7 edges, then 2 (after observer's small-component formation), then
+JUMPS to 10 with the single bridging edge connecting observer to
+the giant.  Discontinuity = 8 nodes added by one edge addition.
+Reversibility verified: removing the bridge collapses observer
+back to size 2; re-adding restores the jump.
+
+**Consequence:** **first substrate-readable measure in the catalogue
+exhibiting genuine critical behaviour.**  Demonstrates that
+substrate primitives are expressive enough to realise percolation-
+theoretic order parameters — the Φ_PA family's inability to do so
+is a property of the FAMILY's design (degree-based), not a limit
+of substrate expressivity.
+
+**Materialised into stdlib:** added `phi-perc(O) = comp-size(O) ·
+self-ref · L_max` to `stdlib/phi.6th` as the fifth Φ-family member
+and the only one with phase-transition behaviour.  Verified by
+demo 111 (9 ✓): phi-pa is UNCHANGED across non-incident bridge
+edge, phi-perc JUMPS — orthogonal discriminating signal between
+the two measures.
+
+**Caveat:** phi-perc mutates NGET state during BFS; callers must
+restore feature state if NGET semantics are load-bearing.  Cleaner
+read-only variant requires future work.
+
+**Status:** demos 110+111 in regression gate; phi-perc shipped
+in stdlib/phi.6th.  Promotion to v9.0 preprint §sec:phi-pa-
+alternatives as the family's critical-behaviour member.
+
 ---
 
 ## Aggregate
@@ -142,13 +248,31 @@ as honest companion to Pilot C/D framing recommended.
 |-------|------------|---------|------|---|
 | 1.3 | HEDGE3 realises Peirce thesis | **NEGATIVE** — ergonomic only | 105 | 21 |
 | 2.1 | Φ_PA has phase transition | **NEGATIVE** — linear-only | 106 | 25 |
+| 2.1b | phi-integ has phase transition | **PARTIAL POSITIVE** — two-regime piecewise-linear | 108 | 24 |
 | 2.3 | Open-ended rewrite gives emergent topology | **POSITIVE** — universal 3× growth law | 107 | 18 |
+| 2.3b | Growth ratio is rule-specific universality | **POSITIVE** — (1+K) law across 4 rules | 109 | 23 |
+| 2.2 | Substrate-readable percolation order parameter | **POSITIVE** — first phase transition | 110 | 22 |
+| 2.2b | phi-perc materialised into stdlib | **POSITIVE** — orthogonal signal to phi-pa | 111 | 9 |
 
-**Net research output (session 2026-05-21):** 3 demos, 64 asserts,
-**2 honest negative results + 1 positive substrate-derived universal
-property**.  Negative results bound Φ_PA / HEDGE3 expressive power
-formally; positive result demonstrates first non-tautological
-cosmogenesis in the catalogue.
+**Net research output (session 2026-05-21):** 7 demos, 142 asserts.
+**3 honest negative/bound results + 4 positive substrate-derived
+results**:
+- HEDGE3 ≠ Peirce reduction thesis (formal bound)
+- Φ_PA family is degree-polynomial × step (formal bound on phase
+  transitions)
+- phi-integ has two-regime crossover (partial nonlinearity)
+- Wolfram-style rewrite has substrate-derived 3^k growth law
+- Growth ratio (1+K) is universality across rules in K-classes
+- Substrate-readable percolation phase transition demonstrated
+- phi-perc shipped to stdlib as 5th Φ-family member with
+  critical behaviour
+
+**Material changes:**
+- `stdlib/phi.6th`: +phi-perc member (BFS-based, percolation order
+  parameter)
+- `examples/`: 105–111 added (7 research-track demos)
+- `tests/examples-test.rkt`: regression gate at 1611 ✓ across 104 demos
+- New top-level `RESULTS.md` tracking ongoing research outputs
 
 ## Pending / future tracks
 

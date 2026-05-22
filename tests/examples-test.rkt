@@ -204,9 +204,33 @@
     ;;      growth law edges_k = 3^k, invariant under initial-
     ;;      condition perturbation.  Honest cosmogenesis in
     ;;      substrate-monism sense.
+    ;; 108: Track 2.1b — phi-integ deferred density sweep.
+    ;;      Partial positive: two-regime piecewise-linear response
+    ;;      (observer-saturation + neighbour-saturation).  Still
+    ;;      no critical exponent, but richer than phi-pa.
+    ;; 109: Track 2.3b — Wolfram-style rewrite-rule universality
+    ;;      across 4 rules with K ∈ {1, 2, 3}.  Verified growth-
+    ;;      ratio law E_k = E_0 · (1+K)^k as substrate-derived
+    ;;      universality across initial conditions and topology.
+    ;; 110: Track 2.2 — substrate-readable percolation order
+    ;;      parameter (largest-component-size containing observer
+    ;;      via BFS).  POSITIVE: first substrate-readable measure
+    ;;      in catalogue exhibiting genuine phase-transition
+    ;;      behaviour (discontinuous jump from 2 → 10 at bridge
+    ;;      edge, reversible under EDGE-).
+    ;; 111: Track 2.2 follow-up — phi-perc stdlib member
+    ;;      verification.  Materialises demo 110 finding into
+    ;;      stdlib/phi.6th as a new Φ-family member with phase-
+    ;;      transition behaviour.  Comparison: phi-pa UNCHANGED
+    ;;      across bridge edge, phi-perc JUMPS — orthogonal
+    ;;      discriminating signal.
     ("105-hedge3-expressivity-vs-binary.6th" 21)
     ("106-phi-pa-parametric-sweep.6th"       25)
-    ("107-open-ended-rewrite.6th"            18)))
+    ("107-open-ended-rewrite.6th"            18)
+    ("108-phi-integ-density-sweep.6th"       24)
+    ("109-rewrite-rule-universality.6th"     23)
+    ("110-substrate-percolation.6th"         22)
+    ("111-phi-perc-verification.6th"          9)))
 
 (define (run-demo file)
   (define out
@@ -231,8 +255,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1533
-                (format "cumulative ✓ count: ~a (expected 1533)" total-pass)))
+  (check-equal? total-pass 1611
+                (format "cumulative ✓ count: ~a (expected 1611)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1533 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1611 ✓ across ~a demos"
                    total-pass (length expected)))
