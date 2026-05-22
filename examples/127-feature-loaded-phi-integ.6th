@@ -1,0 +1,247 @@
+\ examples/127-feature-loaded-phi-integ.6th
+\ phi-integ ensemble on feature-loaded ER substrate.
+\ Pre-registered: examples/PREDICTIONS-127.md (commit b482dc7).
+\
+\ PIVOT from phi-perc (cycle 9 tautology) to phi-integ which
+\ depends on second-moment of degree distribution.
+\
+\ Each graph: undirected ER G(20, p=0.10) via bi-edge, observer
+\ self-loop, then NSET each node to its OUT count.  Measure
+\ phi-integ(1) ensemble.
+\
+\ Pre-registered regimes:
+\   D [275000, 330000]   — correlation-corrected analytic match
+\   E [210000, 275000)   — independence approximation match
+\   F other              — unanticipated
+
+use prelude
+use graph
+use phi
+use rand
+use stats
+use debug
+
+\ ============================================================
+\ ER graph generation (lifted from demo 126, with feature load).
+\ ============================================================
+
+: maybe-add-edge ( i j -- )
+  "mae-j" store   "mae-i" store
+  100 rand 10 < if
+    "mae-i" load "mae-j" load bi-edge
+  then ;
+
+: edge-inner-loop
+  "edge-j" load 20 <= if
+    "edge-i" load "edge-j" load maybe-add-edge
+    "edge-j" load 1 + "edge-j" store
+    edge-inner-loop
+  then ;
+
+: edge-outer-loop
+  "edge-i" load 20 < if
+    "edge-i" load 1 + "edge-j" store
+    edge-inner-loop
+    "edge-i" load 1 + "edge-i" store
+    edge-outer-loop
+  then ;
+
+: mark-n-loop
+  "mark-rem" load 0 > if
+    MARK drop
+    "mark-rem" load 1 - "mark-rem" store
+    mark-n-loop
+  then ;
+
+: gen-er-graph
+  RESET
+  20 "mark-rem" store mark-n-loop
+  1 1 EDGE+                                \ observer self-loop
+  1 "edge-i" store
+  edge-outer-loop ;
+
+\ ============================================================
+\ Feature load: each node's NGET = its current OUT count.
+\ Required for phi-integ to see neighbour connectivity.
+\ ============================================================
+
+: feature-load-rule ( n -- )
+  dup OUT NSET ;
+
+: feature-load
+  ' feature-load-rule EACH ;
+
+\ ============================================================
+\ Auxiliary aggregators: phi-integ sample stats + OUT(1) tally.
+\ Use second stats register via separate memory cells (since
+\ stdlib/stats has only one streaming aggregator).
+\ ============================================================
+
+\ Reset secondary OUT(1) aggregator.
+: out1-reset
+  0 "out1-sum"  store
+  0 "out1-sumsq" store
+  0 "out1-n"    store ;
+
+: out1-add ( x -- )
+  dup "out1-sum"   load + "out1-sum"   store
+  dup * "out1-sumsq" load + "out1-sumsq" store
+  "out1-n" load 1 + "out1-n" store ;
+
+: out1-mean ( -- mean )
+  "out1-sum" load "out1-n" load / ;
+
+\ Scaled mean × 100, to avoid integer-division truncation when
+\ the true mean is non-integer (cycle 10C sub-pred 2 lesson:
+\ stat-mean truncates 2.9 → 2 so OUT(1) sub-prediction couldn't
+\ be tested at face value).
+: out1-mean100 ( -- mean*100 )
+  "out1-sum" load 100 * "out1-n" load / ;
+
+\ ============================================================
+\ One ensemble sample: generate graph, feature-load, measure
+\ phi-integ(1) and OUT(1).
+\ ============================================================
+
+: one-sample
+  gen-er-graph
+  feature-load
+  1 OUT  out1-add
+  1 phi-integ stat-add ;
+
+: K-loop
+  "K-rem" load 0 > if
+    one-sample
+    "K-rem" load 1 - "K-rem" store
+    K-loop
+  then ;
+
+: M-loop
+  "M-rem" load 0 > if
+    "M-rem" load srand
+    20 "K-rem" store
+    K-loop
+    "M-rem" load 1 - "M-rem" store
+    M-loop
+  then ;
+
+\ ============================================================
+\ Run M=50 × K=20 = 1000 graphs.
+\ ============================================================
+
+stat-reset
+out1-reset
+50 "M-rem" store
+M-loop
+
+stat-mean    "phi-mean"   store
+stat-stddev  "phi-stddev" store
+out1-mean    "out1-avg"   store
+out1-mean100 "out1-avg100" store
+
+\ ============================================================
+\ Regime classification per PREDICTIONS-127.md.
+\ ============================================================
+
+\ Regime D: phi-mean in [275000, 330000].
+"phi-mean" load 275000 >= "phi-mean" load 330000 <= * "regime-D?" store
+
+\ Regime E: phi-mean in [210000, 275000).
+"phi-mean" load 210000 >= "phi-mean" load 275000 < * "regime-E?" store
+
+\ Regime F: outside both.
+"regime-D?" load "regime-E?" load + 0 = "regime-F?" store
+
+\ Partition check.
+"regime-D?" load "regime-E?" load + "regime-F?" load + "regime-count" store
+
+\ ============================================================
+\ Sub-prediction checks.
+\ ============================================================
+
+\ Sub-1: stddev in [400000, 1200000].
+"phi-stddev" load 400000 >= "phi-stddev" load 1200000 <= * "stddev-ok?" store
+
+\ Sub-2: OUT(1) avg in [2.6, 3.2].  Use out1-mean100 (no
+\ integer-truncation: scaled by 100 BEFORE divide).
+"out1-avg100" load 260 >= "out1-avg100" load 320 <= * "out1-ok?" store
+
+\ ============================================================
+\ Report.
+\ ============================================================
+
+cr
+"=== Demo 127 — phi-integ ensemble on feature-loaded ER ===" . cr
+cr
+"Pre-registration: examples/PREDICTIONS-127.md (commit b482dc7)" . cr
+"Sample size: M=50 × K=20 = 1000 graphs at n=20, p=10%" . cr
+cr
+"phi-integ mean:    " . "phi-mean" load   . cr
+"phi-integ stddev:  " . "phi-stddev" load . cr
+"phi-integ SEM:     " . "phi-stddev" load 31 / . cr
+"E[OUT(1)] × 100:   " . "out1-avg100" load . cr
+cr
+"Predictions:" . cr
+"  Independence approximation:  238380" . cr
+"  Correlation-corrected:       303400" . cr
+cr
+"Regime D ([275000, 330000], correlation match):  " . "regime-D?" load . cr
+"Regime E ([210000, 275000), independence match): " . "regime-E?" load . cr
+"Regime F (other):                                 " . "regime-F?" load . cr
+cr
+
+"regime-D?" load 1 = if
+  ">>> REGIME D — substrate reproduces correlation-corrected" . cr
+  "    phi-integ ensemble.  Validates substrate at second-moment" . cr
+  "    level on bare ER.  Pivot from phi-perc tautology to a" . cr
+  "    real non-tautological substrate measurement succeeds." . cr
+else "regime-E?" load 1 = if
+  ">>> REGIME E — substrate matches INDEPENDENCE approximation," . cr
+  "    missing degree-degree correlation.  Suggests substrate" . cr
+  "    NSUM/bi-edge implementation drops a real correlation" . cr
+  "    that classical ER has.  Substrate-specific anomaly," . cr
+  "    cycle 11 investigation needed." . cr
+else
+  ">>> REGIME F — unanticipated outcome.  Cycle 11 needs Python" . cr
+  "    phi-integ reference for diagnosis." . cr
+then then
+cr
+"Sub-pred 1 (stddev in [400000, 1200000]):  " . "stddev-ok?" load . cr
+"Sub-pred 2 (E[OUT(1)] in [2.6, 3.2]):       " . "out1-ok?" load . cr
+cr
+
+\ ============================================================
+\ Sanity asserts.
+\ ============================================================
+
+\ phi-mean in plausible range [50000, 2000000].
+"phi-mean" load 50000 >= "phi-mean" load 2000000 <= + 2 assert-eq
+
+\ stddev positive.
+"phi-stddev" load 0 > 1 assert-eq
+
+\ OUT(1) average positive and sensible.
+"out1-avg" load 1 >= 1 assert-eq
+"out1-avg" load 10 <= 1 assert-eq
+
+\ Exactly one regime fires.
+"regime-count" load 1 assert-eq
+
+\ ============================================================
+\ Regression pins (cycle 10C measurement, seeds 1..50).
+\ ============================================================
+
+"phi-mean"     load 297650 assert-eq
+"phi-stddev"   load 308074 assert-eq
+"out1-avg100"  load 285    assert-eq
+"regime-D?"    load 1      assert-eq    \ correlation-corrected match
+"regime-E?"    load 0      assert-eq
+"regime-F?"    load 0      assert-eq
+"regime-count" load 1      assert-eq    \ partition fires once
+"out1-ok?"     load 1      assert-eq    \ E[OUT(1)] = 2.85 in [2.6, 3.2]
+"stddev-ok?"   load 0      assert-eq    \ stddev 308k BELOW pre-reg
+                                        \ [400k, 1200k] — real anomaly,
+                                        \ substrate variance lower than
+                                        \ naive product-variance estimate
+
+REPORT

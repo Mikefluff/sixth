@@ -333,7 +333,22 @@
     ;;      precision; substrate IS a faithful classical-ER
     ;;      reachability implementation at n=20 p=10%.
     ;;      Pre-registered: PREDICTIONS-126.md (commit f31ba43).
-    ("126-substrate-m1000.6th"                   13)))
+    ("126-substrate-m1000.6th"                   13)
+    ;; --- Cycle 10C: phi-integ pivot beyond tautology ---
+    ;; 127: phi-integ ensemble on feature-loaded ER at n=20, p=10%,
+    ;;      M=1000.  Pre-registered (PREDICTIONS-127.md, commit
+    ;;      b482dc7, attested via ledger): regime D match means
+    ;;      substrate reproduces correlation-corrected analytic
+    ;;      303,400; regime E means substrate misses correlation.
+    ;;      Measurement: 297,650 → REGIME D (correlation-corrected
+    ;;      match within 2%).  Substrate validates classical
+    ;;      second-moment ER theory.
+    ;;      Sub-pred 1 (stddev) FAILED — substrate variance 308,074
+    ;;      below naive product-variance bound [400k, 1200k].
+    ;;      Documented as honest sub-prediction miss; main regime
+    ;;      classification stands.  First non-tautological substrate
+    ;;      measurement post-cycle-9 retraction.
+    ("127-feature-loaded-phi-integ.6th"          14)))
 
 (define (run-demo file)
   (define out
@@ -358,8 +373,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1868
-                (format "cumulative ✓ count: ~a (expected 1868)" total-pass)))
+  (check-equal? total-pass 1882
+                (format "cumulative ✓ count: ~a (expected 1882)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1868 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1882 ✓ across ~a demos"
                    total-pass (length expected)))
