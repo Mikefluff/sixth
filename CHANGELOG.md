@@ -11,6 +11,34 @@ release with a maintained changelog from the next version forward.
 
 Tracks `main@HEAD` development past v0.8.  Currently:
 
+### Added (research-track demos — first cycle)
+- **RESULTS.md** — new top-level document tracking ongoing research-
+  track outputs.  Each entry: hypothesis → method → outcome →
+  consequence.  Both positive and negative results catalogued — null
+  results are research output.
+- **Demo 105** (21 ✓) — Track 1.3 HEDGE3 expressivity benchmark.
+  **NEGATIVE RESULT**: no complexity-class separation between HEDGE3-
+  native and binary-encoded triadic queries.  Both O(N).  Falsifies
+  «substrate-level realisation of Peirce's reduction thesis» as
+  expressivity claim.  Downgrade to «ergonomic surface for triadic
+  patterns» recommended in SUBSTRATE.md / README.md / preprint.
+- **Demo 106** (25 ✓) — Track 2.1 Φ_PA family parametric sweep.
+  **NEGATIVE RESULT**: phi-pa is exactly linear in scope across
+  k=0..9 sweep; first-difference is constant L_max=10000 with zero
+  variance.  Self-ref switch is binary STEP, not phase transition.
+  Substrate-derived BOUND on current Φ_PA expressive power —
+  Tononi-IIT-style Φ-criticality (Mediano 2019) NOT replicated.
+  Future measures requiring phase-transition signatures must
+  introduce genuine nonlinearity (MI, KL-divergence, percolation
+  order parameters).
+- **Demo 107** (18 ✓) — Track 2.3 open-ended Wolfram-style rewrite.
+  **POSITIVE RESULT**: substrate-derived growth law `edges_k = 3^k`
+  verified at k=1..4 with growth-ratio UNIVERSALITY (invariant under
+  initial-condition perturbation).  First honest cosmogenesis
+  demonstration in the catalogue — no halting predicate, no
+  target-min, no author tuning of output topology.  Counter to the
+  «Pilot D cosmogenesis is hand-coded» critique.
+
 ### Added
 - `HEDGE3-VALID?` substrate primitive: predicate-only structural
   validation, no insertion, no exception.  Lets demos test kind

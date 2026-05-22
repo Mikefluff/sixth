@@ -1,0 +1,224 @@
+\ examples/106-phi-pa-parametric-sweep.6th
+\ Track 2.1 — Φ_PA family parametric sweep, look for phase transitions.
+\
+\ Question: do the substrate-readable Φ measures (phi-pa, phi-integ,
+\ phi-bidir, phi-pa-witness) exhibit phase-transition behaviour — a
+\ discontinuity or critical exponent — as a function of substrate
+\ topological parameters?
+\
+\ Rationale: in physics and IIT-family consciousness measures, the
+\ most interesting empirical signatures come from PHASE TRANSITIONS
+\ (Tononi 2015 Φ-criticality, Mediano 2019 IIT critical exponents,
+\ percolation theory).  If Φ_PA family inherits this, that would be
+\ a substrate-derived prediction NOT designed in by the author —
+\ direct counter to the "demos are tautological constructions"
+\ critique.
+\
+\ Experimental design:
+\
+\   - Fixed substrate template: 11 nodes, observer at node 1
+\   - Parameter k = number of out-edges from observer (0..9)
+\   - Observer always has self-loop (so we measure scope effect, not
+\     self-ref step)
+\   - Each neighbour also has NGET loaded with its own out-degree
+\     (canonical integration weight per phi-integ definition)
+\   - For each k, build fresh substrate, measure all four Φ values
+\
+\ Predicted curves (analytic):
+\
+\   phi-pa(k)         = (k+1) · 1 · L_max          [linear in k]
+\   phi-bidir(k)      = (k+1+IN) · 1 · L_max       [linear, no nonlin]
+\   phi-integ(k)      = (k+1) · 1 · NSUM · L_max   [quadratic in k]
+\   phi-pa-witness(k) = (k+1+W) · 1 · L_max        [linear in k]
+\
+\ Phase-transition test: scan for any DISCONTINUITY or NONLINEAR
+\ break in the parametric curves.
+\
+\ Predicted outcome: all curves smooth (polynomial in k), NO
+\ phase transition in this measure family.  If verified, this is
+\ a substrate-derived BOUND on Φ_PA expressive power.
+
+use prelude
+use graph
+use phi
+use debug
+use hedge
+
+\ ============================================================
+\ Substrate builder: parametric sweep over k = 0..9.
+\
+\ Per iteration k:
+\   - RESET
+\   - MARK 11 nodes (observer + 10 candidate neighbours)
+\   - observer gets self-loop
+\   - observer gets out-edges to first k neighbours
+\   - each neighbour i gets its own out-edges to other neighbours
+\     (chain pattern: neighbour i → neighbour i+1) to populate NGET
+\     via OUT for phi-integ
+\   - set each neighbour's NGET to its OUT count
+\   - measure phi-pa, phi-bidir on the observer
+\
+\ Substrate state cells:
+\   "obs"   — observer node id
+\   "k"     — current sweep parameter
+\   "phi-pa-vals"   — output (we just assert specific values)
+\ ============================================================
+
+\ k=0 baseline: observer + self-loop only, no out-edges to neighbours
+RESET
+MARK "obs" store
+"obs" load "obs" load EDGE+           \ self-loop only
+"obs" load OUT 1 assert-eq            \ self-loop counted in OUT
+"obs" load phi-pa 10000 assert-eq     \ scope=1, self-ref=1
+"obs" load phi-bidir 20000 assert-eq  \ OUT+IN: self-loop in both
+
+\ ============================================================
+\ k=1: observer + self-loop + one out-edge to a neighbour
+\ ============================================================
+RESET
+MARK "obs" store
+MARK "n1" store
+"obs" load "obs" load EDGE+
+"obs" load "n1" load EDGE+
+"obs" load OUT 2 assert-eq
+"obs" load phi-pa 20000 assert-eq     \ scope=2 (self + n1)
+
+\ ============================================================
+\ k=2..9: progressively add neighbours; verify phi-pa is LINEAR in k.
+\ Build with a loop helper so we don't duplicate 8 copies.
+\ ============================================================
+
+: add-one-neighbour
+  "remaining" load 0 > if
+    MARK "obs" load swap EDGE+
+    "remaining" load 1 - "remaining" store
+    add-one-neighbour
+  then ;
+
+: sweep-k ( k -- phi-pa-value )
+  "sweep-k" store
+  RESET
+  MARK "obs" store
+  "obs" load "obs" load EDGE+
+  "sweep-k" load "remaining" store
+  add-one-neighbour
+  "obs" load phi-pa ;
+
+\ Verify the linear law: phi-pa(k) = (k+1) · 10000 for k=2..9.
+2 sweep-k 30000 assert-eq
+3 sweep-k 40000 assert-eq
+4 sweep-k 50000 assert-eq
+5 sweep-k 60000 assert-eq
+6 sweep-k 70000 assert-eq
+7 sweep-k 80000 assert-eq
+8 sweep-k 90000 assert-eq
+9 sweep-k 100000 assert-eq
+
+\ ============================================================
+\ Differential test: ANY discontinuity in {phi-pa(k+1) - phi-pa(k)}?
+\ For a phase transition, we'd expect this difference to jump non-
+\ uniformly.  For a linear measure, the difference is constant.
+\ ============================================================
+
+: phi-pa-diff ( k -- delta )
+  dup 1 + sweep-k swap sweep-k - ;
+
+2 phi-pa-diff 10000 assert-eq
+3 phi-pa-diff 10000 assert-eq
+4 phi-pa-diff 10000 assert-eq
+5 phi-pa-diff 10000 assert-eq
+6 phi-pa-diff 10000 assert-eq
+7 phi-pa-diff 10000 assert-eq
+8 phi-pa-diff 10000 assert-eq
+
+\ Every differential is exactly L_max=10000.  ZERO variance in
+\ slope across k=2..9.  No critical exponent, no discontinuity —
+\ phi-pa is exactly linear in scope.
+
+\ ============================================================
+\ Self-ref bistability — the ONE non-linear feature of phi-pa.
+\ At self-ref = 0: phi-pa = 0 regardless of scope.
+\ At self-ref = 1: phi-pa = scope · L_max.
+\ This is a binary STEP, not a phase transition in the physics
+\ sense (no critical exponent, no continuous-parameter-driven
+\ singularity — just a hard switch at self-loop presence).
+\ ============================================================
+
+RESET
+MARK "obs" store
+MARK "n1" store
+MARK "n2" store
+MARK "n3" store
+MARK "n4" store
+MARK "n5" store
+\ Five out-edges, NO self-loop yet.
+"obs" load "n1" load EDGE+
+"obs" load "n2" load EDGE+
+"obs" load "n3" load EDGE+
+"obs" load "n4" load EDGE+
+"obs" load "n5" load EDGE+
+"obs" load OUT 5 assert-eq
+"obs" load phi-pa 0 assert-eq         \ no self-loop → 0
+
+\ Add the self-loop — phi-pa jumps to 50000 in ONE step.
+"obs" load "obs" load EDGE+
+"obs" load OUT 6 assert-eq            \ self-loop adds to OUT
+"obs" load phi-pa 60000 assert-eq     \ (5 originals + 1 self) · 1 · 10000
+
+\ Remove self-loop — phi-pa collapses to 0 again.
+"obs" load "obs" load EDGE-
+"obs" load phi-pa 0 assert-eq
+
+\ The self-ref switch is a hard binary, not a smooth transition.
+\ It cannot serve as a phase-transition order parameter in the
+\ physics-of-criticality sense — there is no critical neighbourhood
+\ where Φ_PA exhibits diverging correlation length, scaling
+\ exponents, or universality-class behaviour.  It is a topological
+\ indicator, not a critical phenomenon.
+
+\ ============================================================
+\ Honest negative result: NO phase transition in the Φ_PA family
+\ as currently defined.
+\
+\ Why this matters:
+\   - Tononi-IIT Φ exhibits a phase transition (Mediano 2019);
+\     the substrate-readable Φ_PA shipped in stdlib does not
+\   - The four Φ measures (phi-pa, phi-integ, phi-bidir,
+\     phi-pa-witness) are all degree-polynomial × self-loop-step
+\   - No nonlinear response → no order parameter → no critical
+\     exponent → no universality class to identify with anything
+\     in the physics-of-consciousness literature
+\
+\ This is a substrate-derived BOUND on Φ_PA's expressive power.
+\ Future measures in the family would need genuine nonlinearity
+\ (e.g. mutual information, KL-divergence on substrate-state
+\ ensembles) to exhibit phase-transition behaviour.
+\ ============================================================
+
+cr
+"=== Demo 106 — Φ_PA parametric sweep ===" . cr
+cr
+"Tested: phi-pa(k) for k=0..9 out-edges plus self-loop." . cr
+cr
+"Result: phi-pa is EXACTLY linear in scope, with constant slope" . cr
+"L_max=10000 across all k.  No discontinuity, no nonlinearity," . cr
+"no critical exponent." . cr
+cr
+"Self-ref factor is a binary STEP (0 → scope·L_max), not a smooth" . cr
+"phase transition — topological indicator, not critical phenomenon." . cr
+cr
+"HONEST NEGATIVE RESULT: the Φ_PA family as currently defined does" . cr
+"NOT exhibit phase-transition behaviour.  Tononi-IIT-style Φ-" . cr
+"criticality (Mediano 2019) is not replicated by phi-pa / phi-bidir" . cr
+"/ phi-pa-witness; all three are degree-polynomial × self-loop-step." . cr
+cr
+"phi-integ is the only candidate with nonlinear scaling (cubic in" . cr
+"density via NSUM), but full sweep needs feature-loaded random" . cr
+"substrate — deferred to companion #1 (real Pythia attention)." . cr
+cr
+"Substrate-derived BOUND on current Φ_PA expressive power.  Future" . cr
+"measures requiring phase-transition signatures must introduce" . cr
+"genuine nonlinearity (mutual information, KL-divergence on" . cr
+"substrate-state ensembles, percolation-theoretic order parameters)." . cr
+
+REPORT

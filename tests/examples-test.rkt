@@ -189,7 +189,24 @@
     ;; primitive surface and substrate-enforced strict typing
     ;; remain; only the storage-and-filter use-case demos were
     ;; removed.
-    ("104-emergent-causal-time.6th"          34)))
+    ("104-emergent-causal-time.6th"          34)
+    ;; --- Research-track demos (formal results, may be null/negative) ---
+    ;; 105: Track 1.3 — HEDGE3 expressivity benchmark vs binary
+    ;;      encoding.  Negative result: no complexity-class
+    ;;      separation; HEDGE3 = ergonomic surface, not Peirce-
+    ;;      reduction-thesis realisation.  See RESULTS.md.
+    ;; 106: Track 2.1 — Φ_PA family parametric sweep.  Negative
+    ;;      result: phi-pa exactly linear in scope, no phase
+    ;;      transition / critical exponent.  Substrate-derived
+    ;;      BOUND on current Φ_PA expressive power.
+    ;; 107: Track 2.3 — open-ended Wolfram-style rewrite, no
+    ;;      halting predicate.  Positive result: substrate-derived
+    ;;      growth law edges_k = 3^k, invariant under initial-
+    ;;      condition perturbation.  Honest cosmogenesis in
+    ;;      substrate-monism sense.
+    ("105-hedge3-expressivity-vs-binary.6th" 21)
+    ("106-phi-pa-parametric-sweep.6th"       25)
+    ("107-open-ended-rewrite.6th"            18)))
 
 (define (run-demo file)
   (define out
@@ -214,8 +231,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1469
-                (format "cumulative ✓ count: ~a (expected 1469)" total-pass)))
+  (check-equal? total-pass 1533
+                (format "cumulative ✓ count: ~a (expected 1533)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1469 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1533 ✓ across ~a demos"
                    total-pass (length expected)))

@@ -1,0 +1,286 @@
+\ examples/105-hedge3-expressivity-vs-binary.6th
+\ Track 1.3 — HEDGE3 expressivity separation benchmark.
+\
+\ Question: does HEDGE3 provide a computational-complexity separation
+\ over binary edges + auxiliary node encoding?  Equivalently: is the
+\ "substrate-level realisation of Peirce's reduction thesis" framing
+\ in the v9.0 preprint defensible as expressivity, or is HEDGE3 just
+\ ergonomic syntax sugar?
+\
+\ Benchmark: substrate-readable query
+\   Q(s, d) = { w | (s, d, w) is a WITNESS hyperedge }
+\
+\ Two implementations on equivalent substrate state:
+\
+\   (A) HEDGE3-native:
+\       For each WITNESS (s, d, w), one hash entry.
+\       Query: EACH-HEDGE3-KIND with filter (a==s, b==d), collect c.
+\       Asymptotic cost: O(N_witness).
+\       Substrate storage cost: 1 hash entry per WITNESS.
+\
+\   (B) Binary-encoded with role-tagged auxiliary nodes:
+\       For each WITNESS (s, d, w):
+\         MARK master  (NGET=100 — witness-marker)
+\         MARK aux-a   (NGET=101 — role-a tag)
+\         MARK aux-b   (NGET=102 — role-b tag)
+\         MARK aux-c   (NGET=103 — role-c tag)
+\         master → aux-a, master → aux-b, master → aux-c
+\         aux-a → s, aux-b → d, aux-c → w
+\       Query: EACH all nodes, filter NGET==101 (role-a aux), verify
+\       its target is s, walk back to master, walk to aux-b, verify
+\       target is d, walk to aux-c, collect its target.
+\       Asymptotic cost: O(N_total_nodes) = O(N_witness + N_original).
+\       Substrate storage cost: 4 nodes + 6 edges per WITNESS.
+\
+\ Conclusion under test:
+\   Both implementations are O(N) asymptotically — no complexity-class
+\   separation.  HEDGE3 has smaller constant factor (~5× less storage,
+\   ~5× fewer scan operations) but no asymptotic advantage.
+\
+\ This benchmark demonstrates the negative result honestly via direct
+\ implementation: HEDGE3 is an ergonomic substrate-level primitive,
+\ NOT a complexity-theoretic irreducibility argument for Peirce's
+\ reduction thesis.  Preprint claim "substrate-level realisation of
+\ Peirce's reduction thesis" should be downgraded to "ergonomic
+\ surface for triadic patterns".
+\
+\ Real Peirce-irreducibility would require: a query class polynomial-
+\ time on HEDGE3-substrate, super-polynomial on binary-encoded
+\ substrate.  This benchmark refutes that for the natural triadic-
+\ lookup query.
+
+use prelude
+use graph
+use debug
+use hedge
+
+\ ============================================================
+\ TEST DATA — 5 observer-domain-witness triples:
+\
+\   (o1, d1, w1), (o1, d2, w2), (o2, d1, w3),
+\   (o2, d2, w4), (o3, d3, w5)
+\
+\ Query: for given (o, d), find all w (the witness of that O-D pair).
+\ ============================================================
+
+\ ----------------------------------------------------------------
+\ Substrate A: HEDGE3-native encoding
+\ ----------------------------------------------------------------
+
+MARK "o1" store    MARK "o2" store    MARK "o3" store
+MARK "d1" store    MARK "d2" store    MARK "d3" store
+MARK "w1" store    MARK "w2" store    MARK "w3" store
+MARK "w4" store    MARK "w5" store
+
+NODES 11 assert-eq
+
+"o1" load "d1" load "w1" load witness+
+"o1" load "d2" load "w2" load witness+
+"o2" load "d1" load "w3" load witness+
+"o2" load "d2" load "w4" load witness+
+"o3" load "d3" load "w5" load witness+
+
+witnesses 5 assert-eq
+HEDGES3   5 assert-eq
+
+\ Query implementation (A): for given (o, d), find w via EACH-HEDGE3-KIND.
+\ Scratch cells: q-o, q-d hold query, q-result accumulates count.
+
+: query-A-rule ( a b c -- )
+  "q-c" store  "q-b" store  "q-a" store
+  "q-a" load "q-o" load = if
+    "q-b" load "q-d" load = if
+      "q-result" load 1 + "q-result" store
+    then
+  then ;
+
+: query-A ( o d -- count )
+  "q-d" store  "q-o" store
+  0 "q-result" store
+  ' query-A-rule each-witness
+  "q-result" load ;
+
+\ Verify A: each of the 5 (o, d) pairs returns count 1.
+"o1" load "d1" load query-A 1 assert-eq
+"o1" load "d2" load query-A 1 assert-eq
+"o2" load "d1" load query-A 1 assert-eq
+"o2" load "d2" load query-A 1 assert-eq
+"o3" load "d3" load query-A 1 assert-eq
+
+\ Non-existent pair: count 0.
+"o3" load "d1" load query-A 0 assert-eq
+"o1" load "d3" load query-A 0 assert-eq
+
+\ Storage cost A: 11 substrate nodes + 5 HEDGE3 hash entries.
+NODES   11 assert-eq
+HEDGES3  5 assert-eq
+
+\ ============================================================
+\ Substrate B: binary-encoded with role-tagged auxiliary nodes.
+\ Built ON TOP OF the same substrate (the A-encoding is left
+\ intact; the B-encoding adds parallel structure so we can
+\ verify both queries on the same 11 base nodes).
+\
+\ Role tags via NGET on auxiliary nodes:
+\   NGET = 100  →  master witness node
+\   NGET = 101  →  role-a (the o slot)
+\   NGET = 102  →  role-b (the d slot)
+\   NGET = 103  →  role-c (the w slot)
+\
+\ For each WITNESS (o, d, w):
+\   MARK master  (NGET=100)
+\   MARK aux-a   (NGET=101)
+\   MARK aux-b   (NGET=102)
+\   MARK aux-c   (NGET=103)
+\   master → aux-a    aux-a → o
+\   master → aux-b    aux-b → d
+\   master → aux-c    aux-c → w
+\
+\ 4 nodes + 6 edges per WITNESS = 20 nodes + 30 edges for our 5.
+\ ============================================================
+
+: encode-witness-binary ( o d w -- master )
+  "wb-w" store  "wb-d" store  "wb-o" store
+  MARK dup 100 NSET   "wb-master" store
+  MARK dup 101 NSET   "wb-a" store
+  MARK dup 102 NSET   "wb-b" store
+  MARK dup 103 NSET   "wb-c" store
+  "wb-master" load "wb-a" load EDGE+
+  "wb-master" load "wb-b" load EDGE+
+  "wb-master" load "wb-c" load EDGE+
+  "wb-a" load "wb-o" load EDGE+
+  "wb-b" load "wb-d" load EDGE+
+  "wb-c" load "wb-w" load EDGE+
+  "wb-master" load ;
+
+"o1" load "d1" load "w1" load encode-witness-binary drop
+"o1" load "d2" load "w2" load encode-witness-binary drop
+"o2" load "d1" load "w3" load encode-witness-binary drop
+"o2" load "d2" load "w4" load encode-witness-binary drop
+"o3" load "d3" load "w5" load encode-witness-binary drop
+
+\ After encoding: 11 base + 20 aux = 31 nodes; 30 binary edges.
+NODES 31 assert-eq
+EDGES 30 assert-eq
+
+\ Query implementation (B): for given (o, d), iterate every node,
+\ filter NGET==101 (role-a aux), check its single out-target is o,
+\ walk to its master via IN, find master's other out-targets via
+\ EACH-EDGE, verify role-b out-target is d, return role-c out-target.
+
+\ Helper: given a master node, find its out-neighbour with NGET==tag.
+\ Implementation: scan all master's out-edges via EACH-EDGE filtering
+\ by src=master and target's NGET==tag.
+
+: amt-scan-edge ( src dst -- )
+  "amt-d" store   "amt-s" store
+  "amt-s" load "amt-master" load = if
+    "amt-d" load NGET "amt-tag" load = if
+      "amt-d" load "amt-found" store
+    then
+  then ;
+
+: aux-of-master ( master tag -- aux )
+  "amt-tag" store   "amt-master" store
+  0 "amt-found" store
+  ' amt-scan-edge EACH-EDGE
+  "amt-found" load ;
+
+\ Helper: given an aux node, return its single out-target.
+: aux-target ( aux -- target ) NEXT ;
+
+\ Master scanner: for each node, if NGET==100, check its role-a aux
+\ points to query-o, then check role-b aux points to query-d, and if
+\ both, increment result counter.
+
+: query-B-scan ( n -- )
+  dup NGET 100 = if
+    \ Found a master.  Check role-a → o.
+    dup 101 aux-of-master aux-target "q-o" load = if
+      \ Check role-b → d.
+      dup 102 aux-of-master aux-target "q-d" load = if
+        "q-result" load 1 + "q-result" store
+      then
+    then
+  then
+  drop ;
+
+: query-B ( o d -- count )
+  "q-d" store  "q-o" store
+  0 "q-result" store
+  ' query-B-scan EACH
+  "q-result" load ;
+
+\ Verify B returns the same answers as A.
+"o1" load "d1" load query-B 1 assert-eq
+"o1" load "d2" load query-B 1 assert-eq
+"o2" load "d1" load query-B 1 assert-eq
+"o2" load "d2" load query-B 1 assert-eq
+"o3" load "d3" load query-B 1 assert-eq
+
+\ Non-existent pair: count 0.
+"o3" load "d1" load query-B 0 assert-eq
+"o1" load "d3" load query-B 0 assert-eq
+
+\ ============================================================
+\ Substrate-readable cost comparison.
+\
+\ Per-query cost on N WITNESSes total:
+\
+\   Query A (HEDGE3-native):
+\     EACH-HEDGE3-KIND iterates exactly N hyperedges of the given kind.
+\     For each: pop (a, b, c), compare a==o, b==d, conditional increment.
+\     Cost: 1 EACH-HEDGE3-KIND scan = O(N).
+\
+\   Query B (binary-encoded):
+\     EACH iterates all NODES (= 11 base + 4N aux = O(N)).
+\     For each NGET==100 master, two aux-of-master calls each do an
+\     EACH-EDGE scan of all 6N binary edges = O(N) each.
+\     Cost: N masters × 2 × O(N) = O(N²) per query in this naive
+\     implementation.
+\
+\   The naive binary query is WORSE than HEDGE3 by a factor of N,
+\   but only because aux-of-master uses an unindexed EACH-EDGE scan.
+\   With an indexed cache (substrate-internal CSR is already there
+\   for binary edges; the helper just doesn't exploit it), the
+\   binary query reduces to O(N): one EACH over masters, each with
+\   O(1) aux lookup via OUT/NEXT chains.
+\
+\   With proper indexing: both A and B are O(N) per query.
+\
+\ Conclusion: no complexity-class separation between HEDGE3 and
+\ properly-indexed binary encoding.  HEDGE3 provides constant-factor
+\ improvements (~5× storage, ~5× scan operations) and ergonomic
+\ surface; it does NOT realise Peirce's reduction thesis as a
+\ complexity-theoretic statement.
+\ ============================================================
+
+\ Final cost snapshot:
+\   Substrate A only: 11 nodes + 0 binary edges + 5 HEDGE3 = 5 trivalent
+\   Substrate B only: 11 + 20 aux = 31 nodes + 30 binary edges + 0 HEDGE3
+\
+\ Storage ratio: B uses ~5× more substrate state for the same logical
+\ content (5 triadic relations).  This is the constant-factor cost of
+\ encoding a 4-tuple as a hub-and-spoke pattern of binary edges.
+
+cr
+"=== Demo 105 — HEDGE3 expressivity benchmark ===" . cr
+cr
+"Equivalent triadic queries verified on two encodings:" . cr
+"  A (HEDGE3-native):  5 hash entries, O(N) query" . cr
+"  B (binary + aux):   20 aux nodes + 30 edges, O(N) with proper indexing" . cr
+cr
+"Result: NO complexity-class separation between HEDGE3 and binary" . cr
+"encoding with role-tagged auxiliaries.  HEDGE3 provides ~5×" . cr
+"constant-factor storage advantage and ergonomic substrate surface;" . cr
+"it does NOT realise Peirce's reduction thesis as a formal" . cr
+"computational-complexity argument." . cr
+cr
+"Preprint claim downgrade required: 'substrate-level realisation of" . cr
+"Peirce's reduction thesis' → 'ergonomic substrate-level surface for" . cr
+"triadic-relation patterns'.  The Peircean philosophical motivation" . cr
+"for the four canonical kinds (WITNESS / MEDIATOR / CONTEXT / SIMPLEX)" . cr
+"remains valid as semantic-typology framing, not as expressivity" . cr
+"theorem." . cr
+
+REPORT
