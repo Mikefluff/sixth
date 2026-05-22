@@ -1,0 +1,193 @@
+\ examples/129-substrate-phi-integ-m10k.6th
+\ Substrate phi-integ M=10000 at n=20, p=10%.
+\ Pre-registered in PREDICTIONS-129.md (commit c0ee1a8).
+\
+\ Resolves cycle 11A regime F' ambiguity:
+\   H — |sub - 310577| ≤ 5000   → F' was sampling artifact
+\   I — 5000 < |..| ≤ 12000     → small real bias, investigate
+\   J — |..| > 12000             → confirmed substrate-derived bias
+\
+\ Reference (networkx M=10000): 310,577
+\ Substrate cycle 10C (M=1000):  297,650
+
+use prelude
+use graph
+use phi
+use rand
+use stats
+use debug
+
+\ ============================================================
+\ Same ensemble as cycle 10C demo 127, just larger M.
+\ ============================================================
+
+: maybe-add-edge ( i j -- )
+  "mae-j" store   "mae-i" store
+  100 rand 10 < if
+    "mae-i" load "mae-j" load bi-edge
+  then ;
+
+: edge-inner-loop
+  "edge-j" load 20 <= if
+    "edge-i" load "edge-j" load maybe-add-edge
+    "edge-j" load 1 + "edge-j" store
+    edge-inner-loop
+  then ;
+
+: edge-outer-loop
+  "edge-i" load 20 < if
+    "edge-i" load 1 + "edge-j" store
+    edge-inner-loop
+    "edge-i" load 1 + "edge-i" store
+    edge-outer-loop
+  then ;
+
+: mark-n-loop
+  "mark-rem" load 0 > if
+    MARK drop
+    "mark-rem" load 1 - "mark-rem" store
+    mark-n-loop
+  then ;
+
+: gen-er-graph
+  RESET
+  20 "mark-rem" store mark-n-loop
+  1 1 EDGE+
+  1 "edge-i" store
+  edge-outer-loop ;
+
+: feature-load-rule ( n -- )
+  dup OUT NSET ;
+
+: feature-load
+  ' feature-load-rule EACH ;
+
+: one-sample
+  gen-er-graph
+  feature-load
+  1 phi-integ stat-add ;
+
+: K-loop
+  "K-rem" load 0 > if
+    one-sample
+    "K-rem" load 1 - "K-rem" store
+    K-loop
+  then ;
+
+: M-loop
+  "M-rem" load 0 > if
+    "M-rem" load srand
+    20 "K-rem" store
+    K-loop
+    "M-rem" load 1 - "M-rem" store
+    M-loop
+  then ;
+
+\ ============================================================
+\ M=500 seeds × K=20 = 10000 graphs.
+\ ============================================================
+
+stat-reset
+500 "M-rem" store
+M-loop
+
+stat-mean   "phi-mean"   store
+stat-stddev "phi-stddev" store
+
+\ Compute SEM = stddev / sqrt(10000) = stddev / 100.
+"phi-stddev" load 100 / "phi-sem" store
+
+\ Absolute |sub - 310577|.
+"phi-mean" load 310577 - "raw" store
+"raw" load 0 < if "raw" load -1 * else "raw" load then "diff" store
+
+\ ============================================================
+\ Regime classification per PREDICTIONS-129.md.
+\ ============================================================
+
+\ Regime H: diff ≤ 5000.
+"diff" load 5000 <= "regime-H?" store
+
+\ Regime I: 5000 < diff ≤ 12000.
+"diff" load 5000 >
+"diff" load 12000 <= * "regime-I?" store
+
+\ Regime J: diff > 12000.
+"diff" load 12000 > "regime-J?" store
+
+\ Partition.
+"regime-H?" load "regime-I?" load + "regime-J?" load + "regime-count" store
+
+\ Sub-prediction: stddev within ±5% of cycle 10C stddev 308074.
+\ Lower bound 292,670 / upper bound 323,478.
+"phi-stddev" load 292670 >= "phi-stddev" load 323478 <= * "stddev-sub-ok?" store
+
+\ ============================================================
+\ Report.
+\ ============================================================
+
+cr
+"=== Demo 129 — substrate phi-integ M=10000 (cycle 11A.1) ===" . cr
+cr
+"Pre-reg: PREDICTIONS-129.md (commit c0ee1a8)" . cr
+cr
+"M=500 × K=20 = 10000 graphs at n=20, p=10%" . cr
+cr
+"Substrate mean (M=10000):  " . "phi-mean" load   . cr
+"Substrate stddev:           " . "phi-stddev" load . cr
+"Substrate SEM:              " . "phi-sem" load    . cr
+cr
+"Reference (networkx M=10000): 310577 ± SEM 3275" . cr
+"Substrate cycle 10C (M=1000): 297650 ± SEM 9737" . cr
+cr
+"|substrate M=10000 - reference|: " . "diff" load . cr
+cr
+"Regime H (≤5000, sampling artifact):  " . "regime-H?" load . cr
+"Regime I (5k<≤12k, small bias):       " . "regime-I?" load . cr
+"Regime J (>12000, confirmed bias):    " . "regime-J?" load . cr
+cr
+
+"regime-H?" load 1 = if
+  ">>> REGIME H — substrate CONVERGES to reference at M=10000." . cr
+  "    Cycle 11A regime F' was SAMPLE-SIZE ARTIFACT.  Substrate" . cr
+  "    is faithful to reference at second-moment level after all." . cr
+  "    Cycle 10C effectively confirmed (with caveat that M=1000" . cr
+  "    was at edge of resolution)." . cr
+else "regime-I?" load 1 = if
+  ">>> REGIME I — substrate has SMALL but real bias (≈2%)." . cr
+  "    Not large enough for catalogue finding, but real signal." . cr
+  "    Cycle 12 investigates source (LCG-MT comparison, bi-edge" . cr
+  "    semantics, feature-load order, sampling timing)." . cr
+else "regime-J?" load 1 = if
+  ">>> REGIME J — substrate has CONFIRMED ≥4% systematic deviation." . cr
+  "    REAL SUBSTRATE-DERIVED FINDING: substrate phi-integ ensemble" . cr
+  "    diverges measurably from independent classical reference." . cr
+  "    First cycle in catalogue where substrate behavior shows" . cr
+  "    quantifiable substrate-specific bias.  Cycle 12 must" . cr
+  "    isolate the source and characterize." . cr
+else
+  ">>> Regime partition violated — bug" . cr
+then then then
+cr
+"Sub-pred (stddev within ±5% of cycle 10C 308074):  " . "stddev-sub-ok?" load . cr
+cr
+
+\ ============================================================
+\ Sanity asserts.
+\ ============================================================
+
+\ phi-mean in plausible range.
+"phi-mean" load 50000 >= "phi-mean" load 2000000 <= + 2 assert-eq
+
+\ Exactly one regime fires.
+"regime-count" load 1 assert-eq
+
+\ Stddev positive.
+"phi-stddev" load 0 > 1 assert-eq
+
+\ ============================================================
+\ Regression pins (filled in measurement commit; placeholders
+\ omitted from source-only commit per Rule 1 discipline).
+\ ============================================================
+
+REPORT
