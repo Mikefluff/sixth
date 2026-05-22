@@ -1,0 +1,8 @@
+# Pre-registration attestation ledger
+# format: <iso-timestamp>  <sha256>  <repo-path>  <git-head-when-attested>
+# rules: append-only; never edit existing rows; anchor cumulative hash externally
+# (METHODOLOGY.md Rule 9)
+
+2026-05-22T15:40:01Z  6338db1b1d0bcdba864644acf4bfe4e45750664a618a3b25d5fde06c1d96d1b6  examples/PREDICTIONS-124.md  5a80a97
+2026-05-22T15:40:01Z  6b4930d0d57e67f6e6056708753b57d74fa5c4ac69aebcd150aa3ce53f180906  examples/PREDICTIONS-125.md  5a80a97
+2026-05-22T15:40:01Z  3ef3c2b92eb9502d9b5ba96734df6ac92cfc95e0742d5d7e07cc50ceb9d6b1a8  examples/PREDICTIONS-126.md  5a80a97
