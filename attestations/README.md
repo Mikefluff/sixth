@@ -81,9 +81,22 @@ External anchors of `ledger.txt` cumulative SHA-256:
 
 | date | ledger sha-256 (partial) | anchor type | url / id |
 |------|-------------------------|-------------|----------|
-| _none yet — first anchor pending after cycle 10D commit_ | | | |
+| 2026-05-22 | `77e0a79c…ab116` | git annotated tag (pushed to GitHub) | tag `attest-2026-05-22-cycle11` |
 
 This table is updated by hand when anchors are filed.
+
+### Verifying an anchor
+
+For git-tag anchors:
+```bash
+git show attest-2026-05-22-cycle11           # see message + tag SHA
+gh api repos/Mikefluff/sixth/git/refs/tags/attest-2026-05-22-cycle11
+                                              # see GitHub-recorded creation
+shasum -a 256 attestations/ledger.txt        # recompute ledger SHA
+# Compare to SHA in tag message.  Match = ledger un-tampered.
+```
+
+For future OpenTimestamps anchors, use `ots verify <file>.ots`.
 
 ## Limits of this scheme
 
