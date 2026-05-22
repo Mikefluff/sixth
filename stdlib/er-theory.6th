@@ -1,0 +1,132 @@
+\ stdlib/er-theory.6th — classical Erdős-Rényi reference values.
+\
+\ Hardcoded table of classical ER theory predictions for substrate
+\ benchmarking.  Values committed to git in PREDICTIONS-124.md
+\ before measurement; this stdlib makes them callable from demos.
+\
+\ Theory (no substrate involvement):
+\   - Mean degree c = (n-1) · p
+\   - Subcritical (c < 1): mean cluster size of random node
+\     = 1 / (1 - c).  Bounded by n for finite systems.
+\   - Supercritical (c > 1): giant fraction f from 1-f = exp(-c·f)
+\     E[|cluster(v)|] = n · f² + (1-f) / (1 - c·(1-f))
+\
+\ E[phi-perc] = L_max · E[|cluster(v)|]  with L_max=10000
+\
+\ Predictions ⨯ ±15% bounds tabulated for n ∈ {10, 20}, p_percent
+\ ∈ {5, 10, 15, 20, 30}.  Words below dispatch on (n, p_percent).
+\
+\ NOT for general n, p — predictions ONLY for the specific (n, p)
+\ values pre-registered for demos 121/124.
+
+\ ----------------------------------------------------------------
+\ Classical-ER predicted ⟨phi-perc⟩ for n=20.
+\ Per PREDICTIONS-124.md (committed b0fcccd).
+\ ----------------------------------------------------------------
+
+: er-n20-prediction ( p_percent -- predicted )
+  dup  5 = if drop 100000 else        \ wide bound center (critical region)
+  dup 10 = if drop 108400 else
+  dup 15 = if drop 166800 else
+  dup 20 = if drop 191500 else
+  dup 30 = if drop 198800 else
+                drop -1                \ -1 sentinel: unsupported (p, n)
+  then then then then then ;
+
+: er-n20-low ( p_percent -- lower-bound )
+  dup  5 = if drop 10000  else        \ wide bound (critical region)
+  dup 10 = if drop 92140  else        \ -15%
+  dup 15 = if drop 141780 else
+  dup 20 = if drop 162775 else
+  dup 30 = if drop 168980 else
+                drop -1
+  then then then then then ;
+
+: er-n20-high ( p_percent -- upper-bound )
+  dup  5 = if drop 200000 else        \ wide bound (critical region)
+  dup 10 = if drop 124660 else        \ +15%
+  dup 15 = if drop 191820 else
+  dup 20 = if drop 220225 else
+  dup 30 = if drop 228620 else
+                drop -1
+  then then then then then ;
+
+\ ----------------------------------------------------------------
+\ For n=10 (cycle 6 demo 121 reference; computed similarly).
+\ c = 9p
+\
+\   p=5%  → c=0.45  → subcritical, E[|c|] ≈ 1/0.55 ≈ 1.82
+\          → E[phi-perc] ≈ 18200
+\   p=10% → c=0.9   → near-critical, E[|c|] ≈ 1/0.1 = 10 (formula diverges)
+\          → E[phi-perc] ≈ uncertain, bounded by n·L_max=100000
+\   p=15% → c=1.35  → super, f≈0.42, E[|c|] ≈ 1.76 + 2.67 ≈ 4.43
+\          → E[phi-perc] ≈ 44300
+\   p=20% → c=1.8   → f≈0.69, E[|c|] ≈ 4.76 + 2.13 ≈ 6.89
+\          → E[phi-perc] ≈ 68900
+\   p=30% → c=2.7   → f≈0.94, E[|c|] ≈ 8.84 + 1.07 ≈ 9.91
+\          → E[phi-perc] ≈ 99100
+\ ----------------------------------------------------------------
+
+: er-n10-prediction ( p_percent -- predicted )
+  dup  5 = if drop 18200  else
+  dup 10 = if drop 50000  else        \ critical region midpoint
+  dup 15 = if drop 44300  else
+  dup 20 = if drop 68900  else
+  dup 30 = if drop 99100  else
+                drop -1
+  then then then then then ;
+
+: er-n10-low ( p_percent -- lower-bound )
+  dup  5 = if drop 15470  else
+  dup 10 = if drop 15000  else        \ wide critical bound
+  dup 15 = if drop 37655  else
+  dup 20 = if drop 58565  else
+  dup 30 = if drop 84235  else
+                drop -1
+  then then then then then ;
+
+: er-n10-high ( p_percent -- upper-bound )
+  dup  5 = if drop 20930  else
+  dup 10 = if drop 100000 else        \ wide critical bound (saturated)
+  dup 15 = if drop 50945  else
+  dup 20 = if drop 79235  else
+  dup 30 = if drop 113965 else
+                drop -1
+  then then then then then ;
+
+\ ----------------------------------------------------------------
+\ Dispatch by n (only n=10 and n=20 supported).
+\ ----------------------------------------------------------------
+
+: er-prediction ( n p_percent -- predicted )
+  swap dup 10 = if drop er-n10-prediction else
+  dup 20 = if drop er-n20-prediction else
+                drop drop -1
+  then then ;
+
+: er-low ( n p_percent -- lower )
+  swap dup 10 = if drop er-n10-low else
+  dup 20 = if drop er-n20-low else
+                drop drop -1
+  then then ;
+
+: er-high ( n p_percent -- upper )
+  swap dup 10 = if drop er-n10-high else
+  dup 20 = if drop er-n20-high else
+                drop drop -1
+  then then ;
+
+\ ----------------------------------------------------------------
+\ Test: does measurement match classical within ±15% bound?
+\ Stack juggling avoided via memory cells for clarity.
+\ ----------------------------------------------------------------
+
+: er-matches? ( measured n p_percent -- 0|1 )
+  "er-p"  store
+  "er-n"  store
+  "er-m"  store
+  "er-n" load "er-p" load er-low  "er-lo" store
+  "er-n" load "er-p" load er-high "er-hi" store
+  "er-m" load "er-lo" load >= "er-ge" store
+  "er-m" load "er-hi" load <= "er-le" store
+  "er-ge" load "er-le" load + 2 = if 1 else 0 then ;

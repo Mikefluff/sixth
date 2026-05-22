@@ -1,0 +1,218 @@
+\ examples/124-substrate-vs-classical-er.6th
+\ Substrate phi-perc vs classical ER theory comparison.
+\
+\ Pre-registered in examples/PREDICTIONS-124.md (committed
+\ before this demo source was written — git history proves
+\ predictions external to measurement).
+\
+\ Hypotheses (committed in pre-registration):
+\   H0: substrate matches classical within ±15% at ALL p ∈
+\       {10, 15, 20, 30}%.  Null finding (boring confirmation).
+\   H1: substrate deviates at one or more p.  Positive finding
+\       of substrate-specific behavior.
+\
+\ This demo runs the experiment and reports which hypothesis
+\ data supports.  NO post-hoc bound adjustment.
+
+use prelude
+use graph
+use phi
+use bfs
+use rand
+use stats
+use er-theory
+use debug
+
+\ ============================================================
+\ Ensemble framework (lifted from 121/122/123).
+\ ============================================================
+
+: maybe-add-edge ( i j -- )
+  "mae-j" store   "mae-i" store
+  100 rand "p-current" load < if
+    "mae-i" load "mae-j" load bi-edge
+  then ;
+
+: edge-inner-loop
+  "edge-j" load "edge-n" load <= if
+    "edge-i" load "edge-j" load maybe-add-edge
+    "edge-j" load 1 + "edge-j" store
+    edge-inner-loop
+  then ;
+
+: edge-outer-loop
+  "edge-i" load "edge-n" load < if
+    "edge-i" load 1 + "edge-j" store
+    edge-inner-loop
+    "edge-i" load 1 + "edge-i" store
+    edge-outer-loop
+  then ;
+
+: mark-n-loop
+  "mark-rem" load 0 > if
+    MARK drop
+    "mark-rem" load 1 - "mark-rem" store
+    mark-n-loop
+  then ;
+
+: mark-n ( n -- )
+  "mark-rem" store mark-n-loop ;
+
+: gen-er-graph ( n -- )
+  "edge-n" store
+  RESET
+  "edge-n" load mark-n
+  1 1 EDGE+                                \ observer self-loop
+  1 "edge-i" store
+  edge-outer-loop ;
+
+: one-sample-tally
+  "ens-n" load gen-er-graph
+  1 phi-perc stat-add ;
+
+: K-loop
+  "K-rem" load 0 > if
+    one-sample-tally
+    "K-rem" load 1 - "K-rem" store
+    K-loop
+  then ;
+
+: M-loop
+  "M-rem" load 0 > if
+    "M-rem" load srand
+    "K-init" load "K-rem" store
+    K-loop
+    "M-rem" load 1 - "M-rem" store
+    M-loop
+  then ;
+
+: ensemble-at-p
+  stat-reset
+  "M-init" load "M-rem" store
+  M-loop ;
+
+\ ============================================================
+\ Configuration: n=20 ensemble.
+\ M=5 seeds × K=20 samples = 100 graphs per p.
+\ ============================================================
+
+20 "ens-n" store
+5  "M-init" store
+20 "K-init" store
+
+\ ============================================================
+\ Sweep p ∈ {5, 10, 15, 20, 30}%.
+\ ============================================================
+
+ 5 "p-current" store   ensemble-at-p
+   stat-mean "m05" store   stat-stddev "s05" store
+
+10 "p-current" store   ensemble-at-p
+   stat-mean "m10" store   stat-stddev "s10" store
+
+15 "p-current" store   ensemble-at-p
+   stat-mean "m15" store   stat-stddev "s15" store
+
+20 "p-current" store   ensemble-at-p
+   stat-mean "m20" store   stat-stddev "s20" store
+
+30 "p-current" store   ensemble-at-p
+   stat-mean "m30" store   stat-stddev "s30" store
+
+\ ============================================================
+\ Compare each measurement to classical ER pre-registered
+\ prediction.  Bounds and predictions from PREDICTIONS-124.md
+\ (committed before this demo).
+\ ============================================================
+
+"m05" load 20  5 er-matches? "match05" store
+"m10" load 20 10 er-matches? "match10" store
+"m15" load 20 15 er-matches? "match15" store
+"m20" load 20 20 er-matches? "match20" store
+"m30" load 20 30 er-matches? "match30" store
+
+\ ============================================================
+\ Output: HONEST report of which predictions matched.
+\ ============================================================
+
+cr
+"=== Demo 124 — substrate phi-perc vs classical ER ===" . cr
+cr
+"Configuration: n=20, M=5 seeds × K=20 = 100 graphs per p" . cr
+"Pre-registration: examples/PREDICTIONS-124.md (committed b0fcccd)" . cr
+cr
+" p%   measured ± stddev  |  classical (lower,upper)   | match?" . cr
+" --   ----------------    -------------------------     -----" . cr
+"  5   " . "m05" load . " ±" . "s05" load . "    "
+        . 20 5  er-prediction . " (" . 20 5  er-low . "," . 20 5  er-high . ")  "
+        . "match05" load . cr
+" 10   " . "m10" load . " ±" . "s10" load . "    "
+        . 20 10 er-prediction . " (" . 20 10 er-low . "," . 20 10 er-high . ")  "
+        . "match10" load . cr
+" 15   " . "m15" load . " ±" . "s15" load . "    "
+        . 20 15 er-prediction . " (" . 20 15 er-low . "," . 20 15 er-high . ")  "
+        . "match15" load . cr
+" 20   " . "m20" load . " ±" . "s20" load . "    "
+        . 20 20 er-prediction . " (" . 20 20 er-low . "," . 20 20 er-high . ")  "
+        . "match20" load . cr
+" 30   " . "m30" load . " ±" . "s30" load . "    "
+        . 20 30 er-prediction . " (" . 20 30 er-low . "," . 20 30 er-high . ")  "
+        . "match30" load . cr
+cr
+
+\ Count tight-bound matches (p=10..30, exclude p=5 wide bound).
+"match10" load "match15" load + "match20" load + "match30" load + "tight-matches" store
+cr
+"Tight-bound matches (out of 4 testable p-values, p∈{10,15,20,30}):" . cr
+"  " . "tight-matches" load . " / 4" . cr
+cr
+
+"tight-matches" load 4 = if
+  "H0 NOT REJECTED — substrate matches classical ER within ±15%" . cr
+  "at all 4 tight-bound p-values.  Substrate phi-perc behaves as" . cr
+  "ordinary random-graph reachability measure at n=20.  Null" . cr
+  "finding: substrate consistent with classical ER theory." . cr
+else
+  "tight-matches" load 0 = if
+    "H1 STRONGLY SUPPORTED — substrate deviates from classical ER" . cr
+    "at all 4 tight-bound p-values.  Systematic substrate-specific" . cr
+    "behavior identified.  Positive finding requiring follow-up" . cr
+    "investigation (cycle 9+)." . cr
+  else
+    "MIXED RESULT — substrate matches classical at some p, deviates" . cr
+    "at others.  See per-p output above for which regimes." . cr
+    "Tight bound matches = " . "tight-matches" load . " / 4." . cr
+    "Investigate non-matching regimes in cycle 9." . cr
+  then
+then
+
+\ ============================================================
+\ Sanity asserts (no theory-content; just consistency checks).
+\ ============================================================
+
+\ All means in valid range.
+"m05" load 10000 >= "m05" load 200000 <= + 2 assert-eq
+"m30" load 10000 >= "m30" load 200000 <= + 2 assert-eq
+
+\ Monotonicity at coarse scale.
+"m05" load "m30" load < 1 assert-eq
+
+\ Verify match indicators are 0 or 1 (sanity check on er-matches?).
+"match05" load 0 >= "match05" load 1 <= + 2 assert-eq
+"match10" load 0 >= "match10" load 1 <= + 2 assert-eq
+"match15" load 0 >= "match15" load 1 <= + 2 assert-eq
+"match20" load 0 >= "match20" load 1 <= + 2 assert-eq
+"match30" load 0 >= "match30" load 1 <= + 2 assert-eq
+
+\ Tight matches in valid range [0, 4].
+"tight-matches" load 0 >= "tight-matches" load 4 <= + 2 assert-eq
+
+\ ============================================================
+\ Regression pin: specific outcome (deterministic under seeds 1..5).
+\ These will be filled in measurement-results commit AFTER running.
+\ ============================================================
+
+\ NOTE: pins added in subsequent commit (cycle 8 measurement commit).
+\ This source committed in cycle-8-source commit, before run.
+
+REPORT
