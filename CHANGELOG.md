@@ -11,6 +11,44 @@ release with a maintained changelog from the next version forward.
 
 Tracks `main@HEAD` development past v0.8.  Currently:
 
+### Added (cycle 7 — explicit retract markers + multi-observer + first valid predict-then-measure)
+
+- **Explicit retract notices added to demos 116, 117, 118, 119**
+  (box-style headers at top of each file pointing to RESULTS.md
+  "CYCLE 6" section).  Demos retained as regression tests but
+  research interpretations explicitly superseded.
+- **Demo 122** (18 ✓) — multi-observer ensemble.  Averages
+  phi-perc across all n observers per graph + multi-seed
+  (M=5×K=10×n = 500 samples per p).  Confirms single-observer
+  and multi-observer give means within 1σ at every p tested.
+  Observer choice does not significantly bias ensemble at n=10.
+- **Demo 123** (14 ✓) — **FIRST valid predict-then-measure
+  cycle in catalogue**.  Theory derived analytically from
+  substrate model BEFORE running: at deep supercritical p,
+  ratio ⟨phi-perc⟩(n=20)/⟨phi-perc⟩(n=10) ∈ [2.0, 2.2].
+  Measured 217%, intensive ratio 108%.  **CONFIRMED within
+  predicted bounds.**  Substrate extensivity verified.  First
+  substantive substrate-derived research finding that survives
+  CS-doctor scrutiny.
+- **companion-1-pythia/** scaffold directory — README, DESIGN.md
+  (pre-registered encoding + metrics + predictions + falsifiers),
+  requirements.txt, extract.py stub.  Long-term: F5.1 datestamp
+  2027-06-30 for substrate-monism Pythia attention validation.
+
+### Fixed (engine bug surfaced by cycle 7 stack enforcement)
+
+- **`stdlib/phi.6th phi-perc`** had silent stack leak.  Documented
+  signature `( O -- phi )` but actually `( O -- O phi )` — bfs-init
+  preserves O on stack instead of consuming it.  Cycle 4-5 demos
+  using phi-perc inside recursive K-loop silently accumulated
+  hundreds of leftover values; demos passed because top-of-stack
+  asserts ignored the leak.  Demo 122 (multi-observer) calls
+  phi-perc inside EACH (which has stack-balance enforcement from
+  cycle 1 S2), surfacing the leak immediately.  Fixed with
+  explicit `drop` after bfs-init.  Demos 111/121 still pass.
+  **Cycle-1 stack-balance enforcement (S2) retroactively earned
+  its keep by finding stdlib bug.**
+
 ### Added (cycle 6 — statistical infrastructure + honest retract)
 
 CS-doctor #3 retrospective on cycles 4-5 (in RESULTS.md): single-

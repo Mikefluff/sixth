@@ -292,7 +292,18 @@
     ;;      transition at n=10 — finite-size smearing dominates.
     ;;      First measurement in catalogue with proper error bars.
     ("120-stats-verification.6th"                24)
-    ("121-multiseed-ensemble.6th"                18)))
+    ("121-multiseed-ensemble.6th"                18)
+    ;; --- Cycle 7: multi-observer + theory-driven prediction ---
+    ;; 122: multi-observer ensemble — phi-perc averaged across
+    ;;      all n observers per graph + multi-seed.  Confirms
+    ;;      single-observer and multi-observer give close means
+    ;;      at n=10 (within 1σ for all p).
+    ;; 123: FIRST predict-THEN-measure cycle in catalogue.
+    ;;      Theory: at deep supercritical p, ratio ⟨phi-perc⟩(n=20)
+    ;;      / ⟨phi-perc⟩(n=10) ∈ [2.0, 2.2].  Measured: 217%,
+    ;;      intensive ratio 108%.  Substrate extensivity CONFIRMED.
+    ("122-multiobserver-ensemble.6th"            18)
+    ("123-theory-extensivity.6th"                14)))
 
 (define (run-demo file)
   (define out
@@ -317,8 +328,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1787
-                (format "cumulative ✓ count: ~a (expected 1787)" total-pass)))
+  (check-equal? total-pass 1819
+                (format "cumulative ✓ count: ~a (expected 1819)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1787 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1819 ✓ across ~a demos"
                    total-pass (length expected)))

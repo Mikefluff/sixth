@@ -204,10 +204,12 @@ use bfs
   bfs-step bfs-step bfs-step bfs-step ;
 
 : phi-perc ( O -- phi )
-  dup "phi-perc-O" store
+  "phi-perc-O" store                  \ consume O into memory cell
+  "phi-perc-O" load
   ' phi-perc-snap-rule EACH           \ save all NGETs to negative-int keys
-  bfs-init                            \ initialise NGETs (-1, with O → 0)
+  bfs-init                            \ initialise NGETs (-1, with O → 0); preserves O
   phi-perc-bfs-32                     \ run BFS for 32 steps
+  drop                                \ discard the O that bfs-init preserved
   0 "phi-perc-count" store
   ' phi-perc-tally EACH               \ count reached nodes
   "phi-perc-count" load               \ ( comp-size )

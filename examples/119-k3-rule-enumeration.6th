@@ -1,4 +1,31 @@
 \ examples/119-k3-rule-enumeration.6th
+\
+\ ╔════════════════════════════════════════════════════════════════╗
+\ ║ RECLASSIFICATION NOTICE (cycle 6, 2026-05-22)                 ║
+\ ║                                                                ║
+\ ║ The "second-order substrate degeneracy SURPRISE" framing is   ║
+\ ║ RECLASSIFIED.  The K_eff=3 rules giving 15 (not naive 16)     ║
+\ ║ edges follows directly from documented engine set-semantics   ║
+\ ║ applied to the iter-2 self-loop input (a=b causes (a,c)=(b,c) ║
+\ ║ duplicate, which substrate deduplicates).                      ║
+\ ║                                                                ║
+\ ║ Both "surprises" in cycles 4-5 (this demo + 117) were AUTHOR  ║
+\ ║ tracing errors: I did not carefully count through set-        ║
+\ ║ semantics for the c-source / self-loop interaction at iter 2. ║
+\ ║ Substrate didn't "correct" me — engine documentation already  ║
+\ ║ implied the answer; I just didn't read it carefully.          ║
+\ ║                                                                ║
+\ ║ Honest reclassification: DOCUMENTATION-COMPLETENESS GAP       ║
+\ ║ closure for the K-rule-space.  At K=2 enumeration (demo 117) ║
+\ ║ surfaced a=b duplicate case in the rule itself; at K=3 it    ║
+\ ║ surfaces a=b case in the iter-2 input.  Both are predictable  ║
+\ ║ from engine docs.                                              ║
+\ ║                                                                ║
+\ ║ Retained as regression test for engine semantics on K=3 rule  ║
+\ ║ space.  See RESULTS.md "CYCLE 6" for full context.            ║
+\ ╚════════════════════════════════════════════════════════════════╝
+\
+\ ORIGINAL HEADER:
 \ K=3 rule-space enumeration — SECOND substrate-derived SURPRISE
 \ in cycle 5.
 \

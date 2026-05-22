@@ -1,4 +1,35 @@
 \ examples/118-ensemble-pc-scaling.6th
+\
+\ ╔════════════════════════════════════════════════════════════════╗
+\ ║ DOWNGRADE NOTICE (cycle 6, 2026-05-22)                        ║
+\ ║                                                                ║
+\ ║ The "scaling exponent measurement" claim of this demo is      ║
+\ ║ DOWNGRADED to "preliminary single-seed observation pending    ║
+\ ║ multi-seed validation".  Reasons:                              ║
+\ ║                                                                ║
+\ ║  - 2 data points (n=10, n=20) cannot fit a scaling exponent.  ║
+\ ║    Any 2 points lie on a perfect line trivially.              ║
+\ ║  - K=4 samples per p is even smaller than 116's K=8.          ║
+\ ║    Statistical power is essentially zero.                      ║
+\ ║  - The "n=20 sharpening" finding may be RNG-specific          ║
+\ ║    accident; with K=4 the 22500 → 127500 jump could be one    ║
+\ ║    specific 4-graph configuration.                             ║
+\ ║                                                                ║
+\ ║ Demo 121 multi-seed re-measurement at n=10 RETRACTS demo      ║
+\ ║ 116's sharp-transition framing.  By extension, this demo's    ║
+\ ║ "scaling" claim cannot stand at K=4 either.                   ║
+\ ║                                                                ║
+\ ║ Real scaling exponent measurement requires:                    ║
+\ ║  - 5+ scaling points (n ∈ {10, 20, 30, 50, 100})              ║
+\ ║  - K ≥ 100 samples per (n, p)                                 ║
+\ ║  - Proper p_c definition (susceptibility peak, not threshold) ║
+\ ║                                                                ║
+\ ║ This demo retained as REGRESSION TEST for seed=42 outcomes,   ║
+\ ║ but its scaling interpretation is pending future multi-seed   ║
+\ ║ work.  See RESULTS.md "CYCLE 6" for full context.             ║
+\ ╚════════════════════════════════════════════════════════════════╝
+\
+\ ORIGINAL (NOW-DOWNGRADED) HEADER:
 \ Ensemble p_c scaling measurement — REAL substrate-derived
 \ critical exponent.
 \

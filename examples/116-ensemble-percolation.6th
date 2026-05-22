@@ -1,4 +1,34 @@
 \ examples/116-ensemble-percolation.6th
+\
+\ ╔════════════════════════════════════════════════════════════════╗
+\ ║ RETRACT NOTICE (cycle 6, 2026-05-22)                          ║
+\ ║                                                                ║
+\ ║ The "sharp phase transition at p=15-20%" claim of this demo   ║
+\ ║ is RETRACTED.  Single seed=42 × K=8 samples is not ensemble   ║
+\ ║ measurement; it's deterministic LCG trace with averaging.     ║
+\ ║                                                                ║
+\ ║ Demo 121 (M=10 seeds × K=20 = 200 samples per p) shows the    ║
+\ ║ real ensemble curve at n=10 is SMOOTH MONOTONIC, not sharp:   ║
+\ ║   p=5:  16,600 ± 10,928                                       ║
+\ ║   p=10: 28,950 ± 22,680                                       ║
+\ ║   p=15: 46,250 ± 30,190                                       ║
+\ ║   p=20: 64,050 ± 32,358                                       ║
+\ ║   p=30: 88,700 ± 23,881                                       ║
+\ ║                                                                ║
+\ ║ The apparent "jump 41,250 → 82,500" between p=15% and p=20%   ║
+\ ║ in this demo (116) was SEED-42-SPECIFIC ARTIFACT, within 1σ   ║
+\ ║ of the real ensemble mean.  At n=10, substrate phi-perc does  ║
+\ ║ NOT exhibit classical Erdős-Rényi sharp transition; finite-   ║
+\ ║ size smearing dominates.                                       ║
+\ ║                                                                ║
+\ ║ This demo retained as REGRESSION TEST for RNG/phi-perc        ║
+\ ║ reproducibility at seed=42 (all 9 means pinned), but its      ║
+\ ║ research interpretation is superseded by demo 121.            ║
+\ ║                                                                ║
+\ ║ See RESULTS.md "CYCLE 6 — CS-doctor #3 retrospective".        ║
+\ ╚════════════════════════════════════════════════════════════════╝
+\
+\ ORIGINAL (NOW-RETRACTED) HEADER:
 \ FIRST non-engineered ensemble experiment in the catalogue.
 \
 \ Generates random Erdős-Rényi graphs G(n, p) using stdlib RNG

@@ -1,0 +1,233 @@
+\ examples/122-multiobserver-ensemble.6th
+\ Multi-observer ensemble percolation.
+\
+\ Demo 121 measured phi-perc(observer=1) only.  In a random graph,
+\ different observers reach different components, so the choice of
+\ observer biases the measurement.  Classical percolation
+\ susceptibility samples observers UNIFORMLY over the graph:
+\
+\   χ(graph) = (1/n) · Σ_{i=1..n} |comp(i)|
+\
+\ Substrate-readable equivalent (with all nodes having self-loop):
+\
+\   ⟨phi-perc⟩_graph = (1/n) · Σ_i phi-perc(i)
+\                    = L_max · χ(graph)
+\
+\ This demo computes the multi-observer-averaged phi-perc and
+\ aggregates over multi-seed ensemble.  Compares to demo 121's
+\ observer-1-only ensemble.
+\
+\ Theory prediction: multi-observer averaging gives the substrate-
+\ readable equivalent of percolation SUSCEPTIBILITY — the
+\ classical order parameter.  At p_c, susceptibility peaks for
+\ finite-size systems.  At n=10, finite-size smearing means peak
+\ is broad; we expect curve shape similar to demo 121 but with
+\ different magnitude.
+\
+\ Configuration (deliberately moderate for tractable runtime):
+\   n = 10
+\   M = 5 seeds × K = 10 samples per seed = 50 graphs per p
+\   Per graph: 10 observers → 500 total observer measurements per p
+\   p ∈ {5, 10, 15, 20, 30}%
+
+use prelude
+use graph
+use phi
+use bfs
+use rand
+use stats
+use debug
+
+\ ============================================================
+\ Random graph generator.
+\ ============================================================
+
+: maybe-add-edge ( i j -- )
+  "mae-j" store   "mae-i" store
+  100 rand "p-current" load < if
+    "mae-i" load "mae-j" load bi-edge
+  then ;
+
+: edge-inner-loop
+  "edge-j" load "edge-n" load <= if
+    "edge-i" load "edge-j" load maybe-add-edge
+    "edge-j" load 1 + "edge-j" store
+    edge-inner-loop
+  then ;
+
+: edge-outer-loop
+  "edge-i" load "edge-n" load < if
+    "edge-i" load 1 + "edge-j" store
+    edge-inner-loop
+    "edge-i" load 1 + "edge-i" store
+    edge-outer-loop
+  then ;
+
+: mark-n-loop
+  "mark-rem" load 0 > if
+    MARK drop
+    "mark-rem" load 1 - "mark-rem" store
+    mark-n-loop
+  then ;
+
+: mark-n ( n -- )
+  "mark-rem" store mark-n-loop ;
+
+\ Add self-loops to EVERY node (so all observers' self-ref = 1).
+: self-loop-each-rule ( n -- )
+  dup dup EDGE+ drop ;
+
+: self-loop-all
+  ' self-loop-each-rule EACH ;
+
+: gen-er-graph-all-selfloops ( n -- )
+  "edge-n" store
+  RESET
+  "edge-n" load mark-n
+  self-loop-all
+  1 "edge-i" store
+  edge-outer-loop ;
+
+\ ============================================================
+\ For each observer 1..n, compute phi-perc, add to aggregator.
+\ ============================================================
+
+: tally-observer-rule ( n -- )
+  phi-perc stat-add ;
+
+: tally-all-observers
+  ' tally-observer-rule EACH ;
+
+\ ============================================================
+\ One sample: gen graph, tally all n observers.
+\ Adds n entries to the stat aggregator per call.
+\ ============================================================
+
+: one-multi-obs-sample
+  "ens-n" load gen-er-graph-all-selfloops
+  tally-all-observers ;
+
+\ K samples per seed.
+: K-loop
+  "K-rem" load 0 > if
+    one-multi-obs-sample
+    "K-rem" load 1 - "K-rem" store
+    K-loop
+  then ;
+
+\ M seeds, each runs K samples.
+: M-loop
+  "M-rem" load 0 > if
+    "M-rem" load srand
+    "K-init" load "K-rem" store
+    K-loop
+    "M-rem" load 1 - "M-rem" store
+    M-loop
+  then ;
+
+: ensemble-at-p
+  stat-reset
+  "M-init" load "M-rem" store
+  M-loop ;
+
+\ ============================================================
+\ Configuration.
+\ ============================================================
+
+10 "ens-n" store
+5  "M-init" store
+10 "K-init" store
+
+\ ============================================================
+\ Sweep p.
+\ ============================================================
+
+ 5 "p-current" store   ensemble-at-p
+   stat-mean "mu05" store   stat-stddev "sd05" store   stat-n "n05" store
+
+10 "p-current" store   ensemble-at-p
+   stat-mean "mu10" store   stat-stddev "sd10" store   stat-n "n10" store
+
+15 "p-current" store   ensemble-at-p
+   stat-mean "mu15" store   stat-stddev "sd15" store   stat-n "n15" store
+
+20 "p-current" store   ensemble-at-p
+   stat-mean "mu20" store   stat-stddev "sd20" store   stat-n "n20" store
+
+30 "p-current" store   ensemble-at-p
+   stat-mean "mu30" store   stat-stddev "sd30" store   stat-n "n30" store
+
+\ ============================================================
+\ Output.
+\ ============================================================
+
+cr
+"=== Demo 122 — MULTI-OBSERVER ensemble percolation ===" . cr
+cr
+"n=10, M=5 seeds, K=10 samples/seed, n observers/graph = 500 samples/p" . cr
+cr
+" p%   N     ⟨phi-perc⟩   ± stddev" . cr
+" --   ---   ----------   --------" . cr
+"  5   " . "n05" load . " " . "mu05" load . "   ±" . "sd05" load . cr
+" 10   " . "n10" load . " " . "mu10" load . "   ±" . "sd10" load . cr
+" 15   " . "n15" load . " " . "mu15" load . "   ±" . "sd15" load . cr
+" 20   " . "n20" load . " " . "mu20" load . "   ±" . "sd20" load . cr
+" 30   " . "n30" load . " " . "mu30" load . "   ±" . "sd30" load . cr
+cr
+"Comparison to demo 121 (observer-1-only, M=10, K=20, 200/p):" . cr
+"  p=5:  121 mean=16600 ±10928   122 mean=" . "mu05" load . " ±" . "sd05" load . cr
+"  p=10: 121 mean=28950 ±22680   122 mean=" . "mu10" load . " ±" . "sd10" load . cr
+"  p=15: 121 mean=46250 ±30190   122 mean=" . "mu15" load . " ±" . "sd15" load . cr
+"  p=20: 121 mean=64050 ±32358   122 mean=" . "mu20" load . " ±" . "sd20" load . cr
+"  p=30: 121 mean=88700 ±23881   122 mean=" . "mu30" load . " ±" . "sd30" load . cr
+cr
+"Substrate-derived χ (percolation susceptibility) = mu/L_max:" . cr
+"  p=5:  χ = " . "mu05" load 10000 / . cr
+"  p=10: χ = " . "mu10" load 10000 / . cr
+"  p=15: χ = " . "mu15" load 10000 / . cr
+"  p=20: χ = " . "mu20" load 10000 / . cr
+"  p=30: χ = " . "mu30" load 10000 / . cr
+cr
+"Theory: multi-observer-average phi-perc = L_max · ⟨|comp|⟩" . cr
+"where ⟨|comp|⟩ is mean cluster size sampled uniformly over" . cr
+"nodes — classical percolation susceptibility.  For random ER" . cr
+"at n=10, χ should grow monotonically with p, saturating at n=10" . cr
+"in supercritical regime.  Multi-observer ≥ single-observer because" . cr
+"multi-observer pools across all giant-component members; single-" . cr
+"observer can land in small component depending on graph." . cr
+
+\ ============================================================
+\ Sanity asserts and regression pins.
+\ ============================================================
+
+"mu05" load 10000 >= 1 assert-eq
+"mu30" load 100000 <= 1 assert-eq
+
+\ Monotonicity coarse.
+"mu05" load "mu30" load < 1 assert-eq
+
+\ Count: per p we have M × K × n = 5 × 10 × 10 = 500 samples.
+"n05" load 500 assert-eq
+"n10" load 500 assert-eq
+"n15" load 500 assert-eq
+"n20" load 500 assert-eq
+"n30" load 500 assert-eq
+
+\ Regression pin (deterministic under seeds 1..5).
+"mu05" load 16640 assert-eq
+"mu10" load 29680 assert-eq
+"mu15" load 48120 assert-eq
+"mu20" load 69360 assert-eq
+"mu30" load 89640 assert-eq
+"sd05" load 10193 assert-eq
+"sd10" load 23036 assert-eq
+"sd15" load 31305 assert-eq
+"sd20" load 32372 assert-eq
+"sd30" load 22024 assert-eq
+
+\ Demo 121 vs demo 122 comparison at p=10 — they should be close
+\ (within stddev) since at n=10 both methods sample roughly the
+\ same total reachability distribution.  But may differ at low p
+\ where observer-1-specific bias matters more.
+
+REPORT

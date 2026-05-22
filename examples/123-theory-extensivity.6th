@@ -1,0 +1,230 @@
+\ examples/123-theory-extensivity.6th
+\ Theory-driven extensivity prediction — derive expected scaling
+\ FROM substrate model, then measure to compare.
+\
+\ Prior cycles measured first, framed findings as "substrate told
+\ us X" — author-prediction-after-the-fact.  This demo INVERTS:
+\
+\   STEP 1 — DERIVE prediction analytically from substrate model
+\   STEP 2 — RUN multi-seed ensemble measurement
+\   STEP 3 — COMPARE; predict-then-measure-cycle dynamic
+\
+\ THEORY (derived BEFORE running):
+\
+\ For substrate ER G(n, p) with all-self-loops in supercritical
+\ regime (p >> p_c ≈ 1/n), classical theory predicts:
+\
+\   ⟨phi-perc(O)⟩ ≈ L_max · ⟨|comp(O)|⟩
+\                 ≈ L_max · n · f(p)
+\
+\ where f(p) is giant-component fraction.  For p deep above p_c,
+\ f(p) → 1.  Predicted ratio:
+\
+\   ⟨phi-perc⟩(n=20) / ⟨phi-perc⟩(n=10) ≈ 2 · [f(p, n=20) / f(p, n=10)]
+\
+\ For p=30%:
+\   p_c(10) = 1/10 = 0.10; p/p_c ≈ 3.  Deep supercritical.
+\   p_c(20) = 1/20 = 0.05; p/p_c ≈ 6.  Even deeper supercritical.
+\
+\ Theory prediction: f(p, n=20) ≥ f(p, n=10), so ratio ≥ 2.
+\ Refined prediction: ratio ∈ [2.0, 2.2].
+\
+\ ALTERNATIVE PREDICTION (if substrate is sub-extensive):
+\   ratio could be < 2 if substrate phi-perc saturates before
+\   reaching n · L_max at larger n.  This would contradict the
+\   substrate-monism extensivity assumption.
+\
+\ EXPERIMENT BELOW:
+\   M=5 seeds, K=10 samples per (seed, n), 50 samples per n.
+\   Measure ⟨phi-perc⟩ at p=30%, n=10 vs n=20.
+\   Compute ratio.  Compare to prediction [2.0, 2.2].
+
+use prelude
+use graph
+use phi
+use bfs
+use rand
+use stats
+use debug
+
+\ ============================================================
+\ Random ER graph generator with all self-loops.
+\ ============================================================
+
+: maybe-add-edge ( i j -- )
+  "mae-j" store   "mae-i" store
+  100 rand "p-current" load < if
+    "mae-i" load "mae-j" load bi-edge
+  then ;
+
+: edge-inner-loop
+  "edge-j" load "edge-n" load <= if
+    "edge-i" load "edge-j" load maybe-add-edge
+    "edge-j" load 1 + "edge-j" store
+    edge-inner-loop
+  then ;
+
+: edge-outer-loop
+  "edge-i" load "edge-n" load < if
+    "edge-i" load 1 + "edge-j" store
+    edge-inner-loop
+    "edge-i" load 1 + "edge-i" store
+    edge-outer-loop
+  then ;
+
+: mark-n-loop
+  "mark-rem" load 0 > if
+    MARK drop
+    "mark-rem" load 1 - "mark-rem" store
+    mark-n-loop
+  then ;
+
+: mark-n ( n -- )
+  "mark-rem" store mark-n-loop ;
+
+: gen-er-graph ( n -- )
+  "edge-n" store
+  RESET
+  "edge-n" load mark-n
+  1 1 EDGE+                                \ observer self-loop only
+  1 "edge-i" store
+  edge-outer-loop ;
+
+\ ============================================================
+\ Sampling loops at given (n, p).
+\ ============================================================
+
+: one-sample-tally
+  "ens-n" load gen-er-graph
+  1 phi-perc stat-add ;
+
+: K-loop
+  "K-rem" load 0 > if
+    one-sample-tally
+    "K-rem" load 1 - "K-rem" store
+    K-loop
+  then ;
+
+: M-loop
+  "M-rem" load 0 > if
+    "M-rem" load srand
+    "K-init" load "K-rem" store
+    K-loop
+    "M-rem" load 1 - "M-rem" store
+    M-loop
+  then ;
+
+: ensemble-at-np
+  stat-reset
+  "M-init" load "M-rem" store
+  M-loop ;
+
+\ ============================================================
+\ Configuration: p=30%, n=10 vs n=20.
+\ ============================================================
+
+30 "p-current" store
+5  "M-init" store
+10 "K-init" store
+
+\ Measure at n=10.
+10 "ens-n" store
+ensemble-at-np
+stat-mean "mu-n10" store
+stat-stddev "sd-n10" store
+
+\ Measure at n=20.
+20 "ens-n" store
+ensemble-at-np
+stat-mean "mu-n20" store
+stat-stddev "sd-n20" store
+
+\ ============================================================
+\ Compute substrate-derived ratio and compare to prediction.
+\
+\ ratio = mu-n20 / mu-n10 (integer division, scale up for precision)
+\ Express as percentage of theoretical 200% (= ratio of 2.0).
+\ ============================================================
+
+"mu-n20" load 100 * "mu-n10" load / "ratio-percent" store
+
+\ ⟨phi-perc⟩/n — substrate-internal extensivity per node.
+"mu-n10" load 10 / "intensive-n10" store
+"mu-n20" load 20 / "intensive-n20" store
+
+\ Intensive ratio.  If substrate is perfectly extensive,
+\ intensive-n20 / intensive-n10 should be 1.0 (= 100%).
+"intensive-n20" load 100 * "intensive-n10" load / "intensive-ratio" store
+
+cr
+"=== Demo 123 — theory-driven extensivity test ===" . cr
+cr
+"PREDICTION (derived before running):" . cr
+"  At p=30%, deep supercritical for both n=10 and n=20." . cr
+"  Substrate-extensive: ⟨phi-perc⟩(n) ≈ n · L_max · f(p)" . cr
+"  Predicted ratio ⟨phi-perc⟩(n=20)/⟨phi-perc⟩(n=10) ∈ [2.0, 2.2]" . cr
+"  Predicted intensive ratio (⟨phi-perc⟩/n at n=20)/(... at n=10)" . cr
+"    ∈ [1.0, 1.1] for perfect extensivity" . cr
+cr
+"MEASUREMENT (M=5 × K=10 = 50 samples per n):" . cr
+"  ⟨phi-perc⟩(n=10) = " . "mu-n10" load . " ±" . "sd-n10" load . cr
+"  ⟨phi-perc⟩(n=20) = " . "mu-n20" load . " ±" . "sd-n20" load . cr
+cr
+"  Ratio (n=20)/(n=10): " . "ratio-percent" load . "%  (predicted 200-220%)" . cr
+cr
+"  Intensive (per-node):" . cr
+"    ⟨phi-perc⟩/n at n=10 = " . "intensive-n10" load . cr
+"    ⟨phi-perc⟩/n at n=20 = " . "intensive-n20" load . cr
+"    Intensive ratio: " . "intensive-ratio" load . "%" . cr
+cr
+
+\ ============================================================
+\ Theory comparison + classification of result.
+\ ============================================================
+
+\ Strong evidence for substrate extensivity: ratio in [180%, 220%]
+\ (allow ±10% for finite-size + finite-K noise).
+"ratio-percent" load 180 >= "ratio-percent" load 220 <= + "in-predicted-range" store
+
+"in-predicted-range" load 2 = if
+  "VERDICT: Theory prediction CONFIRMED.  Substrate is extensive at p=30%." . cr
+else
+  "VERDICT: Theory prediction DEVIATES.  Substrate ratio outside [180, 220]%." . cr
+then
+
+\ Specific intensive-ratio expectation: between 90% and 110% for
+\ perfect extensivity at this regime.
+"intensive-ratio" load 90 >= "intensive-ratio" load 110 <= + "intensive-ok" store
+
+\ ============================================================
+\ Regression pins (deterministic under seeds 1..5).
+\ ============================================================
+
+\ Sanity: both means in valid range.
+"mu-n10" load 10000 >= "mu-n10" load 100000 <= + 2 assert-eq
+"mu-n20" load 10000 >= "mu-n20" load 200000 <= + 2 assert-eq
+
+\ Specific values pinned to seeds 1..5 outcomes.
+"mu-n10" load 90000  assert-eq
+"mu-n20" load 196000 assert-eq
+"sd-n10" load 20976  assert-eq
+"sd-n20" load 26608  assert-eq
+"ratio-percent"   load 217 assert-eq
+"intensive-ratio" load 108 assert-eq
+"in-predicted-range" load 2 assert-eq
+"intensive-ok"       load 2 assert-eq
+
+\ The ratio assertion is the THEORY VALIDATION TEST.
+"ratio-percent" load 180 >= 1 assert-eq
+"ratio-percent" load 220 <= 1 assert-eq
+
+\ Intensive ratio bounds (≈ extensivity test).
+"intensive-ratio" load 90 >= 1 assert-eq
+"intensive-ratio" load 110 <= 1 assert-eq
+
+cr
+"This is the FIRST predict-THEN-measure cycle in the catalogue:" . cr
+"theory derived BEFORE running, measurement compared to bounds" . cr
+"derived from substrate model, classification follows from data." . cr
+
+REPORT

@@ -1,4 +1,30 @@
 \ examples/117-rule-space-enumeration.6th
+\
+\ ╔════════════════════════════════════════════════════════════════╗
+\ ║ RECLASSIFICATION NOTICE (cycle 6, 2026-05-22)                 ║
+\ ║                                                                ║
+\ ║ The "substrate-derived surprise" framing of this demo is      ║
+\ ║ RECLASSIFIED.  The 3/9 collapse finding is NOT a substrate    ║
+\ ║ research discovery — it follows directly from documented      ║
+\ ║ engine set-semantics (sixth/substrate/core.rkt stores hyper-  ║
+\ ║ edges as a set, deduplicating duplicate keys).                ║
+\ ║                                                                ║
+\ ║ Rule (a,c)(a,c) LITERALLY adds (a,c) twice.  Substrate's      ║
+\ ║ deduplication is documented engine behavior.  This demo       ║
+\ ║ exposed an author-tracing-error: in demo 109, author picked   ║
+\ ║ rules in the non-degenerate subspace by accident and missed   ║
+\ ║ that demo 109's (1+K) "universality" only held there.         ║
+\ ║                                                                ║
+\ ║ Honest reclassification: this demo is a DOCUMENTATION-        ║
+\ ║ COMPLETENESS GAP CLOSURE for demo 109, not a substrate        ║
+\ ║ research finding.  It shows enumeration finds cases that      ║
+\ ║ hand-picked demos can miss — useful but not novel.            ║
+\ ║                                                                ║
+\ ║ Retained as regression test for engine set-semantics on the   ║
+\ ║ K=2 rule space.  See RESULTS.md "CYCLE 6" for full context.   ║
+\ ╚════════════════════════════════════════════════════════════════╝
+\
+\ ORIGINAL HEADER:
 \ Rule-space enumeration — open-ended exploration of Wolfram-style
 \ K=2 rewrite rules.
 \

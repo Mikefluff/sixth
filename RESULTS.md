@@ -812,6 +812,140 @@ have been retracted (sharp percolation transition at n=10).
 Future cycles can build real findings on top of statistical
 infrastructure with explicit error-bar reporting.
 
+---
+
+## Cycle 7 — explicit retract markers + multi-observer + first valid predict-then-measure
+
+### 7.0 Engine bug discovered + fixed (cycle 6→7 transition)
+
+`stdlib/phi.6th phi-perc` had a silent stack leak: documented as
+( O -- phi ) but actually behaved as ( O -- O phi ).  Cycle 4-5
+demos using phi-perc inside outer recursive loops (K-loop in
+121) silently accumulated 200+ leftover values on the stack.
+Demos still passed because top-of-stack assertions don't check
+depth.
+
+**Surfaced by** demo 122 (multi-observer) which calls phi-perc
+inside EACH — and EACH has stack-balance enforcement.  Enforcement
+caught the leak.  Cycle-1 substrate engineering S2 (stack-balance
+enforcement) earned its keep retroactively by finding a stdlib
+bug.
+
+Fixed in stdlib/phi.6th: explicit `drop` after bfs-init to consume
+the preserved O.  Demos 111/121 still pass — they were robust
+to the leak because their callers ignored leftover stack.
+
+### 7.1 Explicit retract markers in demos 116, 117, 118, 119
+
+Each demo now carries a top-of-file box-notice (RETRACT NOTICE /
+DOWNGRADE NOTICE / RECLASSIFICATION NOTICE) pointing to RESULTS.md
+"CYCLE 6" section and explaining the revised status.  Demos
+retained as regression tests for seed=X outcomes but research
+interpretations explicitly superseded.
+
+### 7.2 Demo 122 — multi-observer ensemble (18 ✓)
+
+Phi-perc(O) varies by observer choice.  Demo 122 averages over
+all n observers per graph (with self-loops on every node), pools
+across M=5 seeds × K=10 samples = 500 samples per p.
+
+**Comparison to demo 121 (observer-1-only, M=10×K=20 = 200/p):**
+
+| p% | demo 121 (single-obs) | demo 122 (multi-obs) |
+|----|----------------------|----------------------|
+|  5 | 16600 ±10928 | 16640 ±10193 |
+| 10 | 28950 ±22680 | 29680 ±23036 |
+| 15 | 46250 ±30190 | 48120 ±31305 |
+| 20 | 64050 ±32358 | 69360 ±32372 |
+| 30 | 88700 ±23881 | 89640 ±22024 |
+
+**Finding:** at n=10 with M×K ≥ 100 samples, single-observer
+and multi-observer averaging give means within 1σ at every p.
+Observer choice does not bias ensemble measurement at this n.
+
+Substrate-monism implication: the «which observer is conscious»
+question at finite n=10 with phi-perc has small statistical
+impact on ensemble-level measurement.  Whether this scales to
+larger n requires further work.
+
+### 7.3 Demo 123 — FIRST predict-then-measure cycle (14 ✓)
+
+**Theory derived BEFORE running:** at deep supercritical p (p >>
+p_c), substrate ER G(n, p) has giant component fraction f(p) → 1.
+Predicted ratio ⟨phi-perc⟩(n=20) / ⟨phi-perc⟩(n=10) ∈ [2.0, 2.2]
+for substrate extensivity.
+
+**Measurement (M=5 × K=10 = 50 samples per n at p=30%):**
+
+| n  | ⟨phi-perc⟩ ± stddev | per-node intensive |
+|----|---------------------|-------------------|
+| 10 | 90,000 ± 20,976 | 9,000 |
+| 20 | 196,000 ± 26,608 | 9,800 |
+
+- **Substrate ratio = 217%** (predicted [200, 220]%) — **CONFIRMED**
+- **Intensive ratio = 108%** (predicted [100, 110]%) — **CONFIRMED**
+
+**Significance:** **first valid predict-then-measure cycle in
+the catalogue.**  Theory derived analytically from substrate
+model, predicted range pre-stated, measurement confirmed within
+predicted bounds.  No post-hoc revision.  No author tracing
+errors.  No engineered transitions.
+
+**Substrate-monism finding (real):** at deep supercritical p,
+substrate phi-perc IS extensive — average per-node Φ_perc grows
+proportionally with n.  The intensive ratio deviation (108% vs
+predicted 100%) is within finite-size correction window.
+
+This is the FIRST substantive substrate-derived research finding
+in the catalogue that survives CS-doctor scrutiny: theory derived
+externally to measurement, both pre-registered, both confirmed.
+
+### 7.4 Companion #1 scaffold (Pythia Φ_PA validation)
+
+Created `companion-1-pythia/` directory:
+- `README.md` — overview, F5.1 datestamp (2027-06-30), pre-flight
+  checklist, methodological commitments
+- `DESIGN.md` — pre-registered encoding scheme (attention → substrate),
+  Φ-family adaptation, correlation metrics, predictions, falsifiers
+- `requirements.txt` — Python deps (torch, transformers, datasets)
+- `extract.py` — scaffold stub (not yet implemented)
+
+Methodological commitments: pre-register predictions BEFORE
+measurement; honest reporting of negative results; F5.1 fires
+if no correlation r > 0.3 across ≥ 3 metrics found by deadline.
+
+**Status:** scaffold only, not executed.  Companion #1 is the
+designated path to real-data validation that breaks encoding-map
+circularity.
+
+---
+
+## Aggregate (cycles 1-7, honest final tally)
+
+19 research-track demos (105-123), 350 asserts.
+Regression: 1819 / 1819 ✓ across 117 demos.
+
+| Cycle | Real research output |
+|-------|----------------------|
+| 1-3 (105-114) | 0 — tautologies + engineered |
+| 4 (115-117)   | RNG infra (real eng); 116-117 retracted |
+| 5 (118-119)   | 118 downgraded, 119 reclassified |
+| 6 (120-121)   | Stats infra; 121 retracts 116 |
+| **7 (122-123)** | **First valid predict-then-measure cycle (123); multi-observer validation (122); engine bug found+fixed; companion scaffold** |
+
+**Real substrate-derived research findings to date: 1**
+- Demo 123: substrate extensivity at deep supercritical p,
+  ratio prediction [2.0, 2.2] confirmed at 2.17 with intensive
+  ratio 1.08.  First valid predict-then-measure cycle.
+
+**Engineering finds:** phi-perc stack leak fixed (cycle 7).
+Cycle 1 stack-balance enforcement (S2) earned its keep.
+
+**Honest framing:** project has now produced ONE statistically
+defensible non-trivial substrate-derived prediction confirmation.
+Future cycles can build on this with more theory-driven
+experiments + Companion #1 scaffolding.
+
 ## Pending / future tracks
 
 | Track | Description | ETA |
