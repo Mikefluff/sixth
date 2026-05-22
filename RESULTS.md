@@ -542,6 +542,129 @@ catalogue:**
 Both findings came from infrastructure that didn't exist before
 this session (RNG + enumeration framework).
 
+---
+
+## Cycle 5 — real measurements + second substrate surprise
+
+### 2.2e Ensemble p_c scaling across n — **POSITIVE NON-ENGINEERED** (demo 118, 24 ✓)
+
+**Hypothesis:** ensemble p_c(n) scales as 1/n per classical Erdős-
+Rényi.  Demo 114 measured this analytically as (2n-1)/(n(n-1));
+demo 118 measures it EMPIRICALLY via ensemble RNG sampling.
+
+**Method:** for n ∈ {10, 20}, K=4 samples per p, sweep p ∈ {3, 5, 7,
+10, 15, 20, 30}%.  Seed=42, reseeded before each n.  Identify p_c
+as smallest p where ⟨phi-perc⟩ first exceeds half-saturation
+(n · L_max / 2).
+
+**Outcome (seed=42 pinned):**
+
+| p% | ⟨phi-perc⟩@n=10 | ⟨phi-perc⟩@n=20 |
+|----|-----------------|------------------|
+|  3 |   10,000       |   15,000        |
+|  5 |   12,500       |   20,000        |
+|  7 |   20,000       |   22,500        |
+| 10 |   17,500       | **127,500**     |
+| 15 |   57,500       |  195,000        |
+| 20 |   42,500       |  195,000        |
+| 30 |   85,000       |  200,000        |
+
+**Substrate-derived p_c:**
+- n=10: p_c = 15%   (classical predicts 10%)
+- n=20: p_c = 10%   (classical predicts 5%)
+- Ratio: 10/15 = 0.66 (classical predicts 0.50)
+
+**Significant secondary finding:** **n=20 transition SHARPENS**
+relative to n=10.  Jump from 22,500 to 127,500 in a single p-grid
+step (factor 5.6) at n=20.  n=10 transition is much fuzzier (K=4
+finite-sample noise also visible as non-monotonic dip at p=20).
+This sharpening with system size is the **finite-size scaling
+signature** classical percolation theory predicts.
+
+**Consequence:** substrate ensemble percolation tracks classical
+Erdős-Rényi qualitatively (transition exists, sharpens with n,
+p_c decreases with n) but deviates quantitatively (factor ~1.5-2
+in absolute p_c).  Real substrate-monism finding: substrate
+universality class is in same family as Erdős-Rényi but with
+substrate-specific finite-size offset.
+
+**Status:** demo 118 in regression gate; all 14 sweep means
+pinned to seed=42 outcomes plus p_c locator outputs and ratio.
+
+### 2.3d K=3 rule enumeration — **SECOND SUBSTRATE SURPRISE** (demo 119, 6 ✓)
+
+**Hypothesis (extension of demo 117):** all 27 K=3 rules with
+sources in {a, b, c} follow the same K_eff = #unique-sources law,
+giving trimodal distribution {edges=4: 3 rules, edges=9: 18 rules,
+edges=16: 6 rules}.
+
+**Method:** enumerate all 27 (s1, s2, s3) ∈ {1, 2, 3}³, run each
+from initial 1→2 substrate for 2 iterations, tabulate final edge
+count.
+
+**Outcome:**
+
+| Class | Predicted | Actual |
+|-------|-----------|--------|
+| K_eff=1 (3 rules) | 4 edges | **4** ✓ |
+| K_eff=2 (18 rules) | 9 edges | **9** ✓ |
+| K_eff=3 (6 rules) | 16 edges | **15** ✗ |
+
+**SECOND-ORDER SUBSTRATE-DERIVED FINDING:** all 6 K_eff=3 rules
+give 15 edges, not 16.  Cause traced: every K_eff=3 rule includes
+«c» as a source position, which adds a (c, c) self-loop on the
+fresh c-node at iter 1.  When iter 2 applies the rule to that
+self-loop input (a=b=3), two of the three new edges become
+duplicates under substrate set-semantics — substrate stores them
+as one hash entry, not two.
+
+**Concrete trace (rule (a, b, c)):**
+- iter 1: input (1, 2), c=3, add (1,3),(2,3),(3,3) → 4 edges total
+- iter 2: input (3, 3) self-loop, c=7, add (3,7),(3,7),(7,7) →
+  set-semantics gives +2 unique, not +3
+- Total iter 2: 4 + 9 (3 non-loops × 3) + 2 (self-loop × 2) = 15
+
+**REVISED THEORY:** «K_eff = #unique-sources» is **first-order
+approximation**.  Substrate has **second-order corrections from
+self-loop input edges** visible at K=3 but invisible at K=2.
+
+**Consequence:** demo 119 is the **SECOND demo in catalogue where
+author's prior prediction was wrong and substrate corrected it.**
+K=3 enumeration surfaced second-order substrate structure that
+K=2 enumeration (demo 117) missed.  Substrate-monism gains a
+quantitative substrate-derived correction term.
+
+**Status:** demo 119 in regression gate.  Confirms cycle-4 pattern:
+open-ended enumeration finds substrate-derived structure that
+hand-picked / lower-arity demos cannot.
+
+---
+
+## Aggregate (cycles 1-5)
+
+15 research-track demos (105-119), 276 asserts.
+Regression: 1745 / 1745 ✓ across 113 demos.
+
+**Non-tautological substrate-derived findings (cycles 4-5):**
+1. **Demo 116**: substrate-derived empirical p_c ≈ 15-20% for
+   ER G(10, p), within factor 2 of classical 1/n
+2. **Demo 117**: rule-space bimodal growth at K=2 (3/9 collapse
+   via duplicate-source set-semantics)
+3. **Demo 118**: substrate p_c sharpening with n, finite-size
+   scaling signature matching classical theory
+4. **Demo 119**: second-order substrate degeneracy at K=3
+   (K_eff=3 rules collapse from 16 to 15 due to self-loop
+   second-order effect)
+
+**Pattern:** demos with infrastructure (RNG, enumeration, ensemble)
+produced **4 substrate-derived findings**.  Demos without (cycles
+1-3) produced 0.  Infrastructure was the bottleneck.
+
+**Two of the four findings (117, 119) WERE PRIOR-PREDICTION
+WRONG events** — substrate corrected author's expectation.  This
+is exactly the falsification dynamic that turns regression-test
+demos into real experiments.
+
 ## Pending / future tracks
 
 | Track | Description | ETA |

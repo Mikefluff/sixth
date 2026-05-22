@@ -11,6 +11,25 @@ release with a maintained changelog from the next version forward.
 
 Tracks `main@HEAD` development past v0.8.  Currently:
 
+### Added (research-track demos — fifth cycle, real measurements + 2nd substrate surprise)
+- **Demo 118** (24 ✓) — ensemble p_c scaling across n ∈ {10, 20}.
+  Empirical measurement (not analytic shortcut of demo 114).
+  Substrate-derived p_c(10)=15%, p_c(20)=10%, ratio 0.66 vs
+  classical 0.50.  Same scaling direction, factor 1.3 deviation.
+  Notable secondary finding: **n=20 transition SHARPENS** vs n=10
+  (jump 22,500 → 127,500 in single p-grid step at n=20), matching
+  classical finite-size scaling signature.
+- **Demo 119** (6 ✓) — K=3 rule-space enumeration (27 variants).
+  **SECOND SUBSTRATE-DERIVED SURPRISE in cycle 5**: all 6 K_eff=3
+  rules give 15 edges, not naive 16.  Second-order substrate
+  degeneracy: K_eff=3 rules include «c» as source position,
+  creating (c,c) self-loop on iter 1; iter 2 applies rule to that
+  self-loop (a=b), generating two duplicate (s_i, c-new) edges
+  that substrate set-semantics deduplicates.  **K_eff =
+  #unique-sources is first-order only**; K=3 surfaces second-order
+  correction K=2 missed.  Second demo in catalogue where author's
+  prior prediction was wrong and substrate corrected it.
+
 ### Added (research-track demos — fourth cycle, infrastructure + first non-engineered findings)
 
 CS-doctor #2 retrospective: cycles 1-3 produced 10 demos with

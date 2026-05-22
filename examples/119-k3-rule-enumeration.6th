@@ -1,0 +1,195 @@
+\ examples/119-k3-rule-enumeration.6th
+\ K=3 rule-space enumeration — SECOND substrate-derived SURPRISE
+\ in cycle 5.
+\
+\ Demo 117 enumerated 9 K=2 rules and found 3/9 collapse to K_eff=1
+\ due to substrate set-semantics on duplicate (val, dst) hyperedges.
+\ This demo extends to all 27 K=3 rules of form
+\
+\   (a, b) → MARK c, add (s1, c), (s2, c), (s3, c)
+\
+\ with s1, s2, s3 ∈ {a, b, c}.  Author's prediction (extension of
+\ 117's K_eff = #unique-sources rule):
+\
+\   - all-3-same (aaa, bbb, ccc):   3 rules → K_eff=1, edges@k=2 = 4
+\   - exactly-2-distinct:          18 rules → K_eff=2, edges@k=2 = 9
+\   - all-3-distinct:               6 rules → K_eff=3, edges@k=2 = 16
+\
+\ SUBSTRATE-DERIVED ACTUAL:
+\
+\   - all-3-same:       3 rules → 4  ✓ matches
+\   - 2-distinct:      18 rules → 9  ✓ matches
+\   - all-3-distinct:   6 rules → 15 ✗ predicted 16, got 15
+\
+\ SECOND-ORDER substrate-derived finding: rules with «c» as source
+\ create self-loops (c, c) on the FRESH c-node in iter 1.  These
+\ self-loop edges, when iterated in iter 2, produce K_eff_local=2
+\ (not 3) because the rule applied to a self-loop input (a=b=3)
+\ generates two edges of form (s_i, c) where two s_i evaluate to
+\ the same node — substrate set-semantics deduplicates.
+\
+\ Concrete trace for rule (1,2,3) = (a, b, c) at iter 2:
+\   Input edge (3, 3) self-loop, a=3, b=3, fresh c=7.
+\   Rule adds (3, 7), (3, 7), (7, 7) — set-semantics: (3, 7) is
+\   one edge.  +2 unique edges, not 3.
+\
+\ Per iter 2 (substrate state from iter 1):
+\   3 non-self-loop input edges × 3 new each = 9 new
+\   1 self-loop input edge × 2 new (degenerate) = 2 new
+\   Total iter 2: 4 + 11 = 15 edges, not 16.
+\
+\ All 6 K_eff=3 rules produce 15 because they ALL include «c» as
+\ a source position, creating the self-loop seed.  Demo 117 missed
+\ this because K=2 rules with K_eff=2 don't include c+c+c-style
+\ self-loop generation — the second-order effect only surfaces at
+\ K ≥ 3.
+\
+\ Substrate-derived hypothesis revision: «K_eff = #unique-sources»
+\ is FIRST-ORDER approximation only.  Second-order corrections from
+\ self-loop input edges visible at K=3 enumeration.
+
+use prelude
+use graph
+use debug
+
+\ ============================================================
+\ Parametric rule with 3 edges; s1, s2, s3 from memory cells.
+\ ============================================================
+
+: decode-src ( s-code -- node )
+  dup 1 = if drop "rule-a" load else
+  dup 2 = if drop "rule-b" load else
+                  drop "rule-c" load
+  then then ;
+
+: parametric-rule-k3 ( a b -- )
+  "rule-b" store   "rule-a" store
+  MARK "rule-c" store
+  "rule-s1" load decode-src "rule-c" load EDGE+
+  "rule-s2" load decode-src "rule-c" load EDGE+
+  "rule-s3" load decode-src "rule-c" load EDGE+ ;
+
+: run-k3-variant ( s1 s2 s3 -- final-edges )
+  "rule-s3" store   "rule-s2" store   "rule-s1" store
+  RESET
+  MARK drop  MARK drop
+  1 2 EDGE+
+  ' parametric-rule-k3 EACH-EDGE
+  ' parametric-rule-k3 EACH-EDGE
+  EDGES ;
+
+\ ============================================================
+\ Enumerate all 27 (s1, s2, s3) ∈ {1, 2, 3}³ combinations.
+\ Categorize by edge count.
+\ ============================================================
+
+\ Counters per edge-class — including 15 which is the substrate-
+\ derived correction to naive (1+K_eff)^k = 16 for K_eff=3 rules.
+0 "class-4"  store
+0 "class-9"  store
+0 "class-15" store                       \ substrate-derived (corrected from 16)
+0 "class-16" store                       \ naive prediction
+0 "class-other" store
+
+: tally-result ( edges -- )
+  dup 4  = if drop "class-4"  load 1 + "class-4"  store else
+  dup 9  = if drop "class-9"  load 1 + "class-9"  store else
+  dup 15 = if drop "class-15" load 1 + "class-15" store else
+  dup 16 = if drop "class-16" load 1 + "class-16" store else
+               drop "class-other" load 1 + "class-other" store
+  then then then then ;
+
+\ ============================================================
+\ Enumerate via 3 nested loops — pure manual unrolling (Sixth
+\ has no native loops; recursive structure here would be heavy
+\ for 27 cases).  Each line runs one variant, tallies result.
+\ ============================================================
+
+1 1 1 run-k3-variant tally-result
+1 1 2 run-k3-variant tally-result
+1 1 3 run-k3-variant tally-result
+1 2 1 run-k3-variant tally-result
+1 2 2 run-k3-variant tally-result
+1 2 3 run-k3-variant tally-result
+1 3 1 run-k3-variant tally-result
+1 3 2 run-k3-variant tally-result
+1 3 3 run-k3-variant tally-result
+
+2 1 1 run-k3-variant tally-result
+2 1 2 run-k3-variant tally-result
+2 1 3 run-k3-variant tally-result
+2 2 1 run-k3-variant tally-result
+2 2 2 run-k3-variant tally-result
+2 2 3 run-k3-variant tally-result
+2 3 1 run-k3-variant tally-result
+2 3 2 run-k3-variant tally-result
+2 3 3 run-k3-variant tally-result
+
+3 1 1 run-k3-variant tally-result
+3 1 2 run-k3-variant tally-result
+3 1 3 run-k3-variant tally-result
+3 2 1 run-k3-variant tally-result
+3 2 2 run-k3-variant tally-result
+3 2 3 run-k3-variant tally-result
+3 3 1 run-k3-variant tally-result
+3 3 2 run-k3-variant tally-result
+3 3 3 run-k3-variant tally-result
+
+\ ============================================================
+\ Verify distribution matches K_eff prediction:
+\   class-4  = 3  (K_eff=1, all-3-same)
+\   class-9  = 18 (K_eff=2)
+\   class-16 = 6  (K_eff=3, all distinct)
+\   class-other = 0 (no deviations)
+\ Total = 27
+\ ============================================================
+
+\ Substrate-derived actual distribution.
+"class-4"  load 3  assert-eq
+"class-9"  load 18 assert-eq
+"class-15" load 6  assert-eq                  \ substrate-corrected
+"class-16" load 0  assert-eq                  \ naive prediction wrong
+"class-other" load 0 assert-eq
+
+\ Total enumeration count.
+"class-4" load "class-9" load + "class-15" load + 27 assert-eq
+
+cr
+"=== Demo 119 — K=3 rule-space enumeration ===" . cr
+cr
+"Enumerated all 27 (s1, s2, s3) ∈ {a, b, c}³ K=3 rules." . cr
+cr
+"NAIVE PREDICTION (extension of demo 117):" . cr
+"  K_eff=1: 4 edges  ×  3 rules" . cr
+"  K_eff=2: 9 edges  × 18 rules" . cr
+"  K_eff=3: 16 edges ×  6 rules" . cr
+cr
+"SUBSTRATE-DERIVED ACTUAL:" . cr
+"  edges@k=2 = 4   (K_eff=1):              " . "class-4" load . " rules  ✓" . cr
+"  edges@k=2 = 9   (K_eff=2):              " . "class-9" load . " rules  ✓" . cr
+"  edges@k=2 = 15  (K_eff=3, CORRECTED):   " . "class-15" load . " rules  ✗ predicted 16" . cr
+"  edges@k=2 = 16  (naive K_eff=3):        " . "class-16" load . " rules" . cr
+"  other:                                  " . "class-other" load . " rules" . cr
+cr
+"SECOND-ORDER SUBSTRATE-DERIVED SURPRISE:" . cr
+"  All 6 K_eff=3 rules produce 15 edges (NOT 16).  Cause: each" . cr
+"  K_eff=3 rule includes «c» as a source position, which adds" . cr
+"  (c, c) self-loop on the FRESH c-node at iter 1.  When iter 2" . cr
+"  applies the rule to that self-loop (a=b=c-of-iter-1), two of" . cr
+"  the three new (s_i, c-of-iter-2) edges become DUPLICATES under" . cr
+"  set-semantics — substrate stores them as one, not two." . cr
+cr
+"  Net: K_eff=3 rules produce K_eff_local=2 on self-loop inputs," . cr
+"  giving 11 new edges at iter 2 (not 12), total 15 (not 16)." . cr
+cr
+"REVISED THEORY: «K_eff = #unique-sources» is FIRST-ORDER only." . cr
+"Substrate has second-order corrections from self-loop input edges" . cr
+"that are visible at K=3 enumeration but invisible at K=2 (where" . cr
+"K_eff=2 rules with c-source were already covered by the first-" . cr
+"order rule)." . cr
+cr
+"Demo 119 is the SECOND demo in catalogue where author's prior" . cr
+"prediction was wrong and substrate corrected it.  K=3 enumeration" . cr
+"surfaces second-order substrate structure that K=2 missed." . cr
+
+REPORT

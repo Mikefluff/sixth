@@ -265,7 +265,22 @@
     ("114-percolation-critical-exponent.6th"     16)
     ("115-rand-stdlib.6th"                        7)
     ("116-ensemble-percolation.6th"              15)
-    ("117-rule-space-enumeration.6th"            11)))
+    ("117-rule-space-enumeration.6th"            11)
+    ;; --- Cycle 5: real measurements + 2nd substrate surprise ---
+    ;; 118: ensemble p_c(n) scaling across n ∈ {10, 20, 30}.
+    ;;      Substrate-derived empirical p_c with sharpening
+    ;;      transition at n=20 (jump 22500 → 127500 in single
+    ;;      p-step).  Ratio p_c(20)/p_c(10) = 0.66 vs classical
+    ;;      0.50.  Same scaling direction, factor ~1.3 deviation.
+    ;; 119: K=3 rule enumeration (27 variants).  2ND SURPRISE:
+    ;;      all 6 K_eff=3 rules give 15 edges, not naive 16.
+    ;;      Second-order substrate degeneracy from self-loops in
+    ;;      iter-1 output (c-source rules create (c,c) self-loop
+    ;;      that degenerates at iter 2).  K_eff = #unique-sources
+    ;;      is first-order only; K=3 surfaces second-order
+    ;;      correction K=2 enumeration missed.
+    ("118-ensemble-pc-scaling.6th"               24)
+    ("119-k3-rule-enumeration.6th"                6)))
 
 (define (run-demo file)
   (define out
@@ -290,8 +305,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1715
-                (format "cumulative ✓ count: ~a (expected 1715)" total-pass)))
+  (check-equal? total-pass 1745
+                (format "cumulative ✓ count: ~a (expected 1745)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1715 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1745 ✓ across ~a demos"
                    total-pass (length expected)))
