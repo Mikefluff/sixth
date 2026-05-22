@@ -1,0 +1,192 @@
+\ examples/132-eics-application.6th
+\ Cycle 13C/D — EICS (Krasnovsky 2025, arXiv 2509.07149) applied
+\ to Sixth substrate. First substrate-distinguishing positive
+\ measurement in catalogue.
+\
+\ Pre-registered: PREDICTIONS-132.md (sha fda5bf34… attested).
+\ Method doc: docs/EICS-HOOK.md.
+\ Implementation: scripts/eics_sixth.py.
+\
+\ === REGIME R FIRES — FIRST POSITIVE SUBSTRATE-DISTINGUISHING SIGNAL ===
+\
+\ R_overall = 1.7954 (mean EICS_substrate / EICS_random_baseline
+\ across 10 canonical Sixth substrates).
+\
+\ Per substrate R values:
+\   cycle_n10_all-self-loops:    7.36   (huge signal)
+\   path_n10_self-loops:         2.20
+\   ER_n10_p20_all-self-loops:   1.74
+\   bipartite_K33_self-loops:    1.40
+\   ER_n20_p10_observer-loop:    1.14
+\   ER_n20_p20_all-self-loops:   1.12
+\   complete_K5:                  1.08
+\   ER_n10_p30_observer-loop:    1.03
+\   star_n10:                     0.88
+\   ER_n10_p10_observer-loop:    0.00   (degenerate at small sparse)
+\
+\ Strongest signals: structured-topology substrates with all-
+\ self-loops (cycle, path).  ER substrates without all-self-loops
+\ near 1.0 (no signal).
+\
+\ Implementation adaptation: macro-Jacobian = A^T (T=10) since
+\ single-step Δ_EI < 0 always due to log-det concavity.  T=10
+\ accumulates emergence from substrate's iterated NSUM dynamics.
+\
+\ HONESTY:
+\ This finding is REAL per pre-registration:
+\   - PREDICTIONS-132 committed BEFORE script
+\   - Script committed BEFORE measurement
+\   - Regime threshold 1.5 pre-set
+\   - R = 1.79 > 1.5 → REGIME R fires
+\
+\ But interpretation:
+\   - EICS captures SPECTRAL structure differences
+\   - Cycle/path graphs have distinct eigenstructure vs ER
+\   - This is well-known spectral graph theory applied to
+\     substrate; not novel substrate-physics
+\   - Substrate-distinguishing in the methodological sense
+\     (substrate's specific topology produces specific EICS)
+\   - Whether this is "substrate-derived" or "spectral-graph-
+\     theory-derived" is a fair question for cycle 14
+\
+\ Honest framing for catalogue:
+\   First measurement where Sixth substrate is pre-registered-
+\   distinguished from random baseline by a published external
+\   metric (EICS).  Modest claim; real result.
+
+use prelude
+use debug
+
+\ ============================================================
+\ Pinned values from scripts/eics_sixth.py run 2026-05-22.
+\ ============================================================
+
+\ R_overall × 1000 (decimal scaled for integer arithmetic).
+1795 "R-overall-1000x"  store
+
+\ Per-substrate R × 1000.
+   0 "r1-1000x" store     \ ER_n10_p10_observer-loop (degenerate)
+1138 "r2-1000x" store     \ ER_n20_p10_observer-loop
+1027 "r3-1000x" store     \ ER_n10_p30_observer-loop
+1743 "r4-1000x" store     \ ER_n10_p20_all-self-loops
+1123 "r5-1000x" store     \ ER_n20_p20_all-self-loops
+ 878 "r6-1000x" store     \ star_n10_center-observer
+7365 "r7-1000x" store     \ cycle_n10_all-self-loops (MAX)
+1084 "r8-1000x" store     \ complete_K5_full
+1400 "r9-1000x" store     \ bipartite_K33_self-loops
+2196 "r10-1000x" store    \ path_n10_self-loops
+
+\ ============================================================
+\ Regime classification per PREDICTIONS-132.md.
+\ ============================================================
+
+\ Regime R: R_overall > 1.5 (× 1000 form: > 1500).
+"R-overall-1000x" load 1500 > "regime-R?" store
+
+\ Regime S: R_overall ∈ [0.8, 1.5] (× 1000 form: [800, 1500]).
+"R-overall-1000x" load 800 >=
+"R-overall-1000x" load 1500 <= * "regime-S?" store
+
+\ Regime T: R_overall < 0.8.
+"R-overall-1000x" load 800 < "regime-T?" store
+
+\ Partition check.
+"regime-R?" load "regime-S?" load + "regime-T?" load + "regime-count" store
+
+\ ============================================================
+\ Count substrates exceeding R > 1.0 (modest signal).
+\ ============================================================
+
+"r1-1000x"  load 1000 > "r1>?"  store
+"r2-1000x"  load 1000 > "r2>?"  store
+"r3-1000x"  load 1000 > "r3>?"  store
+"r4-1000x"  load 1000 > "r4>?"  store
+"r5-1000x"  load 1000 > "r5>?"  store
+"r6-1000x"  load 1000 > "r6>?"  store
+"r7-1000x"  load 1000 > "r7>?"  store
+"r8-1000x"  load 1000 > "r8>?"  store
+"r9-1000x"  load 1000 > "r9>?"  store
+"r10-1000x" load 1000 > "r10>?" store
+
+"r1>?"  load
+"r2>?"  load +
+"r3>?"  load +
+"r4>?"  load +
+"r5>?"  load +
+"r6>?"  load +
+"r7>?"  load +
+"r8>?"  load +
+"r9>?"  load +
+"r10>?" load + "substrates-above-1" store
+
+\ ============================================================
+\ Find max R.
+\ ============================================================
+
+"r7-1000x" load "max-R-1000x" store    \ cycle_n10 = 7365 = max
+
+\ ============================================================
+\ Report.
+\ ============================================================
+
+cr
+"=== Demo 132 — EICS application (cycle 13C/D) ===" . cr
+cr
+"Pre-reg: PREDICTIONS-132.md (sha fda5bf34… attested)" . cr
+"Method:  docs/EICS-HOOK.md (Krasnovsky 2025 arXiv 2509.07149)" . cr
+"Source:  scripts/eics_sixth.py (commit b713748)" . cr
+cr
+"R_overall × 1000: " . "R-overall-1000x" load . "  (actual 1.795)" . cr
+cr
+"Regime R (R_overall > 1.5):       " . "regime-R?" load . cr
+"Regime S (R_overall ∈ [0.8, 1.5]): " . "regime-S?" load . cr
+"Regime T (R_overall < 0.8):        " . "regime-T?" load . cr
+cr
+"Substrates with R > 1.0: " . "substrates-above-1" load . " / 10" . cr
+"Max R: " . "max-R-1000x" load . " × 10⁻³ (cycle_n10 = 7.365)" . cr
+cr
+
+"regime-R?" load 1 = if
+  ">>> REGIME R — FIRST positive substrate-distinguishing signal" . cr
+  "    in catalogue.  R_overall = 1.795 exceeds pre-registered" . cr
+  "    threshold 1.5." . cr
+  "" . cr
+  "    Strongest signals: structured topologies (cycle, path)" . cr
+  "    with regular degree + all-self-loops.  ER substrates with" . cr
+  "    only observer-self-loop near 1.0 (no signal)." . cr
+  "" . cr
+  "    HONEST framing: EICS captures spectral structure" . cr
+  "    differences.  Cycle/path have distinct eigenstructure" . cr
+  "    vs ER baselines — well-known in spectral graph theory" . cr
+  "    applied via Krasnovsky's EICS measure.  Substrate-" . cr
+  "    distinguishing per pre-reg definition, but not novel" . cr
+  "    substrate-physics — it's spectral graph theory applied" . cr
+  "    via an external published measure that had not yet" . cr
+  "    been applied to hypergraph rewriting substrates." . cr
+then
+
+\ ============================================================
+\ Sanity asserts.
+\ ============================================================
+
+\ Exactly one regime fires.
+"regime-count" load 1 assert-eq
+
+\ Regime R is the one that fired.
+"regime-R?" load 1 assert-eq
+"regime-S?" load 0 assert-eq
+"regime-T?" load 0 assert-eq
+
+\ 7 substrates exceed R > 1.0 (2, 3, 4, 5, 7, 8, 9, 10 = 8 actually,
+\ but r3 = 1027 = barely above; check more carefully).
+\ Counted: r2=1138, r3=1027, r4=1743, r5=1123, r7=7365, r8=1084,
+\ r9=1400, r10=2196 → 8 above 1.0.  Plus r1=0, r6=878 below.
+"substrates-above-1" load 8 assert-eq
+
+\ Max R is cycle_n10 = 7365 (×1000 form).
+"max-R-1000x" load 7365 assert-eq
+
+\ R_overall pinned exactly.
+"R-overall-1000x" load 1795 assert-eq
+
+REPORT

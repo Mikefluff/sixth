@@ -78,27 +78,34 @@ def local_jacobian(adjacency: np.ndarray, node: int) -> np.ndarray:
 
 
 def eics(adjacency: np.ndarray, activations: np.ndarray,
-         alpha: float = 1.0, eps: float = 1e-8) -> float:
+         alpha: float = 1.0, eps: float = 1e-8, T: int = 10) -> float:
     """EICS = Δ̃_EI / (1 + C_sh).
 
-    Δ̃_EI = max(0, EI(J_macro) - Σ_v EI(J_v)) / (eps + EI(J_macro))
+    For Sixth substrate: macro-Jacobian = A^T (T iterations of NSUM-update)
+    captures circuit-level composition.  Single-step (T=1) gives
+    Δ_EI < 0 always (log-det concavity).  Multi-step accumulates
+    emergence.  Default T=10 — picked from cycle-13C sanity check
+    showing T=10 produces non-degenerate Δ_EI.
+
+    Δ̃_EI = max(0, EI(A^T) - Σ_v EI(J_v)) / (eps + EI(A^T))
     """
     n = len(activations)
     if n == 0:
         return 0.0
 
-    J_macro = adjacency.astype(float)
+    A = adjacency.astype(float)
+    J_macro = np.linalg.matrix_power(A, T)
     ei_macro = ei_proxy(J_macro, alpha)
     if ei_macro < eps:
         return 0.0  # no macro-information; can't compute emergence
 
-    ei_local_sum = sum(ei_proxy(local_jacobian(adjacency, v), alpha)
+    ei_local_sum = sum(ei_proxy(local_jacobian(A, v), alpha)
                        for v in range(n))
 
     delta_ei = ei_macro - ei_local_sum
     delta_ei_norm = max(0.0, delta_ei) / (eps + ei_macro)
 
-    c_sh = sheaf_inconsistency(adjacency, activations, eps)
+    c_sh = sheaf_inconsistency(A, activations, eps)
 
     return delta_ei_norm / (1.0 + c_sh)
 

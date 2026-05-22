@@ -387,15 +387,26 @@
     ;;      min R(S) = 1.000; mean R decreases 1.231→1.137 with n.
     ;;      Pre-registered regime O fires (R_max ∈ [1.5, 2.0]).
     ;;      HONEST interpretation: R > 1 means HEDGE3 takes MORE
-    ;;      storage than optimized binary (formula direction).  Pre-
-    ;;      reg prose labels were inverted; threshold classification
-    ;;      correct.  Substrate finding (NEGATIVE direction): HEDGE3
-    ;;      has NO storage advantage at n=3..6; on average 13-23%
-    ;;      MORE storage than optimized binary baseline.  Demo 105's
-    ;;      "5× storage advantage" was measured against a sub-optimal
-    ;;      binary baseline; RETRACTED here.
-    ;;      Pre-registered: PREDICTIONS-131.md (commit 8adbdee).
-    ("131-hedge3-storage-counterexample.6th"     11)))
+    ;;      storage than optimized binary (formula direction).
+    ;;      Substrate finding (NEGATIVE direction): HEDGE3 has NO
+    ;;      storage advantage at n=3..6; demo 105's "5× advantage"
+    ;;      RETRACTED.  Pre-registered: PREDICTIONS-131.md (8adbdee).
+    ("131-hedge3-storage-counterexample.6th"     11)
+    ;; --- Cycle 13C/D: EICS application — FIRST POSITIVE SIGNAL ---
+    ;; 132: Krasnovsky (2025) EICS applied to Sixth substrate.
+    ;;      Method: macro-Jacobian = adjacency^T (T=10 iterations),
+    ;;      local Jacobian = per-row, sheaf inconsistency from
+    ;;      adjacency-as-linearization.  Compared 10 canonical
+    ;;      substrates vs M=1000 ER random baselines.
+    ;;      R_overall = 1.795 → REGIME R (substrate-distinguishing).
+    ;;      Strongest signals: cycle_n10 (R=7.36×), path_n10 (2.20×).
+    ;;      First positive substrate-distinguishing measurement in
+    ;;      catalogue.  HONEST: EICS captures spectral structure;
+    ;;      cycle/path have distinct eigenstructure vs ER — well-
+    ;;      known spectral graph theory via Krasnovsky's measure
+    ;;      that hadn't been applied to hypergraph substrates yet.
+    ;;      Pre-registered: PREDICTIONS-132.md (commit e50ae0f).
+    ("132-eics-application.6th"                   7)))
 
 (define (run-demo file)
   (define out
@@ -420,8 +431,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1925
-                (format "cumulative ✓ count: ~a (expected 1925)" total-pass)))
+  (check-equal? total-pass 1932
+                (format "cumulative ✓ count: ~a (expected 1932)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1925 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1932 ✓ across ~a demos"
                    total-pass (length expected)))
