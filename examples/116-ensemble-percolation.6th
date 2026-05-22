@@ -1,0 +1,243 @@
+\ examples/116-ensemble-percolation.6th
+\ FIRST non-engineered ensemble experiment in the catalogue.
+\
+\ Generates random Erdős-Rényi graphs G(n, p) using stdlib RNG
+\ (seeded for reproducibility), computes phi-perc(observer) on
+\ each, averages across K samples per p value.  Sweeps p across
+\ {5, 10, 15, 20, 25, 30, 35, 40, 50}% (edge probability).
+\
+\ Goal: identify substrate-derived p_c where ⟨phi-perc⟩ jumps
+\ from O(1) to O(n).  Compare to classical Erdős-Rényi p_c = 1/n
+\ ≈ 0.1 for n=10.
+\
+\ Unlike demos 110/114 (engineered transitions), this experiment
+\ uses RANDOM construction.  Outcome is NOT predicted by author
+\ in advance — only the predicted region (around p = 0.1) is.
+\ The actual measured p_c is substrate-derived empirical fact.
+\
+\ Parameters:
+\   n = 10 (substrate size)
+\   K = 8  (samples per p value)
+\   seed = 42 (fixed for reproducibility)
+\   p sweep: 5%, 10%, 15%, ..., 50%
+\
+\ Total: 9 p-values × 8 samples = 72 random graphs.
+
+use prelude
+use graph
+use phi
+use bfs
+use rand
+use debug
+
+\ ============================================================
+\ Random-graph generator: bi-edge between every (i, j) pair with
+\ probability p (in percent).  Observer at node 1 always has
+\ self-loop.
+\ ============================================================
+
+: maybe-add-edge ( i j -- )
+  \ Add bi-edge i↔j with probability p%; p stored in "p-current".
+  "mae-j" store   "mae-i" store
+  100 rand "p-current" load < if
+    "mae-i" load "mae-j" load bi-edge
+  then ;
+
+\ ----------------------------------------------------------------
+\ Inner loop: for fixed i, iterate j from (i+1) to n.
+\ ----------------------------------------------------------------
+
+: edge-inner-loop
+  "edge-j" load "edge-n" load <= if
+    "edge-i" load "edge-j" load maybe-add-edge
+    "edge-j" load 1 + "edge-j" store
+    edge-inner-loop
+  then ;
+
+\ ----------------------------------------------------------------
+\ Outer loop: i from 1 to n-1, j from i+1 to n.
+\ ----------------------------------------------------------------
+
+: edge-outer-loop
+  "edge-i" load "edge-n" load < if
+    "edge-i" load 1 + "edge-j" store
+    edge-inner-loop
+    "edge-i" load 1 + "edge-i" store
+    edge-outer-loop
+  then ;
+
+\ ----------------------------------------------------------------
+\ MARK n nodes loop.
+\ ----------------------------------------------------------------
+
+: mark-n-loop
+  "mark-rem" load 0 > if
+    MARK drop
+    "mark-rem" load 1 - "mark-rem" store
+    mark-n-loop
+  then ;
+
+: mark-n ( n -- )
+  "mark-rem" store mark-n-loop ;
+
+\ ----------------------------------------------------------------
+\ Generate one random ER graph at current p.
+\ ----------------------------------------------------------------
+
+: gen-er-graph ( n -- )
+  "edge-n" store
+  RESET
+  "edge-n" load mark-n
+  1 1 EDGE+                                \ observer self-loop
+  1 "edge-i" store
+  edge-outer-loop ;
+
+\ ----------------------------------------------------------------
+\ One sample: gen + measure phi-perc(1).
+\ ----------------------------------------------------------------
+
+: one-sample ( n -- phi-value )
+  gen-er-graph
+  1 phi-perc ;
+
+\ ----------------------------------------------------------------
+\ K samples at current p; sum their phi-perc values.
+\ ----------------------------------------------------------------
+
+: sample-loop
+  "sample-k" load 0 > if
+    "sample-n" load one-sample "phi-sum" load + "phi-sum" store
+    "sample-k" load 1 - "sample-k" store
+    sample-loop
+  then ;
+
+: K-samples ( n K -- mean-phi )
+  "sample-k" store
+  "sample-n" store
+  0 "phi-sum" store
+  "sample-k" load "sample-k-init" store    \ remember for mean div
+  sample-loop
+  "phi-sum" load "sample-k-init" load / ;
+
+\ ============================================================
+\ Sweep p ∈ {5, 10, 15, ..., 50}% at n=10, K=8.
+\ ============================================================
+
+10 "n-fixed" store
+8  "K-fixed" store
+
+\ Reseed before sweep so results are reproducible.
+42 srand
+
+5  "p-current" store
+"n-fixed" load "K-fixed" load K-samples "mean-p05" store
+
+10 "p-current" store
+"n-fixed" load "K-fixed" load K-samples "mean-p10" store
+
+15 "p-current" store
+"n-fixed" load "K-fixed" load K-samples "mean-p15" store
+
+20 "p-current" store
+"n-fixed" load "K-fixed" load K-samples "mean-p20" store
+
+25 "p-current" store
+"n-fixed" load "K-fixed" load K-samples "mean-p25" store
+
+30 "p-current" store
+"n-fixed" load "K-fixed" load K-samples "mean-p30" store
+
+35 "p-current" store
+"n-fixed" load "K-fixed" load K-samples "mean-p35" store
+
+40 "p-current" store
+"n-fixed" load "K-fixed" load K-samples "mean-p40" store
+
+50 "p-current" store
+"n-fixed" load "K-fixed" load K-samples "mean-p50" store
+
+\ ============================================================
+\ Output: substrate-derived ⟨phi-perc⟩ as function of p.
+\ Max possible at n=10 with self-loop: 10 · 10000 = 100000.
+\ Min possible: 10000 (observer alone, no neighbours).
+\ ============================================================
+
+cr
+"=== Demo 116 — ensemble percolation, n=10, K=8 samples, seed=42 ===" . cr
+cr
+" p%   ⟨phi-perc⟩    [max = 100000]" . cr
+" ---  -----------------------------" . cr
+"  5   " . "mean-p05" load . cr
+" 10   " . "mean-p10" load . cr
+" 15   " . "mean-p15" load . cr
+" 20   " . "mean-p20" load . cr
+" 25   " . "mean-p25" load . cr
+" 30   " . "mean-p30" load . cr
+" 35   " . "mean-p35" load . cr
+" 40   " . "mean-p40" load . cr
+" 50   " . "mean-p50" load . cr
+cr
+"Classical Erdős-Rényi p_c = 1/n = 0.1 for n=10." . cr
+"Expected: ⟨phi-perc⟩ jumps from O(1) · 10000 to O(n) · 10000" . cr
+"around p ≈ 10-20%.  Substrate-derived empirical p_c reported above." . cr
+cr
+"This is the FIRST non-engineered ensemble experiment in the" . cr
+"catalogue.  No author-designed bridge edge; transition emerges" . cr
+"from random graph statistics + substrate-readable comp-size." . cr
+
+\ ============================================================
+\ Regression pins (reproducibility at seed=42).  Values to be
+\ filled in after first observation — they pin the OUTCOME of
+\ this stochastic-but-seeded experiment so re-runs catch drift.
+\ ============================================================
+
+\ Sanity bounds: all means must be in valid range [10000, 100000].
+"mean-p05" load 10000 >= "mean-p05" load 100000 <= + 2 assert-eq
+"mean-p50" load 10000 >= "mean-p50" load 100000 <= + 2 assert-eq
+
+\ Monotonicity expectation: ⟨phi-perc⟩ should be non-decreasing
+\ in p across coarse jumps — substrate-derived monotonicity test.
+\ (Local non-monotonicity at K=8 from RNG noise tolerated.)
+"mean-p05" load "mean-p50" load <= 1 assert-eq
+"mean-p10" load "mean-p50" load <= 1 assert-eq
+
+\ ============================================================
+\ REGRESSION PIN: specific seed=42 outcomes for this ensemble.
+\ These values are SUBSTRATE-DERIVED, not author-engineered —
+\ they emerge from the random graph statistics seeded with 42
+\ via the LCG.  Pin them to detect any RNG / phi-perc / BFS
+\ regression that would change the empirical curve.
+\ ============================================================
+
+"mean-p05" load 11250  assert-eq
+"mean-p10" load 30000  assert-eq
+"mean-p15" load 41250  assert-eq
+"mean-p20" load 82500  assert-eq
+"mean-p25" load 83750  assert-eq
+"mean-p30" load 97500  assert-eq
+"mean-p35" load 96250  assert-eq
+"mean-p40" load 98750  assert-eq
+"mean-p50" load 100000 assert-eq
+
+\ ============================================================
+\ SUBSTRATE-DERIVED EMPIRICAL FINDING: phase transition observed
+\ at p ≈ 15-20% for n=10.  Classical Erdős-Rényi p_c = 1/n = 10%.
+\ Substrate-derived p_c is within factor 2 of classical at K=8
+\ samples (finite-size + small-ensemble noise).
+\
+\ Pre-transition (p ≤ 15%): ⟨phi-perc⟩ ≤ 41250 (< n/2 · L_max)
+\ Post-transition (p ≥ 20%): ⟨phi-perc⟩ ≥ 82500 (> 4n/5 · L_max)
+\
+\ Jump-size at transition ≈ 41250 (from p=15% to p=20% gives ∆ ≈
+\ 41250, doubling the order parameter from sub-half-saturated to
+\ near-fully-saturated).
+\
+\ The jump location is NOT specified by author — emerges from
+\ random graph statistics at seed=42.  This is the first ensemble
+\ phase-transition measurement in the catalogue.
+\ ============================================================
+
+"mean-p15" load "mean-p20" load < 1 assert-eq         \ jump exists
+"mean-p20" load "mean-p15" load - 30000 > 1 assert-eq  \ jump ≥ 30000
+
+REPORT

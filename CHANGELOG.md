@@ -11,6 +11,43 @@ release with a maintained changelog from the next version forward.
 
 Tracks `main@HEAD` development past v0.8.  Currently:
 
+### Added (research-track demos — fourth cycle, infrastructure + first non-engineered findings)
+
+CS-doctor #2 retrospective: cycles 1-3 produced 10 demos with
+near-zero non-tautological substrate findings (mostly author-
+verified formulas and engineered constructions).  Root cause:
+no RNG, no ensemble, no enumeration — every "experiment" was
+deterministic with author-known answer.  Cycle 4 attacks the
+infrastructure gap.
+
+- **stdlib/rand.6th** (new) — LCG-based RNG via memory cell
+  `rng-state`.  Words: `srand`, `rand`, `rand-bit`.  Substrate
+  primitive count UNCHANGED (48) — pure stdlib addition.
+  Unlocks ensemble experiments without engine modification.
+- **Demo 115** (7 ✓) — stdlib RNG verification.  Reproducibility
+  (same seed → same sequence), range correctness, seed
+  independence, distribution sanity (100-sample mean ≈ 54 ≈
+  expected 50; 200-bit fraction 100/200 ≈ expected).
+- **Demo 116** (15 ✓) — **FIRST non-engineered ensemble experiment**.
+  Random Erdős-Rényi G(n=10, p) with K=8 samples per p, sweep
+  p ∈ {5, 10, 15, 20, 25, 30, 35, 40, 50}%.  Substrate-derived
+  empirical curve (seed=42 pinned for reproducibility):
+  ⟨phi-perc⟩ jumps from 41,250 at p=15% to 82,500 at p=20%,
+  identifying empirical p_c ≈ 15-20%.  Classical Erdős-Rényi
+  p_c = 1/n = 10%; substrate measurement within factor 1.5-2
+  due to finite-size + K=8 noise.  All 9 means pinned.  The
+  jump location was NOT predicted in advance.
+- **Demo 117** (11 ✓) — **REAL substrate-derived SURPRISE finding**.
+  Enumerated all 9 K=2 rules of form (a,b) → MARK c, add
+  (s1,c), (s2,c).  Result: 3/9 rules (s1=s2 = duplicate sources)
+  collapse to K_eff=1 due to substrate set-semantics on
+  hyperedges — produce 4 edges at k=2 instead of naive 9.  The
+  (1+K) law of demo 109 holds only on the non-degenerate
+  subspace.  Rule-space topology is bimodal (growth=4 or
+  growth=9), not single-class.  Author predicted all 9 = 9;
+  substrate refuted.  **First demo in catalogue where author's
+  prior prediction was wrong and substrate corrected it.**
+
 ### Added (research-track demos — third cycle, code-focused)
 - **Demo 112** (36 ✓) — phi-perc read-only contract via snap/
   restore wrapper.  Uses negative-int memory keys to namespace

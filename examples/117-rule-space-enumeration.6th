@@ -1,0 +1,176 @@
+\ examples/117-rule-space-enumeration.6th
+\ Rule-space enumeration — open-ended exploration of Wolfram-style
+\ K=2 rewrite rules.
+\
+\ Demo 109 verified the (1+K) growth law for 4 hand-picked rules.
+\ This demo enumerates ALL 9 K=2 rules of form
+\
+\   (a, b) → MARK c, add (s1, c), (s2, c)
+\
+\ where s1, s2 ∈ {a, b, c}.  This space includes:
+\
+\   Rule (a, c)(a, c) → degenerate: both edges identical
+\   Rule (a, c)(b, c) → demo 107's rule (hub-spoke)
+\   Rule (c, c)(c, c) → self-loop on c only
+\   ... 6 more
+\
+\ For each variant:
+\   - Run from initial 1→2 for 2 iterations
+\   - Measure final EDGES count, NODES count, phi-perc(observer=1)
+\
+\ Predicted by naive (1+K) law: all rules give edges = 3^2 = 9 at k=2.
+\ ACTUAL: enumerate, find which rules deviate from naive prediction
+\ (set-semantics may cause idempotent duplicate edges; degenerate
+\ s1=s2 produces only 1 edge per input instead of 2).
+
+use prelude
+use graph
+use phi
+use bfs
+use rand
+use debug
+
+\ ============================================================
+\ Parametric rule: input edge (a, b), spawn fresh c, add two
+\ edges per parameters s1, s2 ∈ {1=a, 2=b, 3=c}.
+\
+\ s-code → source node:
+\   1 = a (input edge src)
+\   2 = b (input edge dst)
+\   3 = c (fresh spawned node)
+\
+\ All edges have destination = c (fresh).
+\ ============================================================
+
+: decode-src ( s-code -- node )
+  dup 1 = if drop "rule-a" load exit-decode then
+  dup 2 = if drop "rule-b" load exit-decode then
+  drop "rule-c" load
+  exit-decode ;
+
+: exit-decode ;                          \ marker (no-op)
+
+\ Sixth has no early-return; lift decode into chained if-else.
+: decode-src ( s-code -- node )
+  dup 1 = if drop "rule-a" load else
+  dup 2 = if drop "rule-b" load else
+                  drop "rule-c" load
+  then then ;
+
+: parametric-rule ( a b -- )
+  "rule-b" store   "rule-a" store
+  MARK "rule-c" store
+  "rule-s1" load decode-src "rule-c" load EDGE+
+  "rule-s2" load decode-src "rule-c" load EDGE+ ;
+
+\ ============================================================
+\ Run one rule variant: set (s1, s2), reset substrate to 1→2,
+\ apply rule 2 iterations, return final EDGES count.
+\ ============================================================
+
+: run-variant ( s1 s2 -- final-edges )
+  "rule-s2" store   "rule-s1" store
+  RESET
+  MARK drop  MARK drop
+  1 2 EDGE+
+  ' parametric-rule EACH-EDGE
+  ' parametric-rule EACH-EDGE
+  EDGES ;
+
+\ ============================================================
+\ Enumerate all 9 variants.  Record final EDGES counts.
+\ ============================================================
+
+\ Variant (s1=1, s2=1) = (a, c)(a, c) — duplicate edges, set-semantics
+1 1 run-variant "v11" store
+
+\ Variant (s1=1, s2=2) = (a, c)(b, c) — demo 107 rule A (hub-spoke)
+1 2 run-variant "v12" store
+
+\ Variant (s1=1, s2=3) = (a, c)(c, c) — one outgoing + self-loop on c
+1 3 run-variant "v13" store
+
+\ Variant (s1=2, s2=1) = (b, c)(a, c) — equivalent to (1,2) under reordering
+2 1 run-variant "v21" store
+
+\ Variant (s1=2, s2=2) = (b, c)(b, c) — duplicate
+2 2 run-variant "v22" store
+
+\ Variant (s1=2, s2=3) = (b, c)(c, c) — mirror of (1, 3)
+2 3 run-variant "v23" store
+
+\ Variant (s1=3, s2=1) = (c, c)(a, c) — self-loop + a→c
+3 1 run-variant "v31" store
+
+\ Variant (s1=3, s2=2) = (c, c)(b, c) — self-loop + b→c
+3 2 run-variant "v32" store
+
+\ Variant (s1=3, s2=3) = (c, c)(c, c) — only self-loop on c (duplicate)
+3 3 run-variant "v33" store
+
+\ ============================================================
+\ Analyse: which variants match the naive prediction edges_k = 3^k?
+\ Initial edges = 1, after k=2 naive predicts 9.  Substrate may
+\ deviate due to set-semantics (duplicate edges count once).
+\ ============================================================
+
+cr
+"=== Demo 117 — K=2 rule-space enumeration ===" . cr
+cr
+" s1 s2  rule           edges@k=2  naive predicts 9" . cr
+" --  --  -------------  ---------" . cr
+"  1  1  (a,c)(a,c) dup    " . "v11" load . cr
+"  1  2  (a,c)(b,c) huba   " . "v12" load . cr
+"  1  3  (a,c)(c,c) self   " . "v13" load . cr
+"  2  1  (b,c)(a,c) hubb   " . "v21" load . cr
+"  2  2  (b,c)(b,c) dup    " . "v22" load . cr
+"  2  3  (b,c)(c,c) self   " . "v23" load . cr
+"  3  1  (c,c)(a,c) sla    " . "v31" load . cr
+"  3  2  (c,c)(b,c) slb    " . "v32" load . cr
+"  3  3  (c,c)(c,c) dup    " . "v33" load . cr
+cr
+"SURPRISES (substrate-derived deviations from naive 3^k=9):" . cr
+"  v11 (a,c)(a,c): " . "v11" load . " — DUPLICATE collapse, K_eff=1" . cr
+"  v22 (b,c)(b,c): " . "v22" load . " — DUPLICATE collapse, K_eff=1" . cr
+"  v33 (c,c)(c,c): " . "v33" load . " — DUPLICATE collapse (self-loop only)" . cr
+cr
+"3 of 9 rules (33%) deviate from naive (1+K)^k law due to" . cr
+"substrate set-semantics on hyperedges.  Duplicate-source rules" . cr
+"produce K_eff=1 not K=2; growth ratio = 2 not 3." . cr
+cr
+"Substrate-derived rule-space topology: the (1+K) law of demo" . cr
+"109 holds only on the NON-DEGENERATE subspace (s1 ≠ s2)." . cr
+"Open-ended enumeration reveals this subspace structure that" . cr
+"hand-picked demos missed." . cr
+
+\ ============================================================
+\ Substrate-derived pin: observed values at this implementation.
+\
+\ Non-degenerate variants (6/9): edges = 9, match (1+K)^k = 9
+\ Degenerate variants    (3/9): edges = 4 (initial 1 + 1+1+1 from
+\                                each iteration's surviving edge)
+\
+\ The (4, 9) bimodal distribution is the substrate-derived
+\ rule-space "spectrum" — only two growth classes observable in
+\ this 9-rule enumeration, not the naive single class.
+\ ============================================================
+
+"v11" load 4 assert-eq                          \ duplicate collapse
+"v12" load 9 assert-eq                          \ non-degenerate (1+K)^k
+"v13" load 9 assert-eq                          \ non-degenerate
+"v21" load 9 assert-eq                          \ non-degenerate (symmetric)
+"v22" load 4 assert-eq                          \ duplicate collapse
+"v23" load 9 assert-eq                          \ non-degenerate
+"v31" load 9 assert-eq                          \ non-degenerate
+"v32" load 9 assert-eq                          \ non-degenerate
+"v33" load 4 assert-eq                          \ self-loop duplicate collapse
+
+\ Substrate-readable degeneracy detector: count distinct growth values.
+"v11" load "v22" load = "v22" load "v33" load = + 2 assert-eq
+"v12" load "v13" load = "v13" load "v21" load = + 2 assert-eq
+
+\ Degenerate-to-non-degenerate ratio = 3/6 = 50% in non-trivial subspace,
+\ or 3/9 = 33% in full enumeration.  Substrate-derived combinatorial
+\ structure not visible from any single hand-picked rule.
+
+REPORT

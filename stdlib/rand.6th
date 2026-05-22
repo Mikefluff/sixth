@@ -1,0 +1,64 @@
+\ stdlib/rand.6th — pseudo-random integers via LCG.
+\
+\ A deterministic pseudo-random source for substrate experiments
+\ that require random graph generation, rule sampling, or ensemble
+\ averaging.  Implemented entirely in stdlib using memory cells
+\ for state — substrate primitive count remains unchanged.
+\
+\ Algorithm: linear congruential generator (Numerical Recipes
+\ parameters):
+\
+\   state' = (1664525 · state + 1013904223) mod 2^32
+\
+\ Period: 2^32.  Adequate for substrate-scale experiments
+\ (< 10^9 samples per session).  Reproducible under same seed —
+\ all experiments using rand are byte-deterministic per the
+\ Tier-1 reproducibility contract.
+\
+\ Words provided:
+\   srand   ( seed -- )         set the RNG state
+\   rand    ( bound -- r )      r ∈ [0, bound), uniform pseudo-random
+\   rand-bit ( -- 0|1 )         single random bit, uniform 50/50
+\
+\ State cell key: "rng-state" (regular string key, callers should
+\ avoid using it).
+\
+\ Usage:
+\   42 srand                    \ seed
+\   100 rand                    \ → r ∈ [0, 100)
+\   10 rand   10 rand           \ two independent samples
+
+\ ----------------------------------------------------------------
+\ srand: set RNG state.  Default seed is 1 if rand called without
+\ srand — initialised lazily via load returning 0 + 1 offset.
+\ ----------------------------------------------------------------
+
+: srand ( seed -- )
+  "rng-state" store ;
+
+\ ----------------------------------------------------------------
+\ Internal: advance LCG and store new state.  Returns new state.
+\ Net stack delta: +1.
+\ ----------------------------------------------------------------
+
+: lcg-advance ( -- new-state )
+  "rng-state" load
+  1664525 * 1013904223 +
+  4294967296 mod
+  dup "rng-state" store ;
+
+\ ----------------------------------------------------------------
+\ rand: returns r ∈ [0, bound), uniform-mod (slight bias for non-
+\ power-of-2 bounds, acceptable for substrate experiments).
+\ ----------------------------------------------------------------
+
+: rand ( bound -- r )
+  lcg-advance
+  swap mod ;
+
+\ ----------------------------------------------------------------
+\ rand-bit: single uniform-0/1 sample.  Implemented via 2 rand.
+\ ----------------------------------------------------------------
+
+: rand-bit ( -- 0|1 )
+  2 rand ;

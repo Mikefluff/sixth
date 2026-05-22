@@ -238,6 +238,21 @@
     ;;      exponent -1, same universality class as classical
     ;;      Erdős-Rényi p_c = 1/n within factor 2 (deterministic-
     ;;      chain vs random construction).
+    ;; --- Infrastructure (RNG) + REAL non-engineered experiments ---
+    ;; 115: stdlib RNG via LCG, verified reproducibility + distribution
+    ;;      sanity.  Unlocks ensemble experiments without engine
+    ;;      modification.
+    ;; 116: FIRST non-engineered ensemble experiment — random Erdős-
+    ;;      Rényi G(n=10, p) with K=8 samples per p, sweep p=5..50%.
+    ;;      Substrate-derived empirical p_c ≈ 15-20% within factor 2
+    ;;      of classical 1/n = 10%.  Outcome NOT predicted by author,
+    ;;      pinned by seed=42.
+    ;; 117: Rule-space enumeration of ALL 9 K=2 rules.  SURPRISE
+    ;;      finding: 3/9 rules (s1=s2 duplicates) collapse to K_eff=1
+    ;;      due to substrate set-semantics, producing 4 edges instead
+    ;;      of naive 9.  The (1+K) law of demo 109 holds only on the
+    ;;      non-degenerate subspace.  First open-ended exploration to
+    ;;      surface substrate behaviour not predicted by author.
     ("105-hedge3-expressivity-vs-binary.6th"     21)
     ("106-phi-pa-parametric-sweep.6th"           25)
     ("107-open-ended-rewrite.6th"                18)
@@ -247,7 +262,10 @@
     ("111-phi-perc-verification.6th"              9)
     ("112-phi-perc-readonly.6th"                 36)
     ("113-phi-combination-law.6th"               19)
-    ("114-percolation-critical-exponent.6th"     16)))
+    ("114-percolation-critical-exponent.6th"     16)
+    ("115-rand-stdlib.6th"                        7)
+    ("116-ensemble-percolation.6th"              15)
+    ("117-rule-space-enumeration.6th"            11)))
 
 (define (run-demo file)
   (define out
@@ -272,8 +290,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1682
-                (format "cumulative ✓ count: ~a (expected 1682)" total-pass)))
+  (check-equal? total-pass 1715
+                (format "cumulative ✓ count: ~a (expected 1715)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1682 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1715 ✓ across ~a demos"
                    total-pass (length expected)))

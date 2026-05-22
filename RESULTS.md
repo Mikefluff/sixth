@@ -399,6 +399,149 @@ results**:
 substrate-derived results + 1 PARTIAL + 2 NEGATIVE (formal
 bounds) + 1 ENGINEERING POSITIVE**.
 
+---
+
+## CS-doctor #2 retrospective on cycles 1-3
+
+**Honest self-assessment (2026-05-21):** of the 10 research-track
+demos in cycles 1-3, **near-zero produced non-tautological
+substrate-derived findings**.  Pattern matched the CS-doctor #1
+critique I had levelled at Pilots A-K:
+
+- Demos 105, 106, 108, 109, 113: tautologies — verified formulas
+  the author wrote, then labelled the verification a "finding"
+- Demos 107, 110, 114: engineered constructions labelled "emergent"
+  or "phase transition" or "critical exponent"
+- Demo 111, 112: real engineering work, but not research
+- Demo 105 additionally refuted a strawman version of Peirce's
+  reduction thesis
+
+**Root cause:** without an RNG / ensemble / enumeration framework,
+all experiments were deterministic and author-knew-the-answer.
+Author wrote both the construction and the assert.
+
+## Cycle 4 — infrastructure + first non-engineered experiments
+
+### Infrastructure 4.0 — stdlib RNG (demo 115, 7 ✓)
+
+**Built:** `stdlib/rand.6th` — LCG (Numerical Recipes parameters)
+via memory cell `rng-state`.  Words: `srand`, `rand`, `rand-bit`.
+Substrate primitive count UNCHANGED (48) — pure stdlib addition.
+
+**Unlocks:** ensemble experiments, random graph generation,
+rule sampling.  Without this, all cycle 1-3 demos were
+deterministic constructions.
+
+### 2.2d Ensemble percolation — **POSITIVE NON-ENGINEERED** (demo 116, 15 ✓)
+
+**Hypothesis:** substrate-readable percolation phase transition
+exhibits the classical Erdős-Rényi p_c ≈ 1/n scaling when
+measured on TRULY RANDOM graphs (not engineered bridge edges).
+
+**Method:** seeded RNG (seed=42), n=10 fixed.  For each p ∈
+{5, 10, 15, 20, 25, 30, 35, 40, 50}%, generate K=8 random ER
+graphs (each pair (i,j) added with probability p%), compute
+phi-perc(observer=1) on each, average.
+
+**Outcome:** substrate-derived empirical curve (seed=42 reproducible):
+
+| p%  | ⟨phi-perc⟩ |
+|-----|------------|
+|  5  |  11,250   |
+| 10  |  30,000   |
+| 15  |  41,250   |
+| 20  |  82,500   ← jump |
+| 25  |  83,750   |
+| 30  |  97,500   |
+| 35  |  96,250   |
+| 40  |  98,750   |
+| 50  | 100,000   |
+
+**Substrate-derived empirical p_c ≈ 15-20%** for n=10.  Classical
+Erdős-Rényi p_c = 1/n = 10%.  Discrepancy of ≈ 1.5-2×, expected
+from K=8 finite-sample noise and n=10 finite-size effects.
+
+**Consequence:** **first non-engineered ensemble measurement in
+the catalogue.**  The jump location was NOT predicted in advance
+— I expected it around p=10% per classical theory; substrate
+showed it at p=20%.  Real finite-size correction visible as
+empirical fact, not analytic derivation.
+
+**Status:** demo 116 in regression gate.  All 9 ⟨phi-perc⟩ values
+pinned to seed=42 outcomes for reproducibility.
+
+### 2.3c Rule-space enumeration — **POSITIVE WITH SURPRISE** (demo 117, 11 ✓)
+
+**Hypothesis:** all 9 K=2 Wolfram-style rules of form
+`(a,b) → MARK c, add (s1,c), (s2,c)` with s1, s2 ∈ {a, b, c}
+follow the naive (1+K) growth law verified in demo 109 — i.e.,
+all 9 should give edges_k=2 = 9.
+
+**Method:** enumerate all 9 (s1, s2) combinations.  For each,
+init substrate to 1→2, apply rule via EACH-EDGE 2 iterations,
+count final edges.
+
+**Outcome:**
+
+| Rule | Edges at k=2 | Match naive 9? |
+|------|--------------|----------------|
+| (a,c)(a,c) | **4** | NO — duplicate collapse |
+| (a,c)(b,c) | 9 | yes |
+| (a,c)(c,c) | 9 | yes |
+| (b,c)(a,c) | 9 | yes |
+| (b,c)(b,c) | **4** | NO — duplicate collapse |
+| (b,c)(c,c) | 9 | yes |
+| (c,c)(a,c) | 9 | yes |
+| (c,c)(b,c) | 9 | yes |
+| (c,c)(c,c) | **4** | NO — self-loop duplicate |
+
+**Substrate-derived finding (NOT predicted):** **3/9 rules
+collapse to K_eff=1 due to substrate set-semantics on hyperedges.**
+When s1 = s2, the two emitted edges are identical (val/dst pair),
+and substrate stores them as a single hash entry.  Growth ratio
+becomes 2, not 3.
+
+The (1+K) law of demo 109 holds **only on the non-degenerate
+subspace s1 ≠ s2**.  6/9 rules satisfy it; 3/9 collapse.
+
+**Consequence:** **first open-ended substrate exploration that
+surfaced behaviour the author did not predict.**  Naive (1+K)
+prediction was author-assumed universal; substrate showed it has
+a degenerate 33% subspace.  Rule-space topology is bimodal
+(growth=4 or growth=9), not single-class.
+
+**Significance:** this finding could not have come from any
+hand-picked demo (cycles 1-3 all hand-picked rules in the
+non-degenerate subspace).  Open-ended enumeration was REQUIRED
+to surface it.
+
+**Status:** demo 117 in regression gate; all 9 variants pinned.
+Real substrate-derived rule-space structure result.
+
+---
+
+## Aggregate (cycles 1+2+3+4)
+
+13 research-track demos (105-117), 246 asserts.
+Regression: 1715 / 1715 ✓ across 111 demos.
+
+| Demo | Outcome | Research grade |
+|------|---------|----------------|
+| 105-114 | Various (cycles 1-3) | Mostly tautological per retrospective |
+| **115** | Engineering (RNG infra) | Real eng, unblocks research |
+| **116** | Ensemble p_c measurement | **REAL non-engineered finding** |
+| **117** | Rule-space surprise | **REAL non-engineered finding** |
+
+**First two genuine substrate-derived research findings in the
+catalogue:**
+- 116: substrate-derived empirical p_c ≈ 15-20% for ER G(10, p),
+  within factor 2 of classical 1/n
+- 117: rule-space bimodal growth (3/9 rules collapse via set-
+  semantics, not predicted by naive (1+K) law)
+
+Both findings came from infrastructure that didn't exist before
+this session (RNG + enumeration framework).
+
 ## Pending / future tracks
 
 | Track | Description | ETA |

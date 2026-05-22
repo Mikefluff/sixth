@@ -1,0 +1,125 @@
+\ examples/115-rand-stdlib.6th
+\ Verification of stdlib RNG (LCG via memory cells).
+\
+\ Substrate primitive count UNCHANGED — RNG implemented entirely
+\ in stdlib.  Verify:
+\   - Reproducibility: same seed → same sequence
+\   - Range: rand bound returns r ∈ [0, bound)
+\   - Distribution sanity: large-sample mean ≈ bound/2
+\   - Independence: two srand'd streams with different seeds differ
+
+use prelude
+use rand
+use debug
+
+\ ============================================================
+\ Reproducibility: same seed reproduces sequence.
+\ ============================================================
+
+42 srand
+100 rand "s1-a" store
+100 rand "s1-b" store
+100 rand "s1-c" store
+
+42 srand
+100 rand "s2-a" store
+100 rand "s2-b" store
+100 rand "s2-c" store
+
+"s1-a" load "s2-a" load = 1 assert-eq
+"s1-b" load "s2-b" load = 1 assert-eq
+"s1-c" load "s2-c" load = 1 assert-eq
+
+\ ============================================================
+\ Range: rand bound returns r ∈ [0, bound)
+\ ============================================================
+
+1 srand
+100 rand "v" store
+"v" load 0 >= "v" load 100 < + 2 assert-eq    \ both conditions true
+
+\ ============================================================
+\ Different seeds → different sequences (almost surely).
+\ Check that 5 sample sequences from 2 different seeds differ
+\ in at least one position.
+\ ============================================================
+
+42 srand
+100 rand "a1" store    100 rand "a2" store    100 rand "a3" store
+100 rand "a4" store    100 rand "a5" store
+
+99 srand
+100 rand "b1" store    100 rand "b2" store    100 rand "b3" store
+100 rand "b4" store    100 rand "b5" store
+
+\ Sum of differences across 5 positions — should be > 0 if seeds
+\ produce different streams.
+0
+"a1" load "b1" load = not if 1 + then
+"a2" load "b2" load = not if 1 + then
+"a3" load "b3" load = not if 1 + then
+"a4" load "b4" load = not if 1 + then
+"a5" load "b5" load = not if 1 + then
+0 > 1 assert-eq                                \ at least one differs
+
+\ ============================================================
+\ Distribution sanity: 100 samples uniform in [0, 100), expect
+\ mean roughly around 50.  Loose bound to avoid pseudo-random
+\ flake: 30 ≤ mean ≤ 70.
+\ ============================================================
+
+12345 srand
+0 "sample-sum" store
+0 "sample-count" store
+
+: collect-one
+  100 rand "sample-sum" load + "sample-sum" store
+  "sample-count" load 1 + "sample-count" store ;
+
+: collect-100
+  "sample-count" load 100 < if
+    collect-one collect-100
+  then ;
+
+collect-100
+
+"sample-sum" load 100 / "sample-mean" store
+"sample-mean" load 30 >= "sample-mean" load 70 <= + 2 assert-eq
+
+\ ============================================================
+\ rand-bit: 200 samples, count ones.  Expect ≈ 100 ± 30 (loose).
+\ ============================================================
+
+777 srand
+0 "ones-count" store
+
+: tally-bit
+  rand-bit "ones-count" load + "ones-count" store ;
+
+: collect-bits
+  "tally-iter" load 200 < if
+    tally-bit
+    "tally-iter" load 1 + "tally-iter" store
+    collect-bits
+  then ;
+
+0 "tally-iter" store
+collect-bits
+
+"ones-count" load 70 >= "ones-count" load 130 <= + 2 assert-eq
+
+cr
+"=== Demo 115 — stdlib RNG ===" . cr
+cr
+"Verified: reproducibility (same seed → same sequence)," . cr
+"range correctness, seed independence, distribution sanity." . cr
+"Sample mean = " . "sample-mean" load . " (expected ≈ 50)" . cr
+"Bit-fraction ones = " . "ones-count" load . " / 200" . cr
+cr
+"RNG ready for: random graph generation, rule sampling," . cr
+"ensemble averaging, statistical experiments." . cr
+cr
+"Substrate primitive count UNCHANGED (48).  RNG state lives" . cr
+"in memory cell 'rng-state', no engine modification." . cr
+
+REPORT
