@@ -150,10 +150,12 @@
 \ discontinuously when a bridge edge connects a small observer-
 \ component to a giant component.
 \
-\ CAVEAT: this measure MUTATES substrate NGET state during
-\ computation (uses BFS which writes distances into NGET).
-\ Callers MUST restore feature state via NSET after phi-perc
-\ if NGET semantics are load-bearing in the substrate.
+\ Functionally pure: BFS mutates NGET internally, but a snap/
+\ restore wrapper preserves the substrate's pre-call NGET state.
+\ Snapshot lives in memory keyed by `(- 0 node-id)` (negative
+\ integer), which does not collide with the engine's reserved
+\ underscore-prefixed string/symbol keys nor with typical user
+\ keys (which are strings or symbols, not negative integers).
 \
 \ Iteration depth: BFS uses (substrate-diameter) steps; the
 \ definition below caps at 32 iterations, sufficient for any
@@ -161,10 +163,30 @@
 \ require recompiling with deeper loop.
 \
 \ Connects to: classical Erdős-Rényi percolation theory; demo 110
-\ as substrate-derived realisation.
+\ as substrate-derived realisation; demo 112 verifies the read-
+\ only contract.
 \ ----------------------------------------------------------------
 
 use bfs
+
+\ Negative-int key namespace for the NGET snapshot.  Choosing
+\ negative ints avoids the underscore-prefix guard (which only
+\ applies to symbol/string keys) and collides with neither the
+\ positive substrate-node-id range nor the typical user key set.
+: phi-perc-snap-key ( n -- key )  0 swap - ;
+
+\ Snap-rule: consumes n, saves NGET(n) at key=-n.  EACH-contract net delta 0.
+\ Trace: (n) → dup (n n) → NGET (n NGET(n)) → swap (NGET(n) n)
+\        → phi-perc-snap-key (NGET(n) -n) → store () .
+: phi-perc-snap-rule ( n -- )
+  dup NGET                            \ ( n NGET(n) )
+  swap phi-perc-snap-key              \ ( NGET(n) -n )
+  store ;                             \ ( )
+
+\ Restore-rule: consumes n, restores NGET(n) from key=-n.
+: phi-perc-restore-rule ( n -- )
+  dup phi-perc-snap-key load          \ ( n saved-NGET )
+  NSET ;                              \ ( )
 
 : phi-perc-tally ( n -- )
   NGET 0 >= if
@@ -183,10 +205,12 @@ use bfs
 
 : phi-perc ( O -- phi )
   dup "phi-perc-O" store
+  ' phi-perc-snap-rule EACH           \ save all NGETs to negative-int keys
   bfs-init                            \ initialise NGETs (-1, with O → 0)
   phi-perc-bfs-32                     \ run BFS for 32 steps
   0 "phi-perc-count" store
   ' phi-perc-tally EACH               \ count reached nodes
   "phi-perc-count" load               \ ( comp-size )
   "phi-perc-O" load phi-self-ref *    \ ( comp-size * indicator )
-  "phi-L-max" load * ;                \ ( phi )
+  "phi-L-max" load *                  \ ( phi )
+  ' phi-perc-restore-rule EACH ;      \ restore all NGETs; phi on top

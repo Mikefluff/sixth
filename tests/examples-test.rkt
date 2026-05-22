@@ -224,13 +224,30 @@
     ;;      transition behaviour.  Comparison: phi-pa UNCHANGED
     ;;      across bridge edge, phi-perc JUMPS — orthogonal
     ;;      discriminating signal.
-    ("105-hedge3-expressivity-vs-binary.6th" 21)
-    ("106-phi-pa-parametric-sweep.6th"       25)
-    ("107-open-ended-rewrite.6th"            18)
-    ("108-phi-integ-density-sweep.6th"       24)
-    ("109-rewrite-rule-universality.6th"     23)
-    ("110-substrate-percolation.6th"         22)
-    ("111-phi-perc-verification.6th"          9)))
+    ;; 112: phi-perc read-only contract verification.  Snap/
+    ;;      restore wrapper via negative-int memory keys preserves
+    ;;      pre-call NGET state across phi-perc invocations.
+    ;;      Eliminates the cycle-2 caveat about NGET mutation.
+    ;; 113: Track 4.1 — Φ-family combination laws for nested
+    ;;      observers.  phi-pa(M) = (K+1)·L_max structurally
+    ;;      independent of children's Φ_PA; phi-perc(M) ~ Σ
+    ;;      comp-size(O_i) connectivity-inherited.  Substrate-
+    ;;      monist combination problem is MEASURE-DEPENDENT.
+    ;; 114: Track 2.2c — percolation critical-exponent measurement
+    ;;      across n ∈ {10, 20, 30}.  Substrate-derived scaling
+    ;;      exponent -1, same universality class as classical
+    ;;      Erdős-Rényi p_c = 1/n within factor 2 (deterministic-
+    ;;      chain vs random construction).
+    ("105-hedge3-expressivity-vs-binary.6th"     21)
+    ("106-phi-pa-parametric-sweep.6th"           25)
+    ("107-open-ended-rewrite.6th"                18)
+    ("108-phi-integ-density-sweep.6th"           24)
+    ("109-rewrite-rule-universality.6th"         23)
+    ("110-substrate-percolation.6th"             22)
+    ("111-phi-perc-verification.6th"              9)
+    ("112-phi-perc-readonly.6th"                 36)
+    ("113-phi-combination-law.6th"               19)
+    ("114-percolation-critical-exponent.6th"     16)))
 
 (define (run-demo file)
   (define out
@@ -255,8 +272,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1611
-                (format "cumulative ✓ count: ~a (expected 1611)" total-pass)))
+  (check-equal? total-pass 1682
+                (format "cumulative ✓ count: ~a (expected 1682)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1611 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1682 ✓ across ~a demos"
                    total-pass (length expected)))

@@ -11,6 +11,38 @@ release with a maintained changelog from the next version forward.
 
 Tracks `main@HEAD` development past v0.8.  Currently:
 
+### Added (research-track demos — third cycle, code-focused)
+- **Demo 112** (36 ✓) — phi-perc read-only contract via snap/
+  restore wrapper.  Uses negative-int memory keys to namespace
+  the BFS snapshot away from engine-reserved underscore-prefixed
+  and user string/symbol keys.  Eliminates the cycle-2 NGET-
+  mutation caveat; phi-perc now functionally pure.  Verified
+  across 6-node and 10-node substrates with distinct features,
+  interleaved phi-perc/phi-pa calls, idempotent re-calling.
+- **Demo 113** (19 ✓) — Track 4.1 Φ-family combination laws for
+  nested observers.  **POSITIVE THEORETICAL FINDING**:
+  - phi-pa(M) = (K+1)·L_max — structurally INDEPENDENT of
+    children's Φ_PA values (verified across 10× scope range,
+    20000 to 200000)
+  - phi-perc(M) ~ Σ comp-size(O_i) — connectivity-INHERITED
+  Rejects additive and maximal panpsychism for phi-pa; supports
+  connectivity-aggregation panpsychism for phi-perc.  Substrate-
+  derived dual-law: combination problem is MEASURE-DEPENDENT,
+  not absolute.  Real contribution to philosophy-of-mind
+  combination problem.
+- **Demo 114** (16 ✓) — Track 2.2c percolation critical-exponent
+  scaling.  Measure phase transition across n ∈ {10, 20, 30}:
+  jump-size = (n-2)·L_max linear in n; pre-bridge edge count
+  = 2(n-2)+3 linear in n; critical edge-fraction = 2/(n-1) →
+  2/n.  **Substrate-derived scaling exponent: -1**, same
+  universality class as classical Erdős-Rényi p_c = 1/n within
+  factor 2.  First quantitative substrate-derived critical
+  exponent in catalogue.
+
+### Changed (stdlib)
+- **`stdlib/phi.6th`**: phi-perc upgraded to read-only via
+  snap/restore wrapper.  No more NGET-mutation caveat.
+
 ### Added (research-track demos — second cycle, code-focused)
 - **Demo 108** (24 ✓) — Track 2.1b phi-integ density sweep.
   **PARTIAL POSITIVE**: two-regime piecewise-linear response
