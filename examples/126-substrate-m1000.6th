@@ -1,0 +1,201 @@
+\ examples/126-substrate-m1000.6th
+\ Substrate phi-perc M=1000 at n=20, p=10%.
+\ Pre-registered in PREDICTIONS-126.md (commit f31ba43).
+\
+\ Discriminates between cycle-9 alternatives:
+\   D — substrate FAITHFUL: m_1000 ∈ [124,500, 128,500]
+\   E — UPWARD bias:        m_1000 > 128,500
+\   F — DOWNWARD bias:      m_1000 < 124,500
+\
+\ Reference (cycle 9 networkx M=10000): 126,549 ± 657.
+\ Substrate (cycle 8 M=100):             130,900 ± 6,270.
+\ Difference: 4,351 — looks 0.69σ at M=100, would be ~2.2σ
+\ if substrate true mean really were 130,900.
+\
+\ M=1000 SEM ≈ 62707/sqrt(1000) ≈ 1983, sharp enough to
+\ discriminate D vs E.
+
+use prelude
+use graph
+use phi
+use bfs
+use rand
+use stats
+use debug
+
+\ ============================================================
+\ Ensemble framework (lifted from demo 124, p fixed at 10%).
+\ ============================================================
+
+: maybe-add-edge ( i j -- )
+  "mae-j" store   "mae-i" store
+  100 rand 10 < if
+    "mae-i" load "mae-j" load bi-edge
+  then ;
+
+: edge-inner-loop
+  "edge-j" load 20 <= if
+    "edge-i" load "edge-j" load maybe-add-edge
+    "edge-j" load 1 + "edge-j" store
+    edge-inner-loop
+  then ;
+
+: edge-outer-loop
+  "edge-i" load 20 < if
+    "edge-i" load 1 + "edge-j" store
+    edge-inner-loop
+    "edge-i" load 1 + "edge-i" store
+    edge-outer-loop
+  then ;
+
+: mark-n-loop
+  "mark-rem" load 0 > if
+    MARK drop
+    "mark-rem" load 1 - "mark-rem" store
+    mark-n-loop
+  then ;
+
+: gen-er-graph
+  RESET
+  20 "mark-rem" store mark-n-loop
+  1 1 EDGE+                                \ observer self-loop
+  1 "edge-i" store
+  edge-outer-loop ;
+
+: one-sample-tally
+  gen-er-graph
+  1 phi-perc stat-add ;
+
+: K-loop
+  "K-rem" load 0 > if
+    one-sample-tally
+    "K-rem" load 1 - "K-rem" store
+    K-loop
+  then ;
+
+: M-loop
+  "M-rem" load 0 > if
+    "M-rem" load srand
+    20 "K-rem" store
+    K-loop
+    "M-rem" load 1 - "M-rem" store
+    M-loop
+  then ;
+
+\ ============================================================
+\ Run ensemble: M=50 seeds × K=20 samples = 1000 graphs.
+\ ============================================================
+
+stat-reset
+50 "M-rem" store
+M-loop
+
+stat-mean   "m1000"  store
+stat-stddev "s1000"  store
+
+\ ============================================================
+\ Regime classification per PREDICTIONS-126.md.
+\ ============================================================
+
+\ Regime D: 124500 ≤ m_1000 ≤ 128500.
+"m1000" load 124500 >= "m1000" load 128500 <= * "regime-D?" store
+
+\ Regime E: m_1000 > 128500.
+"m1000" load 128500 > "regime-E?" store
+
+\ Regime F: m_1000 < 124500.
+"m1000" load 124500 < "regime-F?" store
+
+\ Exactly one regime must fire (partition).
+"regime-D?" load "regime-E?" load + "regime-F?" load + "regime-count" store
+
+\ ============================================================
+\ Difference from reference 126,549.
+\ ============================================================
+
+"m1000" load 126549 - "diff-raw" store
+"diff-raw" load 0 < if "diff-raw" load -1 * else "diff-raw" load then
+   "diff-abs" store
+
+\ SEM at M=1000 (expected ≈ stddev / sqrt(1000) ≈ stddev / 31).
+"s1000" load 31 / "sem-1000" store
+
+\ ============================================================
+\ Sub-prediction: stddev_1000 within ±10% of M=100 stddev (62,707).
+\ Lower bound = 56,436; upper bound = 68,978.
+\ ============================================================
+
+"s1000" load 56436 >= "s1000" load 68978 <= * "stddev-consistent?" store
+
+\ ============================================================
+\ Report.
+\ ============================================================
+
+cr
+"=== Demo 126 — substrate phi-perc M=1000 at n=20, p=10% ===" . cr
+cr
+"Pre-registration: examples/PREDICTIONS-126.md (commit f31ba43)" . cr
+cr
+"Sample size:      M=50 × K=20 = 1000 graphs" . cr
+"Substrate mean:   " . "m1000" load . cr
+"Substrate stddev: " . "s1000" load . cr
+"Substrate SEM:    " . "sem-1000" load . cr
+cr
+"Reference (cycle 9, networkx M=10000): 126549 ± 657" . cr
+"Cycle 8 substrate (M=100):             130900 ± 6270" . cr
+cr
+"Absolute |diff| vs reference:          " . "diff-abs" load . cr
+cr
+"Regime D (faithful, [124500, 128500]): " . "regime-D?" load . cr
+"Regime E (upward bias, > 128500):       " . "regime-E?" load . cr
+"Regime F (downward bias, < 124500):     " . "regime-F?" load . cr
+cr
+
+"regime-D?" load 1 = if
+  ">>> REGIME D — substrate FAITHFUL to true classical ER" . cr
+  "    at n=20, p=10% within ±1σ_1000 of reference." . cr
+  "    Cycle-9 'faithful' claim survives M=1000 test." . cr
+  "    Catalogue gains first cross-validated substrate finding." . cr
+else "regime-E?" load 1 = if
+  ">>> REGIME E — substrate has SYSTEMATIC UPWARD BIAS vs" . cr
+  "    classical ER at near-critical regime (~3%)." . cr
+  "    Cycle 8 was 'right for wrong reason'; substrate-specific" . cr
+  "    physics emerges.  Investigate cause in cycle 11" . cr
+  "    (bi-edge, observer self-loop, LCG correlation)." . cr
+else
+  ">>> REGIME F — substrate has SYSTEMATIC DOWNWARD BIAS." . cr
+  "    Unexpected; suggests LCG-RNG under-samples edges." . cr
+  "    Investigate Numerical Recipes constants." . cr
+then then
+cr
+"Sub-prediction (stddev within ±10% of M=100 reference):" . cr
+"  M=100 reference stddev: 62707 (bounds [56436, 68978])" . cr
+"  M=1000 measured stddev: " . "s1000" load . cr
+"  Consistent? (1=yes 0=no): " . "stddev-consistent?" load . cr
+cr
+
+\ ============================================================
+\ Sanity asserts (no regime-content; just consistency).
+\ ============================================================
+
+\ m1000 in plausible range [50000, 200000].
+"m1000" load 50000 >= "m1000" load 200000 <= + 2 assert-eq
+
+\ Exactly one regime fires (D, E, F partition).
+"regime-count" load 1 assert-eq
+
+\ s1000 > 0.
+"s1000" load 0 > 1 assert-eq
+
+\ Diff-abs is non-negative.
+"diff-abs" load 0 >= 1 assert-eq
+
+\ ============================================================
+\ Regression pins to be filled in measurement commit (next).
+\ Placeholder asserts deliberately omitted from source-only
+\ commit so 'racket -l sixth/cli run' produces clean output
+\ without parse failure.  See measurement commit for pinned
+\ values.
+\ ============================================================
+
+REPORT
