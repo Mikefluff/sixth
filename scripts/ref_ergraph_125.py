@@ -79,7 +79,12 @@ if __name__ == "__main__":
     s = measure(n=20, p=0.10, m=1000, seed_start=1)
     report("PRIMARY: n=20, p=0.10, M=1000", s)
 
-    mean_x_lmax = s["mean"] * 10000
+    # Tight: pre-registration committed M≥10000 fallback if SEM>2000.
+    s_tight = measure(n=20, p=0.10, m=10000, seed_start=1)
+    report("TIGHT: n=20, p=0.10, M=10000", s_tight)
+
+    # Use tight measurement for regime classification (per pre-reg fallback).
+    mean_x_lmax = s_tight["mean"] * 10000
     regime, meaning = classify_regime(mean_x_lmax)
     print(f"Regime classification: {regime}")
     print(f"  {meaning}")
@@ -89,11 +94,12 @@ if __name__ == "__main__":
     print("Comparison:")
     print(f"  Substrate phi-perc (cycle 8, M=100):       130,900")
     print(f"  Classical asymptotic formula:              108,400")
-    print(f"  Reference (this run, M=1000):              {mean_x_lmax:.1f}")
+    print(f"  Reference M=1000:                          {s['mean']*10000:.1f}")
+    print(f"  Reference M=10000 (tight):                 {mean_x_lmax:.1f}")
     print()
 
-    # Sub-prediction: 1σ bound check.
-    sem = s["stddev"] * 10000 / (s["m"] ** 0.5)
+    # Sub-prediction: 1σ bound check on tight measurement.
+    sem = s_tight["stddev"] * 10000 / (s_tight["m"] ** 0.5)
     print(f"Sub-prediction check: SEM × L_max = {sem:.1f}")
     if sem <= 2000:
         print("  ✓ SEM ≤ 2000 — reference is tight enough to discriminate A/B.")

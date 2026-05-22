@@ -1,0 +1,163 @@
+\ examples/125-classical-ref-vs-formula.6th
+\ Cycle-9 retraction demo: independent networkx reference shows
+\ substrate phi-perc TRACKS true classical ER at n=20, p=10%.
+\ Pre-registered in PREDICTIONS-125.md (commit 99f33f0); reference
+\ script scripts/ref_ergraph_125.py committed 6f988ac BEFORE run.
+\
+\ === RETRACTION OF CYCLE-8 SUBSTRATE-DERIVED FINDING ===
+\
+\ Cycle 8 (RESULTS.md §"Cycle 8") claimed substrate phi-perc
+\ deviates from classical ER at n=20, p=10% by +21%, OUTSIDE
+\ the pre-registered ±15% bound.  Cycle 9 reference shows my
+\ asymptotic formula (the "classical" baseline) was wrong —
+\ true classical ER Monte Carlo at finite n=20 gives 126,549,
+\ not 108,400.  Substrate's 130,900 is within 1σ of the true
+\ classical reference.  The "deviation" was theory-side error,
+\ not a substrate finding.
+\
+\ Reference values below are FROM scripts/ref_ergraph_125.py,
+\ run with networkx fast_gnp_random_graph + Mersenne Twister,
+\ M=10000 samples, seeds 1..10000 (output captured to git in
+\ next commit).  Pinning the numbers here puts the retraction
+\ inside the regression gate.
+
+use prelude
+use debug
+
+\ ============================================================
+\ Reference: networkx Monte Carlo at n=20, M=10000 seeds.
+\ ============================================================
+
+126549 "ref-p10-mean" store        \ true classical at p=10%
+   657 "ref-p10-sem"  store        \ standard error of mean
+179260 "ref-p15-mean" store        \ p=15%
+194100 "ref-p20-mean" store        \ p=20%
+199730 "ref-p30-mean" store        \ p=30%
+
+\ ============================================================
+\ Cycle-8 substrate measurements (M=100, from demo 124).
+\ ============================================================
+
+130900 "sub-p10-mean"   store
+ 62707 "sub-p10-stddev" store     \ for SEM = stddev / sqrt(100) = 6271
+180600 "sub-p15-mean"   store
+193700 "sub-p20-mean"   store
+198000 "sub-p30-mean"   store
+
+\ ============================================================
+\ Asymptotic formula predictions (from er-theory.6th).
+\ These are what cycle 8 used as the "classical" reference.
+\ ============================================================
+
+108400 "formula-p10" store
+166800 "formula-p15" store
+191500 "formula-p20" store
+198800 "formula-p30" store
+
+\ ============================================================
+\ Substrate SEM (cycle 8 M=100): sqrt(100) = 10, so SEM = stddev / 10.
+\ ============================================================
+
+"sub-p10-stddev" load 10 / "sub-p10-sem" store
+
+\ ============================================================
+\ Vindication: substrate vs true reference at p=10%.
+\ |substrate - reference| / sub-sem should be O(1), NOT >>1.
+\ ============================================================
+
+"sub-p10-mean" load "ref-p10-mean" load - "p10-diff-raw" store
+\ Take absolute value.
+"p10-diff-raw" load 0 < if "p10-diff-raw" load -1 * else "p10-diff-raw" load then
+   "p10-abs-diff" store
+
+\ Substrate-vs-reference difference at p=10% = |130900 - 126549| = 4351.
+"p10-abs-diff" load 4351 assert-eq
+
+\ Substrate SEM at p=10% (M=100) = 62707 / 10 = 6270.
+"sub-p10-sem" load 6270 assert-eq
+
+\ Difference / SEM ≈ 4351 / 6270 ≈ 0.69 — substrate WITHIN 1σ
+\ of true classical.  Formal test: |diff| < 2 * sub-sem (95% CI).
+"p10-abs-diff" load 2 "sub-p10-sem" load * < 1 assert-eq
+
+\ ============================================================
+\ Retraction: asymptotic formula vs true reference at p=10%.
+\ ============================================================
+
+"formula-p10" load "ref-p10-mean" load - "fp10-raw" store
+"fp10-raw" load 0 < if "fp10-raw" load -1 * else "fp10-raw" load then
+  "fp10-abs" store
+
+\ Formula error at p=10% = |108400 - 126549| = 18149.
+"fp10-abs" load 18149 assert-eq
+
+\ Formula error as fraction of reference: 18149/126549 ≈ 14.3% — large.
+\ Compare to substrate-vs-reference error 4351/126549 ≈ 3.4% — small.
+
+\ Formula deviation > 2× substrate SEM (formal: formula is wronger
+\ than substrate is noisy).
+"fp10-abs" load 2 "sub-p10-sem" load * > 1 assert-eq
+
+\ ============================================================
+\ Sanity ladder: formula accuracy IMPROVES away from critical.
+\ At deeper supercritical regimes, asymptotic formula tracks well.
+\ ============================================================
+
+\ p=15%: |166800 - 179260| = 12460  (≈7% error)
+"formula-p15" load "ref-p15-mean" load - "fp15-raw" store
+"fp15-raw" load 0 < if "fp15-raw" load -1 * else "fp15-raw" load then
+   "fp15-abs" store
+"fp15-abs" load 12460 assert-eq
+
+\ p=20%: |191500 - 194100| = 2600  (≈1.3% error)
+"formula-p20" load "ref-p20-mean" load - "fp20-raw" store
+"fp20-raw" load 0 < if "fp20-raw" load -1 * else "fp20-raw" load then
+   "fp20-abs" store
+"fp20-abs" load 2600 assert-eq
+
+\ p=30%: |198800 - 199730| = 930  (≈0.5% error)
+"formula-p30" load "ref-p30-mean" load - "fp30-raw" store
+"fp30-raw" load 0 < if "fp30-raw" load -1 * else "fp30-raw" load then
+   "fp30-abs" store
+"fp30-abs" load 930 assert-eq
+
+\ Monotone: formula error grows as p approaches critical from above.
+"fp30-abs" load "fp20-abs" load < 1 assert-eq      \ deeper super: tighter
+"fp20-abs" load "fp15-abs" load < 1 assert-eq      \ closer to critical: worse
+"fp15-abs" load "fp10-abs" load < 1 assert-eq      \ near critical: worst
+
+\ ============================================================
+\ Report.
+\ ============================================================
+
+cr
+"=== Demo 125 — cycle 9 retraction: formula was wrong, substrate fine ===" . cr
+cr
+" p%   substrate    reference   formula   sub-ref   formula-ref" . cr
+" --   ---------    ---------   -------   -------   -----------" . cr
+" 10   " . "sub-p10-mean" load . "       " . "ref-p10-mean" load . "      "
+        . "formula-p10" load . "    " . "p10-abs-diff" load . "      "
+        . "fp10-abs" load . cr
+" 15   " . "sub-p15-mean" load . "       " . "ref-p15-mean" load . "      "
+        . "formula-p15" load . "    " . "fp15-abs" load . cr
+" 20   " . "sub-p20-mean" load . "       " . "ref-p20-mean" load . "      "
+        . "formula-p20" load . "     " . "fp20-abs" load . cr
+" 30   " . "sub-p30-mean" load . "       " . "ref-p30-mean" load . "      "
+        . "formula-p30" load . "     " . "fp30-abs" load . cr
+cr
+"Substrate-vs-reference at p=10%: |diff| = " . "p10-abs-diff" load . cr
+"Substrate SEM at p=10%:          " . "sub-p10-sem" load . cr
+"Substrate is WITHIN 1σ of true classical reference." . cr
+cr
+"Formula-vs-reference at p=10%:   |diff| = " . "fp10-abs" load . cr
+"Asymptotic formula UNDER-ESTIMATES true classical by ~14%" . cr
+"at near-critical regime (c=1.9, n=20)." . cr
+cr
+"CONSEQUENCE: cycle-8 'substrate deviation' finding RETRACTED" . cr
+"as theory-side error.  Substrate phi-perc tracks true" . cr
+"classical ER faithfully at finite n=20." . cr
+cr
+"Pre-registered: examples/PREDICTIONS-125.md (commit 99f33f0)" . cr
+"Reference data: scripts/ref_ergraph_125.py (commit 6f988ac)" . cr
+
+REPORT

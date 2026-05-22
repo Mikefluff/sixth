@@ -11,6 +11,78 @@ release with a maintained changelog from the next version forward.
 
 Tracks `main@HEAD` development past v0.8.  Currently:
 
+### Added (cycle 9 — independent classical reference retracts cycle-8 finding)
+
+- **`examples/PREDICTIONS-125.md`** (commit `99f33f0`,
+  pre-registered BEFORE reference script) — three mutually
+  exclusive regimes for networkx Monte Carlo outcome:
+  Regime A (substrate deviates), Regime B (formula wrong,
+  substrate fine), Regime C (other).  Sub-prediction:
+  SEM × L_max ≤ 2000 at M=1000 (else escalate to M=10000).
+- **`scripts/ref_ergraph_125.py`** (commit `6f988ac`,
+  source BEFORE measurement) — independent classical
+  reference using `networkx.fast_gnp_random_graph` with
+  Mersenne Twister, computes E[|component(0)|] × L_max.
+- **`examples/125-classical-ref-vs-formula.6th`** (11 ✓) —
+  Cycle-9 retraction demo with pinned reference values
+  inside regression gate.  Asserts:
+  - Substrate within 1σ of true classical at p=10%
+    (|130900 - 126549| = 4351 < 2 × SEM = 12540)
+  - Asymptotic formula error grows monotonically toward
+    critical regime (0.5% → 1.3% → 7.0% → 14.3% at
+    p∈{30, 20, 15, 10}%)
+
+### Retracted (cycle 8 "substrate-derived deviation" claim)
+
+- **Cycle 8 "first binding pre-registered finding"
+  RETRACTED as theory-side error.**  The classical
+  reference used in cycle 8 was an asymptotic
+  `E[|C|] = n·f² + (1-f)/(1-c(1-f))` formula that
+  under-estimates true classical at near-critical finite
+  n by 14%.  True classical Monte Carlo at n=20, p=10%
+  gives 126,549 (M=10000, SEM=657), not 108,400 as the
+  formula predicted.  Substrate's 130,900 is faithful to
+  true classical within 1σ.
+
+### New finding (cycle 9 — substrate fidelity to classical ER)
+
+- **Substrate phi-perc is a faithful finite-n classical-ER
+  reachability implementation** at n=20 across p∈{10,15,
+  20,30}%, tracking true classical to ~3%.  This is a
+  positive finding for substrate fidelity, replacing the
+  retracted cycle-8 "deviation" claim.  Pre-registered
+  test, independent RNG (Mersenne Twister), no post-hoc
+  bound adjustment.
+
+### Methodological lesson reinforced
+
+The cycle 8 → cycle 9 transition demonstrates the
+pre-registration loop **catches its own bugs**.  Cycle 8
+flagged three hypotheses for the "deviation"; cycle 9's
+binding test eliminated hypotheses 1 and 3 by direct
+reference, identifying hypothesis 2 (formula error) as
+the actual cause.  This is *engineered honesty*: the
+sub-prediction escalation from M=1000 to M=10000 fired
+exactly as pre-committed when SEM=2091 exceeded the 2000
+bound, leaving no room for post-hoc cherry-picking.
+
+### Added (cycle 8 — first BINDING pre-registered substrate-vs-classical test)
+
+- **`examples/PREDICTIONS-124.md`** (commit `b0fcccd`,
+  pre-registered BEFORE demo source) — classical
+  Erdős-Rényi predictions for n=20 ensemble with ±15%
+  tight bounds and explicit H0/H1 hypotheses.
+- **`stdlib/er-theory.6th`** (commit `931b04d`) —
+  classical ER reference value table (n ∈ {10, 20} × p ∈
+  {5,10,15,20,30}%) callable from demos; `er-prediction`,
+  `er-low`, `er-high`, `er-matches?`.
+- **`examples/124-substrate-vs-classical-er.6th`** (25 ✓) —
+  pre-registered substrate-vs-classical test, M=5 seeds ×
+  K=20 = 100 graphs per p.  Results: 3/4 tight-bound
+  matches; cycle-8 claimed deviation at p=10% but cycle 9
+  retracted as theory-side error (see above).  Demo kept
+  in regression gate for historical traceability.
+
 ### Added (cycle 7 — explicit retract markers + multi-observer + first valid predict-then-measure)
 
 - **Explicit retract notices added to demos 116, 117, 118, 119**

@@ -308,11 +308,22 @@
     ;; 124: FIRST cycle with binding pre-registration in git
     ;;      (PREDICTIONS-124.md committed b0fcccd before demo source).
     ;;      Result: 3/4 tight-bound matches.  Substrate phi-perc at
-    ;;      n=20, p=10% (near-critical) EXCEEDS classical ER
-    ;;      prediction by 21% — outside ±15% bound.  First GENUINE
-    ;;      substrate-derived deviation from classical theory
-    ;;      identified via pre-registered test.
-    ("124-substrate-vs-classical-er.6th"         25)))
+    ;;      n=20, p=10% (near-critical) APPEARED to exceed classical
+    ;;      ER prediction by 21% — but cycle 9 (demo 125) shows the
+    ;;      "classical" baseline was a wrong asymptotic formula, not
+    ;;      true classical.  Substrate values are correct; finding
+    ;;      RETRACTED by cycle 9 — see demo 125 and RESULTS.md.
+    ("124-substrate-vs-classical-er.6th"         25)
+    ;; --- Cycle 9: independent classical reference retracts cycle-8 ---
+    ;; 125: networkx Monte Carlo (n=20, M=10000, Mersenne Twister via
+    ;;      scripts/ref_ergraph_125.py) gives true classical reference
+    ;;      126,549 at p=10% (cf. asymptotic formula's 108,400 and
+    ;;      substrate's 130,900).  Substrate WITHIN 1σ of true
+    ;;      classical.  Cycle-8 "substrate-derived deviation"
+    ;;      RETRACTED as theory-side error.  Substrate phi-perc tracks
+    ;;      true classical ER faithfully at finite n=20.
+    ;;      Pre-registered: PREDICTIONS-125.md (commit 99f33f0).
+    ("125-classical-ref-vs-formula.6th"          11)))
 
 (define (run-demo file)
   (define out
@@ -337,8 +348,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1844
-                (format "cumulative ✓ count: ~a (expected 1844)" total-pass)))
+  (check-equal? total-pass 1855
+                (format "cumulative ✓ count: ~a (expected 1855)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1844 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1855 ✓ across ~a demos"
                    total-pass (length expected)))

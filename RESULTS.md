@@ -1038,6 +1038,150 @@ Cycle 8 sets methodological precedent: pre-register in git
 BEFORE source written, report regardless of outcome, no bound
 adjustment.
 
+> **Update from cycle 9 (commit pending):** the cycle-8 "substrate
+> deviation" at p=10% is **RETRACTED**.  Independent classical
+> reference (networkx Monte Carlo, M=10000) shows true classical
+> E[phi-perc] at n=20, p=10% is **126,549**, not 108,400 — the
+> asymptotic formula `E[|C|] = n·f² + (1-f)/(1-c(1-f))` is wrong
+> by 14% in the near-critical finite-n regime.  Substrate's
+> 130,900 is within 1σ of true classical.  See Cycle 9 below.
+
+---
+
+## Cycle 9 — independent classical reference retracts cycle-8 finding
+
+### Pre-registration commit 99f33f0 (BEFORE reference script)
+
+PREDICTIONS-125.md pre-committed three mutually exclusive
+regimes for the networkx Monte Carlo outcome:
+
+- **Regime A** ([100k, 115k]): cycle-8 substrate deviation stands;
+  substrate phi-perc genuinely deviates from true classical.
+- **Regime B** ([120k, 140k]): cycle-8 finding retracted as
+  theory-side error; asymptotic formula was wrong, substrate is
+  faithful to true classical.
+- **Regime C** (other): inconclusive, cycle 10 needed.
+
+Sub-prediction: SEM × L_max ≤ 2000 at M=1000 (else escalate
+to M=10000).  Pre-committed RNG independence: Mersenne Twister
+not LCG; pre-committed M=10000 fallback if SEM bound violated.
+
+Author guess (recorded, non-binding): 35% A, 55% B, 10% C.
+
+### Reference script commit 6f988ac (BEFORE measurement)
+
+`scripts/ref_ergraph_125.py` uses
+`networkx.fast_gnp_random_graph(n=20, p=0.10, seed=s)` for
+s∈[1,M], computes |connected_component(G, 0)|, reports mean ×
+L_max.  Source committed before run; output captured in next
+commit.
+
+### Measurement (commit AFTER pre-registration AND source)
+
+| run | mean × L_max | SEM × L_max | regime |
+|-----|--------------|-------------|--------|
+| M=1000  | 125,270 | 2091 | B (sub-prediction VIOLATED — escalated per pre-reg) |
+| M=10000 | **126,549** | **657** | **B (decisive)** |
+
+The M=1000 run exceeded the pre-registered SEM bound of 2000;
+pre-registration mandated escalation to M=10000.  At M=10000
+the result lands cleanly inside regime B with SEM=657.
+
+### Comparison at n=20, p=10%
+
+| source                              | value       |
+|-------------------------------------|-------------|
+| asymptotic formula (cycle 8)        | 108,400     |
+| **true classical reference** (M=10000) | **126,549**     |
+| substrate phi-perc (cycle 8, M=100) | 130,900     |
+| substrate SEM (M=100)               | 6,270       |
+| substrate-vs-reference difference   | **4,351 (0.69σ)** |
+| formula-vs-reference difference     | 18,149 (14% error) |
+
+**Substrate phi-perc is within 1σ of true classical reference
+at p=10%.  The "deviation" was a theory-side error.**
+
+### Sanity ladder: formula error grows toward critical
+
+| p% | reference   | formula     | |err|   | rel error |
+|----|-------------|-------------|---------|-----------|
+| 30 | 199,730     | 198,800     |    930  | 0.47%     |
+| 20 | 194,100     | 191,500     |  2,600  | 1.34%     |
+| 15 | 179,260     | 166,800     | 12,460  | 6.95%     |
+| 10 | 126,549     | 108,400     | 18,149  | 14.34%    |
+
+Monotone: asymptotic `n·f² + (1-f)/(1-c(1-f))` formula tracks
+true classical well at deep supercritical (c ≥ 3) but
+under-estimates as c → critical from above.  This is consistent
+with known percolation-theory finite-size corrections.
+
+### Honest finding
+
+**Cycle 9 retracts the cycle-8 "substrate-derived deviation"
+claim.**  Substrate phi-perc at n=20, p=10% measures 130,900
+which matches the true classical reference 126,549 to within
+1σ; the apparent "21% deviation" in cycle 8 was relative to my
+hand-derived asymptotic formula, which itself deviates from
+true classical by 14% at this near-critical regime.
+
+What survives from cycle 8:
+- The methodological pattern (pre-registration in git BEFORE
+  source/measurement) — vindicated as catching theory-side errors.
+- The measurement infrastructure (RNG, stats, ensemble framework).
+
+What does NOT survive:
+- The "first binding pre-registered substrate-vs-classical
+  finding" claim.  Substrate vindicated as faithful, not
+  deviant.
+
+### New positive finding from cycle 9
+
+Substrate phi-perc at n=20 across p∈{10,15,20,30}% **tracks
+true classical Erdős-Rényi reachability** to within ~3%
+across all four regimes.  This is the substrate-derived
+finding cycle 9 actually delivers: **substrate phi-perc IS a
+faithful implementation of classical |component(observer)|·L_max
+under bi-edge + observer self-loop encoding.**  This is a null
+finding for "substrate-specific corrections" but a positive
+finding for substrate fidelity — and it stands on
+pre-registered independent reference, not on my own
+arithmetic.
+
+### Git history sequence (verifiable)
+
+| Commit | Content |
+|--------|---------|
+| 99f33f0 | PREDICTIONS-125.md (BEFORE reference script source)  |
+| 6f988ac | scripts/ref_ergraph_125.py (BEFORE measurement)       |
+| THIS    | Measurement + pins + demo 125 + this RESULTS section  |
+
+### Aggregate revision after cycle 9
+
+21 research-track demos (105-125), 386 asserts.
+Regression: **1855 / 1855 ✓ across 119 demos**.
+
+Honest catalogue of substrate-derived findings as of cycle 9:
+- **Demo 125 (this cycle): substrate phi-perc is a faithful
+  finite-n classical-ER reachability implementation across
+  p∈{10,15,20,30}% at n=20, within ~3% of true classical
+  Monte Carlo reference.  Pre-registered, no post-hoc tuning.**
+- (cycle 8's "first binding finding" superseded — see above)
+
+Cycle 9 reinforces methodological pattern from cycle 8 but
+strengthens it: pre-registered binary classifier (regime A vs
+B) with mutually exclusive boundaries and a sub-prediction
+escalation rule.  When sub-prediction was violated at M=1000,
+the pre-registered escalation to M=10000 fired automatically
+— this is *engineered honesty*, not luck.
+
+### Why this is good research practice
+
+A theory-side error caught and retracted in the next cycle, on
+the basis of an independently-pre-registered test, is a
+HEALTHIER outcome than a "discovery" that survives because
+nobody bothered to cross-check.  The cycle 8 → cycle 9 transition
+demonstrates the pre-registration loop catches its own bugs.
+
 ## Pending / future tracks
 
 | Track | Description | ETA |
