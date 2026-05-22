@@ -946,6 +946,98 @@ defensible non-trivial substrate-derived prediction confirmation.
 Future cycles can build on this with more theory-driven
 experiments + Companion #1 scaffolding.
 
+---
+
+## Cycle 8 — first BINDING pre-registered substrate-vs-classical-ER test
+
+### Pre-registration commit b0fcccd (BEFORE measurement)
+
+Predictions for n=20 ensemble derived purely from classical
+Erdős-Rényi theory:
+
+| p%  | classical E[phi-perc] | tight bound (±15%)       |
+|-----|----------------------|--------------------------|
+|  5  | UNCERTAIN (critical) | [10,000, 200,000]        |
+| 10  | 108,400              | [92,140, 124,660]        |
+| 15  | 166,800              | [141,780, 191,820]       |
+| 20  | 191,500              | [162,775, 220,225]       |
+| 30  | 198,800              | [168,980, 228,620]       |
+
+H0: substrate matches within ±15% at all p ∈ {10,15,20,30}.
+H1: substrate deviates at one or more.
+
+### Measurement (commit AFTER pre-registration)
+
+n=20, M=5 seeds × K=20 = 100 graphs per p:
+
+| p%  | measured ± stddev | classical | match? |
+|-----|-------------------|-----------|--------|
+|  5  | 37,800 ± 35,030   | wide      | yes    |
+| 10  | **130,900 ± 62,707** | 108,400 | **NO (+21%)** |
+| 15  | 180,600 ± 40,244  | 166,800   | yes    |
+| 20  | 193,700 ± 27,005  | 191,500   | yes    |
+| 30  | 198,000 ± 18,920  | 198,800   | yes    |
+
+**Result: 3/4 tight-bound matches.  Substrate deviates at
+p=10% (near-critical regime).**
+
+### Honest finding (first genuine substrate-derived deviation)
+
+At p=10% for n=20 (c=1.9, near-critical), substrate phi-perc
+measures 130,900 — **EXCEEDS classical ER prediction (108,400)
+by 21%, outside ±15% bound**.
+
+Three possible explanations (cycle 9 work):
+1. **Substrate set-semantics correction** — bi-edges and self-
+   loops in our substrate may inflate component-size near
+   critical regime.
+2. **Classical prediction formula approximation breaks at
+   c=1.9** — my hand-derivation used approximation
+   E[|cluster|] = n·f² + (1-f)/(1 - c(1-f)) which may
+   under-estimate at intermediate c.
+3. **Real substrate-specific finite-size correction** —
+   substrate phi-perc has measurable deviation from classical
+   ER at near-critical regime due to phi-perc's specific
+   definition.
+
+**This is the FIRST genuinely pre-registered cycle in the
+catalogue with binding git-history pre-registration of:**
+- specific predicted values (not vague ranges)
+- ±15% tight bound (falsifiable)
+- explicit H0/H1 hypotheses
+- falsification rules committed BEFORE data
+
+Three of four pre-registered predictions matched; one deviated
+substantially.  Deviation is the substrate-derived finding —
+not an unfalsifiable wide bound, not a dimensional-analysis
+verification, but a specific quantitative measurement that
+disconfirms a specific quantitative prediction at one regime.
+
+### Git history sequence (verifiable)
+
+| Commit | Content |
+|--------|---------|
+| b0fcccd | PREDICTIONS-124.md (classical predictions, BEFORE source) |
+| 931b04d | stdlib/er-theory.6th + demo 124 source (BEFORE run)     |
+| THIS    | Measurement results + pins + this RESULTS section       |
+
+### Aggregate revision after cycle 8
+
+20 research-track demos (105-124), 375 asserts.
+Regression: 1844 / 1844 ✓ across 118 demos.
+
+**Real substrate-derived research findings:**
+- Demo 123: substrate extensivity verified to dimensional-analysis
+  precision (now retracted by CS-doctor pass as too loose to
+  count; see cycle 7 retrospective)
+- **Demo 124: substrate phi-perc at near-critical n=20 p=10%
+  exceeds classical ER by 21%, OUTSIDE pre-registered ±15%
+  bound.  First binding pre-registered finding.**
+
+Cycle 8 sets methodological precedent: pre-register in git
+BEFORE source written, report regardless of outcome, no bound
+adjustment.
+
 ## Pending / future tracks
 
 | Track | Description | ETA |

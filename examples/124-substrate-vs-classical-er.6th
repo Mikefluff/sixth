@@ -208,11 +208,22 @@ then
 "tight-matches" load 0 >= "tight-matches" load 4 <= + 2 assert-eq
 
 \ ============================================================
-\ Regression pin: specific outcome (deterministic under seeds 1..5).
-\ These will be filled in measurement-results commit AFTER running.
+\ Regression pins (cycle-8 measurement commit, seeds 1..5).
 \ ============================================================
 
-\ NOTE: pins added in subsequent commit (cycle 8 measurement commit).
-\ This source committed in cycle-8-source commit, before run.
+"m05" load 37800  assert-eq    "s05" load 35030 assert-eq
+"m10" load 130900 assert-eq    "s10" load 62707 assert-eq
+"m15" load 180600 assert-eq    "s15" load 40244 assert-eq
+"m20" load 193700 assert-eq    "s20" load 27005 assert-eq
+"m30" load 198000 assert-eq    "s30" load 18920 assert-eq
+
+\ Match indicators (PRE-REGISTERED outcome).
+"match05" load 1 assert-eq                \ wide bound
+"match10" load 0 assert-eq                \ DEVIATION: 130900 > 124660 (+15%)
+"match15" load 1 assert-eq                \ matches
+"match20" load 1 assert-eq                \ matches
+"match30" load 1 assert-eq                \ matches
+
+"tight-matches" load 3 assert-eq          \ 3/4 tight-bound matches
 
 REPORT

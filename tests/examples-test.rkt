@@ -303,7 +303,16 @@
     ;;      / ⟨phi-perc⟩(n=10) ∈ [2.0, 2.2].  Measured: 217%,
     ;;      intensive ratio 108%.  Substrate extensivity CONFIRMED.
     ("122-multiobserver-ensemble.6th"            18)
-    ("123-theory-extensivity.6th"                14)))
+    ("123-theory-extensivity.6th"                14)
+    ;; --- Cycle 8: pre-registered substrate-vs-classical-ER test ---
+    ;; 124: FIRST cycle with binding pre-registration in git
+    ;;      (PREDICTIONS-124.md committed b0fcccd before demo source).
+    ;;      Result: 3/4 tight-bound matches.  Substrate phi-perc at
+    ;;      n=20, p=10% (near-critical) EXCEEDS classical ER
+    ;;      prediction by 21% — outside ±15% bound.  First GENUINE
+    ;;      substrate-derived deviation from classical theory
+    ;;      identified via pre-registered test.
+    ("124-substrate-vs-classical-er.6th"         25)))
 
 (define (run-demo file)
   (define out
@@ -328,8 +337,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1819
-                (format "cumulative ✓ count: ~a (expected 1819)" total-pass)))
+  (check-equal? total-pass 1844
+                (format "cumulative ✓ count: ~a (expected 1844)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1819 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1844 ✓ across ~a demos"
                    total-pass (length expected)))
