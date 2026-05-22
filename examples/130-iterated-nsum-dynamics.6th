@@ -1,0 +1,269 @@
+\ examples/130-iterated-nsum-dynamics.6th
+\ Cycle 11B — iterated NSUM dynamics on ER substrate.
+\ Pre-registered: PREDICTIONS-130.md (attested, sha a1c48cc…b510).
+\
+\ Substrate-axiomatic experiment: iterate NSET v ← NSUM(v) (i.e.
+\ matrix power iteration on adjacency).  Predict per spectral
+\ theory + PA "feature integration" axiom:
+\
+\   r10 = phi-integ(1)_t1 / phi-integ(1)_t0 ∈ [2.50, 3.80]
+\   r21 = phi-integ(1)_t2 / phi-integ(1)_t1 ≥ r10  (axiom: monotone)
+\
+\ Regimes (partition):
+\   K — r10 in bound AND r21 ≥ r10  → AXIOM HOLDS
+\   L — r10 in bound AND r21 < r10  → AXIOM FALSIFIED (real finding)
+\   M — r10 outside bound            → setup error / investigate
+\
+\ Author guess: 60% K, 25% L, 15% M.
+
+use prelude
+use graph
+use phi
+use rand
+use stats
+use debug
+
+\ ============================================================
+\ ER graph + self-loops on ALL nodes (so power iteration works
+\ for every node, not only observer).
+\ ============================================================
+
+: maybe-add-edge ( i j -- )
+  "mae-j" store   "mae-i" store
+  100 rand 10 < if
+    "mae-i" load "mae-j" load bi-edge
+  then ;
+
+: edge-inner-loop
+  "edge-j" load 20 <= if
+    "edge-i" load "edge-j" load maybe-add-edge
+    "edge-j" load 1 + "edge-j" store
+    edge-inner-loop
+  then ;
+
+: edge-outer-loop
+  "edge-i" load 20 < if
+    "edge-i" load 1 + "edge-j" store
+    edge-inner-loop
+    "edge-i" load 1 + "edge-i" store
+    edge-outer-loop
+  then ;
+
+: mark-n-loop
+  "mark-rem" load 0 > if
+    MARK drop
+    "mark-rem" load 1 - "mark-rem" store
+    mark-n-loop
+  then ;
+
+: self-loop-rule ( n -- )
+  dup dup EDGE+ drop ;
+
+: add-self-loops
+  ' self-loop-rule EACH ;
+
+: gen-er-graph
+  RESET
+  20 "mark-rem" store mark-n-loop
+  add-self-loops                                \ all nodes have self-loops
+  1 "edge-i" store
+  edge-outer-loop ;
+
+\ ============================================================
+\ Feature initialization: NGET = 1 everywhere.
+\ ============================================================
+
+: init-one-rule ( n -- )
+  1 NSET ;
+
+: init-features-uniform
+  ' init-one-rule EACH ;
+
+\ ============================================================
+\ Iterated NSUM step: NSET v ← NSUM(v) for all v simultaneously
+\ via STEP-CA (two-phase commit, no serial bias).
+\ ============================================================
+
+: nsum-step-rule ( n -- next )
+  NSUM ;
+
+: nsum-step
+  ' nsum-step-rule STEP-CA ;
+
+\ ============================================================
+\ Per-seed measurement: build graph, init NGET=1, measure
+\ phi-integ at t=0, step, measure at t=1, step, measure at t=2.
+\ ============================================================
+
+: one-sample
+  gen-er-graph
+
+  \ t=0: NGET = 1.
+  init-features-uniform
+  1 phi-integ "phi-t0-sample" store
+
+  \ t=1: NSET v ← NSUM(v) (which is OUT(v) since NGET=1).
+  nsum-step
+  1 phi-integ "phi-t1-sample" store
+
+  \ t=2: NSET v ← NSUM(v) again.
+  nsum-step
+  1 phi-integ "phi-t2-sample" store
+
+  \ Accumulate ratios×100 into stats.
+  \ r10×100 = phi-t1 * 100 / phi-t0
+  "phi-t1-sample" load 100 *
+  "phi-t0-sample" load /
+  stat-add
+
+  \ Use second aggregator for r21×100.
+  "phi-t2-sample" load 100 *
+  "phi-t1-sample" load /
+  "r21-sum"   load + "r21-sum"   store
+  "r21-n"     load 1 + "r21-n"   store ;
+
+\ ============================================================
+\ Ensemble loops.  M=20 seeds × K=5 samples = 100 graphs.
+\ ============================================================
+
+: K-loop
+  "K-rem" load 0 > if
+    one-sample
+    "K-rem" load 1 - "K-rem" store
+    K-loop
+  then ;
+
+: M-loop
+  "M-rem" load 0 > if
+    "M-rem" load srand
+    5 "K-rem" store
+    K-loop
+    "M-rem" load 1 - "M-rem" store
+    M-loop
+  then ;
+
+\ Init both stats aggregators.
+stat-reset
+0 "r21-sum" store
+0 "r21-n"   store
+
+20 "M-rem" store
+M-loop
+
+stat-mean   "r10-mean" store          \ = mean of r10 × 100
+"r21-sum" load "r21-n" load / "r21-mean" store
+
+\ ============================================================
+\ Regime classification per PREDICTIONS-130.md.
+\ Bounds: r10 ∈ [2.50, 3.80] means r10×100 ∈ [250, 380].
+\ Axiom: r21 ≥ r10 (monotone non-decreasing).
+\ ============================================================
+
+"r10-mean" load 250 >= "r10-mean" load 380 <= * "r10-in-bound?" store
+
+"r21-mean" load "r10-mean" load >= "monotone?" store
+
+\ Regime K: r10 in bound AND monotone.
+"r10-in-bound?" load "monotone?" load * "regime-K?" store
+
+\ Regime L: r10 in bound AND NOT monotone.
+"r10-in-bound?" load "monotone?" load 1 - -1 * * "regime-L?" store
+
+\ Regime M: r10 outside bound.
+"r10-in-bound?" load 1 - -1 * "regime-M?" store
+
+\ Partition.
+"regime-K?" load "regime-L?" load + "regime-M?" load + "regime-count" store
+
+\ ============================================================
+\ Report.
+\ ============================================================
+
+cr
+"=== Demo 130 — iterated NSUM dynamics (cycle 11B) ===" . cr
+cr
+"Pre-reg: PREDICTIONS-130.md (sha a1c48cc…b510, attested)" . cr
+cr
+"M=20 seeds × K=5 = 100 graphs at n=20, p=10%" . cr
+"Each sample: rebuild graph, init NGET=1, measure phi-integ at" . cr
+"t=0/t=1/t=2 with STEP-CA nsum-step between." . cr
+cr
+"r10 × 100 (ensemble mean):  " . "r10-mean" load . cr
+"r21 × 100 (ensemble mean):  " . "r21-mean" load . cr
+cr
+"Predictions:" . cr
+"  r10×100 ∈ [250, 380]   (analytic 307 ± 25%)" . cr
+"  r21 ≥ r10  (axiom)" . cr
+cr
+"r10 in bound:  " . "r10-in-bound?" load . cr
+"r21 ≥ r10:     " . "monotone?"     load . cr
+cr
+"Regime K (axiom HOLDS):              " . "regime-K?" load . cr
+"Regime L (axiom FALSIFIED):          " . "regime-L?" load . cr
+"Regime M (r10 outside, setup error): " . "regime-M?" load . cr
+cr
+
+"regime-K?" load 1 = if
+  ">>> REGIME K — substrate-axiomatic prediction CONFIRMED." . cr
+  "    Iterated NSUM produces monotone ratio increase, " . cr
+  "    consistent with spectral power iteration toward leading" . cr
+  "    eigenvector.  Substrate's NSET/NSUM/STEP-CA primitives" . cr
+  "    realise Pointer Architecture feature-integration axiom." . cr
+  "    First cycle confirming a substrate-axiomatic prediction." . cr
+else "regime-L?" load 1 = if
+  ">>> REGIME L — substrate-axiom FALSIFIED." . cr
+  "    Ratio decreased at t=2 vs t=1.  Substrate dynamics" . cr
+  "    NON-monotone.  Pointer Architecture feature-integration" . cr
+  "    axiom NEEDS REVISION.  This is a real substrate-derived" . cr
+  "    finding in the NEGATIVE direction — substrate dynamics" . cr
+  "    diverge from leading-eigenvector evolution.  Cycle 12" . cr
+  "    investigates why." . cr
+else "regime-M?" load 1 = if
+  ">>> REGIME M — r10 outside [250, 380] bound." . cr
+  "    Setup error or unexpected scaling.  Cycle 12 needed." . cr
+then then then
+cr
+
+\ ============================================================
+\ Sanity asserts.
+\ ============================================================
+
+\ Exactly one regime fires.
+"regime-count" load 1 assert-eq
+
+\ Ratios positive.
+"r10-mean" load 0 > 1 assert-eq
+"r21-mean" load 0 > 1 assert-eq
+
+\ Ratios in plausible range (< 10000x = 100 in scaled units).
+"r10-mean" load 10000 < 1 assert-eq
+"r21-mean" load 10000 < 1 assert-eq
+
+\ ============================================================
+\ Regression pins (cycle 11B measurement, seeds 1..20).
+\ ============================================================
+
+"r10-mean"      load   305 assert-eq    \ phi_t1/phi_t0 × 100
+"r21-mean"      load   302 assert-eq    \ phi_t2/phi_t1 × 100
+"r10-in-bound?" load     1 assert-eq    \ in [250, 380]
+"monotone?"     load     0 assert-eq    \ r21 < r10 (axiom violated)
+"regime-K?"     load     0 assert-eq
+"regime-L?"     load     1 assert-eq    \ AXIOM FALSIFIED
+"regime-M?"     load     0 assert-eq
+"regime-count"  load     1 assert-eq
+
+\ HONESTY NOTE: r21 < r10 by 3 units in scaled-by-100 form
+\ (3.02 vs 3.05).  Strictly per pre-reg rule "r21 ≥ r10":
+\ axiom FALSIFIED.  Statistically with M=100: difference of 3
+\ is within sampling SEM (~5 for ratio variance ~50).
+\ Two readings:
+\   strict per pre-reg → regime L (falsification)
+\   statistical        → quasi-stationary equilibration at t=1
+\
+\ Either reading is a substrate-derived finding: substrate's
+\ iterated NSUM dynamics rapidly equilibrate to ratio ≈ mean
+\ degree (1 + (n-1)p = 2.9 here) within 1 step, NOT exhibiting
+\ the slow power-iteration convergence the naive axiomatic
+\ reading predicted.
+
+REPORT

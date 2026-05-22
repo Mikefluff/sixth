@@ -367,7 +367,22 @@
     ;;      1.29σ — not significant.  Substrate APPROXIMATELY
     ;;      faithful at second-moment level.
     ;;      Pre-registered: PREDICTIONS-129.md (commit c0ee1a8).
-    ("129-substrate-phi-integ-m10k.6th"          12)))
+    ("129-substrate-phi-integ-m10k.6th"          12)
+    ;; --- Cycle 11B: iterated NSUM dynamics (regime L — axiom falsified) ---
+    ;; 130: substrate-axiomatic experiment.  Init NGET=1 for all
+    ;;      nodes; STEP-CA-iterate NSET v ← NSUM(v); measure
+    ;;      phi-integ(1) at t=0, t=1, t=2.  M=20 × K=5 = 100 graphs.
+    ;;      Pre-registered (PREDICTIONS-130.md, attested, first
+    ;;      cycle under active pre-commit hook): r10=phi_t1/phi_t0
+    ;;      should be in [2.5, 3.8] AND r21≥r10 (PA "feature
+    ;;      integration" axiom: monotone non-decreasing toward λ₁).
+    ;;      Measurement: r10=3.05 (in bound), r21=3.02 < r10 →
+    ;;      REGIME L (axiom FALSIFIED per pre-reg rule).
+    ;;      Honestly: difference 3 units in scaled×100 form is
+    ;;      within sampling SEM (~5).  Either reading is real
+    ;;      substrate finding: substrate equilibrates rapidly
+    ;;      (~mean-degree ratio) rather than slow power-iteration.
+    ("130-iterated-nsum-dynamics.6th"            13)))
 
 (define (run-demo file)
   (define out
@@ -392,8 +407,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1901
-                (format "cumulative ✓ count: ~a (expected 1901)" total-pass)))
+  (check-equal? total-pass 1914
+                (format "cumulative ✓ count: ~a (expected 1914)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1901 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1914 ✓ across ~a demos"
                    total-pass (length expected)))
