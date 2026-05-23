@@ -21,9 +21,11 @@
 
 (require racket/list
          racket/string
+         racket/format
          "../env.rkt"
          "../errors.rkt"
          "../opcodes.rkt"
+         "../substrate/core.rkt"
          "../vm.rkt"
          "runtime.rkt")
 
@@ -188,22 +190,32 @@
   (define hit (assv mh (unbox (shadow-certs-of e))))
   (and hit (cdr hit)))
 
+(define (bump-energy-search! e amount)
+  (define b (energy-search-of e))
+  (set-box! b (+ (unbox b) amount)))
+
+(define (bump-energy-conflict! e amount)
+  (define b (energy-conflict-of e))
+  (set-box! b (+ (unbox b) amount)))
+
 (define (prim-shadow-check e)
   (define motif (require-list (pop! e) 'SHADOW-CHECK))
   (define law-before (compute-law-hash e))
+  ;; Cycle 25E: every SHADOW-CHECK costs E_search proportional to
+  ;; motif length (one symbol lookup per motif element).
+  (bump-energy-search! e (length motif))
   (cond
     [(null? motif)
      (push! e 0)]
     [(motif-has-forbidden? motif)
      (record-shadow-cert! e motif 'fail-forbidden)
+     (bump-energy-conflict! e 100)
      (push! e 0)]
     [(not (motif-expandable? e motif))
      (record-shadow-cert! e motif 'fail-unexpandable)
+     (bump-energy-conflict! e 100)
      (push! e 0)]
     [else
-     ;; Lookup-only check: law-hash should not have changed.
-     ;; Sanity for future extensions of SHADOW-CHECK that might
-     ;; accidentally mutate dictionary.
      (define law-after (compute-law-hash e))
      (cond
        [(= law-before law-after)
@@ -211,6 +223,7 @@
         (push! e 1)]
        [else
         (record-shadow-cert! e motif 'fail-law-mutation)
+        (bump-energy-conflict! e 100)
         (push! e 0)])]))
 
 ;; ---- INDUCE-RUNTIME --------------------------------------------------
@@ -457,10 +470,25 @@
                          (filter (lambda (entry)
                                    (not (eq? (car entry) cand-sym)))
                                  (unbox sb))))
+     ;; Cycle 25E DRY-RUN energy gate (observe-only; cycle 26 enforces).
+     ;; Per-cand metrics:
+     ;;   law_cost     = expansion length (added to E_law at INDUCE)
+     ;;   reuse_gain   = use_count * (expansion_length - 1)
+     ;;   net_delta_e  = law_cost - reuse_gain
+     ;;   would_pass   = net_delta_e < 0
+     (define exp-len (expansion-length-of e cand-sym))
+     (define reuse-gain (* cand-uses (max 0 (- exp-len 1))))
+     (define net-delta-e (- exp-len reuse-gain))
+     (define would-pass (< net-delta-e 0))
      (record-ledger! e (list 'commit-primitive cand-sym
                               cand-uses
                               (compute-law-hash e)
-                              (session-id-of e)))
+                              (session-id-of e)
+                              'energy-dry-run
+                              (list 'law-cost exp-len
+                                    'reuse-gain reuse-gain
+                                    'net-delta-e net-delta-e
+                                    'would-pass-energy-gate would-pass)))
      (push! e cand-sym)]))
 
 ;; ---- LAW-HASH --------------------------------------------------------
@@ -522,9 +550,85 @@
                       (filter (lambda (entry)
                                 (not (eq? (car entry) c)))
                               (unbox sb))))
+  ;; cycle 25E: invariant violation += 1000 to E_conflict.
+  (define eb (energy-conflict-of e))
+  (set-box! eb (+ (unbox eb) 1000))
   (record-ledger! e (list 'contamination c reason
                            (compute-law-hash e)
                            (session-id-of e))))
+
+;; ============================================================
+;; Energy inspection primitives (cycle 25E, item 16-20 hardening).
+;; All 8 are INSPECTION-OPS — they read counters without bumping
+;; E_semantic_trace.  The dispatch hook in runtime.rkt enforces
+;; the inspection exemption.
+;; ============================================================
+
+(define (prim-e-world e)
+  (push! e (compute-e-world e)))
+
+(define (prim-e-law e)
+  (push! e (compute-e-law e)))
+
+(define (prim-e-trace e)
+  (push! e (unbox (energy-semantic-trace-of e))))
+
+(define (prim-e-conflict e)
+  (push! e (unbox (energy-conflict-of e))))
+
+(define (prim-e-search e)
+  (push! e (unbox (energy-search-of e))))
+
+(define (prim-e-reuse-gain e)
+  (push! e (unbox (energy-reuse-gain-of e))))
+
+(define (prim-e-total e)
+  (push! e (compute-e-total e)))
+
+;; E-SNAPSHOT ( -- list ) pushes a single LIST containing all
+;; components + world_hash + law_hash + session_id + step.
+;; Format (positional):
+;;   (E_world E_law E_trace E_conflict E_search E_reuse_gain
+;;    E_total world_hash law_hash session_id)
+;; Step (substrate-now) is omitted — substrate's step counter is
+;; world-state, observable via NOW separately.
+(define (prim-e-snapshot e)
+  (define w   (compute-e-world e))
+  (define l   (compute-e-law e))
+  (define tr  (unbox (energy-semantic-trace-of e)))
+  (define cf  (unbox (energy-conflict-of e)))
+  (define sr  (unbox (energy-search-of e)))
+  (define rg  (unbox (energy-reuse-gain-of e)))
+  (define tot (compute-e-total e))
+  ;; compute hashes locally — these are inspection, do not mutate.
+  (define wh  (require-hash-world e))
+  (define lh  (compute-law-hash e))
+  (define sid (session-id-of e))
+  (push! e (list w l tr cf sr rg tot wh lh sid)))
+
+;; Helper: get current world hash without going through primitive
+;; dispatch (avoid double-counting in inspection).
+(define (require-hash-world e)
+  ;; Replicate prim-HASH-WORLD logic from sixth/primitives/substrate.rkt:
+  ;;   hash of (n, sorted-out-edges, sorted-hedges).
+  (define s (env-substrate e))
+  (cond
+    [(not s) 0]
+    [else
+     ;; Lazy require via dynamic-require would avoid linking the
+     ;; whole substrate module here, but we already require core.rkt
+     ;; from runtime.rkt so the function is in scope through
+     ;; substrate-outs / substrate-node-count.
+     ;; We reimplement to avoid cross-module dependency on primitives/.
+     (define n (substrate-node-count s))
+     (define edge-summary
+       (for/list ([nid (in-range n)])
+         (cons nid (sort (substrate-outs s nid) <))))
+     (define hedge-summary
+       (sort (substrate-hedges-snapshot s)
+             (lambda (a b)
+               (string<? (format "~a" a) (format "~a" b)))))
+     (equal-hash-code (list n edge-summary hedge-summary))]))
 
 ;; ---- registry --------------------------------------------------------
 
@@ -542,7 +646,16 @@
         (cons 'CAND-STATUS       prim-cand-status)
         (cons 'SHADOW-CERT-OF    prim-shadow-cert-of)
         (cons 'SESSION-ID        prim-session-id)
-        (cons 'CONTAMINATE!      prim-contaminate!)))
+        (cons 'CONTAMINATE!      prim-contaminate!)
+        ;; cycle 25E energy accounting (observational):
+        (cons 'E-WORLD           prim-e-world)
+        (cons 'E-LAW             prim-e-law)
+        (cons 'E-TRACE           prim-e-trace)
+        (cons 'E-CONFLICT        prim-e-conflict)
+        (cons 'E-SEARCH          prim-e-search)
+        (cons 'E-REUSE-GAIN      prim-e-reuse-gain)
+        (cons 'E-TOTAL           prim-e-total)
+        (cons 'E-SNAPSHOT        prim-e-snapshot)))
 
 (define (register-tier1! e)
   (for ([entry (in-list TIER1-TABLE)])

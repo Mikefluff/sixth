@@ -9,6 +9,30 @@ NO code, NO test.
 
 ## §0. Revision History & Deprecation Notice
 
+### v2.1 amendment — Energy Accounting added (cycle 25E)
+
+Date: 2026-05-23 (same authorship period as v2).
+
+Per user spec 2026-05-23: §17 Energy Accounting v0 appended as an
+**additive** amendment.  Energy is observational, NOT a gate in
+cycle 25.  Cycle 26 will activate `COMMIT-PRIMITIVE` energy
+enforcement.
+
+No existing constraint modified; all §1–§16 retain v2 semantics.
+Additive amendments are permitted without full deprecation cycle
+when:
+- they do not change the behavior of existing primitives in
+  ways that affect already-passed protocol tests
+- they introduce new observables only, not new gates
+- they are explicitly marked as additive in revision history
+
+v2.1 satisfies all three conditions.  The energy counters live in
+`_energy-*` env-memory keys with the iron constraint **observational
+only**: they do not enter `law_hash`, do not enter `world_hash`,
+do not affect SHADOW-CHECK equivalence outside of explicit energy
+tests.  Without this constraint, the measurer would alter the
+measured (Heisenberg trap).
+
 ### v1 → v2 transition (same authorship session)
 
 **v1** committed at `ec7370f` (2026-05-23 03:44Z, ledger row sha
@@ -677,3 +701,128 @@ prior to v2 attestation, establishing audit trail:
 Future modifications require new attestation and explicit
 deprecation cycle.  Quiet modifications are protocol violations
 and contaminate all subsequent cycles relying on the modified spec.
+
+---
+
+## §17. Energy Accounting v0 (added cycle 25E)
+
+Per user spec 2026-05-23.  Additive amendment per §0 — no existing
+constraint modified.
+
+### Thesis
+
+> Energy in Sixth is not physical energy.  It is the internal cost
+> of maintaining, transforming, explaining, and extending the
+> runtime.  A primitive is energetically justified when its
+> promotion reduces long-run runtime energy without violating
+> invariants.
+
+### Runtime tuple extension
+
+```
+Runtime = { world_state, law_state, trace, ledger, energy_state }
+```
+
+`energy_state` lives in `_energy-*` env-memory keys.  **Iron
+constraint:** observational only.  Does NOT enter `law_hash`, does
+NOT enter `world_hash`, does NOT affect SHADOW-CHECK equivalence
+outside of explicit energy tests.
+
+### Components (v0)
+
+```
+E_total = E_world + E_law + E_trace + E_conflict + E_search
+        - E_reuse_gain
+```
+
+| component | definition (v0) |
+|-----------|-----------------|
+| `E_world` | `node_count + edge_count` (computed on demand) |
+| `E_law` | sum of expansion lengths for all currently-active `cand_*` |
+| `E_trace` | semantic-trace event count (NON-inspection top-level dispatches) |
+| `E_conflict` | `shadow_failures × 100 + invariant_violations × 1000` |
+| `E_search` | `Σ motif_length` per SHADOW-CHECK invocation |
+| `E_reuse_gain` | `Σ (expansion_length - 1)` per cand_* dispatch |
+
+For motif of length 3 promoted to `cand_001`:
+- `E_law` delta on INDUCE: +3
+- `E_reuse_gain` per USE: +2 (saves 2 ops vs inline expansion)
+- At N=5 uses: gain=10, cost=3, **net = -7** → energetically justified.
+- Length-1 motif: gain=0 per use → never justified. Defends against
+  NOP-like promotions.
+- Length-0 motif: rejected at INDUCE-RUNTIME (empty motif error).
+
+### Inspection-vs-semantic separation
+
+`E_trace` counts only **semantic** top-level dispatches.  The set
+`INSPECTION-OPS` (defined in `sixth/meta/runtime.rkt`) is excluded:
+- All `E-*` primitives + `E-SNAPSHOT`
+- `LAW-HASH`, `HASH-WORLD`
+- `LEDGER-COUNT`, `LEDGER-LAST`, `CAND-USES`, `CAND-STATUS`,
+  `SHADOW-CERT-OF`, `SESSION-ID`, `ACTIVE-DICTIONARY`,
+  `CONTAMINATE!`
+
+Without this exclusion, inspection events bloat their own measure
+(Heisenberg trap).
+
+### 8 inspection primitives (Tier 1, object-level reads)
+
+```
+E-WORLD       ( -- n )    node_count + edge_count
+E-LAW         ( -- n )    sum of cand body lengths
+E-TRACE       ( -- n )    semantic-trace count
+E-CONFLICT    ( -- n )    accumulated penalty
+E-SEARCH      ( -- n )    accumulated SHADOW-CHECK cost
+E-REUSE-GAIN  ( -- n )    accumulated saved ops
+E-TOTAL       ( -- n )    full sum per formula
+E-SNAPSHOT    ( -- list ) 10-tuple:
+                          (world law trace conflict search reuse_gain
+                           total world_hash law_hash session_id)
+```
+
+### COMMIT-PRIMITIVE dry-run (cycle 25E)
+
+`COMMIT-PRIMITIVE` writes an energy dry-run record to ledger but
+does NOT block on energy in cycle 25:
+
+```
+('commit-primitive cand-sym uses law-hash session-id
+ 'energy-dry-run
+ ('law-cost L  'reuse-gain R  'net-delta-e D  'would-pass-energy-gate B))
+```
+
+Cycle 26 activates the gate: COMMIT requires `coupling_pass AND
+cumulative_delta_e < 0`.
+
+### Item 18 — Demo 143 unaffected
+
+Demo 143 was specified pre-cycle-25E.  Adding energy must not break
+it; energy is observational only.  Verified by regression
+(2051 / 2051 ✓).
+
+### Item 20 — Manual rollback flag on energy regression
+
+If a primitive shows positive long-run ΔE after promotion, it gets
+a rollback **flag** via `CONTAMINATE!` with reason
+`'energy-regression`.  Auto-rollback deferred to cycle 26 (would
+require infrastructure for "long-run" measurement, not just snapshot).
+
+### What §17 does NOT claim
+
+- Energy as defined here is NOT physical energy.
+- Energy v0 is intentionally crude (count-based).  More
+  sophisticated formulations (Kolmogorov complexity, MDL gain,
+  prediction information bottleneck) belong to later cycles, not
+  cycle 25E.
+- v0 does NOT prove primitive induction will discover
+  energetically-justified candidates.  It only provides the
+  measurement substrate for cycle 26 to enforce.
+
+### Cross-references
+
+- Cycle 25E implementation: commit pending (this file's commit)
+- `sixth/meta/runtime.rkt` — energy counters, hooks, helpers
+- `sixth/meta/tier1.rkt` — 8 inspection primitives, SHADOW/COMMIT
+  energy integration
+- Demo 146 `examples/146-energy-accounting.6th` — items 16-20
+  asserts (10 passes)

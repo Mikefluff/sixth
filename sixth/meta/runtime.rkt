@@ -44,6 +44,17 @@
          cand-name?
          bump-use-count!
          make-cand-dispatch-hook
+         ;; cycle 25E energy accounting
+         energy-conflict-of
+         energy-search-of
+         energy-reuse-gain-of
+         energy-semantic-trace-of
+         compute-e-world
+         compute-e-law
+         compute-e-total
+         INSPECTION-OPS
+         inspection-op?
+         expansion-length-of
          ;; Re-export the VM trace parameter so meta primitives can
          ;; toggle trace on / off without further requires.
          current-engine-trace
@@ -54,6 +65,7 @@
          racket/format
          "../env.rkt"
          "../opcodes.rkt"
+         "../substrate/core.rkt"
          "../vm.rkt")
 
 ;; ---- in-env storage (underscore-prefixed = engine-reserved) ----
@@ -67,6 +79,22 @@
 (define MEM_CAND_STATUS     '_cand-status)      ; cand-sym → status sym
 (define MEM_CONTAMINATION   '_contamination)    ; set of contamination flags
 (define MEM_SESSION_ID      '_session-id)       ; deterministic per-run id
+;; ---- cycle 25E energy accounting (observational ONLY) ----
+;;
+;; CONSTRAINT (user spec 2026-05-23): _energy-* keys are observational
+;; counters, not semantic world-state.  They do NOT enter law_hash or
+;; world_hash and they do NOT affect SHADOW-CHECK equivalence (except
+;; in tests that specifically compare energy accounting).  Otherwise
+;; the measurer would alter the measured.
+;;
+;; E_world and E_law are computed on-demand from existing state
+;; (substrate node/edge counts + dictionary expansion lengths).
+;; Only counters with side-effecting events (conflict, search,
+;; reuse_gain, semantic-trace) live as boxes.
+(define MEM_ENERGY_CONFLICT       '_energy-conflict)
+(define MEM_ENERGY_SEARCH         '_energy-search)
+(define MEM_ENERGY_REUSE_GAIN     '_energy-reuse-gain)
+(define MEM_ENERGY_SEMANTIC_TRACE '_energy-semantic-trace)
 
 ;; Forbidden symbols inside a candidate motif (per docs/mining_protocol.md §4).
 ;; A candidate cannot invoke meta-primitives (would allow self-modifying-meta)
@@ -107,7 +135,24 @@
              (equal-hash-code
               (cons 'session
                     (sort (hash-keys (env-words e)) symbol<?))))
+  ;; energy counters (cycle 25E):
+  (hash-set! mem MEM_ENERGY_CONFLICT       (box 0))
+  (hash-set! mem MEM_ENERGY_SEARCH         (box 0))
+  (hash-set! mem MEM_ENERGY_REUSE_GAIN     (box 0))
+  (hash-set! mem MEM_ENERGY_SEMANTIC_TRACE (box 0))
   (void))
+
+(define (energy-conflict-of e)
+  (hash-ref (env-memory e) MEM_ENERGY_CONFLICT (box 0)))
+
+(define (energy-search-of e)
+  (hash-ref (env-memory e) MEM_ENERGY_SEARCH (box 0)))
+
+(define (energy-reuse-gain-of e)
+  (hash-ref (env-memory e) MEM_ENERGY_REUSE_GAIN (box 0)))
+
+(define (energy-semantic-trace-of e)
+  (hash-ref (env-memory e) MEM_ENERGY_SEMANTIC_TRACE (box 0)))
 
 (define (shadow-certs-of e)
   (hash-ref (env-memory e) MEM_SHADOW_CERTS (box '())))
@@ -158,13 +203,81 @@
                               (not (eq? (car entry) cand-sym)))
                             current)))))
 
+;; ============================================================
+;; Energy accounting helpers (cycle 25E).
+;; ============================================================
+
+;; Inspection ops: top-level dispatches that DO NOT increment
+;; E_semantic_trace.  Otherwise inspections like E-SNAPSHOT would
+;; bloat their own measure (measurer-changes-measured trap).
+(define INSPECTION-OPS
+  '(LAW-HASH HASH-WORLD
+    LEDGER-COUNT LEDGER-LAST
+    CAND-USES CAND-STATUS SHADOW-CERT-OF SESSION-ID
+    ACTIVE-DICTIONARY CONTAMINATE!
+    E-WORLD E-LAW E-TRACE E-CONFLICT E-SEARCH
+    E-REUSE-GAIN E-TOTAL E-SNAPSHOT))
+
+(define (inspection-op? name)
+  (and (memq name INSPECTION-OPS) #t))
+
+;; Look up the expansion length (motif length) of an active cand.
+;; Returns 0 for unknown / rolled-back.  Used by E_reuse_gain.
+(define (expansion-length-of e cand-sym)
+  (define entry (assq cand-sym (unbox (cand-bodies-of e))))
+  (if entry (length (cadr entry)) 0))
+
+;; E_world = node_count + edge_count.  Computed on demand from
+;; substrate (no separate counter to drift).
+(define (compute-e-world e)
+  (define s (env-substrate e))
+  (cond
+    [s (+ (substrate-node-count s)
+          (substrate-edge-count* s))]
+    [else 0]))
+
+;; E_law = sum of expansion lengths for all currently-active
+;; ephemerals (cand_*).  Computed on demand from _cand-bodies.
+(define (compute-e-law e)
+  (define entries (unbox (cand-bodies-of e)))
+  (for/sum ([entry (in-list entries)])
+    (length (cadr entry))))
+
+;; E_total = E_world + E_law + E_trace_semantic + E_conflict +
+;;           E_search - E_reuse_gain.
+(define (compute-e-total e)
+  (+ (compute-e-world e)
+     (compute-e-law e)
+     (unbox (energy-semantic-trace-of e))
+     (unbox (energy-conflict-of e))
+     (unbox (energy-search-of e))
+     (- (unbox (energy-reuse-gain-of e)))))
+
 ;; Build a cand-dispatch-hook closure suitable for
-;; current-cand-dispatch-hook parameter.  When the VM dispatches a
-;; cand_NNN symbol at top level, this hook bumps the use counter.
+;; current-cand-dispatch-hook parameter.  Per cycle 25E, the hook
+;; also handles energy accounting:
+;;   - on cand_* dispatch: bump use_count AND E_reuse_gain by
+;;     (expansion_length - 1) (each invocation saves L-1 ops vs
+;;     inline expansion)
+;;   - on any non-inspection top-level dispatch: bump E_semantic_trace
 (define (make-cand-dispatch-hook)
   (lambda (e name)
-    (when (cand-name? name)
-      (bump-use-count! e name))))
+    (cond
+      [(cand-name? name)
+       (bump-use-count! e name)
+       (define save (- (expansion-length-of e name) 1))
+       (when (> save 0)
+         (define rb (energy-reuse-gain-of e))
+         (set-box! rb (+ (unbox rb) save)))
+       ;; Also count as semantic (the cand IS a semantic op).
+       (define stb (energy-semantic-trace-of e))
+       (set-box! stb (+ (unbox stb) 1))]
+      [(inspection-op? name)
+       ;; do not bump E_semantic_trace
+       (void)]
+      [else
+       (define stb (energy-semantic-trace-of e))
+       (set-box! stb (+ (unbox stb) 1))])))
 
 (define (trace-of e)
   (hash-ref (env-memory e) MEM_TRACE (box '())))

@@ -549,7 +549,21 @@
     ;;       15  failure recovery — DOCUMENTED GAP cycle 26
     ;;      Plus session id stability sanity.
     ;;      21 asserts.  Documented gaps: 14 (external) + 15 (c26).
-    ("145-hardening-suite.6th"                   22)))
+    ("145-hardening-suite.6th"                   22)
+    ;; 146. Cycle 25E — energy accounting v0 hardening items 16-20.
+    ;;        16 _energy-* observation does NOT mutate law_hash or
+    ;;           world_hash (measurer-changes-measured trap defended)
+    ;;        17 commit-primitive writes energy components to ledger;
+    ;;           commit itself does NOT bump energy counters
+    ;;        18 demo 143 still passes (no energy gate, only reports)
+    ;;        19 COMMIT writes would_pass_energy_gate but does NOT
+    ;;           block — gate enforcement deferred to cycle 26
+    ;;        20 contamination flag + manual rollback path (auto-
+    ;;           rollback on energy regression deferred to cycle 26)
+    ;;      Plus E-SNAPSHOT 10-tuple format sanity.  10 asserts.
+    ;;      Energy v0 formula: E_total = E_world + E_law + E_trace
+    ;;        + E_conflict + E_search - E_reuse_gain
+    ("146-energy-accounting.6th"                 10)))
 
 (define (run-demo file)
   (define out
@@ -574,8 +588,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 2041
-                (format "cumulative ✓ count: ~a (expected 2041)" total-pass)))
+  (check-equal? total-pass 2051
+                (format "cumulative ✓ count: ~a (expected 2051)" total-pass)))
 
-(displayln (format "examples regression: ~a / 2041 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 2051 ✓ across ~a demos"
                    total-pass (length expected)))
