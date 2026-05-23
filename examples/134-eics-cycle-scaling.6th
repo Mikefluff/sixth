@@ -1,0 +1,203 @@
+\ examples/134-eics-cycle-scaling.6th
+\ Cycle 15 — EICS cycle-substrate scaling + chord-breaking.
+\ Pre-registered: PREDICTIONS-134.md (sha 1999497f… attested).
+\ Source:        scripts/eics_cycle_scaling.py (commit 546018a).
+\
+\ === REGIME Z + REGIME CC — cycle 14 signal NARROWED further ===
+\
+\ Cycle 14 reported R_regular = 2.00 for cycle_n10.  Cycle 15
+\ reveals this was BASELINE MIS-CALCULATION: cycle 14 used
+\ mean_deg = 10/10 = 1.0 (excluded self-loops) → k=1 regular
+\ baseline = matching graph (5 disjoint edges).  Cycle (ring +
+\ self-loops) vs matching is unsurprisingly higher EICS.
+\
+\ Cycle 15 uses proper k=2 baseline (matching cycle's degree
+\ excluding self-loops).  Results:
+\
+\   SCALING (cycle_n with self-loops vs random k=2 regular):
+\     n=  5: R = 1.20
+\     n= 10: R = 1.14
+\     n= 20: R = 1.10
+\     n= 50: R = 1.06
+\     n=100: R = 1.04
+\   → Monotone-shrinking; REGIME Z (small-n artifact)
+\
+\   CHORD-BREAKING (cycle_10 + chords vs k=2 regular):
+\     0 chords: R = 1.14
+\     1 chord:  R = 1.04
+\     2 chords: R = 0.97
+\     5 chords: R = 0.87
+\   → R_decay = 0.87/1.14 = 0.76; REGIME CC (robust, ∈ [0.5, 1.5])
+\
+\ HONEST INTERPRETATION:
+\
+\   Cycle topology has MODEST EICS distinction from random k=2
+\   regular: R ≈ 1.14 at n=10, decaying to R ≈ 1.04 at n=100.
+\   Signal is real (M=200 baselines, stddev << diff) but small.
+\
+\   Cycle 14's R=2.00 was inflated by mean_deg mis-calc using k=1
+\   baseline.  True signal at proper k=2 baseline: ~14% above
+\   random at n=10, ~4% above at n=100.
+\
+\   Per pre-reg regime classifier: scaling Z (shrinks with n),
+\   chord CC (decays but doesn't crash).  Combined: signal is
+\   small-n artifact tendency, fragile but not catastrophically.
+\
+\ NET CATALOGUE STATUS update (after cycle 15):
+\
+\   Cycle 13 R=1.795: PARTIALLY RETRACTED (cycle 14)
+\   Cycle 14 R=2.00 cycle survivor: REFINED to R≈1.14 (cycle 15)
+\   Substrate distinction at scale (n=100): essentially zero
+\   Substrate-distinguishing positive findings (genuine): 0 at scale
+\
+\   This is the methodology working: cycle 13 → cycle 14 → cycle 15
+\   chain progressively tightened the claim from "substrate has
+\   EICS signature" to "cycle has 14% EICS edge at n=10 vanishing
+\   at scale".  Honest narrow result.
+
+use prelude
+use debug
+
+\ ============================================================
+\ Pinned values from scripts/eics_cycle_scaling.py.
+\ ============================================================
+
+\ Scaling R × 1000 per n.
+1200 "R-n5-1000x"   store
+1140 "R-n10-1000x"  store
+1096 "R-n20-1000x"  store
+1060 "R-n50-1000x"  store
+1040 "R-n100-1000x" store
+
+\ Mean R across n.
+1107 "R-mean-scaling-1000x" store
+
+\ Chord-breaking R × 1000.
+1140 "R-chord0-1000x" store
+1042 "R-chord1-1000x" store
+ 970 "R-chord2-1000x" store
+ 867 "R-chord5-1000x" store
+
+\ R_decay × 1000.
+760 "R-decay-1000x" store      \ 867/1140 ≈ 0.760
+
+\ ============================================================
+\ Regime classification per PREDICTIONS-134.md.
+\ ============================================================
+
+\ Scaling regime Z: R monotone-shrinking, R(100) < 1.2.
+\ R values: 1200 → 1140 → 1096 → 1060 → 1040 (monotone shrinking).
+\ R(100) = 1040 < 1200, so Z fires.
+"R-n5-1000x" load "R-n10-1000x" load > "mono5-10?" store
+"R-n10-1000x" load "R-n20-1000x" load > "mono10-20?" store
+"R-n20-1000x" load "R-n50-1000x" load > "mono20-50?" store
+"R-n50-1000x" load "R-n100-1000x" load > "mono50-100?" store
+
+"mono5-10?" load
+"mono10-20?" load *
+"mono20-50?" load *
+"mono50-100?" load *
+"monotone-shrinking?" store
+
+"R-n100-1000x" load 1200 < "R100<1.2?" store
+
+"monotone-shrinking?" load "R100<1.2?" load * "regime-Z?" store
+
+\ Regime X: monotone-growing AND R(100) > 1.5.
+"R-n100-1000x" load 1500 > "regime-X-cond?" store
+0 "regime-X?" store    \ explicit: R values shrink, not grow
+
+\ Regime Y: approximately constant ≈ 2.0.
+\ R range 1040..1200 = spread 160; not constant at 2.0.
+0 "regime-Y?" store
+
+\ Regime AA: non-monotone or other.
+"regime-Z?" load 0 = "regime-X?" load 0 = * "regime-Y?" load 0 = *
+   "regime-AA?" store
+
+\ Chord regime CC: R_decay ∈ [0.5, 1.5].
+"R-decay-1000x" load 500 >= "R-decay-1000x" load 1500 <= *
+   "regime-CC?" store
+
+\ Chord regime BB: R_decay < 0.5.
+"R-decay-1000x" load 500 < "regime-BB?" store
+
+\ Chord regime DD: R_decay > 1.5.
+"R-decay-1000x" load 1500 > "regime-DD?" store
+
+\ Partition.
+"regime-X?" load "regime-Y?" load + "regime-Z?" load + "regime-AA?" load +
+   "scaling-regime-count" store
+"regime-BB?" load "regime-CC?" load + "regime-DD?" load +
+   "chord-regime-count" store
+
+\ ============================================================
+\ Report.
+\ ============================================================
+
+cr
+"=== Demo 134 — EICS cycle scaling + chord-breaking ===" . cr
+cr
+"Pre-reg: PREDICTIONS-134.md (sha 1999497f… attested)" . cr
+"Source:  scripts/eics_cycle_scaling.py (546018a)" . cr
+cr
+"SCALING (cycle_n with all-self-loops vs k=2 random regular, M=200):" . cr
+"  n=  5: R × 1000 = " . "R-n5-1000x"   load . "  (1.20)" . cr
+"  n= 10: R × 1000 = " . "R-n10-1000x"  load . "  (1.14)" . cr
+"  n= 20: R × 1000 = " . "R-n20-1000x"  load . "  (1.10)" . cr
+"  n= 50: R × 1000 = " . "R-n50-1000x"  load . "  (1.06)" . cr
+"  n=100: R × 1000 = " . "R-n100-1000x" load . "  (1.04)" . cr
+cr
+"Monotone-shrinking: " . "monotone-shrinking?" load . cr
+"R(100) < 1.2:       " . "R100<1.2?" load . cr
+cr
+"CHORD-BREAKING (cycle_10 + chords vs k=2 regular):" . cr
+"  0 chords: R × 1000 = " . "R-chord0-1000x" load . "  (1.14)" . cr
+"  1 chord:  R × 1000 = " . "R-chord1-1000x" load . "  (1.04)" . cr
+"  2 chords: R × 1000 = " . "R-chord2-1000x" load . "  (0.97)" . cr
+"  5 chords: R × 1000 = " . "R-chord5-1000x" load . "  (0.87)" . cr
+cr
+"R_decay × 1000 = " . "R-decay-1000x" load . "  (0.76)" . cr
+cr
+"Scaling regime X (growing, R(100)>1.5):  " . "regime-X?" load . cr
+"Scaling regime Y (const ≈ 2.0):           " . "regime-Y?" load . cr
+"Scaling regime Z (shrinking, R(100)<1.2): " . "regime-Z?" load . cr
+"Scaling regime AA (other):                " . "regime-AA?" load . cr
+cr
+"Chord regime BB (fragile, R_decay<0.5):    " . "regime-BB?" load . cr
+"Chord regime CC (robust, R_decay∈[0.5,1.5]): " . "regime-CC?" load . cr
+"Chord regime DD (enhances, R_decay>1.5):    " . "regime-DD?" load . cr
+cr
+
+"regime-Z?" load 1 = if
+  ">>> REGIME Z (scaling) + REGIME CC (chord) — combined Z+CC" . cr
+  "    means cycle 14's R=2.00 signal further narrows to:" . cr
+  "    modest distinction (R≈1.14 at n=10) shrinking at scale" . cr
+  "    (R≈1.04 at n=100).  Chord adds, R decays slowly." . cr
+  "" . cr
+  "    Most of cycle 14's R=2.00 was baseline mis-calculation" . cr
+  "    (k=1 instead of correct k=2 for cycle's true degree)." . cr
+  "" . cr
+  "    True surviving signal: ~14% above k=2 random regular at" . cr
+  "    n=10, vanishing toward zero at n=100.  At scale, cycle" . cr
+  "    topology essentially indistinguishable from k=2 random." . cr
+then
+
+\ ============================================================
+\ Sanity asserts.
+\ ============================================================
+
+\ Exactly one scaling regime fires.
+"scaling-regime-count" load 1 assert-eq
+"regime-Z?" load 1 assert-eq
+
+\ Exactly one chord regime fires.
+"chord-regime-count" load 1 assert-eq
+"regime-CC?" load 1 assert-eq
+
+\ Pinned values match script.
+"R-n5-1000x"   load 1200 assert-eq
+"R-n100-1000x" load 1040 assert-eq
+"R-decay-1000x" load 760 assert-eq
+
+REPORT

@@ -409,16 +409,23 @@
     ;;      graphs (degree-matched to each substrate).  Tests if
     ;;      cycle 13's signal survives tighter control.
     ;;      M=500 random regular baselines per substrate.
-    ;;      Result: R_overall_regular = 0.815 → REGIME V (partial,
-    ;;      [0.7, 1.5]).  Cycle 13's broad signal PARTIALLY
-    ;;      RETRACTED — only cycle_n10 (R=2.00) survives degree-
-    ;;      matched comparison.  Surviving claim: cycle topology
-    ;;      specifically has EICS signature beyond degree-matched
-    ;;      random.  Cross-measure: Pearson(EICS, 1/spectral_gap)
-    ;;      = -0.54 (moderate anti-corr); EICS captures structure
-    ;;      beyond simple spectral gap.
+    ;;      Result: R_overall_regular = 0.815 → REGIME V.
+    ;;      Surviving signal: cycle_n10 R=2.00.  Cycle 15 (demo 134)
+    ;;      reveals this was mean-degree mis-calc (k=1 baseline).
     ;;      Pre-registered: PREDICTIONS-133.md (commit 50ceb60).
-    ("133-eics-regular-baseline.6th"              8)))
+    ("133-eics-regular-baseline.6th"              8)
+    ;; --- Cycle 15: cycle-topology scaling + chord-breaking ---
+    ;; 134: cycle_n at n ∈ {5, 10, 20, 50, 100} vs proper k=2
+    ;;      regular baseline; cycle_10 + {0, 1, 2, 5} chords.
+    ;;      Result: REGIME Z (scaling shrinks) + REGIME CC (chord
+    ;;      decays slowly).  Cycle 14's R=2.00 reduced to R=1.14
+    ;;      at n=10 (proper baseline), R=1.04 at n=100 (vanishing
+    ;;      at scale).  Cycle 14's signal was baseline mis-calc
+    ;;      artifact (k=1 instead of k=2 for self-loop-rich cycle).
+    ;;      Honest surviving claim: cycle has ~14% EICS edge over
+    ;;      k=2 random regular at small n, vanishing at scale.
+    ;;      Pre-registered: PREDICTIONS-134.md (commit ce5aa80).
+    ("134-eics-cycle-scaling.6th"                 7)))
 
 (define (run-demo file)
   (define out
@@ -443,8 +450,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1940
-                (format "cumulative ✓ count: ~a (expected 1940)" total-pass)))
+  (check-equal? total-pass 1947
+                (format "cumulative ✓ count: ~a (expected 1947)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1940 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1947 ✓ across ~a demos"
                    total-pass (length expected)))
