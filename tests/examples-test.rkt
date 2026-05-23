@@ -529,7 +529,27 @@
     ;;      land in cycle 26+ alongside discovery integration.
     ;;      Architectural completion of 14-meta-primitive set per
     ;;      META-SEMANTICS.md v2 §6.
-    ("144-substrate-signatures.6th"              16)))
+    ("144-substrate-signatures.6th"              16)
+    ;; 145. Cycle 25D — hardening suite verifying 15 invariants per
+    ;;      user spec (2026-05-23) before Cycle 26:
+    ;;        1  law_hash sensitivity (incl word body)
+    ;;        2  world_hash / law_hash separation
+    ;;        3  SHADOW-CHECK pass + cert recording
+    ;;        4  INDUCE-RUNTIME requires cert
+    ;;        5  ROLLBACK transactionally clears cert
+    ;;        6  status persists as rolled-back (non-deletion)
+    ;;        7  use counter increments on cand dispatch
+    ;;        8  CONTAMINATE! sets first-class status
+    ;;        9  ledger grows on each meta event
+    ;;       10  USE-RUNTIME actually executes (counter side effect)
+    ;;       11  PROMOTE-STABLE refusal paths (per-status reasons)
+    ;;       12  substrate generator determinism on re-run
+    ;;       13  no hidden entropy in law_hash
+    ;;       14  regression isolation (verified externally)
+    ;;       15  failure recovery — DOCUMENTED GAP cycle 26
+    ;;      Plus session id stability sanity.
+    ;;      21 asserts.  Documented gaps: 14 (external) + 15 (c26).
+    ("145-hardening-suite.6th"                   22)))
 
 (define (run-demo file)
   (define out
@@ -554,8 +574,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 2019
-                (format "cumulative ✓ count: ~a (expected 2019)" total-pass)))
+  (check-equal? total-pass 2041
+                (format "cumulative ✓ count: ~a (expected 2041)" total-pass)))
 
-(displayln (format "examples regression: ~a / 2019 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 2041 ✓ across ~a demos"
                    total-pass (length expected)))

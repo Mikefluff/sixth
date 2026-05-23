@@ -16,7 +16,8 @@
   run!
   vm-step!
   push-halt-frame!
-  current-engine-trace)
+  current-engine-trace
+  current-cand-dispatch-hook)
 
 ;; current-engine-trace: parameter holding either #f (default; zero
 ;; overhead) or a `box` of a list of (cons kind name) trace entries
@@ -29,18 +30,27 @@
 ;; outer call already recorded); only top-level dispatch.
 (define current-engine-trace (make-parameter #f))
 
+;; Parameter for cand-dispatch counter hook (cycle 25D item 10).
+;; If bound, called as (hook e name) on every TOP-LEVEL CALL / PRIM
+;; dispatch.  Used by meta-runtime to bump per-candidate use counter
+;; when a `cand_NNN` word actually executes (not merely registered).
+(define current-cand-dispatch-hook (make-parameter #f))
+
 ;; Log only TOP-LEVEL ops (rstack empty or just halt-sentinel).  When
 ;; inside a word body, rstack has the caller's frame, so further CALLs
 ;; are body-internal and not part of the user-visible motif.
 (define (trace-append! e kind name)
-  (define b (current-engine-trace))
-  (when (and b
-             (let ([depth (length (env-rstack e))])
-               (or (= depth 0)
-                   ;; halt-sentinel frame has program=#f
-                   (and (= depth 1)
-                        (not (frame-program (car (env-rstack e))))))))
-    (set-box! b (cons (cons kind name) (unbox b)))))
+  (define top-level?
+    (let ([depth (length (env-rstack e))])
+      (or (= depth 0)
+          (and (= depth 1)
+               (not (frame-program (car (env-rstack e))))))))
+  (when top-level?
+    (define b (current-engine-trace))
+    (when b
+      (set-box! b (cons (cons kind name) (unbox b))))
+    (define hook (current-cand-dispatch-hook))
+    (when hook (hook e name))))
 
 (require "opcodes.rkt"
          "env.rkt"

@@ -28,6 +28,7 @@
 (provide register-tier2!)
 
 (require racket/base
+         racket/list
          "../env.rkt"
          "../errors.rkt"
          "../vm.rkt"
@@ -59,12 +60,26 @@
                           'cycle-25B-deferred-to-26)))
 
 ;; ---- FREEZE-CANDIDATE ------------------------------------------------
-;; Stub: in cycle 26 this will compute candidate_hash and append a
-;; permanent FROZEN ledger row.  Here it just records "would-freeze".
+;; Stub-with-status-check (25D item 11): refuses non-candidate symbols
+;; and candidates with non-COMMITTED status (rolled-back, contaminated,
+;; or ephemeral-active without commit).  In cycle 26 this will compute
+;; candidate_hash and append a permanent FROZEN ledger row.
 (define (prim-freeze-candidate e)
   (define c (require-sym (pop! e) 'FREEZE-CANDIDATE))
-  (stub-event! e 'freeze-candidate c)
-  (push! e c))            ; pass-through cand-id as "frozen-id"
+  (define status-alist (unbox (cand-status-of e)))
+  (define cs (let ([x (assq c status-alist)]) (and x (cdr x))))
+  (cond
+    [(memq cs '(rolled-back contaminated))
+     (stub-event! e 'freeze-candidate-rejected (list c cs))
+     (raise (exn:fail:sixth
+             (format "~a — FREEZE-CANDIDATE: cand ~a status=~a, refuse"
+                     (format-srcloc (current-prim-srcloc)) c cs)
+             (current-continuation-marks)
+             (current-prim-srcloc)))]
+    [else
+     ;; Stub: cycle 26 will compute candidate_hash; here pass-through.
+     (stub-event! e 'freeze-candidate c)
+     (push! e c)]))
 
 ;; ---- TRAIN-EVAL ------------------------------------------------------
 ;; Stub: cycle 26 will run candidate against substrates/train/*.6th
@@ -84,13 +99,23 @@
   (push! e 0))
 
 ;; ---- PROMOTE-STABLE --------------------------------------------------
-;; Stub: cycle 26 will apply the multi-criterion stable gate.
-;; Here always returns 'rejected — gate is closed during plumbing
-;; cycle to prevent accidental promotion of unvetted candidates.
+;; Stub-with-defence (25D item 11): gate closed in cycle 25; returns
+;; 'rejected for any input.  BUT for non-committed or contaminated
+;; candidates, returns specific reject reason for trace inspection.
+;; Cycle 26 replaces with full multi-criterion gate.
 (define (prim-promote-stable e)
   (define c (require-sym (pop! e) 'PROMOTE-STABLE))
-  (stub-event! e 'promote-stable c)
-  (push! e 'rejected))
+  (define status-alist (unbox (cand-status-of e)))
+  (define cs (let ([x (assq c status-alist)]) (and x (cdr x))))
+  (define reason
+    (cond
+      [(eq? cs 'rolled-back)    'rejected-rolled-back]
+      [(eq? cs 'contaminated)   'rejected-contaminated]
+      [(eq? cs 'ephemeral-active) 'rejected-no-commit]
+      [(eq? cs 'committed)      'rejected-no-heldout-in-25D]
+      [else                      'rejected-unknown-status]))
+  (stub-event! e 'promote-stable (list c reason))
+  (push! e reason))
 
 ;; ---- RETEST ----------------------------------------------------------
 ;; Stub: cycle 26 will shell out to `raco test`.  Here pushes 1

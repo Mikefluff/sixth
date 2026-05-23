@@ -77,11 +77,13 @@ cr
 RESET
 ACTIVE-DICTIONARY "dict-pre" store
 
-\ create a Tier 1 ephemeral
+\ create a Tier 1 ephemeral (per cycle 25D hardening, must SHADOW-CHECK first)
 MARK MARK bi-edge
 MARK MARK bi-edge
 MARK MARK bi-edge
-DETECT-MOTIF INDUCE-RUNTIME "cand" store
+DETECT-MOTIF "motif" store
+"motif" load SHADOW-CHECK drop
+"motif" load INDUCE-RUNTIME "cand" store
 
 ACTIVE-DICTIONARY "dict-post-induce" store
 

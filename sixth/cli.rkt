@@ -78,10 +78,11 @@
 
 (define (cmd-run path)
   (define e (make-runtime-env))
-  ;; Bind the VM trace parameter to the env's _trace box so that
-  ;; vm.rkt's trace-append! populates it.  Zero overhead when not
-  ;; bound; here we always bind (engine-trace is cheap append).
-  (parameterize ([current-engine-trace (trace-of e)])
+  ;; Bind both meta-runtime hooks:
+  ;;   - current-engine-trace populates env's _trace box (cycle 25A)
+  ;;   - current-cand-dispatch-hook bumps cand use counter (25D item 10)
+  (parameterize ([current-engine-trace (trace-of e)]
+                 [current-cand-dispatch-hook (make-cand-dispatch-hook)])
     (load-file path e)))
 
 (define (cmd-test)
