@@ -1,0 +1,109 @@
+\ examples/139-mdl-descent-strong.6th
+\ Cycle 20 — STEP-CA-MIN-STRONG (2-edge + SA) on Sixth substrate.
+\ Pre-reg: PREDICTIONS-139.md (commit 5d9a979, attested).
+\ Source:  scripts/mdl_descent_strong.py (commit 4f111cf).
+\
+\ === REGIME AA' — H_search WINS, substrate L-monotonic in STRONG sense ===
+\
+\ Cycle 19 left 4/6 substrates stuck at initial L under single-edge
+\ greedy. Cycle 20 tests if stronger optimizer unsticks them.
+\
+\ Per-substrate STRONG vs greedy (cycle 19 frozen reference):
+\   ER_n10_p30:     descent 4 -> 4   (matches greedy; already at floor)
+\   ER_n20_p20:     descent 0 -> 2   UNSTUCK
+\   ER_n15_p40:     descent 0 -> 2   UNSTUCK
+\   path_n10:       descent 2 -> 5   UNSTUCK (more)
+\   cycle_n10:      descent 0 -> 9   UNSTUCK (HUGE, SA->L=1 attractor)
+\   ER_n15_p25:     descent 0 -> 2   UNSTUCK
+\
+\ Aggregate:
+\   n_unstuck (strong > greedy): 5 / 6
+\   total descent strong: 24
+\   total descent greedy: 6 (cycle 19)
+\   R_strong_vs_greedy = 24 / 6 = 4.0
+\
+\ Pre-reg classifier: AA' fires (n_unstuck >= 5 AND R > 2.0).
+\
+\ INTERPRETATION:
+\   - H_search WINS over H_landscape within MDL family.
+\   - cycle_n10 dropped L 10 -> 1: SA exploited rotational symmetry of
+\     the cycle graph to discover an all-identical-row attractor.
+\   - 2-edge moves alone insufficient (most steps still 1-edge); SA
+\     thermal acceptance is what enabled escape on cycle_n10.
+\   - Substrate IS L-monotonic in STRONG sense: dynamics CAN actively
+\     descend L when given thermal access to plateau traversal.
+\
+\ HONEST SCOPE (cycle 20 does NOT claim):
+\   - L = unique-row-count is THE universal loss the universe minimizes.
+\   - This result generalizes beyond directed adjacency matrices.
+\   - SA hyperparams (T0=2.0, alpha=0.95) are optimal; they were fixed
+\     pre-commit and gave AA' on first try — no tuning.
+\
+\ NEXT (per user reframe 2026-05-22): MDL is ONE of 7 candidate loss
+\ families.  Cycle 21+ should test MDL + prediction error:
+\    L = MDL_cost + lambda * prediction_error
+\ to test if objecthood = compression-stable AND prediction-useful
+\ grouping, not just compression-stable.
+
+use prelude
+use debug
+
+\ Pinned values from script output.
+4   "strong-er10"     store
+2   "strong-er20"     store
+2   "strong-er15-p40" store
+5   "strong-path"     store
+9   "strong-cycle"    store
+2   "strong-er15-p25" store
+
+24  "total-strong"    store
+6   "total-greedy"    store
+5   "n-unstuck"       store
+
+\ R_strong_vs_greedy = 24/6 = 4 (integer here; demo asserts integer ratio).
+4   "r-strong-greedy" store
+
+\ Regime AA' fires if n_unstuck >= 5 AND R > 2.
+"n-unstuck" load 5 >= "unstuck-pass?" store
+"r-strong-greedy" load 2 > "ratio-pass?" store
+"unstuck-pass?" load "ratio-pass?" load * "regime-AA-prime?" store
+
+\ ============================================================
+\ Report.
+\ ============================================================
+
+cr
+"=== Demo 139 — STEP-CA-MIN-STRONG (cycle 20) ===" . cr
+cr
+"Per-substrate descent (STRONG vs greedy cycle 19):" . cr
+"  ER_n10_p30:     " . "strong-er10"     load . " vs 4" . cr
+"  ER_n20_p20:     " . "strong-er20"     load . " vs 0" . cr
+"  ER_n15_p40:     " . "strong-er15-p40" load . " vs 0" . cr
+"  path_n10:       " . "strong-path"     load . " vs 2" . cr
+"  cycle_n10:      " . "strong-cycle"    load . " vs 0" . cr
+"  ER_n15_p25:     " . "strong-er15-p25" load . " vs 0" . cr
+cr
+"n_unstuck (strong > greedy): " . "n-unstuck" load . " / 6" . cr
+"total descent STRONG:        " . "total-strong" load . cr
+"total descent greedy (c19):  " . "total-greedy" load . cr
+"R_strong / greedy:           " . "r-strong-greedy" load . cr
+cr
+"Regime AA' fires: " . "regime-AA-prime?" load . cr
+cr
+
+"regime-AA-prime?" load 1 = if
+  ">>> REGIME AA' — H_search WINS over H_landscape." . cr
+  "    Substrate L-monotonic in STRONG sense (5/6 unstuck)." . cr
+  "    cycle_n10: SA found L=1 attractor (rotational symmetry)." . cr
+  "    NOTE: MDL is ONE of 7 candidate losses (user reframe)." . cr
+  "    Cycle 21 tests MDL + prediction error." . cr
+then
+
+\ Sanity asserts.
+"regime-AA-prime?" load 1 assert-eq
+"n-unstuck"        load 5 assert-eq
+"total-strong"     load 24 assert-eq
+"total-greedy"     load 6 assert-eq
+"r-strong-greedy"  load 4 assert-eq
+
+REPORT

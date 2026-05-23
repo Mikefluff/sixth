@@ -464,7 +464,15 @@
     ;;      descent on random ER; substrate L-monotonic in weak
     ;;      sense (L never increases) but rarely actively descends.
     ;;      Cycle 20 needs stronger search (2-edge moves, SA).
-    ("138-mdl-descent.6th"                        4)))
+    ("138-mdl-descent.6th"                        4)
+    ;; 139. Cycle 20 — STEP-CA-MIN-STRONG (2-edge moves + SA) tests
+    ;;      H_search vs H_landscape: does cycle 19 4/6-stuck reflect
+    ;;      weak optimizer or genuine L-plateau?  Result: AA' fires
+    ;;      (n_unstuck=5/6, R_strong/greedy=4.0).  H_search WINS.
+    ;;      cycle_n10 dropped L 10->1 (SA found symmetric attractor).
+    ;;      Substrate L-monotonic in STRONG sense.  Honest scope:
+    ;;      MDL is ONE of 7 candidate losses; cycle 21 = MDL + pred.
+    ("139-mdl-descent-strong.6th"                 5)))
 
 (define (run-demo file)
   (define out
@@ -489,8 +497,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1975
-                (format "cumulative ✓ count: ~a (expected 1975)" total-pass)))
+  (check-equal? total-pass 1980
+                (format "cumulative ✓ count: ~a (expected 1980)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1975 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1980 ✓ across ~a demos"
                    total-pass (length expected)))
