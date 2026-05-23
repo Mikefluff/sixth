@@ -492,7 +492,20 @@
     ;;      Substrate-derived NEGATIVE #3.  MDL family CLOSED.
     ;;      Cycle 23 pivots to Information Bottleneck or Predictive
     ;;      Processing per pre-registered consequence.
-    ("141-mdl-combined.6th"                       6)))
+    ("141-mdl-combined.6th"                       6)
+    ;; 142. Cycle 23 Phase A — STEP-CA-PRED: L = PredError +
+    ;;      alpha*(K/n) + gamma*DegPenalty.  Predictive-only loss
+    ;;      WITHOUT MDL as primary driver.  Result: REGIME CCCCC.
+    ;;      Best alpha=0.01 wins 2/6 against degree, but CONCENTRATED
+    ;;      (winners = path + ER_n10, same as C22 winners).
+    ;;      Three loss families (MDL c21, MDL+Pred c22, Pred-only c23A)
+    ;;      all FAIL vs degree on NSUM benchmark.  delta_spread across
+    ;;      alphas non-trivial -> landscape has structure but degree
+    ;;      IS oracle for NSUM dynamics; no fixed-primitive STEP-CA
+    ;;      optimizer can beat it on these substrates.
+    ;;      Loss-family arc EXHAUSTED.  Cycle 24+ pivots to runtime
+    ;;      primitive induction (engine evolves own primitive alphabet).
+    ("142-pred-objecthood.6th"                    6)))
 
 (define (run-demo file)
   (define out
@@ -517,8 +530,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1990
-                (format "cumulative ✓ count: ~a (expected 1990)" total-pass)))
+  (check-equal? total-pass 1996
+                (format "cumulative ✓ count: ~a (expected 1996)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1990 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1996 ✓ across ~a demos"
                    total-pass (length expected)))

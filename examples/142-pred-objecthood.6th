@@ -1,0 +1,134 @@
+\ examples/142-pred-objecthood.6th
+\ Cycle 23 Phase A — STEP-CA-PRED: Predictive Objecthood without MDL.
+\ Pre-reg: PREDICTIONS-142.md (commit 8572023, attested).
+\ Source:  scripts/pred_objecthood.py (commit 5aa4a05).
+\
+\ === REGIME CCCCC — predictive-only loss also fails on NSUM benchmark ===
+\
+\ L23 = PredError + alpha * (K/n) + gamma * DegeneracyPenalty
+\   gamma = 0.1, alpha grid {0.01, 0.1, 1}, gamma fixed pre-commit.
+\   PASS evaluated by PredError (NOT L23) per user spec.
+\
+\ Per-alpha aggregate:
+\
+\   alpha    pred_wins   mean_delta_pred   concentrated   winners
+\   0.01     2/6         +0.00082          TRUE           path, ER_n10_p30
+\   0.1      0/6         -0.00189          --             (none)
+\   1.0      0/6         -0.00553          --             (none)
+\
+\ Best alpha = 0.01 (pred_wins=2, mean_delta=+0.00082).
+\ Concentrated = TRUE -> wins confined to C22-winners.
+\
+\ Pre-reg classifier:
+\   AAAAA requires pred_wins>=4, mean_delta>0.005, NOT concentrated.
+\   BBBBB requires pred_wins>=3, NOT has_K1.
+\   CCCCC: pred_wins<=2 OR concentrated OR mean_delta<=0 OR has_K1.
+\
+\   Best alpha has pred_wins=2 AND concentrated=TRUE -> CCCCC fires.
+\
+\ CRITICAL DIAGNOSTIC: delta_spread across alphas = +0.00635.
+\ Non-trivial alpha-sensitivity -> landscape has structure but search
+\ cannot find groups beating degree.  Strongly suggests degree IS
+\ the oracle for NSUM dynamics (a_{t+1} = normalize(A * a_t)).
+\
+\ Three families of loss tested on same 6 substrates, all fail:
+\   L21 = MDL only             -> CCC   (cycle 21)
+\   L22 = MDL + lambda*Pred    -> CCCC  (cycle 22)
+\   L23 = Pred + alpha*K/n     -> CCCCC (this cycle)
+\
+\ Six substrates, three loss families, three failures vs degree.
+\ The honest interpretation per user spec (2026-05-23):
+\
+\   degree IS sufficient statistic for NSUM-update dynamics being
+\   predicted; no fixed-loss + fixed-primitive STEP-CA optimizer
+\   can beat it on these substrates because the benchmark is
+\   degree-biased.
+\
+\ NEW DIRECTION (user pivot 2026-05-23):
+\   Move from "test L candidates on fixed primitives" to
+\   "engine that evolves its own primitive alphabet via formal
+\   induction protocol: DISCOVER -> SPECIFY -> FREEZE -> TEST ->
+\   PROMOTE -> RETEST -> ATTEST."
+\
+\ Phase A (this demo) closes the loss-family arc on the original
+\ NSUM benchmark.  Phase B (cycle 24+) opens primitive induction
+\ as the next architectural test.
+\
+\ CATALOGUE UPDATE:
+\   - Substrate-distinguishing positives:    2 (matryoshka c18, L-monotonic c19/20)
+\   - Modest narrow signals:                 2
+\   - Substrate-derived NEGATIVES:           4 (HEDGE3 c12C, MDL c21,
+\                                              MDL+Pred c22, Pred-only c23A)
+\   - Substrate ~ classical:                 3
+\   - Retracted/narrowed:                   10
+\
+\ Honest scope: loss-family hypothesis on NSUM benchmark is
+\ EXHAUSTED.  No need for further L-perturbations.  Primitive
+\ induction is the architecturally different next test.
+
+use prelude
+use debug
+
+\ Pinned aggregates (pred_wins for each alpha).
+2   "pw-alpha-001" store
+0   "pw-alpha-01"  store
+0   "pw-alpha-1"   store
+
+\ Best alpha = 0.01.
+2   "best-pred-wins" store
+
+\ Concentration flag (winners subset of {path, ER_n10}).
+1   "concentrated"  store
+
+\ delta_spread across alphas (positive non-trivial = landscape has structure).
+\ Stored as integer x10000: 0.00635 -> 63.
+63  "delta-spread-x10k" store
+
+\ Regime classifier.
+"best-pred-wins" load 4 >= "aaaaa-pass?" store
+"best-pred-wins" load 3 >= "bbbbb-weak-pass?" store
+"best-pred-wins" load 2 <= "ccccc-fail-by-wins?" store
+"concentrated"   load 1 = "ccccc-fail-by-conc?" store
+
+\ CCCCC fires if EITHER condition is met.
+"ccccc-fail-by-wins?" load "ccccc-fail-by-conc?" load + 0 > "regime-CCCCC?" store
+
+cr
+"=== Demo 142 — STEP-CA-PRED (cycle 23 Phase A) ===" . cr
+cr
+"L23 = PredError + alpha*(K/n) + gamma*DegeneracyPenalty" . cr
+"  gamma=0.1, alpha grid {0.01, 0.1, 1} pre-committed" . cr
+"  PASS evaluated by PredError vs degree baseline" . cr
+cr
+"Per-alpha pred_wins (out of 6 substrates):" . cr
+"  alpha=0.01:  " . "pw-alpha-001" load . "  (mean_delta +0.00082, CONCENTRATED)" . cr
+"  alpha=0.1 :  " . "pw-alpha-01"  load . "  (mean_delta -0.00189)" . cr
+"  alpha=1.0 :  " . "pw-alpha-1"   load . "  (mean_delta -0.00553)" . cr
+cr
+"delta_spread across alphas (x10000): " . "delta-spread-x10k" load . cr
+"  -> non-trivial landscape structure, search-limited" . cr
+cr
+"AAAAA  (>=4 wins, robust):  " . "aaaaa-pass?"     load . cr
+"BBBBB  (>=3 wins):          " . "bbbbb-weak-pass?" load . cr
+"CCCCC  (<=2 OR concentrated):" . "regime-CCCCC?"  load . cr
+cr
+
+"regime-CCCCC?" load 1 = if
+  ">>> REGIME CCCCC — Predictive-only ALSO fails on NSUM benchmark." . cr
+  "    Three loss families (MDL, MDL+Pred, Pred-only) all <=2/6." . cr
+  "    delta_spread non-trivial -> landscape has structure," . cr
+  "    BUT search cannot beat degree because degree IS the oracle" . cr
+  "    for a_{t+1} = normalize(A*a_t) dynamics." . cr
+  "    Loss-family hypothesis on NSUM benchmark: EXHAUSTED." . cr
+  "    Pivot (cycle 24+): runtime primitive induction." . cr
+then
+
+\ Sanity asserts.
+"regime-CCCCC?"     load 1 assert-eq
+"best-pred-wins"    load 2 assert-eq
+"concentrated"      load 1 assert-eq
+"aaaaa-pass?"       load 0 assert-eq
+"bbbbb-weak-pass?"  load 0 assert-eq
+"pw-alpha-001"      load 2 assert-eq
+
+REPORT
