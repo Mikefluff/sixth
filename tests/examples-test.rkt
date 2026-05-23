@@ -425,20 +425,24 @@
     ("134-eics-cycle-scaling.6th"                 7)
     ;; --- Cycle 16: DMBD (Beck-Ramstead 2025) on Sixth ---
     ;; 135: Dynamic Markov Blanket Detection via pyDMBD applied to
-    ;;      Sixth substrate trajectories (iterated NSUM-update T=50).
-    ;;      10 canonical substrates vs M=20 random rewrite baselines.
-    ;;      Primary metric (object_count): R_objects = 0.736 →
-    ;;      REGIME FF (just inside null band [0.7, 1.5]).
-    ;;      Secondary metric (ELBO): R_ELBO = 1.489 → substrate
-    ;;      trajectories fit MB-structured generative model 49%
-    ;;      better than random.  Pattern: structured substrates
-    ;;      produce predictable trajectories that fit ANY structural
-    ;;      model well — including MB.  Whether ELBO advantage is
-    ;;      genuine substrate-of-cognition signal OR cycle-13 pattern
-    ;;      (structured vs sparse random) needs cycle 17 with
-    ;;      degree-matched baseline.
+    ;;      Sixth substrate trajectories.  Primary R_objects=0.736
+    ;;      (REGIME FF, null).  Secondary R_ELBO=1.489 (+49% MB-fit).
+    ;;      Cycle 17 (demo 136) tests under degree-matched baseline.
     ;;      Pre-registered: PREDICTIONS-135.md (commit e3d0537).
-    ("135-dmbd-substrate.6th"                     8)))
+    ("135-dmbd-substrate.6th"                     8)
+    ;; --- Cycle 17: DMBD degree-matched baseline (retracts cycle 16) ---
+    ;; 136: same DMBD pipeline as cycle 16 but baseline = random
+    ;;      k-regular graphs matching substrate mean degree.
+    ;;      Result: R_ELBO_regular = 1.013 (cycle 16 was 1.489).
+    ;;      REGIME II (∈ [0.9, 1.3]) — aggregate signal VANISHED.
+    ;;      Cycle 16's 49% advantage was sparse-baseline artifact;
+    ;;      same exact pattern as cycle 13→14 (R=1.795 → 0.815).
+    ;;      Surviving narrow claim: structured topology class (cycle,
+    ;;      path, complete, bipartite, star) individually retains
+    ;;      modest signal at MB level; ER substrates don't.
+    ;;      Cycle 16 broad "49% better MB fit" claim RETRACTED.
+    ;;      Pre-registered: PREDICTIONS-136.md (commit 33cef9a).
+    ("136-dmbd-regular-baseline.6th"              9)))
 
 (define (run-demo file)
   (define out
@@ -463,8 +467,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1955
-                (format "cumulative ✓ count: ~a (expected 1955)" total-pass)))
+  (check-equal? total-pass 1964
+                (format "cumulative ✓ count: ~a (expected 1964)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1955 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1964 ✓ across ~a demos"
                    total-pass (length expected)))

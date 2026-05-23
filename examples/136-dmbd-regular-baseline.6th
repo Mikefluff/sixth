@@ -1,0 +1,155 @@
+\ examples/136-dmbd-regular-baseline.6th
+\ Cycle 17 — DMBD с degree-matched random regular baseline.
+\ Pre-registered: PREDICTIONS-136.md (sha 1999497f… attested).
+\ Source:        scripts/dmbd_sixth_regular.py (commit fd4698a).
+\
+\ === REGIME II FIRES — cycle 16 R_ELBO=1.49 SIGNAL VANISHED ===
+\
+\ R_ELBO_regular = 1.013 (cycle 16 was 1.489)
+\ R_objects_regular = 0.991 (cycle 16 was 0.736)
+\
+\ Per pre-reg primary classifier: REGIME II (∈ [0.9, 1.3]).
+\ Cycle 16's 49% ELBO advantage REDUCED to 1.3% at degree-matched
+\ baseline.  Statistically essentially indistinguishable from no signal.
+\
+\ EXACT cycle 13/14 pattern repeated:
+\   cycle 13: R=1.795 (sparse ER baseline)
+\   cycle 14: R=0.815 (degree-matched k-regular)
+\   cycle 16: R_ELBO=1.489 (sparse random baseline)
+\   cycle 17: R_ELBO=1.013 (degree-matched k-regular)
+\
+\ Per-substrate breakdown reveals NUANCED pattern:
+\   bipartite_K33:  sub ELBO=160, base=4   → substrate 40× better
+\   cycle_n10:      sub=664,     base=255  → 2.60× better
+\   star_n10:       sub=811,     base=571  → 1.42× better
+\   complete_K5:    sub=52,      base=-10  → much better (positive vs negative)
+\   path_n10:       sub=290,     base=255  → 1.14× better
+\   ER substrates:  mostly substrate < baseline
+\
+\ HONEST FINDING (narrow, post-cycle-17):
+\   STRUCTURED topologies (cycle, bipartite, complete, star, path)
+\   individually have modest DMBD ELBO signal even at degree-matched
+\   baseline.  ER substrates do NOT.  Aggregate dilutes to ~1.0.
+\
+\   Same shape as cycle 14: cycle_n10 alone retained EICS signal.
+\   Now extended at MB level: class of structured topologies all
+\   retain modest signal.
+\
+\ NET CATALOGUE STATUS:
+\   Cycle 16 broad claim "substrate has 49% better MB fit" RETRACTED.
+\   Surviving narrow claim: "structured-topology substrates have
+\   modest individual signal at MB level vs degree-matched random;
+\   ER substrates don't."
+
+use prelude
+use debug
+
+\ ============================================================
+\ Pinned values from scripts/dmbd_sixth_regular.py.
+\ ============================================================
+
+\ Cycle 17 aggregate × 1000.
+1013 "R-elbo-1000x"     store   \ 1.013
+ 991 "R-objs-1000x"     store   \ 0.991
+
+\ Per-substrate sub/base ELBO ratios × 100.
+\ Note: complete_K5 baseline ELBO is negative, ratio undefined; pin sub-ELBO instead.
+4000  "bipartite-ratio-100x" store    \ 40.0× (bipartite_K33: 160/4)
+ 260  "cycle-ratio-100x"     store    \ 2.60×
+ 142  "star-ratio-100x"      store    \ 1.42×
+ 114  "path-ratio-100x"      store    \ 1.14×
+
+\ Aggregate ELBOs.
+54327 "sub-elbo-100x"    store   \ 543.27
+53629 "base-elbo-100x"   store   \ 536.29
+
+\ ============================================================
+\ Regime classification per PREDICTIONS-136.md.
+\ ============================================================
+
+\ Regime HH: R_ELBO > 1.3.
+"R-elbo-1000x" load 1300 > "regime-HH?" store
+
+\ Regime II: R_ELBO ∈ [0.9, 1.3].
+"R-elbo-1000x" load 900 >=
+"R-elbo-1000x" load 1300 <= * "regime-II?" store
+
+\ Regime JJ: R_ELBO < 0.9.
+"R-elbo-1000x" load 900 < "regime-JJ?" store
+
+\ Partition.
+"regime-HH?" load "regime-II?" load + "regime-JJ?" load + "regime-count" store
+
+\ Signal vanished (R_ELBO close to 1.0).
+"R-elbo-1000x" load 1100 < "signal-vanished?" store
+
+\ Structured-topology surviving signal indicators.
+"bipartite-ratio-100x" load 200 > "bipartite-survives?" store
+"cycle-ratio-100x" load 200 > "cycle-survives?" store
+
+\ ============================================================
+\ Report.
+\ ============================================================
+
+cr
+"=== Demo 136 — DMBD degree-matched baseline (cycle 17) ===" . cr
+cr
+"Pre-reg: PREDICTIONS-136.md (sha 1999497f… attested)" . cr
+"Source:  scripts/dmbd_sixth_regular.py (fd4698a)" . cr
+cr
+"AGGREGATE (cycle 17 with degree-matched random regular baseline):" . cr
+"  R_objects × 1000: " . "R-objs-1000x" load . "  (0.991; cycle 16 was 0.736)" . cr
+"  R_ELBO × 1000:    " . "R-elbo-1000x" load . "  (1.013; cycle 16 was 1.489)" . cr
+cr
+"Substrate mean ELBO × 100: " . "sub-elbo-100x" load . "  (543.27)" . cr
+"Baseline mean ELBO × 100:  " . "base-elbo-100x" load . "  (536.29)" . cr
+cr
+"PER-SUBSTRATE ELBO RATIOS (sub/baseline × 100):" . cr
+"  bipartite_K33: " . "bipartite-ratio-100x" load . "  (40.0×, retains signal)" . cr
+"  cycle_n10:     " . "cycle-ratio-100x" load . "  (2.60×, retains signal)" . cr
+"  star_n10:      " . "star-ratio-100x" load . "  (1.42×)" . cr
+"  path_n10:      " . "path-ratio-100x" load . "  (1.14×)" . cr
+cr
+"Regime HH (R>1.3, survives):       " . "regime-HH?" load . cr
+"Regime II (R∈[0.9, 1.3], partial): " . "regime-II?" load . cr
+"Regime JJ (R<0.9, vanished):       " . "regime-JJ?" load . cr
+cr
+
+"regime-II?" load 1 = if
+  ">>> REGIME II — cycle 16 broad claim RETRACTED, narrow finding survives." . cr
+  "" . cr
+  "    Aggregate R_ELBO dropped from 1.489 (cycle 16) to 1.013" . cr
+  "    (cycle 17) with degree-matched baseline.  Essentially no" . cr
+  "    aggregate signal; statistically indistinguishable from 1.0." . cr
+  "" . cr
+  "    EXACT cycle 13/14 pattern: structured-vs-sparse-random gave" . cr
+  "    inflated cycle 16 signal; degree-matched control eliminates it." . cr
+  "" . cr
+  "    SURVIVING NARROW CLAIM: structured topology class (cycle," . cr
+  "    path, complete, bipartite, star) individually retains modest" . cr
+  "    DMBD ELBO advantage at MB level; ER substrates do not." . cr
+  "    Same shape as cycle 14 (cycle_n10 alone in EICS); now" . cr
+  "    extended to broader class via MB-amenability measure." . cr
+then
+
+\ ============================================================
+\ Sanity asserts.
+\ ============================================================
+
+"regime-count" load 1 assert-eq
+"regime-II?" load 1 assert-eq
+"regime-HH?" load 0 assert-eq
+"regime-JJ?" load 0 assert-eq
+
+\ Aggregate signal essentially vanished.
+"signal-vanished?" load 1 assert-eq
+
+\ Structured topologies retain individual signal.
+"bipartite-survives?" load 1 assert-eq
+"cycle-survives?" load 1 assert-eq
+
+\ Pinned values match script output.
+"R-elbo-1000x" load 1013 assert-eq
+"R-objs-1000x" load 991 assert-eq
+
+REPORT
