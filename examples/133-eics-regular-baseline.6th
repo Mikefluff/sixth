@@ -1,0 +1,182 @@
+\ examples/133-eics-regular-baseline.6th
+\ Cycle 14 — EICS with random k-regular baseline (cross-validates
+\ cycle 13's R=1.795 with degree-matched control).
+\
+\ Pre-registered: PREDICTIONS-133.md (sha fda5bf… attested).
+\ Source:        scripts/eics_sixth_regular.py (commit 31a9b87).
+\
+\ === REGIME V FIRES — CYCLE 13 SIGNAL PARTIALLY RETRACTED ===
+\
+\ R_overall_regular = 0.8149 → REGIME V (∈ [0.7, 1.5]).
+\
+\ Most of cycle 13's R=1.795 was sparse-ER baseline artifact.
+\ When baseline matches substrate's degree distribution, the
+\ "substrate-distinguishing" effect largely vanishes.
+\
+\ Per-substrate cycle 13 vs cycle 14 comparison:
+\   cycle_n10 :  7.36  →  2.00    SURVIVES (genuine signal)
+\   complete_K5: 1.08  →  1.08    same (trivial)
+\   bipartite : 1.40  →  1.05    drops
+\   path      :  2.20  →  1.04    drops
+\   ER all-self: 1.74  →  0.88    drops
+\   star      :  0.88  →  0.19    anti-signal
+\   others    : ~1.0   →  0.5-0.9 drops
+\
+\ HONEST FINDING:
+\   Only CYCLE GRAPH n=10 retains substrate-distinguishing
+\   EICS signal (R=2.0) against degree-matched random k-regular
+\   baseline.  This is a narrow but real result.
+\
+\   Cycle 13's broad "substrate has EICS signature" claim
+\   significantly weakened to "cycle topology specifically has
+\   EICS signature beyond what degree-matched random graphs
+\   produce".
+\
+\ Cross-measure correlation:
+\   Pearson(EICS, 1/spectral_gap)    = -0.54 (moderate anti-corr)
+\   Pearson(EICS, von_Neumann_entropy) = 0.17 (weak)
+\   → EICS NOT just 1/spectral_gap; captures additional structure
+\   → But strongest signal (cycle_n10) is precisely where
+\     spectral gap is smallest (rotational symmetry)
+\
+\ Net status of cycle 13 finding after cycle 14:
+\   - "Substrate has EICS signature": PARTIALLY RETRACTED
+\   - "Cycle topology specifically has EICS signature": SURVIVES
+\   - This is the narrower, defensible claim
+
+use prelude
+use debug
+
+\ ============================================================
+\ Pinned values from scripts/eics_sixth_regular.py.
+\ ============================================================
+
+\ R_overall_regular × 1000.
+815 "R-overall-regular-1000x" store
+
+\ Per-substrate R_regular × 1000.
+   0 "r1-reg-1000x" store     \ ER_n10_p10
+ 536 "r2-reg-1000x" store     \ ER_n20_p10
+ 629 "r3-reg-1000x" store     \ ER_n10_p30
+ 878 "r4-reg-1000x" store     \ ER_n10_p20 all-self
+ 738 "r5-reg-1000x" store     \ ER_n20_p20 all-self
+ 191 "r6-reg-1000x" store     \ star
+2002 "r7-reg-1000x" store     \ cycle_n10 (only true survivor)
+1084 "r8-reg-1000x" store     \ complete_K5
+1054 "r9-reg-1000x" store     \ bipartite K33
+1038 "r10-reg-1000x" store    \ path
+
+\ Cycle 13 R values (vs ER baseline) for direct comparison.
+   0 "r1-er-1000x" store
+1138 "r2-er-1000x" store
+1027 "r3-er-1000x" store
+1743 "r4-er-1000x" store
+1123 "r5-er-1000x" store
+ 878 "r6-er-1000x" store
+7365 "r7-er-1000x" store     \ cycle_n10 was 7365 vs ER, 2002 vs k-reg
+1084 "r8-er-1000x" store
+1400 "r9-er-1000x" store
+2196 "r10-er-1000x" store
+
+\ Cross-measure correlations × 1000 (signed).
+-538 "corr-eics-invsg-1000x"  store    \ -0.538
+ 174 "corr-eics-vn-1000x"     store    \  0.174
+
+\ ============================================================
+\ Regime classification per PREDICTIONS-133.md.
+\ ============================================================
+
+\ Regime U: R_overall_regular > 1.5 (×1000: > 1500)
+"R-overall-regular-1000x" load 1500 > "regime-U?" store
+
+\ Regime V: R_overall_regular ∈ [0.7, 1.5] (×1000: [700, 1500])
+"R-overall-regular-1000x" load 700 >=
+"R-overall-regular-1000x" load 1500 <= * "regime-V?" store
+
+\ Regime W: R_overall_regular < 0.7 (×1000: < 700)
+"R-overall-regular-1000x" load 700 < "regime-W?" store
+
+\ Partition.
+"regime-U?" load "regime-V?" load + "regime-W?" load + "regime-count" store
+
+\ ============================================================
+\ Cycle survivor analysis: which substrate retains R > 1.5
+\ when baseline matches degree distribution?
+\ ============================================================
+
+"r7-reg-1000x" load 1500 > "cycle-survives?" store     \ cycle_n10 R=2.00 > 1.5 ✓
+
+\ Count substrates with R_regular > 1.5 (genuine signal vs degree-matched).
+"r1-reg-1000x"  load 1500 > "r2-reg-1000x"  load 1500 > +
+"r3-reg-1000x"  load 1500 > + "r4-reg-1000x"  load 1500 > +
+"r5-reg-1000x"  load 1500 > + "r6-reg-1000x"  load 1500 > +
+"r7-reg-1000x"  load 1500 > + "r8-reg-1000x"  load 1500 > +
+"r9-reg-1000x"  load 1500 > + "r10-reg-1000x" load 1500 > +
+   "substrates-r>1.5" store
+
+\ ============================================================
+\ Report.
+\ ============================================================
+
+cr
+"=== Demo 133 — EICS regular-baseline (cycle 14) ===" . cr
+cr
+"Pre-reg: PREDICTIONS-133.md (sha fda5bf… attested)" . cr
+"Source:  scripts/eics_sixth_regular.py (31a9b87)" . cr
+cr
+"R_overall_regular × 1000: " . "R-overall-regular-1000x" load . "  (0.815)" . cr
+"Cycle 13 R_overall × 1000:  1795  (1.795)" . cr
+cr
+"Regime U (R > 1.5):    " . "regime-U?" load . cr
+"Regime V (R ∈ [0.7, 1.5]): " . "regime-V?" load . cr
+"Regime W (R < 0.7):    " . "regime-W?" load . cr
+cr
+"Substrates with R_regular > 1.5 (true survivors): " . "substrates-r>1.5" load . " / 10" . cr
+"cycle_n10 R_regular = 2002 × 10⁻³ (survives): " . "cycle-survives?" load . cr
+cr
+"Correlation EICS vs 1/spectral_gap:    " . "corr-eics-invsg-1000x" load . " × 10⁻³ (= -0.538)" . cr
+"Correlation EICS vs von_Neumann_entropy: " . "corr-eics-vn-1000x" load . " × 10⁻³ (= 0.174)" . cr
+cr
+
+"regime-V?" load 1 = if
+  ">>> REGIME V — partial signal; cycle 13's R=1.795 substantially" . cr
+  "    weakened to R_regular=0.815 when baseline degree-matched." . cr
+  "" . cr
+  "    HONEST READING: cycle 13's 'first positive substrate-" . cr
+  "    distinguishing signal' was MOSTLY artifact of sparse-ER" . cr
+  "    baseline.  When baseline matches substrate's degree" . cr
+  "    distribution, only CYCLE_N10 retains R > 1.5 (R=2.00)." . cr
+  "" . cr
+  "    SURVIVING claim: cycle topology specifically has EICS" . cr
+  "    signature distinguishable from degree-matched random." . cr
+  "    Narrow but real result; cycle 13's broad claim retracted" . cr
+  "    to this narrower scope." . cr
+then
+
+\ ============================================================
+\ Sanity asserts.
+\ ============================================================
+
+\ Exactly one regime fires.
+"regime-count" load 1 assert-eq
+
+\ Regime V is the one.
+"regime-U?" load 0 assert-eq
+"regime-V?" load 1 assert-eq
+"regime-W?" load 0 assert-eq
+
+\ cycle_n10 survives (R_regular > 1.5).
+"cycle-survives?" load 1 assert-eq
+
+\ Only 1 substrate (cycle_n10) exceeds R_regular > 1.5.
+"substrates-r>1.5" load 1 assert-eq
+
+\ R_overall pinned.
+"R-overall-regular-1000x" load 815 assert-eq
+
+\ Each per-substrate R_regular ≤ corresponding cycle 13 ER R
+\ (degree-matched baseline cannot inflate signal vs sparse ER
+\ baseline, modulo specific cases).
+"r7-reg-1000x" load "r7-er-1000x" load <= 1 assert-eq    \ 2002 ≤ 7365
+
+REPORT

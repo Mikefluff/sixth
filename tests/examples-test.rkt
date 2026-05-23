@@ -398,15 +398,27 @@
     ;;      local Jacobian = per-row, sheaf inconsistency from
     ;;      adjacency-as-linearization.  Compared 10 canonical
     ;;      substrates vs M=1000 ER random baselines.
-    ;;      R_overall = 1.795 → REGIME R (substrate-distinguishing).
-    ;;      Strongest signals: cycle_n10 (R=7.36×), path_n10 (2.20×).
-    ;;      First positive substrate-distinguishing measurement in
-    ;;      catalogue.  HONEST: EICS captures spectral structure;
-    ;;      cycle/path have distinct eigenstructure vs ER — well-
-    ;;      known spectral graph theory via Krasnovsky's measure
-    ;;      that hadn't been applied to hypergraph substrates yet.
+    ;;      R_overall = 1.795 → REGIME R.  Cycle 14 (demo 133)
+    ;;      shows this signal was mostly sparse-ER baseline artifact;
+    ;;      only cycle_n10 survives at degree-matched k-regular
+    ;;      baseline.
     ;;      Pre-registered: PREDICTIONS-132.md (commit e50ae0f).
-    ("132-eics-application.6th"                   7)))
+    ("132-eics-application.6th"                   7)
+    ;; --- Cycle 14: EICS regular-baseline cross-validation ---
+    ;; 133: same EICS as cycle 13 but baseline = random k-regular
+    ;;      graphs (degree-matched to each substrate).  Tests if
+    ;;      cycle 13's signal survives tighter control.
+    ;;      M=500 random regular baselines per substrate.
+    ;;      Result: R_overall_regular = 0.815 → REGIME V (partial,
+    ;;      [0.7, 1.5]).  Cycle 13's broad signal PARTIALLY
+    ;;      RETRACTED — only cycle_n10 (R=2.00) survives degree-
+    ;;      matched comparison.  Surviving claim: cycle topology
+    ;;      specifically has EICS signature beyond degree-matched
+    ;;      random.  Cross-measure: Pearson(EICS, 1/spectral_gap)
+    ;;      = -0.54 (moderate anti-corr); EICS captures structure
+    ;;      beyond simple spectral gap.
+    ;;      Pre-registered: PREDICTIONS-133.md (commit 50ceb60).
+    ("133-eics-regular-baseline.6th"              8)))
 
 (define (run-demo file)
   (define out
@@ -431,8 +443,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1932
-                (format "cumulative ✓ count: ~a (expected 1932)" total-pass)))
+  (check-equal? total-pass 1940
+                (format "cumulative ✓ count: ~a (expected 1940)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1932 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1940 ✓ across ~a demos"
                    total-pass (length expected)))
