@@ -15,7 +15,32 @@
 (provide
   run!
   vm-step!
-  push-halt-frame!)
+  push-halt-frame!
+  current-engine-trace)
+
+;; current-engine-trace: parameter holding either #f (default; zero
+;; overhead) or a `box` of a list of (cons kind name) trace entries
+;; in reverse order (most recent first).  Set by meta-runtime to
+;; enable Tier 1 motif detection per META-SEMANTICS.md §3.
+;;
+;; Trace records every op-PRIM and op-CALL execution: the kind is
+;; either 'prim or 'call, and the name is the symbol invoked.
+;; Word-internal CALLs are NOT recorded (they're expansion of the
+;; outer call already recorded); only top-level dispatch.
+(define current-engine-trace (make-parameter #f))
+
+;; Log only TOP-LEVEL ops (rstack empty or just halt-sentinel).  When
+;; inside a word body, rstack has the caller's frame, so further CALLs
+;; are body-internal and not part of the user-visible motif.
+(define (trace-append! e kind name)
+  (define b (current-engine-trace))
+  (when (and b
+             (let ([depth (length (env-rstack e))])
+               (or (= depth 0)
+                   ;; halt-sentinel frame has program=#f
+                   (and (= depth 1)
+                        (not (frame-program (car (env-rstack e))))))))
+    (set-box! b (cons (cons kind name) (unbox b)))))
 
 (require "opcodes.rkt"
          "env.rkt"
@@ -39,6 +64,7 @@
           (env-push! e (op-arg instr))
           (loop prog (+ pc 1))]
          [(= code op-CALL)
+          (trace-append! e 'call (op-arg instr))
           (handle-call e prog pc instr loop)]
          [(= code op-JZ)
           (define v (env-pop! e (op-srcloc instr)))
@@ -49,6 +75,7 @@
           (pop-return-frame e (lambda (next-prog next-pc)
                                  (loop next-prog next-pc)))]
          [(= code op-PRIM)
+          (trace-append! e 'prim (op-arg instr))
           (call-prim! e (op-arg instr) (op-srcloc instr))
           (loop prog (+ pc 1))]
          [else

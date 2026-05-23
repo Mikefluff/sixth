@@ -1,0 +1,87 @@
+\ examples/143-runtime-promotion.6th
+\ Cycle 25A — Tier 1 runtime law-state mutation smoke test.
+\ Per docs/META-SEMANTICS.md v2 §13 Cycle 25 acceptance.
+\
+\ Demo is intentionally boring — tests runtime mechanics only:
+\   1. observe a repeated motif during execution
+\   2. detect via DETECT-MOTIF
+\   3. shadow-check expandability via SHADOW-CHECK
+\   4. induce ephemeral via INDUCE-RUNTIME (law-state mutates IN-RUN)
+\   5. invoke induced primitive (USE-RUNTIME)
+\   6. rollback via ROLLBACK-RUNTIME (law-state restored)
+\
+\ Motif: MARK MARK bi-edge (semantic-free at substrate level).
+
+use prelude
+use graph
+use debug
+
+cr "=== Demo 143 — Cycle 25A Tier 1 Runtime Promotion ===" . cr
+cr
+
+\ --- Phase 1: baseline ---
+RESET
+LAW-HASH "h0" store
+
+\ --- Phase 2: execute motif x3 AND IMMEDIATELY detect+induce ---
+\ Anything printed/stored between motif and DETECT-MOTIF pollutes
+\ the trace window, so we do all detection inline first.
+MARK MARK bi-edge
+MARK MARK bi-edge
+MARK MARK bi-edge
+
+\ At this point, trace tail is ... MARK MARK bi-edge MARK MARK bi-edge MARK MARK bi-edge
+DETECT-MOTIF "motif" store
+"motif" load SHADOW-CHECK "shadow-ok" store
+"motif" load INDUCE-RUNTIME "cand" store
+LAW-HASH "h2" store
+
+\ Capture nodes/edges right after induce (no extra ops between)
+NODES "nodes-pre-invoke" store
+EDGES "edges-pre-invoke" store
+
+\ --- Phase 3: invoke induced cand_001 ---
+cand_001
+NODES "nodes-post-invoke" store
+EDGES "edges-post-invoke" store
+
+\ --- Phase 4: rollback ---
+"cand" load ROLLBACK-RUNTIME
+LAW-HASH "h3" store
+
+\ --- Now safe to print/diagnose; trace mining is done ---
+"phase 1: baseline law_hash h0 = " . "h0" load . cr
+"phase 2: detected motif = " . "motif" load . cr
+"         SHADOW-CHECK pass = " . "shadow-ok" load . cr
+"         induced cand = " . "cand" load . cr
+"         law_hash post-induce h2 = " . "h2" load . cr
+"         nodes pre-invoke = " . "nodes-pre-invoke" load . cr
+"         edges pre-invoke = " . "edges-pre-invoke" load . cr
+"phase 3: nodes post-invoke = " . "nodes-post-invoke" load . cr
+"         edges post-invoke = " . "edges-post-invoke" load . cr
+"phase 4: law_hash post-rollback h3 = " . "h3" load . cr
+cr
+
+\ --- Phase 5: derived predicates for assertions ---
+"h0" load "h2" load = "h0-eq-h2?" store          \ should be 0 (changed)
+"h0" load "h3" load = "h0-eq-h3?" store          \ should be 1 (restored)
+"motif" load \ stack: motif
+3 \ stack: motif 3  -- expected length (MARK MARK bi-edge)
+
+\ Compute length via simple recursion would be heavy; instead
+\ pin assertion against the size effect on substrate:
+\   3 motif iterations + 1 cand_001 invoke = 4 motif iterations total
+\   each motif = 2 marks + 1 bi-edge = 2 nodes + 2 directed edges
+\   so total = 8 nodes, 8 edges
+drop drop \ clean those scratch vals
+
+\ --- Phase 6: acceptance asserts per META-SEMANTICS.md v2 §13 ---
+"shadow-ok"  load 1 assert-eq               \ shadow check passed
+"h0-eq-h2?"  load 0 assert-eq               \ INDUCE mutated law_hash
+"h0-eq-h3?"  load 1 assert-eq               \ ROLLBACK restored
+"nodes-pre-invoke"  load 6 assert-eq        \ 3 motifs = 6 nodes
+"edges-pre-invoke"  load 6 assert-eq        \ 3 motifs = 6 directed edges
+"nodes-post-invoke" load 8 assert-eq        \ +1 invoke = 8 nodes
+"edges-post-invoke" load 8 assert-eq        \ +1 invoke = 8 directed edges
+
+REPORT

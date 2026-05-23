@@ -505,7 +505,18 @@
     ;;      optimizer can beat it on these substrates.
     ;;      Loss-family arc EXHAUSTED.  Cycle 24+ pivots to runtime
     ;;      primitive induction (engine evolves own primitive alphabet).
-    ("142-pred-objecthood.6th"                    6)))
+    ("142-pred-objecthood.6th"                    6)
+    ;; 143. Cycle 25A — Tier 1 runtime law-state mutation smoke test
+    ;;      per META-SEMANTICS.md v2 §13.  NO scientific claim; tests
+    ;;      runtime mechanics only.  Motif MARK MARK bi-edge x3
+    ;;      detected via DETECT-MOTIF; SHADOW-CHECK passes;
+    ;;      INDUCE-RUNTIME creates cand_001 and mutates law_hash;
+    ;;      cand_001 invoked successfully (USE-RUNTIME);
+    ;;      ROLLBACK-RUNTIME restores law_hash.
+    ;;      Demonstrates law-state mutation INSIDE a single run —
+    ;;      the architectural minimum that distinguishes runtime
+    ;;      self-modification from offline deployment pipeline.
+    ("143-runtime-promotion.6th"                  7)))
 
 (define (run-demo file)
   (define out
@@ -530,8 +541,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1996
-                (format "cumulative ✓ count: ~a (expected 1996)" total-pass)))
+  (check-equal? total-pass 2003
+                (format "cumulative ✓ count: ~a (expected 2003)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1996 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 2003 ✓ across ~a demos"
                    total-pass (length expected)))

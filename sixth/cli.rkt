@@ -15,8 +15,11 @@
          (only-in "main.rkt" sixth-version)
          "env.rkt"
          "loader.rkt"
+         "vm.rkt"
          "primitives/base.rkt"
-         "primitives/substrate.rkt")
+         "primitives/substrate.rkt"
+         "meta/runtime.rkt"
+         "meta/tier1.rkt")
 
 (define no-prelude? (make-parameter #f))
 (define defines    (make-parameter '()))   ; list of (cons KEY VAL)
@@ -45,6 +48,8 @@
   (define e (make-env))
   (register-base! e)
   (register-substrate! e)
+  (install-meta-runtime! e)
+  (register-tier1! e)
   (unless (no-prelude?)
     (use-module! "prelude" e))
   (apply-defines! e)
@@ -71,7 +76,11 @@
 
 (define (cmd-run path)
   (define e (make-runtime-env))
-  (load-file path e))
+  ;; Bind the VM trace parameter to the env's _trace box so that
+  ;; vm.rkt's trace-append! populates it.  Zero overhead when not
+  ;; bound; here we always bind (engine-trace is cheap append).
+  (parameterize ([current-engine-trace (trace-of e)])
+    (load-file path e)))
 
 (define (cmd-test)
   (printf "sixth test — run `raco test sixth tests`~n")
