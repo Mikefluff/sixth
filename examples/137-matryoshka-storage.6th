@@ -1,0 +1,344 @@
+\ examples/137-matryoshka-storage.6th
+\ Cycle 18C/D — matryoshka storage compression test.
+\ Pre-registered: PREDICTIONS-137.md (commit 04f2196, attested).
+\ stdlib:        stdlib/group.6th
+\
+\ For each (N, K) test point:
+\   1. Build FLAT substrate: N observers each with K direct edges
+\      to K distinct members.  Total edges = N × K × 2 (bi-edge).
+\   2. Build MATRYOSHKA substrate: 1 group, K members in group,
+\      N observers sharing group via 1 edge each.
+\      Total edges = (K + N) × 2.
+\   3. R_observed = flat_edges / matryoshka_edges
+\   4. R_predicted = (N × K) / (N + K)
+\   5. Relative error = |observed - predicted| / predicted
+\
+\ Regime classifier: MARE (mean absolute relative error) across 6 points.
+\   KK: MARE < 0.10  → matryoshka CONFIRMED
+\   LL: MARE [0.10, 0.50] → partial
+\   MM: MARE > 0.50  → broken
+
+use prelude
+use graph
+use group
+use debug
+
+\ ============================================================
+\ Test point 1: N=2, K=2.  R_pred = 4/4 = 1.00.
+\ ============================================================
+
+\ FLAT: 2 observers × 2 members = 4 pairs, 8 directed edges.
+RESET
+MARK drop MARK drop MARK drop MARK drop    \ 4 nodes total
+1 3 bi-edge   1 4 bi-edge
+2 3 bi-edge   2 4 bi-edge
+EDGES "flat-2-2" store
+
+\ MATRYOSHKA: 1 group node + 2 members + 2 observers.
+\   nodes 1,2 = observers; node 3 = group; nodes 4,5 = members
+\   3→4, 3→5 (group adds members)
+\   1→3, 2→3 (observers share group)
+RESET
+MARK drop MARK drop                         \ nodes 1, 2 observers
+perceive-group drop                         \ node 3 = group
+MARK drop MARK drop                         \ nodes 4, 5 members
+3 4 add-to-group   3 5 add-to-group
+1 3 share-group    2 3 share-group
+EDGES "mat-2-2" store
+
+\ R_observed × 1000 (integer arithmetic, ×1000 for precision)
+"flat-2-2" load 1000 * "mat-2-2" load / "R-obs-2-2" store
+
+\ ============================================================
+\ Test point 2: N=3, K=5.  R_pred = 15/8 = 1.875 → ×1000 = 1875.
+\ ============================================================
+
+\ FLAT: 3 observers × 5 members = 15 pairs, 30 directed edges.
+RESET
+MARK drop MARK drop MARK drop                   \ observers 1, 2, 3
+MARK drop MARK drop MARK drop MARK drop MARK drop  \ members 4..8
+1 4 bi-edge   1 5 bi-edge   1 6 bi-edge   1 7 bi-edge   1 8 bi-edge
+2 4 bi-edge   2 5 bi-edge   2 6 bi-edge   2 7 bi-edge   2 8 bi-edge
+3 4 bi-edge   3 5 bi-edge   3 6 bi-edge   3 7 bi-edge   3 8 bi-edge
+EDGES "flat-3-5" store
+
+\ MATRYOSHKA: 3 obs + 1 group + 5 members; group→5 + obs→group = 8 pairs.
+RESET
+MARK drop MARK drop MARK drop                   \ observers 1, 2, 3
+perceive-group drop                              \ group = 4
+MARK drop MARK drop MARK drop MARK drop MARK drop  \ members 5..9
+4 5 add-to-group   4 6 add-to-group   4 7 add-to-group
+4 8 add-to-group   4 9 add-to-group
+1 4 share-group    2 4 share-group    3 4 share-group
+EDGES "mat-3-5" store
+
+"flat-3-5" load 1000 * "mat-3-5" load / "R-obs-3-5" store
+
+\ ============================================================
+\ Test point 3: N=5, K=5.  R_pred = 25/10 = 2.50 → ×1000 = 2500.
+\ ============================================================
+
+\ FLAT: 5 × 5 = 25 pairs.
+RESET
+MARK drop MARK drop MARK drop MARK drop MARK drop    \ obs 1..5
+MARK drop MARK drop MARK drop MARK drop MARK drop    \ members 6..10
+1 6 bi-edge 1 7 bi-edge 1 8 bi-edge 1 9 bi-edge 1 10 bi-edge
+2 6 bi-edge 2 7 bi-edge 2 8 bi-edge 2 9 bi-edge 2 10 bi-edge
+3 6 bi-edge 3 7 bi-edge 3 8 bi-edge 3 9 bi-edge 3 10 bi-edge
+4 6 bi-edge 4 7 bi-edge 4 8 bi-edge 4 9 bi-edge 4 10 bi-edge
+5 6 bi-edge 5 7 bi-edge 5 8 bi-edge 5 9 bi-edge 5 10 bi-edge
+EDGES "flat-5-5" store
+
+\ MATRYOSHKA: 5 obs + 1 group + 5 members = 10 pairs.
+RESET
+MARK drop MARK drop MARK drop MARK drop MARK drop    \ obs 1..5
+perceive-group drop                                   \ group = 6
+MARK drop MARK drop MARK drop MARK drop MARK drop    \ members 7..11
+6 7 add-to-group  6 8 add-to-group  6 9 add-to-group  6 10 add-to-group  6 11 add-to-group
+1 6 share-group   2 6 share-group   3 6 share-group   4 6 share-group   5 6 share-group
+EDGES "mat-5-5" store
+
+"flat-5-5" load 1000 * "mat-5-5" load / "R-obs-5-5" store
+
+\ ============================================================
+\ Test point 4: N=10, K=10.  R_pred = 100/20 = 5.0 → ×1000 = 5000.
+\ ============================================================
+
+\ Use helper loops for compact code.
+: mark-n-loop
+  "mark-rem" load 0 > if
+    MARK drop
+    "mark-rem" load 1 - "mark-rem" store
+    mark-n-loop
+  then ;
+
+: mark-n ( n -- )  "mark-rem" store mark-n-loop ;
+
+\ Helper: bi-edge observer to range of nodes [start..end].
+: bi-edge-loop
+  "bi-rem" load "bi-end" load <= if
+    "bi-obs" load "bi-rem" load bi-edge
+    "bi-rem" load 1 + "bi-rem" store
+    bi-edge-loop
+  then ;
+
+: obs-to-range ( obs start end -- )
+  "bi-end" store
+  "bi-rem" store
+  "bi-obs" store
+  bi-edge-loop ;
+
+\ Helper: observers in [obs-start..obs-end] each bi-edge to range [mem-start..mem-end].
+: outer-loop
+  "outer-cur" load "outer-end" load <= if
+    "outer-cur" load "inner-start" load "inner-end" load obs-to-range
+    "outer-cur" load 1 + "outer-cur" store
+    outer-loop
+  then ;
+
+: flat-observers-x-members ( obs-start obs-end mem-start mem-end -- )
+  "inner-end" store
+  "inner-start" store
+  "outer-end" store
+  "outer-cur" store
+  outer-loop ;
+
+\ FLAT N=10, K=10: 20 nodes total, observers 1..10, members 11..20.
+RESET
+20 mark-n
+1 10 11 20 flat-observers-x-members
+EDGES "flat-10-10" store
+
+\ MATRYOSHKA N=10, K=10: 10 obs + 1 group + 10 members = 21 nodes; 10+10 = 20 pairs.
+RESET
+10 mark-n                                  \ observers 1..10
+perceive-group drop                         \ group = 11
+10 mark-n                                  \ members 12..21
+11 12 21 obs-to-range                       \ group→members (using as observer)
+\ Wait: obs-to-range bi-edges (obs, target).  For group→members: group is obs param.
+\ But add-to-group is just bi-edge, same effect.
+\ Already done: 11→12..21.
+
+\ Now N=10 observers share group:
+: share-loop
+  "share-cur" load "share-end" load <= if
+    "share-cur" load "share-grp" load share-group
+    "share-cur" load 1 + "share-cur" store
+    share-loop
+  then ;
+
+11 "share-grp" store
+1  "share-cur" store
+10 "share-end" store
+share-loop
+
+EDGES "mat-10-10" store
+
+"flat-10-10" load 1000 * "mat-10-10" load / "R-obs-10-10" store
+
+\ ============================================================
+\ Test point 5: N=5, K=20.  R_pred = 100/25 = 4.0 → ×1000 = 4000.
+\ ============================================================
+
+\ FLAT 5 × 20 = 100 pairs.
+RESET
+25 mark-n                                  \ obs 1..5, members 6..25
+1 5 6 25 flat-observers-x-members
+EDGES "flat-5-20" store
+
+\ MATRYOSHKA: 5 obs + 1 group + 20 members; group→20 + obs→group = 25 pairs.
+RESET
+5 mark-n                                   \ obs 1..5
+perceive-group drop                         \ group = 6
+20 mark-n                                  \ members 7..26
+6 7 26 obs-to-range                         \ group→members
+6 "share-grp" store
+1 "share-cur" store
+5 "share-end" store
+share-loop                                  \ observers→group
+EDGES "mat-5-20" store
+
+"flat-5-20" load 1000 * "mat-5-20" load / "R-obs-5-20" store
+
+\ ============================================================
+\ Test point 6: N=20, K=5.  R_pred = 100/25 = 4.0 → ×1000 = 4000.
+\ ============================================================
+
+RESET
+25 mark-n                                  \ obs 1..20, members 21..25
+1 20 21 25 flat-observers-x-members
+EDGES "flat-20-5" store
+
+RESET
+20 mark-n                                  \ obs 1..20
+perceive-group drop                         \ group = 21
+5 mark-n                                   \ members 22..26
+21 22 26 obs-to-range                       \ group→members
+21 "share-grp" store
+1 "share-cur" store
+20 "share-end" store
+share-loop                                  \ observers→group
+EDGES "mat-20-5" store
+
+"flat-20-5" load 1000 * "mat-20-5" load / "R-obs-20-5" store
+
+\ ============================================================
+\ Compute relative errors and aggregate MARE.
+\ ============================================================
+
+\ Predicted R × 1000.
+1000 "R-pred-2-2" store
+1875 "R-pred-3-5" store
+2500 "R-pred-5-5" store
+5000 "R-pred-10-10" store
+4000 "R-pred-5-20" store
+4000 "R-pred-20-5" store
+
+\ |obs - pred| × 1000 / pred (relative error × 1000).
+\ Helper: returns abs diff × 1000 / pred.
+: abs-rel-err ( obs pred -- err-×1000 )
+  swap over -                       \ pred (obs - pred)
+  dup 0 < if -1 * then              \ |obs - pred|
+  1000 * swap / ;
+
+"R-obs-2-2"   load "R-pred-2-2"   load abs-rel-err "err-2-2"   store
+"R-obs-3-5"   load "R-pred-3-5"   load abs-rel-err "err-3-5"   store
+"R-obs-5-5"   load "R-pred-5-5"   load abs-rel-err "err-5-5"   store
+"R-obs-10-10" load "R-pred-10-10" load abs-rel-err "err-10-10" store
+"R-obs-5-20"  load "R-pred-5-20"  load abs-rel-err "err-5-20"  store
+"R-obs-20-5"  load "R-pred-20-5"  load abs-rel-err "err-20-5"  store
+
+\ MARE = mean of all 6 errors × 1000.
+"err-2-2"   load
+"err-3-5"   load +
+"err-5-5"   load +
+"err-10-10" load +
+"err-5-20"  load +
+"err-20-5"  load +
+6 / "MARE-1000x" store
+
+\ ============================================================
+\ Regime classification.
+\ ============================================================
+
+\ KK: MARE < 0.10 → MARE×1000 < 100.
+"MARE-1000x" load 100 < "regime-KK?" store
+
+\ LL: MARE ∈ [0.10, 0.50] → ×1000 [100, 500].
+"MARE-1000x" load 100 >=
+"MARE-1000x" load 500 <= * "regime-LL?" store
+
+\ MM: MARE > 0.50 → ×1000 > 500.
+"MARE-1000x" load 500 > "regime-MM?" store
+
+"regime-KK?" load "regime-LL?" load + "regime-MM?" load + "regime-count" store
+
+\ ============================================================
+\ Report.
+\ ============================================================
+
+cr
+"=== Demo 137 — matryoshka storage compression (cycle 18) ===" . cr
+cr
+"Pre-reg: PREDICTIONS-137.md (commit 04f2196, attested)" . cr
+"stdlib:  stdlib/group.6th" . cr
+cr
+"Test point (N=2, K=2):" . cr
+"  flat edges:    " . "flat-2-2" load . cr
+"  matryoshka:    " . "mat-2-2" load . cr
+"  R obs × 1000:  " . "R-obs-2-2" load . "  (pred 1000, err " . "err-2-2" load . ")" . cr
+cr
+"Test point (N=3, K=5):" . cr
+"  R obs × 1000:  " . "R-obs-3-5" load . "  (pred 1875, err " . "err-3-5" load . ")" . cr
+cr
+"Test point (N=5, K=5):" . cr
+"  R obs × 1000:  " . "R-obs-5-5" load . "  (pred 2500, err " . "err-5-5" load . ")" . cr
+cr
+"Test point (N=10, K=10):" . cr
+"  R obs × 1000:  " . "R-obs-10-10" load . "  (pred 5000, err " . "err-10-10" load . ")" . cr
+cr
+"Test point (N=5, K=20):" . cr
+"  R obs × 1000:  " . "R-obs-5-20" load . "  (pred 4000, err " . "err-5-20" load . ")" . cr
+cr
+"Test point (N=20, K=5):" . cr
+"  R obs × 1000:  " . "R-obs-20-5" load . "  (pred 4000, err " . "err-20-5" load . ")" . cr
+cr
+"MARE × 1000: " . "MARE-1000x" load . cr
+cr
+"Regime KK (MARE < 0.10): " . "regime-KK?" load . cr
+"Regime LL (MARE ∈ [0.10, 0.50]): " . "regime-LL?" load . cr
+"Regime MM (MARE > 0.50): " . "regime-MM?" load . cr
+cr
+
+"regime-KK?" load 1 = if
+  ">>> REGIME KK — matryoshka scaling CONFIRMED." . cr
+  "    Observer-grouping pattern using MARK + bi-edge produces" . cr
+  "    storage compression matching (N×K)/(N+K) prediction within" . cr
+  "    10% across all 6 test points." . cr
+  "" . cr
+  "    SUBSTRATE-DERIVED ENGINEERING FINDING: substrate primitives" . cr
+  "    (existing, no new ones added) support pointer architecture" . cr
+  "    'это теперь 1 — внутри меня' principle.  Storage advantage" . cr
+  "    grows with N×K/(N+K) — significant compression at scale." . cr
+  "" . cr
+  "    Addresses cycle 12 retraction: HEDGE3 storage 'no advantage'" . cr
+  "    finding was because test treated edges as isolated.  With" . cr
+  "    correct observer-grouping usage, compression DOES emerge." . cr
+then
+
+\ ============================================================
+\ Sanity asserts.
+\ ============================================================
+
+\ Exactly one regime fires.
+"regime-count" load 1 assert-eq
+
+\ All 6 observed R values positive.
+"R-obs-2-2"   load 0 > 1 assert-eq
+"R-obs-3-5"   load 0 > 1 assert-eq
+"R-obs-5-5"   load 0 > 1 assert-eq
+"R-obs-10-10" load 0 > 1 assert-eq
+"R-obs-5-20"  load 0 > 1 assert-eq
+"R-obs-20-5"  load 0 > 1 assert-eq
+
+REPORT

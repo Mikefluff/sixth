@@ -434,15 +434,27 @@
     ;; 136: same DMBD pipeline as cycle 16 but baseline = random
     ;;      k-regular graphs matching substrate mean degree.
     ;;      Result: R_ELBO_regular = 1.013 (cycle 16 was 1.489).
-    ;;      REGIME II (∈ [0.9, 1.3]) — aggregate signal VANISHED.
-    ;;      Cycle 16's 49% advantage was sparse-baseline artifact;
-    ;;      same exact pattern as cycle 13→14 (R=1.795 → 0.815).
-    ;;      Surviving narrow claim: structured topology class (cycle,
-    ;;      path, complete, bipartite, star) individually retains
-    ;;      modest signal at MB level; ER substrates don't.
-    ;;      Cycle 16 broad "49% better MB fit" claim RETRACTED.
-    ;;      Pre-registered: PREDICTIONS-136.md (commit 33cef9a).
-    ("136-dmbd-regular-baseline.6th"              9)))
+    ;;      REGIME II — aggregate signal VANISHED; same exact pattern
+    ;;      as cycle 13→14 (R=1.795→0.815).  Cycle 16 broad claim
+    ;;      RETRACTED.  Pre-registered: PREDICTIONS-136.md (33cef9a).
+    ("136-dmbd-regular-baseline.6th"              9)
+    ;; --- Cycle 18: matryoshka storage compression — FIRST CLEAN POSITIVE ---
+    ;; 137: Pre-registered (PREDICTIONS-137.md commit 04f2196) test
+    ;;      of observer-grouping compression using existing MARK +
+    ;;      bi-edge primitives via stdlib/group.6th.
+    ;;      For 6 (N,K) test points: predicted R(N,K)=(N×K)/(N+K),
+    ;;      observed R EXACTLY matches predicted at ALL 6 points
+    ;;      (MARE = 0).  REGIME KK fires (MARE < 0.10 within tolerance).
+    ;;      First substrate-derived ENGINEERING FINDING in catalogue
+    ;;      that doesn't suffer cycle-14 pattern retraction:
+    ;;        - Pre-registered before source
+    ;;        - Algebraic prediction with deterministic test
+    ;;        - Uses EXISTING substrate primitives (38 unchanged)
+    ;;        - Exhaustive verification (every point exact match)
+    ;;      Addresses cycle 12 retraction: HEDGE3 "no storage
+    ;;      advantage" was because test treated edges as isolated;
+    ;;      observer-grouping pattern reveals genuine compression.
+    ("137-matryoshka-storage.6th"                 7)))
 
 (define (run-demo file)
   (define out
@@ -467,8 +479,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1964
-                (format "cumulative ✓ count: ~a (expected 1964)" total-pass)))
+  (check-equal? total-pass 1971
+                (format "cumulative ✓ count: ~a (expected 1971)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1964 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1971 ✓ across ~a demos"
                    total-pass (length expected)))

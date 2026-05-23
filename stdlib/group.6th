@@ -1,0 +1,69 @@
+\ stdlib/group.6th — observer-grouping matryoshka pattern.
+\
+\ Implements the Pointer Architecture "это теперь 1 — внутри меня"
+\ principle: observer perceives stable group as 1 unit referenced
+\ inside itself; group stored once, multiple observers share it.
+\
+\ Uses ONLY existing substrate primitives (MARK + bi-edge).  No new
+\ substrate primitives required.  Storage compression emerges from
+\ correct usage of substrate as pointer architecture, not from new
+\ machinery.
+\
+\ Pre-registered: PREDICTIONS-137.md (cycle 18A, commit 04f2196).
+\
+\ Words provided:
+\   perceive-group   ( -- group-id )            : MARK new group node
+\   add-to-group     ( group member -- )         : add member via bi-edge
+\   share-group      ( observer group -- )       : observer points to group
+\
+\ Storage semantics:
+\   N observers + 1 shared group of K members =
+\     1 (group node)     via MARK
+\     K (group→member edges)    via bi-edge each
+\     N (observer→group edges)  via bi-edge each
+\   Total directed edges = (K + N) × 2  (bi-edge creates pair)
+\
+\ Vs flat encoding without grouping:
+\   N observers × K members each, direct edges =
+\     N × K × 2 directed edges
+\
+\ Compression ratio R(N, K) = (N × K) / (N + K), where larger means
+\ more compression benefit from grouping.
+\
+\ Recursive nesting: groups can contain group-refs (matryoshka).
+\ add-to-group accepts group-id as member, creating super-group.
+\
+\ Usage example:
+\   perceive-group "g1" store
+\   "g1" load 5 add-to-group
+\   "g1" load 6 add-to-group
+\   "g1" load 7 add-to-group
+\   1 "g1" load share-group       \ observer 1 points to g1
+\   2 "g1" load share-group       \ observer 2 also points to g1
+\   ...
+
+\ ----------------------------------------------------------------
+\ perceive-group: MARK new node, return its id.
+\ Observer-side primitive: "this is the new entity I just perceived".
+\ ----------------------------------------------------------------
+
+: perceive-group ( -- group-id )
+  MARK ;
+
+\ ----------------------------------------------------------------
+\ add-to-group: bi-edge group → member.
+\ Group "owns" the member from observer's POV; member is pointed
+\ to via group-id rather than directly enumerated.
+\ ----------------------------------------------------------------
+
+: add-to-group ( group member -- )
+  bi-edge ;
+
+\ ----------------------------------------------------------------
+\ share-group: bi-edge observer → group.
+\ Observer references group as single pointer; multiple observers
+\ sharing same group is where storage compression emerges.
+\ ----------------------------------------------------------------
+
+: share-group ( observer group -- )
+  bi-edge ;
