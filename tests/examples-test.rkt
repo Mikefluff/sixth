@@ -454,7 +454,17 @@
     ;;      Addresses cycle 12 retraction: HEDGE3 "no storage
     ;;      advantage" was because test treated edges as isolated;
     ;;      observer-grouping pattern reveals genuine compression.
-    ("137-matryoshka-storage.6th"                 7)))
+    ("137-matryoshka-storage.6th"                 7)
+    ;; --- Cycle 19: MDL-descent energetic substrate dynamics ---
+    ;; 138: L(state) = unique out-neighbor patterns; STEP-CA-MIN
+    ;;      greedy descent.  6 substrates: monotone 6/6, total
+    ;;      descent=6, baseline=0.  REGIME AA fires per pre-reg
+    ;;      (PREDICTIONS-138.md commit 750789c).  Honest caveat:
+    ;;      4/6 stuck at initial — greedy insufficient for active
+    ;;      descent on random ER; substrate L-monotonic in weak
+    ;;      sense (L never increases) but rarely actively descends.
+    ;;      Cycle 20 needs stronger search (2-edge moves, SA).
+    ("138-mdl-descent.6th"                        4)))
 
 (define (run-demo file)
   (define out
@@ -479,8 +489,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1971
-                (format "cumulative ✓ count: ~a (expected 1971)" total-pass)))
+  (check-equal? total-pass 1975
+                (format "cumulative ✓ count: ~a (expected 1975)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1971 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1975 ✓ across ~a demos"
                    total-pass (length expected)))

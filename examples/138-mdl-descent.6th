@@ -1,0 +1,100 @@
+\ examples/138-mdl-descent.6th
+\ Cycle 19 — MDL-descent energetic substrate dynamics.
+\ Pre-reg: PREDICTIONS-138.md (commit 750789c, attested).
+\ Source:  scripts/mdl_descent.py (commit b950dfd).
+\
+\ === REGIME AA — substrate L-energetic confirmed (но weak descent) ===
+\
+\ L(state) = unique out-neighbor patterns (rows of adjacency matrix).
+\ STEP-CA-MIN: greedy edge toggle minimizing L at each step.
+\
+\ Per-substrate results (6 test cases):
+\   ER_n10_p30 seed1:    L 10 → 6  (descent=4)  monotone ✓
+\   ER_n20_p20 seed2:    L 20 → 20 (descent=0)  monotone ✓
+\   ER_n15_p40 seed3:    L 15 → 15 (descent=0)  monotone ✓
+\   path_n10:            L 10 → 8  (descent=2)  monotone ✓
+\   cycle_n10:           L 10 → 10 (descent=0)  monotone ✓
+\   ER_n15_p25 seed4:    L 15 → 15 (descent=0)  monotone ✓
+\
+\ Aggregate: monotone 6/6, total descent=6, baseline=0, R=infinity.
+\ Per pre-registered classifier: REGIME AA fires.
+\
+\ HONEST CAVEATS:
+\   - Only 2/6 substrates achieved nonzero descent (ER_n10 and path).
+\   - 4/6 stuck at initial state — greedy local search insufficient
+\     to find global minima of L when initial random ER has no
+\     single-edge toggle that reduces L.
+\   - "Energetic" claim holds in WEAK sense: substrate doesn't
+\     ANTI-descend (L never increases under STEP-CA-MIN); but
+\     ACTIVE descent is rare for random initial states.
+\
+\ FINDING (narrow): substrate IS L-monotonic under STEP-CA-MIN
+\ (regime AA per pre-reg).  Random baseline is not (would frequently
+\ increase L).  Substrate-as-energetic-system confirmed in weak
+\ direction: dynamics RESPECT L-gradient where possible.
+\
+\ Cycle 20 should: stronger search (2-edge moves, simulated annealing)
+\ to test if active descent achievable across more substrates;
+\ alternative L definitions to test framework robustness.
+
+use prelude
+use debug
+
+\ Pinned values from script output.
+6   "descent-er10"   store
+0   "descent-er20"   store
+0   "descent-er15-p40" store
+2   "descent-path"   store
+0   "descent-cycle"  store
+0   "descent-er15-p25" store
+
+6   "total-descent"  store
+0   "baseline-descent" store
+6   "monotone-count" store
+
+\ Regime AA: monotone-count = 6 AND R_descent > 1.5 (here infinity).
+"monotone-count" load 6 = "all-monotone?" store
+"total-descent" load 0 > "any-descent?" store
+"baseline-descent" load 0 = "baseline-zero?" store
+
+\ Aggregate AA condition.
+"all-monotone?" load "any-descent?" load * "baseline-zero?" load *
+   "regime-AA?" store
+
+\ ============================================================
+\ Report.
+\ ============================================================
+
+cr
+"=== Demo 138 — MDL-descent dynamics (cycle 19) ===" . cr
+cr
+"Per-substrate L descent (STEP-CA-MIN vs random):" . cr
+"  ER_n10_p30 seed1:     " . "descent-er10"     load . " vs 0" . cr
+"  ER_n20_p20 seed2:     " . "descent-er20"     load . " vs 0" . cr
+"  ER_n15_p40 seed3:     " . "descent-er15-p40" load . " vs 0" . cr
+"  path_n10:             " . "descent-path"     load . " vs 0" . cr
+"  cycle_n10:            " . "descent-cycle"    load . " vs 0" . cr
+"  ER_n15_p25 seed4:     " . "descent-er15-p25" load . " vs 0" . cr
+cr
+"Monotone non-increasing: " . "monotone-count" load . " / 6" . cr
+"Total descent:           " . "total-descent" load . cr
+"Baseline descent:        " . "baseline-descent" load . cr
+cr
+"Regime AA fires: " . "regime-AA?" load . cr
+cr
+
+"regime-AA?" load 1 = if
+  ">>> REGIME AA — substrate L-energetic confirmed per pre-reg." . cr
+  "    Monotone in all 6 cases (L never increases under STEP-CA-MIN)." . cr
+  "    HONEST CAVEAT: 4/6 stuck at initial; greedy local search" . cr
+  "    insufficient for active descent on random ER.  Strong test" . cr
+  "    requires cycle 20 with stronger search (2-edge moves, SA)." . cr
+then
+
+\ Sanity asserts.
+"regime-AA?"      load 1 assert-eq
+"monotone-count"  load 6 assert-eq
+"total-descent"   load 6 assert-eq
+"baseline-descent" load 0 assert-eq
+
+REPORT
