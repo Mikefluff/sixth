@@ -1,585 +1,679 @@
-# META-SEMANTICS — Runtime Primitive Induction Protocol
+# META-SEMANTICS — Runtime Primitive Induction Protocol (v2)
 
-**Status:** Cycle 24 deliverable. Specification document. NO code, NO test.
+**Status:** Cycle 24 deliverable, revision 2.  Specification document.
+NO code, NO test.
 
 **Date:** 2026-05-23
 
-**Provenance:** Authored in response to user spec 2026-05-23 after
-loss-family arc closed in C19–C23A (4 substrate-derived negatives on
-NSUM benchmark).  Establishes the protocol BEFORE any primitive
-induction code is written, so the rules of the game are fixed
-independent of any specific candidate primitive.
+---
 
-This document is normative: future cycles 25+ MUST conform to it.
-Modifications to this protocol require explicit deprecation cycle
-and re-attestation; quiet changes are protocol violations.
+## §0. Revision History & Deprecation Notice
+
+### v1 → v2 transition (same authorship session)
+
+**v1** committed at `ec7370f` (2026-05-23 03:44Z, ledger row sha
+`096d2902`).  v1 described a controlled deployment pipeline:
+DISCOVER → SPECIFY → FREEZE → TRAIN-EVAL → HELD-OUT-EVAL → PROMOTE →
+RETEST → ATTEST.  This is governance machinery.
+
+**v1 deprecation reason** (user critique 2026-05-23): v1 missed the
+runtime-evaluation requirement.  In v1, candidates are prepared
+offline and loaded into the dictionary between runs.  This is NOT
+Sixth's thesis.  Sixth's thesis is that the runtime ITSELF mutates
+its law-state during execution — the substrate observes its own
+patterns and promotes them WHILE running, not as an external CI/CD
+pipeline.
+
+**v1 was never used as basis for any cycle 25+ test** before
+deprecation.  No contamination.  Audit trail in git history (`git
+show ec7370f`) and ledger row `096d2902`.
+
+**v2 supersedes v1** in entirety.  v2 introduces **two-tier
+primitive lifecycle**:
+
+- **Tier 1 (ephemeral, in-run)**: `INDUCE-RUNTIME` mutates law-state
+  during evaluation; cheap local equivalence check; rollback within
+  run.  This is the Sixth thesis.
+- **Tier 2 (stable, cross-run)**: `COMMIT-PRIMITIVE` → held-out
+  protocol → `PROMOTE-STABLE`.  This is the governance layer (v1's
+  content).
+
+Both tiers required.  Tier 1 alone has no scientific filter (would
+admit any pattern that happens to repeat).  Tier 2 alone is not
+self-modifying runtime (it's offline pipeline).  Together they
+realize "engine evolves its own alphabet under both fast local
+fitness AND slow attestation pressure."
+
+This document is normative for cycles 25+.  Any further
+modification requires explicit deprecation cycle and new
+attestation; quiet changes are protocol violations.
 
 ---
 
-## 1. Core Thesis
+## §1. Core Thesis (revised)
 
-> Sixth primitives are not eternal axioms. They are promoted,
+> Sixth primitives are not eternal axioms.  They are promoted,
 > attested, rollbackable operational compressions of repeated
-> successful patterns.
+> successful patterns — discovered AND promoted **during runtime
+> execution**, with a separate slow-track attestation pipeline that
+> elevates proven-useful ephemerals into permanent law.
 
 The fixed-primitive substrate of C19–C23A was insufficient because
 *any* loss function on degree-biased NSUM dynamics is dominated by
-degree.  This document defines the architectural alternative:
-**substrate that evolves its own alphabet** under a formal,
-falsifiable protocol.
+degree (cycle 23A, REGIME CCCCC).
 
-The protocol's purpose is not to *make* Sixth pass benchmarks.  Its
-purpose is to make the question "does primitive induction beat fixed
-primitives" *answerable* without human curation cheating.
+The architectural alternative is **substrate-that-evolves-its-own-
+alphabet** with two coupled lifecycles:
 
----
+| tier | timescale | mechanism | filter |
+|------|-----------|-----------|--------|
+| Tier 1 ephemeral | within single run | `INDUCE-RUNTIME` at eval-loop motif detection | local shadow-world equivalence + cheap predictive gain |
+| Tier 2 stable | across runs | `COMMIT-PRIMITIVE` → held-out eval → `PROMOTE-STABLE` | formal multi-criterion gate, append-only ledger |
 
-## 2. Two-Level Primitive System
-
-Critical architectural distinction.  Mixing levels destroys
-protocol meaning.
-
-### Object-level primitives
-Operate on substrate state (hypergraph nodes/edges/hedges, marks,
-activations).
-
-- Examples: `MARK`, `EDGE+`, `bi-edge`, `NSUM-UPDATE`, `STEP-CA`
-- Effect: change world-state
-- Invariants: bounded by hypergraph axioms; deterministic given seed
-- Promotion authority: subject to discovery protocol (§4)
-
-### Meta-level primitives
-Operate on engine state (active dictionary, ledger, version, costs).
-
-- Examples: `PROMOTE`, `ATTEST-PRIMITIVE`, `ROLLBACK`, `HELD-OUT-EVAL`
-- Effect: change law-state (what object-level operations exist)
-- Invariants: append-only ledger; immutable provenance; explicit
-  versioning
-- Promotion authority: **meta-primitives themselves are NOT subject
-  to discovery protocol.**  They are hand-crafted, attested at
-  cycle 25, and never auto-induced.  Self-modifying-meta would
-  collapse the protocol.
-
-**Aphorism:** `MARK` changes the world.  `PROMOTE` changes the laws
-by which the world can be changed.  Without that distinction there
-is no protocol, only drift.
+The protocol's purpose is to make the question "does runtime
+primitive induction beat fixed primitives" *answerable* without
+human curation cheating — at BOTH tiers.
 
 ---
 
-## 3. Lifecycle Protocol
-
-Every candidate primitive passes through this state machine in order.
-Skipping a state OR re-entering a previous state after the fact OR
-mutating candidate after held-out exposure are all **contamination
-events** (§9).
+## §2. Two-Tier Primitive Lifecycle (NEW vs v1)
 
 ```
-                         (ROLLBACK)
-                              ↑
-                              │
-DISCOVER → SPECIFY → FREEZE → TRAIN-EVAL → HELD-OUT-EVAL → PROMOTE
-                                                              ↓
-                                                         RETEST → ATTEST
+                          ┌──────────────────────────────┐
+                          │  TIER 1: EPHEMERAL (in run)  │
+                          ├──────────────────────────────┤
+                          │                              │
+   STEP t  ───►  eval()  ─┤  DETECT-MOTIF                │
+     │                    │       │                      │
+     │                    │       ▼                      │
+     │                    │  SHADOW-CHECK (equivalence)  │
+     │                    │       │                      │
+     │                    │       ▼ (passes)             │
+     │                    │  INDUCE-RUNTIME cand_NNN     │
+     │                    │       │                      │
+     │                    │       ▼ (law_hash mutates)   │
+     │                    │  USE-RUNTIME (subsequent     │
+     │                    │             steps may call)  │
+     │                    │       │                      │
+     │                    │       ▼ (invariant violation)│
+     │                    │  ROLLBACK-RUNTIME            │
+     │                    │                              │
+   STEP t+1 ◄─── continue ┘                              │
+                          │  (optional, post-run)        │
+                          │  COMMIT-PRIMITIVE  ──────────┼──┐
+                          └──────────────────────────────┘  │
+                                                            │
+                          ┌──────────────────────────────┐  │
+                          │  TIER 2: STABLE (cross-run)  │◄─┘
+                          ├──────────────────────────────┤
+                          │  SPECIFY   (machine record)  │
+                          │       │                      │
+                          │       ▼                      │
+                          │  FREEZE  (immutable hash)    │
+                          │       │                      │
+                          │       ▼                      │
+                          │  TRAIN-EVAL  (sanity)        │
+                          │       │                      │
+                          │       ▼                      │
+                          │  HELD-OUT-EVAL  (iron rule)  │
+                          │       │                      │
+                          │       ▼                      │
+                          │  PROMOTE-STABLE              │
+                          │       │                      │
+                          │       ▼                      │
+                          │  RETEST  (full regression)   │
+                          │       │                      │
+                          │       ▼                      │
+                          │  ATTEST  (ledger append)     │
+                          │       │                      │
+                          │       ▼ (regression breaks)  │
+                          │  ROLLBACK-STABLE             │
+                          └──────────────────────────────┘
 ```
 
-### DISCOVER
-Mining algorithm scans logged successful trajectories on **train
-substrates only**.  Algorithm is a separate module with its own
-hash; its only inputs are train data and the FROZEN mining
-hyperparameters.  Held-out and challenge sets MUST NOT be loaded by
-the discovery module.
+**Coupling rule**: a Tier 1 ephemeral becomes a Tier 2 candidate
+ONLY via `COMMIT-PRIMITIVE`, which requires:
+- ephemeral was used successfully ≥ N times within ≥ M distinct
+  runs (N=5, M=3 — fixed pre-commit at cycle 25)
+- no `ROLLBACK-RUNTIME` was issued against the ephemeral in any
+  of those runs
+- no run hit invariant-violation traceable to the ephemeral
 
-Output: ordered list of `cand_NNN` candidates with provenance:
-- pattern (subgraph / operation sequence)
-- support_count (frequency in train trajectories)
-- train_score (training-set gain proxy)
-- discovery_seed
-
-**Blind naming:** candidates are named `cand_001`, `cand_002`, ….
-Pretty names (`GROUP-BY-DEGREE`, `MOTIF-FOLD`) are assigned ONLY
-after final promotion decision.  This blunts cherry-pick at the
-interpretation level.
-
-### SPECIFY
-For each candidate, write a machine-readable record:
-
-- `name`: cand_NNN (no pretty name yet)
-- `expansion`: macro body in BOOTSTRAP primitives only (§5)
-- `preconditions`: stack/state shape required for application
-- `postconditions`: stack/state shape produced
-- `cost_model`: expected operation count per invocation (closed-form
-  or empirical bound)
-- `discovery_provenance`: train_set_hash, mining_algo_hash,
-  discovery_seed, support_count, train_score
-
-### FREEZE
-Compute `candidate_hash = sha256(name || expansion || preconditions ||
-postconditions || cost_model || discovery_provenance)`.
-
-Append `(cycle, timestamp, candidate_hash, status=frozen)` to
-`attestations/primitives-ledger.txt`.
-
-After freeze, candidate source code is read-only.  Any modification
-voids candidate; modified version requires new `cand_NNN+1` id
-AND new held-out rotation (the original held-out is now
-contaminated for the modified candidate).
-
-### TRAIN-EVAL
-Evaluate candidate on train substrates via standard benchmark
-(PredError vs degree baseline).  Result is informational only —
-train evaluation is for sanity, not promotion authority.
-
-If candidate fails train (PredError improvement < 1% mean on train),
-mark `status=train_failed`, skip held-out.
-
-### HELD-OUT-EVAL
-Evaluate candidate on **held-out substrates** via separate command
-(`scripts/heldout_eval.sh cand_NNN`).
-
-Output: per-substrate (PredError_with, PredError_without, runtime).
-
-**Iron rule:** result of held-out eval is APPEND-ONLY.  Once
-evaluated, the candidate's held-out score is fixed for its lifetime.
-Any attempt to re-run on same candidate is logged as duplicate
-evaluation; only first counts.
-
-### PROMOTE
-Apply promotion gate (§7).  Three outcomes:
-- `promoted_stable` — passes stable gate
-- `promoted_experimental` — passes experimental gate only
-- `rejected` — fails both gates
-
-`PROMOTE` is a meta-primitive that updates the active dictionary:
-
-```
-PROMOTE cand_NNN status
-  → adds cand_NNN's expansion as a callable word in active dictionary
-  → records (cand_NNN, status, ledger_row, timestamp)
-  → ON FAILURE: dictionary unchanged
-```
-
-### RETEST
-After promotion, full regression suite (`raco test`) MUST pass
-unchanged.  If regression breaks, automatic `ROLLBACK` of this
-candidate and ALL candidates in same promotion batch.
-
-Pre-promotion regression count: stored as `pre_promote_pass_count`.
-Post-promotion regression count: must equal `pre_promote_pass_count`.
-
-### ATTEST
-Append final entry to ledger:
-```
-(cycle, timestamp, candidate_hash, expansion_hash, train_set_hash,
- heldout_set_hash, metric_hash, threshold_hash, result_hash,
- engine_version, decision)
-```
-
-This entry is permanent.  Even if candidate is later rolled back,
-the attestation row remains as historical record of what was tested
-and decided.
-
-### ROLLBACK
-Removes candidate from active dictionary.  Triggered by:
-- Failed retest after PROMOTE
-- Manual cycle (deprecation)
-- Cascade from dependency rollback (§8)
-
-Rollback appends `(cycle, timestamp, candidate_hash, status=rolled_back,
-reason)` to ledger.  Provenance of why rollback happened is permanent.
+This filter ensures Tier 2 evaluation is not flooded with
+single-occurrence motifs.
 
 ---
 
-## 4. Bootstrap Boundary
+## §3. Runtime State and Law-State Mutation (NEW)
 
-Three tiers.  Membership in each tier is established at cycle 25 and
-modifying tier membership requires explicit deprecation cycle.
+Sixth runtime is a 4-tuple, not the previous 1-tuple
+("substrate state"):
+
+```
+Runtime = { world_state, law_state, trace, ledger }
+
+world_state  : hypergraph (nodes, edges, hedges, marks, activations)
+law_state    : active dictionary (bootstrap ∪ stdlib ∪ ephemeral ∪ stable)
+trace        : append-only log of {step, op, law_hash_before,
+                                   law_hash_after, world_delta}
+ledger       : append-only log of {timestamp, event, candidate_hash,
+                                   provenance}
+```
+
+Each evaluation step `STEP(runtime, op)`:
+
+```
+1. record trace.law_hash_before = hash(runtime.law_state)
+2. if op is object-level primitive:
+     world_state' = apply_object(op, world_state, law_state)
+     world_delta = world_state' - world_state
+     law_hash_after = law_hash_before  (unchanged)
+3. else if op is meta-level primitive (Tier 1 or Tier 2):
+     law_state' = apply_meta(op, law_state, world_state)
+     law_hash_after = hash(law_state')
+     world_delta = ∅  (world unchanged by meta ops)
+     ledger.append(meta-event)
+4. trace.append({step, op, law_hash_before, law_hash_after, world_delta})
+5. return updated runtime
+```
+
+**Critical invariant**: `law_hash` is a first-class observable in
+trace.  Any law-state mutation is visible to outside reviewer
+without needing to reconstruct dictionary contents — the hash
+mutation itself is the evidence that law changed at step t.
+
+**Aphorism (v1 §2 retained)**: `MARK` changes world.  `PROMOTE`
+changes the laws.  v2 adds: **and you can see the moment of the
+change in the trace, not in some external manifest.**
+
+---
+
+## §4. Meta-primitives — Tier 1 (Ephemeral, NEW)
+
+These live alongside object-level primitives in the runtime.  They
+operate on `law_state` and `trace`.  They are hand-crafted bootstrap
+(per §6), never auto-induced (self-modifying-meta would collapse the
+protocol).
+
+### `DETECT-MOTIF`
+Scans recent trace window (fixed pre-commit: last K=20 steps) for
+operation subsequences appearing ≥ R times (fixed pre-commit:
+R=3).  Returns list of candidate motifs with positions.
+
+```
+( -- motif-list )   \ stack: nothing in, list of motifs out
+```
+
+### `SHADOW-CHECK`
+Given a candidate motif (operation sequence), applies it on a
+forked copy of `world_state` and compares to applying the original
+expansion.  Pass = identical world_state delta AND runtime cost
+≤ expanded cost.  Cheap (forks at primitive granularity, not full
+trace replay).
+
+```
+( motif -- pass? )
+```
+
+### `INDUCE-RUNTIME`
+Promotes a passed motif as ephemeral primitive `cand_NNN`.  Mutates
+`law_state` by adding new word to dictionary with status
+`ephemeral_active`.  Records ledger event with candidate hash and
+trace position of induction.
+
+```
+( motif -- cand-id )   \ pushes new candidate id
+```
+
+Triggers `law_hash` mutation visible in trace.
+
+### `USE-RUNTIME`
+Implicit: any subsequent eval step that matches the motif now
+resolves through the ephemeral word instead of expanding to base
+primitives.  No explicit user invocation needed; this is dispatch
+behavior.
+
+### `ROLLBACK-RUNTIME`
+Removes ephemeral primitive from active dictionary.  Triggered by:
+- Invariant violation detected during subsequent steps
+- Explicit user/test request
+- Coupling-rule timeout (ephemeral was never `USE-RUNTIME`d after
+  induction within configurable window)
+
+```
+( cand-id -- )   \ ephemeral removed; law_hash mutates back
+```
+
+If `ROLLBACK-RUNTIME` is called on a Tier 2 stable primitive, it
+errors — stable primitives are immutable from runtime path.
+
+### `COMMIT-PRIMITIVE`
+Bridge from Tier 1 to Tier 2.  Called after run completes; takes an
+ephemeral that satisfies coupling rule (§2) and produces a frozen
+candidate record suitable for Tier 2 held-out evaluation.
+
+```
+( cand-id -- candidate-record )
+```
+
+Once `COMMIT-PRIMITIVE` is called, the candidate's expansion and
+metadata are sealed.  Iron rule of v1 §9 still applies post-commit:
+no mutation after held-out exposure.
+
+---
+
+## §5. Meta-primitives — Tier 2 (Stable, was v1 §3)
+
+Tier 2 lifecycle is essentially v1's protocol, but reframed as
+follow-on to Tier 1 rather than as standalone deployment pipeline.
+
+### `SPECIFY`
+Takes a `COMMIT-PRIMITIVE` output and produces machine-readable
+candidate record with full metadata (expansion, preconditions,
+postconditions, cost_model, discovery_provenance — including
+ephemeral usage history from Tier 1).
+
+### `FREEZE`
+Computes `candidate_hash` and appends `(cycle, timestamp, hash,
+status=frozen)` to `attestations/primitives-ledger.txt`.  After
+freeze, candidate source is read-only.
+
+### `TRAIN-EVAL` (informational)
+Runs candidate on train substrates.  Result is NOT promotion
+authority; only sanity (catch obvious bugs).
+
+### `HELD-OUT-EVAL`
+Iron rule: result is append-only.  First eval fixes held-out score
+forever.  Implemented as separate command
+`scripts/heldout_eval.sh cand_NNN` which writes to ledger and
+cannot be invoked twice on same candidate.
+
+### `PROMOTE-STABLE`
+Applies promotion gate (§9).  Three outcomes:
+`promoted_stable` (eligible for E1/E2), `promoted_experimental`
+(E2-experimental only), `rejected`.
+
+Status appended to ledger.  Stable promotion adds word to permanent
+dictionary as `stable_active`.
+
+### `RETEST`
+Full `raco test tests/examples-test.rkt` MUST pass unchanged after
+stable promotion.  If regression breaks, automatic
+`ROLLBACK-STABLE` for entire promotion batch.
+
+### `ATTEST-PRIMITIVE`
+Final ledger append with full provenance bundle (candidate_hash,
+expansion_hash, train_set_hash, heldout_set_hash, metric_hash,
+threshold_hash, result_hash, engine_version, decision).
+
+### `ROLLBACK-STABLE`
+Removes stable primitive from permanent dictionary.  Triggered
+only by retest failure or explicit deprecation cycle.  Cascade
+rules per §10.
+
+---
+
+## §6. Bootstrap Boundary (revised v1 §4)
+
+Three tiers; membership locked at cycle 25.  Promoted words from
+EITHER tier MUST be macro-expansible to bootstrap.
 
 ### Bootstrap (object-level)
-Cannot be removed, cannot be redefined, never enter promotion protocol.
-- Stack ops: `dup`, `drop`, `swap`, `over`, `rot`, `-rot`, `nip`, `tuck`
-- Arithmetic: `+`, `-`, `*`, `/`, `mod`, `=`, `<`, `>`
-- Memory: `store`, `load`
-- I/O: `.`, `cr`, `emit`
-- Control: `:`, `;`, `if`, `else`, `then`, `'` (quote)
-- Substrate axioms: `MARK`, `EDGE+`, `HEDGE+`, `bi-edge`, `MARK-COUNT`,
-  `EDGE-COUNT`, `HEDGE-COUNT`, `STEP-CA`, `RESET`, `REPORT`,
-  `EACH`, `EACH-EDGE`, `EACH-2PATH`, `MATCH`
+Unchanged from v1.  Cannot enter promotion protocol of either tier.
+Stack ops, arithmetic, memory, control, substrate axioms.
 
-### Bootstrap (meta-level)
+### Bootstrap (meta-level) — EXPANDED in v2
 Added at cycle 25.  Cannot be removed, cannot be redefined.  Cannot
-themselves enter promotion protocol (self-modifying-meta = collapse).
-- `PROMOTE`, `ATTEST-PRIMITIVE`, `ROLLBACK`, `HELD-OUT-EVAL`,
-  `DICTIONARY-SNAPSHOT`, `LEDGER-APPEND`
+enter promotion protocol.
+
+**Tier 1 ephemeral machinery (NEW v2):**
+- `DETECT-MOTIF`
+- `SHADOW-CHECK`
+- `INDUCE-RUNTIME`
+- `ROLLBACK-RUNTIME`
+- `COMMIT-PRIMITIVE`
+- `LAW-HASH` (returns current law_state hash)
+
+**Tier 2 stable machinery (v1 carryover):**
+- `SPECIFY`
+- `FREEZE`
+- `HELD-OUT-EVAL` (technically a script wrapper, but invokable as
+  meta-primitive in test harnesses)
+- `PROMOTE-STABLE`
+- `ATTEST-PRIMITIVE`
+- `ROLLBACK-STABLE`
+- `DICTIONARY-SNAPSHOT`
+- `LEDGER-APPEND`
+
+Total: 14 meta-primitives added at cycle 25 (6 Tier 1 + 8 Tier 2).
 
 ### Fixed stdlib
-Currently in `stdlib/*.6th`.  Hand-written, version-controlled,
-counts as bootstrap for the purpose of macro expansion (candidate
-primitives may invoke stdlib words).
+Unchanged: `stdlib/*.6th` hand-written, version-controlled, counts
+as bootstrap for macro expansion purposes.
 
 ### Promoted words
-Output of induction protocol.  Stored in `stdlib/promoted/<cycle>/
-cand_NNN.6th` with full provenance comment.  Removable via rollback.
+- **Ephemeral (Tier 1)**: live only in `law_state` of current
+  runtime session.  NOT persisted across processes.  Removed on
+  session end or `ROLLBACK-RUNTIME`.
+- **Stable (Tier 2)**: stored as `stdlib/promoted/<cycle>/
+  cand_NNN.6th` with full provenance comment.  Loaded into every
+  runtime via standard `use` mechanism.
 
-**Constraint:** promoted words MUST be macro-expansible to bootstrap
-(object + meta) + fixed stdlib.  No new Racket-level opcode.  No
-new hidden evaluator behavior.  No side-effect outside `store`/`load`
-or substrate axioms.  No internal metric not exposable via
-expansion.
-
-This is the **expressivity bound**: induction is reorganization of
-existing computational power, not extension of it.  A later
-optimization phase may compile a stable promoted word to native
-opcode for performance, but only as compilation, not as scientific
-recognition of new capability.
+**Expressivity bound (unchanged)**: both tiers require
+macro-expansibility to bootstrap + fixed stdlib.  No new
+Racket-level opcode at either tier.  No hidden evaluator behavior.
+No side-effect outside `store`/`load` or substrate axioms.
 
 ---
 
-## 5. Engine Classes
+## §7. Engine Classes (revised v1 §5 with ephemeral consideration)
 
-| class | dictionary | publishable | use |
-|-------|------------|-------------|-----|
-| **E0** | bootstrap + fixed stdlib | yes | baseline; all C19–C23A used this |
-| **E1** | E0 + ≥1 attested primitive | yes | post-cycle-26 minimum |
-| **E2** | E0 + batch of attested primitives | yes | post-cycle-27 target |
-| **E_bad** | any dictionary with non-attested or contaminated primitives | **NO** | development-only; results not for catalogue |
+| class | dictionary at runtime end | publishable | use |
+|-------|--------------------------|-------------|-----|
+| **E0** | bootstrap + fixed stdlib | yes | baseline; all C19–C23A |
+| **E1** | E0 + ≥1 attested **stable** primitive | yes | post-cycle-27 minimum |
+| **E2** | E0 + batch of attested **stable** primitives | yes | post-cycle-27 target |
+| **E1_ephemeral** | E0 + ≥1 ephemeral (Tier 1 only, not committed) | yes for "runtime mutation demonstrated", **NO** for stable claims | cycle 26 demo |
+| **E_bad** | any dictionary with non-attested OR contaminated primitives | **NO** | development-only |
 
-Any benchmark result must report the engine class that produced it.
-Result from E_bad cannot be cited as evidence in catalogue updates
-or papers.
+`E1_ephemeral` is a publishable class for the narrow claim "law-state
+mutated during runtime and trace recorded it" — i.e. that the engine
+demonstrably self-modifies.  It is NOT publishable as claim about
+generalization (no held-out evidence), only as architectural
+demonstration.
 
----
-
-## 6. Substrate Set Policy
-
-12 substrates total (6 train + 6 held-out) plus 4 challenge
-substrates.  Generated at cycle 25 via deterministic seeded
-generators; substrate hash committed before any candidate enters
-DISCOVER.
-
-### Train (6)
-- `train_ER_n10_p30` — seed 100
-- `train_ER_n20_p15` — seed 101
-- `train_path_n10` — deterministic
-- `train_cycle_n10` — deterministic
-- `train_motif_triads` — n=12, triadic motif planted, seed 102
-- `train_hidden_family_n18` — SBM 3-community, degree-matched,
-  seed 103
-
-### Held-out (6)
-Same family as train, different graphs.  Seeds disjoint from train.
-- `heldout_ER_n10_p30` — seed 200
-- `heldout_ER_n20_p15` — seed 201
-- `heldout_path_n12`
-- `heldout_cycle_n12`
-- `heldout_motif_wedges` — n=12, wedge motif planted, seed 202
-- `heldout_hidden_family_n24` — SBM 4-community, seed 203
-
-### Challenge (4)
-Reserved for promotion-time invariance check.  NOT used for
-training, NOT used for held-out eval.  Used ONCE at promotion
-decision per candidate to filter out exploits.
-- `challenge_degree_trap` — substrate where degree-based grouping
-  catastrophically fails (planted hidden community with
-  uniform degree)
-- `challenge_mega_group_trap` — substrate where merging into single
-  group looks attractive on prediction but breaks structural metrics
-- `challenge_motif_vs_degree_conflict` — substrate where motif
-  grouping and degree grouping give opposite winners
-- `challenge_random_relabeling_invariance` — same graph as
-  `train_hidden_family_n18` but node ids relabeled; primitive
-  result must be invariant
-
-The 6 OLD substrates from C19–C23A (ER_n10_p30 seed=1, etc.) are
-**deprecated for primitive-induction work**.  They are
-contaminated by exposure to manual loss-family iteration; using
-them for promotion decisions would conflate substrate variance with
-protocol gain.  They remain usable only for regression tests of
-existing demos (C19–C23A pin values).
+Cycle 26 (manual ephemeral) produces an `E1_ephemeral` artifact.
+Cycle 27 (automated discovery + Tier 2 promotion) produces `E1` or
+`E2` artifact, conditional on held-out pass.
 
 ---
 
-## 7. Promotion Gates
+## §8. Substrate Set Policy (unchanged from v1 §6)
 
-Both gates evaluated on held-out + challenge results.  Train results
-do NOT figure into promotion decision (they are sanity-only per §4
-TRAIN-EVAL).
+12 substrates total (6 train + 6 held-out same families different
+graphs) + 4 challenge substrates.  All generated by deterministic
+seeded generators; hashes committed at cycle 25 before any
+candidate enters discovery.
 
-### Stable gate (E1/E2 eligible)
-ALL of:
-- `mean_PE_reduction_heldout ≥ 0.05` (5% across 6 held-out)
-- `wins_heldout ≥ 4/6` (substrate beats E0 baseline)
-- `runtime_overhead ≤ 1.5×` (candidate invocation cost vs equivalent
-  bootstrap composition)
-- `no_degeneracy_flag` on any held-out substrate (K=1, mega-group,
-  singleton-dominant)
-- `passes_random_relabeling_invariance` on `challenge_random_
-  relabeling_invariance` (output equivalent up to relabeling)
-- `wins_on_at_least_2_challenge` of 4 (excluding relabel invariance,
-  which is binary pass/fail)
+Train: `train_ER_n10_p30`, `train_ER_n20_p15`, `train_path_n10`,
+`train_cycle_n10`, `train_motif_triads`, `train_hidden_family_n18`.
 
-### Experimental gate (E2-experimental only; not stable-active)
-ALL of:
+Held-out: corresponding `heldout_*` with disjoint seeds.
+
+Challenge: `degree_trap`, `mega_group_trap`,
+`motif_vs_degree_conflict`, `random_relabeling_invariance`.
+
+**Old C19–C23A substrates remain DEPRECATED for primitive
+induction.**  Usable only for regression of existing demos.
+
+**Tier 1 ephemeral induction (cycle 26) MAY use train substrates
+freely** since Tier 1 has no held-out claim.  The held-out
+discipline kicks in only at Tier 2 transition.
+
+---
+
+## §9. Promotion Gates (Tier 2 only; v1 §7 essentially unchanged)
+
+Both gates evaluated on held-out + challenge results.
+
+### Stable gate (E1/E2 eligible) — ALL of:
+- `mean_PE_reduction_heldout ≥ 0.05`
+- `wins_heldout ≥ 4/6`
+- `runtime_overhead ≤ 1.5×`
+- `no_degeneracy_flag` on any held-out
+- `passes_random_relabeling_invariance` (challenge)
+- `wins_on_at_least_2_challenge` of remaining 3
+
+### Experimental gate (E2-experimental only) — ALL of:
 - `mean_PE_reduction_heldout ≥ 0.03`
 - `wins_heldout ≥ 3/6`
 - `runtime_overhead ≤ 2.0×`
 - `no_degeneracy_flag`
-- (challenge tests informational only)
 
-Candidate that fails experimental gate → `rejected`.  Ledger entry
-records why.  Rejected candidates cannot be re-evaluated unless
-SPECIFY produces a structurally different `cand_NNN+1`.
+### Tier 1 ephemeral has NO formal gate
+Tier 1 acceptance is `SHADOW-CHECK` pass only (cheap local
+equivalence + runtime cost bound).  No predictive-quality
+requirement — Tier 1 is for fast local pattern caching, not
+scientific evidence.  Tier 1 failures `ROLLBACK-RUNTIME` silently
+without ceremony.
 
-### Promotion batch
-DISCOVER produces N candidates; SPECIFY/FREEZE/EVAL run in batch;
-PROMOTE decision is per-candidate but RETEST is on whole batch.
-If batch retest fails, ALL batch promotions roll back transactionally
-(§8).
-
----
-
-## 8. Rollback and Dependency Graph
-
-Primitive lifecycle states:
-- `candidate` — specified, not yet evaluated
-- `frozen` — locked, ready for held-out
-- `experimental_active` — passed experimental gate; in E2-experimental
-- `stable_active` — passed stable gate; in E1/E2-stable
-- `rolled_back` — removed from dictionary; ledger row remains
-- `deprecated` — explicitly retired via deprecation cycle
-
-### Dependency graph
-Stored as ledger metadata on each promoted primitive:
-```
-primitive_id: cand_NNN
-depends_on: [cand_MMM, cand_KKK, ...]   (other promoted words
-                                          used in expansion; empty
-                                          for direct-bootstrap-only
-                                          candidates)
-introduced_in_cycle: NN
-status: ...
-```
-
-### Rollback rules
-
-| trigger | scope |
-|---------|-------|
-| Retest fails post-promotion | Entire promotion batch, transactionally |
-| Manual deprecation | Single primitive, cascade-rollback anything that depends_on it AND is not stable_active |
-| Cascade from dependency rollback | All primitives transitively depending on rolled-back one AND not stable_active |
-
-**Stable primitives are immutable** until explicit deprecation cycle
-(requires new pre-reg explaining why deprecation, attested).
-Cascade rollback CANNOT touch a stable_active primitive — if a
-non-stable rollback would orphan a stable primitive, the rollback is
-blocked and surfaces as a protocol error requiring human review.
+Coupling rule (§2) is the bridge: only ephemerals that proved
+useful across multiple runs even reach Tier 2 evaluation.  This
+filters most ephemerals before they consume held-out attention.
 
 ---
 
-## 9. Contamination Rules
+## §10. Rollback — Ephemeral AND Stable (extends v1 §8)
 
-Once any of these events occur, the affected candidate is
-contaminated and cannot be cited as positive evidence in catalogue
-updates regardless of subsequent results.
+### Tier 1 (`ROLLBACK-RUNTIME`)
+Single ephemeral removed within run.  Cheap, no ceremony.  Logged
+in trace (not ledger — trace is the right level since ephemeral
+lifetime is in-run).
 
-### Event: candidate mutated after held-out exposure
-Iron rule.  Even single-character edit to expansion/preconditions/
-postconditions/cost_model after first HELD-OUT-EVAL run = candidate
-voided.  Modified version requires new cand_id AND new held-out
-rotation (the substrate hashes change for the new candidate).
+If ephemeral's own usage caused world_state inconsistency
+(detected by post-condition violation or runtime invariant break),
+auto-rollback fires.  Subsequent retry of motif gets a fresh
+ephemeral id (`cand_NNN+1`) — the failed id is permanently marked
+contaminated for THAT run.
 
-### Event: held-out substrate leaked into discovery
-If discovery module logs show access to held-out or challenge
-substrate hashes, all candidates produced in that DISCOVER run are
-contaminated.  Discovery must re-run with fresh seeded train-only
-loader.
+### Tier 2 (`ROLLBACK-STABLE`)
+Inherits v1 §8 transactional batch rule.  Stable primitives are
+immutable until explicit deprecation cycle.  Cascade rollback for
+non-stable dependents.  Cascade BLOCKED on stable_active dependents
+(orphaning a stable primitive is protocol error requiring human
+review).
 
-### Event: threshold mining
-If promotion gate parameters (5%, 4/6, 1.5×) are adjusted *after*
-seeing any candidate's held-out score, all subsequent promotions
-under modified parameters are contaminated.  Gates can be modified
-ONLY in explicit deprecation cycle, never silently.
-
-### Event: result mining via cand_NNN cherry-pick
-Discovery produces an ordered candidate list with provenance.
-Evaluating only "interesting-looking" candidates is contamination.
-Either evaluate top-K with K fixed pre-discovery, OR evaluate ALL
-candidates produced by mining run (no skipping).  K and evaluation
-order are committed at cycle 25 in mining_protocol.md and
-attested.
-
-### Event: hidden opcode injection
-Promoted primitive uses Racket-level behavior not expressible in
-bootstrap + fixed stdlib.  Caught by macro-expansion test
-(`scripts/verify_expansion.sh cand_NNN` must reduce candidate to a
-proof tree of bootstrap calls).  Failure → contamination,
-candidate voided.
-
-### Event: metric replacement
-Switching from declared metric (PredError vs degree baseline) to a
-substitute metric ("alternative comparison") after seeing
-unfavorable results = contamination.  Metric is committed at
-cycle 25 and modifications require deprecation cycle.
-
-### Event: post-hoc challenge substrate
-Adding challenge substrates AFTER candidates have been evaluated =
-contamination.  Challenge set is locked at cycle 25 along with
-train/held-out.  Adding more challenges requires new pre-reg and
-restarts the evaluation count.
+### Cross-tier interaction
+If Tier 2 `ROLLBACK-STABLE` removes a primitive `cand_K` that was
+also being used as ephemeral in some active runtime session, the
+session's law_state is invalidated; trace logs the invalidation
+event and any in-flight `USE-RUNTIME` of `cand_K` causes the next
+step to fall back to expanded form.  This is explicit, not silent.
 
 ---
 
-## 10. Cheating Defense — Summary
+## §11. Contamination Rules (extends v1 §9)
 
-Multi-layer.  Each layer alone is insufficient; combined they make
-human cherry-pick auditable.
+All v1 §9 rules retained:
+- Candidate mutation after held-out exposure → voided
+- Held-out substrate leak into discovery → batch voided
+- Threshold mining → subsequent promotions voided
+- Result mining via cand_NNN cherry-pick → voided
+- Hidden opcode injection → voided
+- Post-result metric replacement → voided
+- Post-hoc challenge substrate addition → voided
+
+NEW v2 contamination events specific to runtime tier:
+
+### Event: ephemeral re-used across processes without commit
+An ephemeral in one runtime session cannot be invoked in another
+session as if it were stable.  If a test or script attempts to
+"warm-start" a new runtime with old ephemerals, it is a contamination
+event — the result cannot be cited.
+
+Enforcement: `law_state` is serialized only via stable primitives;
+ephemerals are NOT included in any persistence format.  This is a
+mechanical guarantee, not just a rule.
+
+### Event: SHADOW-CHECK bypass
+If runtime trace shows `INDUCE-RUNTIME` event without preceding
+`SHADOW-CHECK` event (or `SHADOW-CHECK` event with pass=false),
+the resulting ephemeral is contaminated.  Any `COMMIT-PRIMITIVE`
+on contaminated ephemeral fails at SPECIFY stage of Tier 2.
+
+### Event: COMMIT-PRIMITIVE without coupling rule
+Coupling rule (§2: N=5 uses, M=3 distinct runs) is mechanical
+gate at `COMMIT-PRIMITIVE`.  Bypassing it (e.g., by `COMMIT`
+on a freshly-induced ephemeral with usage_count=1) fails at
+commit time with explicit error.  Manual override of coupling
+rule = contamination.
+
+---
+
+## §12. Cheating Defense — Summary (extends v1 §10)
+
+All v1 layers retained.  v2 adds runtime-tier defenses:
 
 **Pre-discovery (frozen at cycle 25):**
-- Substrate set hashes
-- Metric definitions
-- Promotion gate thresholds
-- Mining algorithm code hash
-- Mining hyperparameters (incl. K, evaluation order)
-- Random seed policy
-- Forbidden features list (e.g., direct degree access)
+- v1 layer + DETECT-MOTIF window size (K=20), repetition threshold
+  (R=3), coupling rule (N=5, M=3)
+- SHADOW-CHECK cost-bound parameters
+- Trace format (so reviewers can re-parse)
 
-**During discovery:**
-- Discovery module loads ONLY train substrate hashes
-- Held-out command (`scripts/heldout_eval.sh`) is separate binary;
-  emits append-only entries
-- Blind candidate naming `cand_NNN`
-- No human inspection of mining output before SPECIFY locks
+**During runtime (Tier 1):**
+- `INDUCE-RUNTIME` requires preceding `SHADOW-CHECK` pass — no
+  bypass
+- `law_hash` mutation visible in trace at every step
+- Ephemerals NEVER persisted across processes
+- All Tier 1 events logged to trace with timestamps
 
-**After held-out exposure:**
-- Iron rule: no candidate mutation
-- All thresholds frozen
-- Results append-only
-- Result_hash recorded in ATTEST
+**At Tier 1 → Tier 2 bridge:**
+- `COMMIT-PRIMITIVE` enforces coupling rule mechanically
+- Tier 2 SPECIFY records ephemeral usage history from Tier 1 trace
+  as required provenance
 
-**Post-promotion:**
-- Engine version bumped
-- Full regression retest mandatory
-- Ledger entry permanent
-- Rollback fully provenance-tracked
+**During Tier 2 (unchanged from v1):**
+- Iron rule on post-held-out mutation
+- Blind naming
+- Append-only results
+- Multi-criterion gates
 
-The protocol does not assume the human is malicious.  It assumes the
-human will be biased (we all are) and provides a paper trail that
-makes the bias visible to outside reviewers.  A reviewer reading
-the ledger should be able to reconstruct every promotion decision
-and detect any rule violation.
+The added defenses make the **runtime claim itself auditable**: a
+reviewer reading the trace can verify that `law_hash` mutated at
+the right step, that `SHADOW-CHECK` preceded `INDUCE-RUNTIME`, and
+that the ephemeral was actually used before any `COMMIT-PRIMITIVE`.
+This is the architectural correctness check that v1 lacked.
 
 ---
 
-## 11. Cycle Roadmap (post-cycle-24)
+## §13. Cycle Roadmap (revised v1 §11)
 
-### Cycle 25 — Bootstrap Extension
-**Goal:** add 6 meta-level primitives + freeze substrate set +
-freeze mining protocol.  All hand-crafted, no induction yet.
+### Cycle 25 — Runtime Law-State Mutation Plumbing
+**Goal (revised):** add 14 meta-primitives (6 Tier 1 + 8 Tier 2)
+and 4-tuple runtime model (`world_state`, `law_state`, `trace`,
+`ledger`).  Freeze substrate set, freeze mining protocol parameters,
+freeze coupling rule.
 
 Deliverables:
-- `sixth/meta/promote.rkt` — `PROMOTE`, `ROLLBACK` implementations
-- `sixth/meta/attest.rkt` — `ATTEST-PRIMITIVE`, `LEDGER-APPEND`
-- `sixth/meta/heldout.rkt` — `HELD-OUT-EVAL`, `DICTIONARY-SNAPSHOT`
+- `sixth/meta/tier1/{detect_motif,shadow_check,induce_runtime,
+  rollback_runtime,commit_primitive,law_hash}.rkt`
+- `sixth/meta/tier2/{specify,freeze,heldout,promote_stable,
+  attest_primitive,rollback_stable,dictionary_snapshot,
+  ledger_append}.rkt`
+- `sixth/runtime/state.rkt` — 4-tuple runtime model with trace
+  recording every step's law_hash_before/after
 - `attestations/primitives-ledger.txt` — initialized
-- `substrates/train/*.6th`, `substrates/heldout/*.6th`,
-  `substrates/challenge/*.6th` — 16 substrate files generated and
-  committed (12 main + 4 challenge)
-- `mining_protocol.md` — frozen mining algorithm spec, K, eval order
-- Smoke test: hand-craft NOP candidate, run through full lifecycle,
-  verify ledger entries, verify dictionary mutation, verify rollback
-  restores
-- Full regression 1996/1996 must pass with new meta-primitives loaded
+- `substrates/{train,heldout,challenge}/*` — 16 substrate generators
+  + hash commits
+- `mining_protocol.md` — algorithm spec, K=20, R=3, N=5, M=3, eval
+  order, forbidden features
+- Demo 143 (smoke test): runtime executes a sequence; trace contains
+  `INDUCE-RUNTIME` event; `law_hash` mutates at expected step;
+  subsequent step uses the ephemeral; trace shows that exactly;
+  `ROLLBACK-RUNTIME` cleanly restores `law_hash`
 
-NO scientific claim from cycle 25.  This is plumbing.
+NO scientific claim from cycle 25.  Pure plumbing.
 
-### Cycle 26 — Manual Primitive Induction (Protocol Validation)
-**Goal:** validate the protocol works end-to-end on ONE hand-crafted
-candidate.  Honest framing: this is NOT scientific signal — the
-human chose the candidate.  This cycle answers "does the protocol
-correctly route a known candidate to its honest verdict?".
+Regression invariant: 1996/1996 with meta-primitives loaded but
+demo 143 NOT YET registered (it's net-new); 2NNN with demo 143
+registered, where NNN reflects new pass count.
+
+### Cycle 26 — Manual Tier 1 Demonstration (Protocol Validation)
+**Goal:** validate runtime-induction works end-to-end on a
+hand-crafted candidate motif.  Produces `E1_ephemeral` artifact —
+publishable as architectural demonstration ONLY ("engine
+demonstrably mutates own law-state during runtime"), NOT as
+scientific predictive claim.
 
 Pre-reg PREDICTIONS-144.md must commit:
-- Specific candidate expansion (e.g., a `MERGE-IDENTICAL-ROWS`
-  candidate)
-- Predicted result regime (likely promoted_experimental or rejected
-  given C21–C23A history — degree dominance suggests rejection
-  is plausible)
-- Forbid mutation of candidate after held-out
+- Hand-crafted motif (e.g., `MATCH-PATTERN EDGE+ EDGE+ MARK`
+  three-repetition trigger)
+- Expected `law_hash` sequence (before / at-induction / after-use)
+- Expected world_state equivalence between induced-path and
+  expanded-path
+- Forbid mutation of motif spec after run begins
+- Acceptance: trace contains required events in required order;
+  world equivalence holds; `ROLLBACK-RUNTIME` restoration verified
 
-If candidate passes stable gate → protocol can promote stable
-primitives correctly.
-If candidate fails experimental → protocol's rejection mechanism
-works.
-If candidate passes experimental but fails stable → boundary
-behavior validated.
+Cycle 26 PASS ⇒ Tier 1 machinery works on known input.
+Cycle 26 FAIL ⇒ runtime model broken; cycle 25 had subtle bug;
+no progression to cycle 27.
 
-This cycle's success is NOT "primitive helped"; it is "protocol
-behaved according to spec on a known-input case".
-
-### Cycle 27 — Automated Discovery (The Real Test)
-**Goal:** mining algorithm produces N candidates from train
-trajectories WITHOUT human curation.  Top-K run through protocol.
-If any pass stable gate, E2 vs E0 comparison is the publishable
-signal.
+### Cycle 27 — Automated Discovery → Tier 2 Promotion (Real Test)
+**Goal:** mining algorithm produces ephemerals during runtime on
+train substrates WITHOUT human curation.  Those satisfying coupling
+rule auto-promote via `COMMIT-PRIMITIVE` to Tier 2.  Top-K candidates
+run through held-out protocol.  E1/E2 vs E0 held-out comparison is
+publishable signal.
 
 Pre-reg PREDICTIONS-145.md must commit:
-- Mining algorithm hash (fixed at cycle 25)
-- K (number of top candidates to evaluate)
+- Mining algorithm hash (frozen at cycle 25)
+- K (top candidates evaluated)
 - Evaluation order rule
-- Acceptance: ≥1 candidate passes stable gate AND E2 beats E0
-  on held-out PredError by ≥10% mean
+- Acceptance: ≥1 candidate passes stable gate AND E2 beats E0 on
+  held-out PredError by ≥10% mean
 
-If pass → first true substrate-derived positive of cognition
-direction.  Catalogue: "substrate engine self-extends its alphabet
-in a way that beats fixed-alphabet engine on held-out predictive
-task."  Publishable.
+Cycle 27 PASS ⇒ first true substrate-derived positive of cognition
+direction.  Catalogue addition: "substrate engine self-extends its
+alphabet at runtime in a way that beats fixed-alphabet engine on
+held-out predictive task."
 
-If fail → primitive induction (as currently specified) does not
-beat fixed primitives on these substrates.  Honest negative.
-Cycle 28+ either: (a) revisit mining algorithm with new pre-reg,
-or (b) declare substrate-of-cognition under current Sixth
-architecture unfalsified-but-unsupported and pivot to next
-architectural test.
+Cycle 27 FAIL ⇒ honest negative: runtime primitive induction (as
+currently specified) does not beat fixed primitives on these
+substrates.  Cycle 28+ either revises mining algorithm with new
+pre-reg, or declares substrate-of-cognition under current Sixth
+architecture unsupported and pivots to next architectural test.
 
 ---
 
-## 12. What This Document Does NOT Claim
+## §14. What This Document Does NOT Claim (v1 §12 unchanged)
 
 - It does NOT claim primitive induction will succeed.
 - It does NOT claim Sixth is a substrate of cognition.
 - It does NOT prove the protocol is bias-free; it only makes bias
-  auditable.
-- It does NOT make any empirical prediction (that is cycle 25+'s job).
+  auditable AT BOTH TIERS.
+- It does NOT make any empirical prediction (that is cycle 26+'s
+  job).
 
-It claims only: **here is a falsifiable protocol for evaluating
-whether Sixth can extend its own alphabet under predictive pressure;
-if cycle 27 fails under this protocol, primitive induction in this
-form is a substrate-derived negative.**
+It claims only: **here is a falsifiable two-tier protocol for
+evaluating whether Sixth can self-modify during runtime (Tier 1)
+AND whether such self-modifications generalize beyond their
+discovery context (Tier 2); if cycle 27 fails under this protocol,
+primitive induction in this form is a substrate-derived negative.**
 
 ---
 
-## References
+## §15. References
 
 - Cycle 23A (commit 36fb9ee) — closes loss-family arc with CCCCC
-  on NSUM benchmark (4th substrate-derived negative)
-- User spec 2026-05-23 — primitive-evolving substrate; meta-level
-  vs object-level distinction; train/held-out/challenge split;
-  cost-aware promotion; macro-expansibility constraint;
-  transactional rollback; multi-layer cheating defense including
-  blind naming and iron rule on post-held-out mutation
+  (4th substrate-derived negative)
+- v1 META-SEMANTICS.md (commit ec7370f, deprecated 2026-05-23 same
+  session, ledger row 096d2902) — controlled deployment pipeline;
+  superseded for missing runtime-evaluation requirement
+- User spec 2026-05-23 (initial) — primitive-evolving substrate;
+  meta vs object-level; promotion gates; cheating defense
+- User spec 2026-05-23 (v2-trigger) — runtime self-modification as
+  Sixth's core thesis; INDUCE-RUNTIME inside eval loop;
+  ephemeral/stable two-tier; law_hash visible in trace
 - METHODOLOGY.md — Rules 1–9 (pre-registration discipline)
-- Lakatos (1970) "Falsification and the methodology of scientific
-  research programmes" — hardcore/protective belt distinction;
-  the protocol here is the substrate research programme's hardcore
-- Goodhart (1975) — "when a measure becomes a target, it ceases to
-  be a good measure"; the protocol's threshold-freeze and append-only
-  ledger are explicit Goodhart-defense
+- Lakatos (1970) — hardcore/protective belt
+- Goodhart (1975) — measure-target degeneration; protocol's
+  threshold freeze and append-only ledger are Goodhart defense
 
 ---
 
-## Attestation
+## §16. Attestation
 
-This document is attested via `scripts/attest_prediction.sh
-docs/META-SEMANTICS.md` and committed in cycle 24.  Future
-modifications require new attestation and explicit deprecation
-cycle.  Quiet modifications are protocol violations and contaminate
-all subsequent cycles relying on the modified spec.
+v2 attested via `scripts/attest_prediction.sh docs/META-SEMANTICS.md`
+and committed in cycle 24 (same session as v1 deprecation).
+
+v1 deprecation event itself recorded in ledger row immediately
+prior to v2 attestation, establishing audit trail:
+1. v1 written, attested (ec7370f, ledger sha 096d2902)
+2. v1 deprecated within session (no test ever relied on v1)
+3. v2 written replacing v1 in entirety
+4. v2 attested (this commit, new ledger sha)
+
+Future modifications require new attestation and explicit
+deprecation cycle.  Quiet modifications are protocol violations
+and contaminate all subsequent cycles relying on the modified spec.
