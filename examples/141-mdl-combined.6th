@@ -1,0 +1,128 @@
+\ examples/141-mdl-combined.6th
+\ Cycle 22 — STEP-CA-MIN-COMBINED on Sixth substrate.
+\ Pre-reg: PREDICTIONS-141.md (commit e81f046, attested).
+\ Source:  scripts/mdl_combined.py (commit 106cce4).
+\
+\ === REGIME CCCC — MDL+prediction+penalty STILL fails ===
+\
+\ L22 = MDL_norm + lambda * Pred_norm + mu * DegeneracyPenalty
+\   mu = 0.1 fixed; lambda in {0.1, 1, 10} grid (pre-committed).
+\   Dynamics chooses moves by Delta(L22), not Delta(MDL).
+\
+\ Per-lambda aggregate (vs degree baseline at same K):
+\
+\   lambda   combined_wins   pred_wins   both_wins   K=1?   mean delta_pred
+\   0.1      0/6             0/6         0/6         no     -0.0055
+\   1.0      2/6             2/6         2/6         no     +0.0005
+\   10.0     2/6             2/6         2/6         no     +0.0003
+\
+\ Best lambda = 1.0 (both_wins=2, mean_delta_pred=+0.0005).
+\ robust_drop = 1.
+\
+\ Pre-reg classifier:
+\   AAAA requires both_wins >= 4, no K=1, mean_delta_pred > 0, robust.
+\   BBBB requires both_wins >= 3, no K=1, mean_delta_pred > 0.
+\   CCCC: both_wins <= 2 OR K=1 OR mean_delta_pred <= 0.
+\
+\   Best lambda has both_wins = 2 -> CCCC fires.
+\
+\ WHICH 2 substrates WORKED (at both lambda=1 and lambda=10):
+\   - ER_n10_p30  (small dense ER)
+\   - path_n10    (linear structured)
+\
+\ WHICH 4 substrates FAILED:
+\   - ER_n20_p20:  K stays 18 (no merging found by combined L)
+\   - ER_n15_p40:  K stays 13
+\   - cycle_n10:   K=3 stable (DegeneracyPenalty avoided K=1 collapse,
+\                  but matches degree EXACTLY for cycle topology)
+\   - ER_n15_p25:  K stays 13
+\
+\ INTERPRETATION:
+\   - DegeneracyPenalty WORKED: no K=1 collapse anywhere
+\     (cycle_n10 went to K=3, not K=1 as in cycle 20 pure MDL).
+\   - But combined L creates a SADDLE: at high K, PredError ~ 0
+\     (atomic = perfect prediction); any merge spikes PredError;
+\     SA can't traverse the barrier.
+\   - Only path_n10 (most structured) and small dense ER achieved
+\     prediction-aware grouping that beats degree.
+\
+\ HONEST CALL per pre-reg: MDL family is wrong direction.
+\ Cycle 23 pivots to Information Bottleneck (track 4) or
+\ Predictive Processing (track 5).
+\
+\ CATALOGUE UPDATE:
+\   - Substrate-distinguishing positives:    2
+\   - Modest narrow signals:                 2
+\   - Substrate-derived NEGATIVES:           3 (HEDGE3 c12C, MDL-pred c21,
+\                                              MDL+combined c22)
+\   - Substrate ~ classical:                 3
+\   - Retracted/narrowed:                   10
+\
+\ The MDL-family chain of falsification is now CLOSED:
+\   C19 AA  -> MDL descent works mechanically
+\   C20 AA' -> stronger search confirms (5/6 unstuck)
+\   C21 CCC -> pure MDL groups lose to degree (5/5 non-tie)
+\   C22 CCCC-> MDL+prediction+penalty STILL only 2/6 vs degree
+\
+\ Three different operationalizations, three different failures.
+\ MDL family exhausted; pivot mandatory.
+
+use prelude
+use debug
+
+\ Pinned per-lambda aggregates (count of wins out of 6).
+0   "bw-lam-01"  store    \ lambda=0.1 both_wins
+2   "bw-lam-1"   store    \ lambda=1.0 both_wins
+2   "bw-lam-10"  store    \ lambda=10  both_wins
+
+\ Best lambda (=1.0 per tiebreak).
+2   "best-both-wins" store
+
+\ Pre-reg regimes.
+\ AAAA: best both_wins >= 4
+\ BBBB: best both_wins >= 3
+\ CCCC: best both_wins <= 2
+"best-both-wins" load 4 >= "aaaa-pass?" store
+"best-both-wins" load 3 >= "bbbb-pass?" store
+"best-both-wins" load 2 <= "cccc-fail?" store
+
+\ DegeneracyPenalty worked: no K=1 collapse anywhere.
+0   "has-k1-anywhere" store
+"has-k1-anywhere" load 0 = "no-k1-collapse?" store
+
+cr
+"=== Demo 141 — STEP-CA-MIN-COMBINED (cycle 22) ===" . cr
+cr
+"Combined L = MDL_norm + lambda*Pred_norm + mu*DegeneracyPenalty" . cr
+"  mu = 0.1 fixed, lambda grid {0.1, 1, 10} pre-committed" . cr
+cr
+"Per-lambda both_wins (out of 6 substrates):" . cr
+"  lambda=0.1:  " . "bw-lam-01" load . cr
+"  lambda=1.0:  " . "bw-lam-1"  load . cr
+"  lambda=10 :  " . "bw-lam-10" load . cr
+cr
+"Best lambda = 1.0, both_wins = " . "best-both-wins" load . cr
+"K=1 collapse anywhere? " . "has-k1-anywhere" load . " (DegeneracyPenalty worked)" . cr
+cr
+"AAAA (>=4 wins): " . "aaaa-pass?" load . cr
+"BBBB (>=3 wins): " . "bbbb-pass?" load . cr
+"CCCC (<=2 wins): " . "cccc-fail?" load . cr
+cr
+
+"cccc-fail?" load 1 = if
+  ">>> REGIME CCCC — MDL family exhausted." . cr
+  "    Combined L beats degree on only 2/6 (need >=3 for BBBB)." . cr
+  "    DegeneracyPenalty PREVENTED K=1 collapse (good)." . cr
+  "    But high-K saddle blocks substrate from finding object groups." . cr
+  "    Cycle 23 pivots to Information Bottleneck or Predictive Proc." . cr
+then
+
+\ Sanity asserts.
+"cccc-fail?"      load 1 assert-eq
+"no-k1-collapse?" load 1 assert-eq
+"bw-lam-1"        load 2 assert-eq
+"bw-lam-10"       load 2 assert-eq
+"aaaa-pass?"      load 0 assert-eq
+"bbbb-pass?"      load 0 assert-eq
+
+REPORT

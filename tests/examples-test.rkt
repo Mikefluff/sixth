@@ -481,7 +481,18 @@
     ;;      loss for substrate-of-cognition.  Substrate-derived
     ;;      NEGATIVE — strongest possible falsification.  Cycle 22
     ;;      operationalizes combined L = MDL + lambda*pred_error.
-    ("140-mdl-prediction.6th"                     4)))
+    ("140-mdl-prediction.6th"                     4)
+    ;; 141. Cycle 22 — STEP-CA-MIN-COMBINED with L = MDL_norm +
+    ;;      lambda*Pred_norm + mu*DegeneracyPenalty.  Dynamics
+    ;;      chooses moves by Delta(L_combined) not Delta(MDL).
+    ;;      Result: REGIME CCCC.  Best lambda=1.0 wins only 2/6
+    ;;      against degree baseline (need >=3 for BBBB pass).
+    ;;      DegeneracyPenalty PREVENTED K=1 collapse (good — cycle_n10
+    ;;      went to K=3 not K=1).  But high-K saddle blocks search.
+    ;;      Substrate-derived NEGATIVE #3.  MDL family CLOSED.
+    ;;      Cycle 23 pivots to Information Bottleneck or Predictive
+    ;;      Processing per pre-registered consequence.
+    ("141-mdl-combined.6th"                       6)))
 
 (define (run-demo file)
   (define out
@@ -506,8 +517,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1984
-                (format "cumulative ✓ count: ~a (expected 1984)" total-pass)))
+  (check-equal? total-pass 1990
+                (format "cumulative ✓ count: ~a (expected 1990)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1984 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1990 ✓ across ~a demos"
                    total-pass (length expected)))
