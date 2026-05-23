@@ -21,16 +21,37 @@ Statements in this tier are mechanically verified on every CI run by
 target. Failure of any one of them is an immediate falsification
 trigger F0 of the v9.0 preprint.
 
-1. **The substrate exists as a 48-primitive language.** The Sixth
-   engine compiles, the 48 primitives (17 base + 23 substrate-core +
-   8 HEDGE3 trivalent) are exposed by `sixth/primitives/*.rkt`, the
-   module loader resolves the stdlib, and a `#lang sixth` reader is
-   registered.  Counted via `grep -E "^\s*\(cons '"
-   sixth/primitives/*.rkt`.
+1. **The substrate exists as an 82-primitive language.** The Sixth
+   engine compiles, the 82 primitives are exposed across
+   `sixth/primitives/*.rkt` and `sixth/meta/*.rkt`:
+   - **49 object-level** (mutate world-state): 17 base + 24
+     substrate-core + 8 HEDGE3 trivalent.  `HASH-WORLD` added in
+     cycle 25B as a deterministic substrate digest.
+   - **33 meta-level** (mutate law-state per META-SEMANTICS.md v2.1):
+     25 Tier 1 (ephemeral lifecycle + hardening + energy
+     accounting + cycle-26 testing) + 8 Tier 2 stable-promotion
+     stubs (gate-closed until cycle 27+ wires held-out infra).
 
-2. **All 98 demonstrations pass deterministically.** `examples-test.rkt`
-   asserts cumulative `pass=1469 fail=0` across 98 demos organised
-   in nine conceptual tracks:
+   The module loader resolves the stdlib and `substrates/` paths,
+   and a `#lang sixth` reader is registered.  Counted via
+   `grep -E "^\s*\(cons '" sixth/primitives/*.rkt sixth/meta/*.rkt`.
+
+2. **All 142 demonstrations pass deterministically.** `examples-test.rkt`
+   asserts cumulative `pass=2070 fail=0` across 142 demos organised
+   in conceptual tracks (additions since v9.0 baseline):
+   - **Spencer-Brown / pilots / HEDGE3 / honest-emergence
+     (01–104)** — unchanged from v9.0 baseline.
+   - **Substrate-physics / cosmology / Φ measures (105–130)** —
+     additions through cycle 12.
+   - **Loss-family arc (131–142)** — closed CCCCC at cycle 23A
+     (commit `36fb9ee`).  Four substrate-derived negatives:
+     HEDGE3 (12C), pure MDL groups (21), MDL+prediction (22),
+     predictive-only (23A).
+   - **Meta-semantics arc (143–148)** — cycles 25-26.  Demos
+     143 (Tier 1 mechanics), 144 (substrate signatures), 145
+     (15-item hardening), 146 (energy accounting v0), 147
+     (happy-path runtime promotion with energy gate), 148
+     (negative path: energy gate rejects length-1 motif).
    - **Canonical Spencer-Brown ladder (01–11)** — eleven atomic
      rungs from void to first-Φ_PA.
    - **Substrate applications (12–31)** — Peano / time / conservation
@@ -100,6 +121,69 @@ trigger F0 of the v9.0 preprint.
 
 These are properties of the released code. They do not depend on any
 metaphysical position.
+
+### Tier 1 additions from meta-semantics arc (cycles 24-26)
+
+7. **Sixth supports runtime law-state mutation.** During a single
+   execution session the active dictionary can change, with the
+   mutation observable via `LAW-HASH` and recorded in the meta-
+   ledger.  Verified by `examples/143-runtime-promotion.6th`
+   (7 asserts): a motif `MARK MARK bi-edge` is detected via
+   `DETECT-MOTIF`, induced via `INDUCE-RUNTIME` after a passing
+   `SHADOW-CHECK`, and rolled back via `ROLLBACK-RUNTIME` — the
+   `law_hash` trajectory `h0 → h1 → h0` is asserted.
+
+8. **The law mutation passes 15 hardening invariants.** Verified by
+   `examples/145-hardening-suite.6th` (22 asserts).  Includes:
+   canonical `law_hash` (sensitive to word bodies, not just keys);
+   `world_hash` / `law_hash` separation (mutation of one does not
+   affect the other); SHADOW-CHECK rejects forbidden meta-primitives
+   in motifs; INDUCE-RUNTIME requires a valid shadow certificate
+   (defence-in-depth); ROLLBACK transactionally clears certificate
+   AND counters; substrate generators deterministic on re-run; no
+   hidden entropy in `law_hash`.
+
+9. **Energy accounting is observational, not gating in cycle 25E.**
+   `_energy-*` keys do not enter `law_hash` or `world_hash`
+   (Heisenberg-trap defence per META-SEMANTICS.md v2.1 §17).
+   Verified by `examples/146-energy-accounting.6th` (10 asserts):
+   8 inspection primitives (`E-WORLD`, `E-LAW`, `E-TRACE`,
+   `E-CONFLICT`, `E-SEARCH`, `E-REUSE-GAIN`, `E-TOTAL`,
+   `E-SNAPSHOT`) report runtime cost without affecting the
+   measured state.
+
+10. **`COMMIT-PRIMITIVE` enforces coupling + energy gate.** Cycle 26
+    activates three gates simultaneously:
+    - N=5 uses (counted by VM dispatch hook on every `cand_*` call)
+    - M=3 distinct sessions (tracked per-candidate via session-id set)
+    - `net_delta_e < 0` (energy v0: `law_cost - reuse_gain`)
+
+    Verified by `examples/147-runtime-promotion-happy.6th`
+    (12 asserts): the motif `MARK MARK bi-edge` (L=3) passes
+    after 5 uses across 3 sessions (`net_delta_e = -7`).
+
+11. **The energy gate actually rejects, not decorates.** Verified by
+    `examples/148-runtime-promotion-energy-fail.6th` (7 asserts).
+    A length-1 motif (single `MARK` constructed via `WRAP-MOTIF`)
+    satisfies coupling (N=5, M=3) but has `reuse_gain = 0` because
+    expansion saves no ops.  `TRY-COMMIT` returns
+    `'rejected-energy`; status stays `'ephemeral-active`.
+
+12. **Substrate generation is Sixth-native.** 12 frozen substrates
+    (6 train + 6 held-out, from `substrates/manifest.6th`) are
+    generated by Sixth-language words in
+    `stdlib/substrate-gen.6th` using `stdlib/rand.6th`'s LCG; no
+    Python in core path.  Each substrate's `HASH-WORLD` signature
+    is pinned; verified by `examples/144-substrate-signatures.6th`
+    (16 asserts: 12 signatures + 4 Tier 2 stub probes).
+
+The catalogue formulation now machine-enforced:
+
+> primitive ≠ named macro.
+>
+> primitive = runtime-induced law candidate that survived
+> equivalence (SHADOW-CHECK), reuse (N=5 uses), multi-session
+> coupling (M=3), and negative energy delta (`net_delta_e < 0`).
 
 ## Tier 2 — Demonstrated by examples
 

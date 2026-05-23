@@ -1575,6 +1575,157 @@ Pre-registration commit pending.  Companion #1 Pythia (long-term)
 remains the future site where EICS could be applied to real LLM
 substrates.
 
+## Meta-Semantics Milestone (Cycles 24-26)
+
+A separate research arc from the loss-family work (cycles 14-23A,
+which closed CCCCC at commit `36fb9ee`).  This arc tests whether
+Sixth, as an *engine*, can move from fixed-primitive interpretation
+to runtime-evolving law-state.
+
+### Cycle 24 — Protocol specification
+
+**Deliverable:** `docs/META-SEMANTICS.md` v2 (commit `360604d`) +
+v2.1 amendment with §17 Energy Accounting (commit `67cab83`).
+
+**Scope:** normative specification only.  No code.  Establishes the
+two-tier primitive lifecycle (Tier 1 ephemeral in-run, Tier 2 stable
+cross-run via held-out gate) BEFORE any primitive induction code is
+written, so rules of the game are fixed independent of any specific
+candidate.
+
+**v1 → v2 supersession**: v1 (commit `ec7370f`) described offline
+deployment pipeline; deprecated within session because it missed the
+runtime-evaluation requirement.  Audit trail in ledger (`096d2902`
+→ `9f43e3a8`).  v1 was never used as basis for any cycle 25+ test.
+
+### Cycle 25 — Runtime plumbing (5 sub-commits)
+
+| sub | commit | scope |
+|-----|--------|-------|
+| 25A | `34cad87` | Tier 1: 6 meta-prims + 4-tuple runtime + demo 143 |
+| 25B | `2421e0f` | Tier 2 stubs (8) + 12 frozen Sixth-native substrates + manifest |
+| 25C | `b660eb5` | mining_protocol.md frozen hyperparameters |
+| 25D | `78143cf` | 15-item hardening pass (demo 145, 22 asserts) |
+| 25E | `67cab83` | Energy Accounting v0 — observational (demo 146, 10 asserts) |
+
+**Key architectural result of cycle 25A:** `law_hash` mutates inside
+a single run (verified by demo 143: 231849... → 278734... → 231849...
+across `INDUCE-RUNTIME` and `ROLLBACK-RUNTIME`).  This is NOT a
+deployment pipeline event; it is mid-execution self-modification of
+the active dictionary.
+
+**Anti-Python guardrail (cycle 25B per user spec 2026-05-23):**
+substrate generation lives in Sixth (`stdlib/substrate-gen.6th`)
+via existing PRNG (`stdlib/rand.6th`) and recursion.  No Python in
+core path.  12 substrates (6 train + 6 held-out) generated and
+signed at `substrates/manifest.6th`.  Python remains for external
+visualization only.
+
+**Hardening invariants (cycle 25D):** 15 items asserted via
+demo 145.  Highlights:
+- canonical `law_hash` includes word body (replacement detected)
+- `world_hash` and `law_hash` separated (mutation of one doesn't
+  affect the other; verified inline)
+- SHADOW-CHECK forbidden-symbol blacklist + lookup-purity
+- INDUCE-RUNTIME requires valid shadow certificate (defence-in-depth)
+- ROLLBACK transactional: clears certificate, status → 'rolled-back
+- contamination is first-class status with explicit reject paths
+- substrate generators deterministic on re-run
+
+### Cycle 26 — Energy gate ACTIVE + manual validation
+
+**Pre-reg:** PREDICTIONS-147.md (commit `e4dd80d`, attested
+`afe4782b`).
+
+**Implementation (commit `2e1edbf`):**
+
+| mechanism | enforcement |
+|-----------|-------------|
+| Coupling N=5 uses | `COMMIT-PRIMITIVE` raises if `uses < N` |
+| Coupling M=3 distinct sessions | `COMMIT-PRIMITIVE` raises if `len(sessions) < M` |
+| Energy gate `net_delta_e < 0` | `COMMIT-PRIMITIVE` raises if `net_delta_e >= 0` |
+| Per-cand session tracking | dispatch hook adds session-id to per-cand set |
+| `NEW-SESSION` test primitive | increments deterministic session_id (test-only) |
+| `WRAP-MOTIF` helper | construct length-1 motif (DETECT-MOTIF can't) |
+| `TRY-COMMIT` | catches exn:fail:sixth, returns status sym |
+
+**Demo 147 (happy path, 12 asserts):**
+- Motif `MARK MARK bi-edge` (L=3)
+- N=5 uses split across M=3 sessions
+- `E_law` post-INDUCE = 3, `E_reuse_gain` post-5-uses = 10
+- `net_delta_e` = 3 - 10 = **-7** → energy gate passes
+- COMMIT succeeds, status `'committed`, FREEZE stub accepts
+
+**Demo 148 (negative path, 7 asserts):**
+- Single `MARK` (L=1) via `WRAP-MOTIF`
+- Same coupling: N=5 across M=3 sessions
+- `E_reuse_gain` = 5×(1-1) = **0**
+- `net_delta_e` = 1 - 0 = **+1** → energy gate REJECTS
+- `TRY-COMMIT` returns `'rejected-energy`
+- Status stays `'ephemeral-active`, not promoted
+
+**Why demo 148 matters more than demo 147**: demo 147 only proves
+the mechanism works on happy path.  Demo 148 proves the gate
+**actually gates**, not just decorates.  Without demo 148, a
+critic could say energy_gate is theater.  With 148, the rejection
+path is machine-asserted.
+
+### What the meta-semantics arc claims (honest scope)
+
+**Now operationally true (machine-verified at every regression run):**
+
+1. Sixth supports runtime law-state mutation: a single execution
+   session can change its own active dictionary mid-run, with the
+   mutation observable in `law_hash` and recorded in `ledger`.
+
+2. The mutation is gated: a candidate is committed only if it
+   satisfies coupling (N=5 uses across M=3 sessions) AND energy
+   (`net_delta_e < 0` per energy v0 formula).
+
+3. Negative validation: a candidate that meets coupling but fails
+   energy is rejected (`'rejected-energy` symbol returned).  The
+   gate is not decoration.
+
+4. Substrate generation is Sixth-native: `_energy-*` keys are
+   observational only and do not enter `law_hash` or `world_hash`.
+
+### What it does NOT claim
+
+- It does NOT claim automated discovery: cycle 26 uses
+  hand-crafted motifs.  Cycle 27 is the first automated test.
+- It does NOT claim cognition-substrate behavior: energy v0
+  is a count-based formula, not a theory of meaning.
+- It does NOT claim primitive induction generalizes to useful
+  cognitive structure: the test cases are toy motifs chosen for
+  protocol validation, not scientific signal.
+- It does NOT validate Tier 2 stable promotion: cycle 26 only
+  reaches the `'committed` Tier 1 status; Tier 2 stubs remain
+  gate-closed (HELD-OUT-EVAL returns 0) until cycle 27+ wires
+  held-out infrastructure.
+
+### Aggregate state after cycle 26
+
+- Regression: **2070 / 2070 ✓ across 142 demos**.
+- Frozen substrate set: 12 (train + held-out).
+- Frozen mining protocol: hyperparameters in `docs/mining_protocol.md`,
+  cannot change without deprecation cycle.
+- Meta-semantics specification: v2.1 attested via ledger;
+  modifications require new pre-reg.
+- Energy accounting: v0 formula attested; v1 deferred to post-cycle-27
+  pending evidence whether v0 is too crude.
+
+### Catalogue formulation (post-cycle-26)
+
+> primitive ≠ named macro.
+>
+> primitive = runtime-induced law candidate that survived
+> equivalence (SHADOW-CHECK), reuse (N=5 uses), multi-session
+> coupling (M=3), and negative energy delta (`net_delta_e < 0`).
+
+This formulation is now machine-enforced.
+
+---
+
 ## Pending / future tracks
 
 | Track | Description | ETA |
