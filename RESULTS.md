@@ -1726,6 +1726,118 @@ This formulation is now machine-enforced.
 
 ---
 
+## Cycle 27 — Automated Tier 1 Discovery
+
+**Pre-reg:** `examples/PREDICTIONS-149.md` (commit `8828052`,
+attested ledger sha `87a64fe7`).
+
+**Single primary claim** (verified):
+
+> Sixth can automatically discover and commit an energetically
+> justified runtime law candidate from execution traces under a
+> frozen mining protocol (`docs/mining_protocol.md` commit
+> `b660eb5`).
+
+### What was implemented
+
+`DETECT-MOTIF-AUTO` Tier 1 primitive (`sixth/meta/tier1.rkt`):
+- enumerates all distinct n-grams of length [MIN_LEN, MAX_LEN] in
+  the trace window K=20
+- filters n-grams containing any `FORBIDDEN-IN-MOTIF` or
+  `INSPECTION-OPS` symbol
+- counts non-overlapping occurrences per distinct n-gram
+- ranks by `(frequency desc, length desc, motif-hash asc)` —
+  fully deterministic
+- returns top-1 (or empty list)
+
+Distinct from existing `DETECT-MOTIF` (tail-anchored legacy
+heuristic).  Used by automated discovery; existing `DETECT-MOTIF`
+remains for the cycle-25/26 happy-path test demos.
+
+### Happy path (demo 149)
+
+Workload: 4 inline `MARK MARK bi-edge` sequences with `NODES drop`
+noise between.  Source code does NOT name the candidate motif
+anywhere — the miner alone selects via deterministic ranking.
+
+Result: miner discovered `(MARK MARK bi-edge)` (length 3, freq 4
+in the workload), passed SHADOW-CHECK, INDUCE → cand_001, used 5
+times across 3 sessions (`NEW-SESSION` between), `net_delta_e =
+3 - 10 = -7`, COMMIT succeeded, status `'committed`,
+ATTEST-PRIMITIVE stub recorded.  10 asserts pass.
+
+### Negative controls (demos 150, 151, 152)
+
+Three negative demos verify that the miner correctly REJECTS bad
+inputs (no candidate committed):
+
+| demo | workload | expected | result |
+|------|----------|----------|--------|
+| 150 | trace without 2-gram appearing ≥3× | empty motif, no induce | ✓ |
+| 151 | distinctive motif appears only 2× | empty motif (below R=3) | ✓ |
+| 152 | repeated n-gram laced with LAW-HASH (INSPECTION-OPS) | clean alternative returned, no forbidden in output | ✓ |
+
+Each negative passes 2 asserts.
+
+### Demos 153, 154 — DEFERRED (documented gaps)
+
+**153 world-mismatch**: requires substrate-snapshot infrastructure
+to compare a candidate's run-time behavior against its expansion's
+behavior beyond symbol-level equivalence.  Substrate snapshot
+deferred to cycle 28.
+
+**154 energy-fail-auto**: structurally impossible under frozen
+protocol — `MIN_LEN=2` prevents length-1 motifs from being
+discovered, so the energy gate cannot fire "too late" at COMMIT
+for auto-discovered candidates.  This is the defence hierarchy
+working as designed: `MIN_LEN` at mining (first defence) preempts
+the energy gate at commit (last defence).  Cycle 26 demo 148
+already verified the energy gate works for hand-crafted length-1
+inputs.
+
+### What cycle 27 demonstrates
+
+- Automated Tier 1 discovery is operational: the miner finds a
+  candidate, SHADOW gates, runtime mutation happens, candidate is
+  used, COMMIT under N=5 / M=3 / energy<0 gates succeeds — all
+  without human curation of the candidate motif.
+
+### What cycle 27 does NOT claim
+
+- The discovered candidate is *useful* for anything beyond protocol
+  validation.
+- Sixth has discovered "a useful law" or "a substrate-of-cognition
+  primitive".
+- Stable promotion has been validated.  PROMOTE-STABLE still
+  returns `'rejected-no-heldout-in-25D` (the Tier 2 gate is
+  closed).
+- The negative controls are exhaustive (153 and 154 are
+  documented gaps).
+
+### Aggregate state after cycle 27
+
+- Regression: **2086 / 2086 ✓ across 146 demos**.
+- Mining protocol parameters unchanged from cycle 25C freeze.
+- Tier 2 stable promotion still gate-closed; cycle 28+ wires
+  held-out infrastructure.
+- Energy gate operational; demo 148 verifies it rejects;
+  demo 149 verifies it accepts justified candidates.
+
+### Catalogue formulation (post-cycle-27)
+
+> automated discovery = trace mining + deterministic ranking +
+> blind candidate naming + protocol-validated commit.
+>
+> Cycle 25: закон можно менять.
+> Cycle 26: закон можно закреплять по цене.
+> Cycle 27: кандидат в закон можно находить автоматически.
+
+The next test (cycle 28+) is whether candidates discovered on
+train substrates carry over to held-out — first real
+generalization claim.
+
+---
+
 ## Pending / future tracks
 
 | Track | Description | ETA |

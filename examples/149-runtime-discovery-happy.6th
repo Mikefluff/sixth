@@ -1,0 +1,146 @@
+\ examples/149-runtime-discovery-happy.6th
+\ Cycle 27C — automated runtime motif discovery, happy path.
+\ Pre-reg: PREDICTIONS-149.md (commit 8828052).
+\
+\ Demonstrates that DETECT-MOTIF-AUTO (cycle 27B) can discover a
+\ runtime law candidate from execution traces WITHOUT being told
+\ what motif to look for, and the candidate passes the full
+\ meta-semantics pipeline through COMMIT-PRIMITIVE.
+\
+\ CRITICAL: no `' MARK MARK bi-edge` style hint anywhere in source.
+\ The workload writes a sequence of substrate-building operations
+\ that naturally produces top-level trace repetition.  The miner
+\ alone selects via deterministic ranking from frozen
+\ docs/mining_protocol.md (commit b660eb5).
+
+use prelude
+use debug
+use graph
+
+cr "=== Demo 149 — automated discovery happy path (cycle 27) ===" . cr
+cr
+
+\ ============================================================
+\ Workload: build 4 small structures with NODES/drop noise.
+\
+\ The natural top-level repeats in this trace will be:
+\   * `MARK MARK bi-edge` (length 3, 4 occurrences)
+\   * various shorter substrings (lower priority by len)
+\
+\ NODES is in INSPECTION-OPS, so n-grams containing it are
+\ filtered out by the miner per mining_protocol.md §4.
+\
+\ The miner alone discovers the top candidate by frozen ranking.
+\ ============================================================
+
+RESET
+LAW-HASH "h0" store
+
+\ Build 4 inline structures (NOT a function — function body would
+\ not appear in top-level trace).  Each is 3 ops.
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+
+\ Mine immediately while window K=20 still contains the repeats.
+DETECT-MOTIF-AUTO "motif" store
+
+\ Validate motif properties (no hardcoded target name)
+"motif" load "motif-len-marker" store  \ for inspection in output
+
+\ Run protocol over the auto-discovered motif.
+"motif" load SHADOW-CHECK   "shadow" store
+"motif" load SHADOW-CERT-OF "cert"   store
+"motif" load INDUCE-RUNTIME "c"      store
+LAW-HASH                    "h1"     store
+
+\ Workload uses the candidate N=5 times across M=3 sessions.
+\ We invoke by cand_NNN literal — we know the cand counter starts at
+\ 0 post-RESET on first INDUCE in this run, so the first cand is
+\ cand_001.  But we DON'T know what motif it expands to without
+\ inspecting — the discovery was made by the miner.
+cand_001
+NEW-SESSION
+cand_001 cand_001
+NEW-SESSION
+cand_001 cand_001
+
+"c" load CAND-USES               "uses"   store
+"c" load CAND-DISTINCT-SESSIONS  "msess"  store
+E-LAW                            "el"     store
+E-REUSE-GAIN                     "er"     store
+
+\ Commit with energy gate ACTIVE.
+"c" load COMMIT-PRIMITIVE        "commit" store
+"c" load CAND-STATUS             "status" store
+
+\ Tier 2 stub attestation (no real held-out per cycle 27 scope).
+"c" load ATTEST-PRIMITIVE        \ stub; just emits ledger event
+LEDGER-COUNT "ledger-final" store
+
+\ Diagnostics ===================================================
+cr "Diagnostics:" . cr
+"  discovered motif      = " . "motif" load . cr
+"  shadow pass           = " . "shadow" load . cr
+"  shadow cert           = " . "cert" load . cr
+"  cand id               = " . "c" load . cr
+"  use count             = " . "uses" load . cr
+"  distinct sessions     = " . "msess" load . cr
+"  E-LAW post-induce     = " . "el" load . cr
+"  E-REUSE-GAIN post-N   = " . "er" load . cr
+"  commit return         = " . "commit" load . cr
+"  status post-commit    = " . "status" load . cr
+"  ledger count final    = " . "ledger-final" load . cr
+cr
+
+\ Derived predicates per PREDICTIONS-149.md happy-path c-1..c-10
+\ (c-11 regression green verified externally by raco test).
+\
+\ We CANNOT assert the exact motif content — that's what makes
+\ discovery genuine.  We CAN assert:
+\   - motif is non-empty (c-1)
+\   - shadow passed and cert is 'pass (c-3, c-4)
+\   - law_hash mutated (c-4)
+\   - N=5 reached (c-5)
+\   - M=3 reached (c-6)
+\   - net_delta_e < 0 (c-7): el - er < 0 means el < er
+\   - commit returned cand-sym (c-8)
+\   - status is 'committed (c-9)
+\   - ledger grew (c-10)
+
+"motif" load 0 = "motif-empty?" store
+"shadow"          load 1                  = "c-3?" store
+"cert"            load 'pass              = "c-4-cert?" store
+"h0"              load "h1" load          = "law-unchanged?" store
+"uses"            load 5                  = "c-5?" store
+"msess"           load 3                  = "c-6?" store
+"el"              load "er" load          < "c-7?" store
+"commit"          load "c" load           = "c-8?" store
+"status"          load 'committed         = "c-9?" store
+"ledger-final"    load 0                  > "c-10?" store
+
+\ c-1: motif non-empty (motif-empty? must be 0 since 'motif != 0)
+\   `motif` is a LIST; `0 =` on a list is 0 (false) — so c-1 passes
+\   when motif is non-empty list, fails on empty '().
+\   Assert: motif-empty? load 0 assert-eq
+"motif-empty?" load 0 assert-eq
+"c-3?"         load 1 assert-eq
+"c-4-cert?"    load 1 assert-eq
+"law-unchanged?" load 0 assert-eq     \ c-4: law_hash DID change (=0 means !=)
+"c-5?"         load 1 assert-eq
+"c-6?"         load 1 assert-eq
+"c-7?"         load 1 assert-eq
+"c-8?"         load 1 assert-eq
+"c-9?"         load 1 assert-eq
+"c-10?"        load 1 assert-eq
+
+cr "Happy path: automated Tier 1 discovery demonstrated." . cr
+cr "  Sixth located a candidate without human hint, validated it" . cr
+cr "  via SHADOW-CHECK, induced it inside runtime, used it across" . cr
+cr "  multiple sessions, and committed under coupling + energy gates." . cr
+cr "  This does NOT claim cognition or stable promotion." . cr
+REPORT

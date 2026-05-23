@@ -1,0 +1,43 @@
+\ examples/151-discovery-single-use.6th
+\ Cycle 27D — negative control: distinctive motif appears only once.
+\ Pre-reg: PREDICTIONS-149.md (commit 8828052) demo 151 spec.
+\
+\ Workload: a long distinctive sequence appears exactly once.
+\ Below R=3 threshold, miner must return empty list.
+
+use prelude
+use debug
+use graph
+
+cr "=== Demo 151 — discovery on single-use motif (cycle 27 negative) ===" . cr
+cr
+
+RESET
+
+\ One distinctive 4-op sequence appears ONCE: MARK MARK bi-edge NODES drop.
+\ NODES is INSPECTION so n-grams containing it are filtered anyway.
+\ The clean part is `MARK MARK bi-edge` — but the second appearance
+\ of MARK MARK bi-edge wraps a NODES-drop, so clean 3-gram appears
+\ only twice (with one being end-of-trace anchor).
+\ Stack-safe throughout.
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+\ Stop here — only 2 occurrences of MARK MARK bi-edge.  Below R=3.
+
+DETECT-MOTIF-AUTO "motif" store
+
+"  trace mining result = " . "motif" load . cr
+' cand_001 CAND-STATUS "status" store
+LEDGER-COUNT "lc" store
+"  cand_001 status     = " . "status" load . cr
+"  ledger event count  = " . "lc" load . cr
+
+"status" load 'unknown = "no-induce?" store
+"lc"     load 0 = "no-events?" store
+"no-induce?" load 1 assert-eq
+"no-events?" load 1 assert-eq
+
+cr "Negative control 151 PASS: single-occurrence motif rejected" . cr
+cr "  (below frequency threshold R=3)." . cr
+REPORT

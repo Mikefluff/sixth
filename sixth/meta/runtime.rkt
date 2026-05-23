@@ -262,7 +262,9 @@
     E-WORLD E-LAW E-TRACE E-CONFLICT E-SEARCH
     E-REUSE-GAIN E-TOTAL E-SNAPSHOT
     ;; cycle 26 additions:
-    NEW-SESSION WRAP-MOTIF CAND-DISTINCT-SESSIONS TRY-COMMIT))
+    NEW-SESSION WRAP-MOTIF CAND-DISTINCT-SESSIONS TRY-COMMIT
+    ;; cycle 27: mining (also inspection of trace)
+    DETECT-MOTIF-AUTO))
 
 (define (inspection-op? name)
   (and (memq name INSPECTION-OPS) #t))

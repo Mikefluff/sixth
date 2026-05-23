@@ -137,6 +137,82 @@
          [m (push! e m)]
          [else (loop (- len 1))])])))
 
+;; ============================================================
+;; DETECT-MOTIF-AUTO (cycle 27B, per docs/mining_protocol.md §3-§4)
+;; ============================================================
+;;
+;; Global mining (not tail-anchored).  Returns the GLOBAL top-1
+;; candidate by (frequency desc, length desc, motif-hash asc)
+;; from the recent trace window.
+;;
+;; Filters per frozen mining_protocol.md §4:
+;;   - excludes n-grams containing FORBIDDEN-IN-MOTIF symbols
+;;   - excludes n-grams containing INSPECTION-OPS symbols
+;;   - length in [MOTIF_MIN_LEN=2, MOTIF_MAX_LEN=5..6]
+;;   - frequency >= MOTIF_REPEAT_R=3
+;;
+;; Differs from DETECT-MOTIF:
+;;   DETECT-MOTIF: returns the most-recent (tail-anchored) candidate
+;;                 with positional preference; legacy heuristic.
+;;   DETECT-MOTIF-AUTO: deterministic global search with explicit
+;;                      ranking, used by automated discovery.
+;; ============================================================
+
+(define (n-gram-clean? motif)
+  ;; Returns #t if motif contains no FORBIDDEN-IN-MOTIF or
+  ;; INSPECTION-OPS symbols.
+  (andmap (lambda (sym)
+            (and (not (memq sym FORBIDDEN-IN-MOTIF))
+                 (not (memq sym INSPECTION-OPS))))
+          motif))
+
+(define (enumerate-n-grams seq len)
+  ;; Returns a list of distinct n-grams (as lists) of given length
+  ;; present in seq.  Deduped.
+  (define slen (length seq))
+  (define seen (make-hash))
+  (cond
+    [(< slen len) '()]
+    [else
+     (for ([i (in-range 0 (+ 1 (- slen len)))])
+       (define cand (take (drop seq i) len))
+       (hash-set! seen cand #t))
+     (hash-keys seen)]))
+
+(define (find-best-motif-global seq)
+  ;; Enumerate all distinct clean n-grams across all valid lengths.
+  ;; For each, compute non-overlapping occurrence count.  Filter by
+  ;; count >= R.  Rank by (freq desc, len desc, motif-hash asc).
+  ;; Return top-1 or #f.
+  (define candidates
+    (for*/list ([len (in-range MOTIF_MIN_LEN (+ 1 MOTIF_MAX_LEN))]
+                [ng (in-list (enumerate-n-grams seq len))]
+                #:when (n-gram-clean? ng)
+                #:when (>= (count-nonoverlap-occurrences seq ng)
+                            MOTIF_REPEAT_R))
+      (vector ng len
+              (count-nonoverlap-occurrences seq ng)
+              (motif-hash ng))))
+  (cond
+    [(null? candidates) #f]
+    [else
+     ;; Sort by (freq desc, len desc, hash asc).
+     (define sorted
+       (sort candidates
+             (lambda (a b)
+               (cond
+                 [(> (vector-ref a 2) (vector-ref b 2)) #t]
+                 [(< (vector-ref a 2) (vector-ref b 2)) #f]
+                 [(> (vector-ref a 1) (vector-ref b 1)) #t]
+                 [(< (vector-ref a 1) (vector-ref b 1)) #f]
+                 [else (< (vector-ref a 3) (vector-ref b 3))]))))
+     (vector-ref (car sorted) 0)]))
+
+(define (prim-detect-motif-auto e)
+  (define seq (extract-recent-trace e))
+  (define motif (find-best-motif-global seq))
+  (push! e (or motif '())))
+
 ;; ---- SHADOW-CHECK ----------------------------------------------------
 ;;
 ;; Hardened in cycle 25D per user spec items 3 + 4.
@@ -732,7 +808,9 @@
         (cons 'NEW-SESSION                prim-new-session)
         (cons 'WRAP-MOTIF                 prim-wrap-motif)
         (cons 'CAND-DISTINCT-SESSIONS     prim-cand-distinct-sessions)
-        (cons 'TRY-COMMIT                 prim-try-commit)))
+        (cons 'TRY-COMMIT                 prim-try-commit)
+        ;; cycle 27: automated discovery mining engine
+        (cons 'DETECT-MOTIF-AUTO          prim-detect-motif-auto)))
 
 (define (register-tier1! e)
   (for ([entry (in-list TIER1-TABLE)])

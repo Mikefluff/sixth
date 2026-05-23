@@ -579,7 +579,35 @@
     ;;      rejects via TRY-COMMIT → 'rejected-energy.  Cand
     ;;      stays 'ephemeral-active.  Validates that the gate
     ;;      ACTUALLY gates (not just reports).  7 asserts.
-    ("148-runtime-promotion-energy-fail.6th"      7)))
+    ("148-runtime-promotion-energy-fail.6th"      7)
+    ;; 149. Cycle 27C — automated runtime motif discovery (happy).
+    ;;      Workload produces natural top-level trace repetition;
+    ;;      DETECT-MOTIF-AUTO selects via frozen mining_protocol
+    ;;      ranking (freq desc, len desc, hash asc); full pipeline
+    ;;      through SHADOW-CHECK + INDUCE + N=5/M=3 + COMMIT (with
+    ;;      energy gate ACTIVE) + ATTEST-PRIMITIVE stub.
+    ;;      10 asserts cover pre-reg c-1..c-10; c-11 (regression)
+    ;;      verified by raco test.
+    ("149-runtime-discovery-happy.6th"           10)
+    ;; 150. Cycle 27D — negative: trace without sufficient repeats.
+    ;;      Workload has no 2-gram or longer appearing >= R=3 times.
+    ;;      Miner returns empty list; no cand_001 induced; ledger
+    ;;      stays empty.  Validates that mining respects frequency
+    ;;      threshold.  2 asserts.
+    ("150-discovery-no-repeats.6th"               2)
+    ;; 151. Cycle 27D — negative: single-occurrence motif (R<3).
+    ;;      Even a distinctive motif that appears only 2 times is
+    ;;      rejected.  Same expectations as demo 150.  2 asserts.
+    ("151-discovery-single-use.6th"               2)
+    ;; 152. Cycle 27D — negative: forbidden-op-laced trace.
+    ;;      Workload contains 3-gram with LAW-HASH (INSPECTION-OPS);
+    ;;      miner filters out forbidden-laced n-grams and returns
+    ;;      only a clean alternative (length-2 MARK MARK).  Validates
+    ;;      mining_protocol §4 filter.  2 asserts.
+    ;;      Demos 153 (world-mismatch, needs substrate snapshot) and
+    ;;      154 (energy-fail-auto, structurally impossible under
+    ;;      MIN_LEN=2 frozen protocol) DEFERRED to cycle 28.
+    ("152-discovery-forbidden-laced.6th"          2)))
 
 (define (run-demo file)
   (define out
@@ -604,8 +632,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 2070
-                (format "cumulative ✓ count: ~a (expected 2070)" total-pass)))
+  (check-equal? total-pass 2086
+                (format "cumulative ✓ count: ~a (expected 2086)" total-pass)))
 
-(displayln (format "examples regression: ~a / 2070 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 2086 ✓ across ~a demos"
                    total-pass (length expected)))

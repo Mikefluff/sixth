@@ -1,0 +1,59 @@
+\ examples/152-discovery-forbidden-laced.6th
+\ Cycle 27D — negative control: forbidden-op-laced motif.
+\ Pre-reg: PREDICTIONS-149.md (commit 8828052) demo 152 spec.
+\
+\ Workload: a repeated 3-gram that INCLUDES a FORBIDDEN-IN-MOTIF
+\ symbol (LAW-HASH).  Miner must filter it out.  Returns either
+\ an alternative clean motif (if any) or empty.
+\
+\ Note: we use LAW-HASH (not RESET) because RESET would wipe the
+\ substrate mid-workload, breaking subsequent operations.  LAW-HASH
+\ is in INSPECTION-OPS AND would be the right kind of meta-prim
+\ to filter.  Either filter type (INSPECTION-OPS or FORBIDDEN-IN-
+\ MOTIF) excludes the n-gram.
+
+use prelude
+use debug
+use graph
+
+cr "=== Demo 152 — discovery on forbidden-laced trace (cycle 27 negative) ===" . cr
+cr
+
+RESET
+
+\ Repeat 3 times: MARK MARK LAW-HASH (3-gram with LAW-HASH inside).
+\ LAW-HASH is INSPECTION-OPS so any n-gram containing it is excluded.
+MARK MARK LAW-HASH drop
+MARK MARK LAW-HASH drop
+MARK MARK LAW-HASH drop
+
+\ Trace (most recent first):
+\   drop LAW-HASH MARK MARK drop LAW-HASH MARK MARK drop LAW-HASH MARK MARK
+\
+\ Clean n-grams (no INSPECTION-OPS):
+\   `MARK MARK` appears 3 times (clean — passes filter)
+\
+\ Miner SHOULD find `MARK MARK` (length-2, freq 3, clean).
+\ It SHOULD NOT find any n-gram containing LAW-HASH.
+
+DETECT-MOTIF-AUTO "motif" store
+
+"  trace mining result = " . "motif" load . cr
+
+\ Check returned motif does NOT contain LAW-HASH or any forbidden.
+\ Sixth doesn't have list-search primitive easily exposed; we use
+\ SHADOW-CHECK as the verifier — it would return 0 if motif had
+\ forbidden symbol.  But our miner already filtered, so shadow
+\ should pass on whatever was returned.
+
+"motif" load SHADOW-CHECK "shadow" store
+"  shadow on returned  = " . "shadow" load . cr
+
+\ Acceptance: motif is non-empty AND shadow passes.
+"motif" load 0 = "motif-empty?" store
+"motif-empty?" load 0 assert-eq          \ motif non-empty (a clean alt found)
+"shadow" load 1 assert-eq                \ no forbidden in returned
+
+cr "Negative control 152 PASS: miner filtered forbidden-laced" . cr
+cr "  n-grams; returned only clean candidate." . cr
+REPORT

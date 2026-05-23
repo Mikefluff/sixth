@@ -1,0 +1,58 @@
+\ examples/150-discovery-no-repeats.6th
+\ Cycle 27D — negative control: trace without sufficient repeats.
+\ Pre-reg: PREDICTIONS-149.md (commit 8828052) demo 150 spec.
+\
+\ Workload: 20 ops with NO subsequence of length >= 2 appearing
+\ 3+ times.  DETECT-MOTIF-AUTO must return empty list.
+
+use prelude
+use debug
+use graph
+
+cr "=== Demo 150 — discovery without repeats (cycle 27 negative) ===" . cr
+cr
+
+RESET
+
+\ Build a varied workload — 20 top-level ops, all distinct sequences.
+\ No 2-gram occurs 3 times.
+MARK MARK
+bi-edge
+MARK MARK MARK
+bi-edge
+NODES drop
+MARK
+NODES drop
+
+\ Trace tail at this moment (most-recent first, K=20 window):
+\   drop NODES MARK drop NODES bi-edge MARK MARK MARK bi-edge MARK MARK
+\
+\ Possible 2-grams:
+\   (MARK MARK) appears 2 times not 3 → below R
+\   (drop NODES) appears 2 times → below R
+\
+\ No clean n-gram of len 2..6 appears >= 3 times.
+\ Miner must return empty list.
+
+DETECT-MOTIF-AUTO "motif" store
+
+"  trace mining result = " . "motif" load . cr
+
+\ Per cycle 27 spec, the assertion is "no candidate was induced
+\ because miner returned empty".  We verify this via CAND-STATUS:
+\ if no induce happened, cand_001 has status 'unknown (no record).
+' cand_001 CAND-STATUS "status" store
+"  cand_001 status     = " . "status" load . cr
+
+\ ledger should also be empty (no induce/commit/rollback events).
+LEDGER-COUNT "lc" store
+"  ledger event count  = " . "lc" load . cr
+
+"status" load 'unknown = "no-induce?" store
+"lc"     load 0 = "no-events?" store
+"no-induce?" load 1 assert-eq            \ no cand induced
+"no-events?" load 1 assert-eq            \ no meta events recorded
+
+cr "Negative control 150 PASS: miner correctly returns empty" . cr
+cr "  on trace without sufficient repetition." . cr
+REPORT
