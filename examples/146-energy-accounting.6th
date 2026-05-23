@@ -65,8 +65,14 @@ DETECT-MOTIF "m17" store
 "m17" load SHADOW-CHECK drop
 "m17" load INDUCE-RUNTIME "c17" store
 
-\ Bump uses to N=5 to satisfy coupling
-cand_001 cand_001 cand_001 cand_001 cand_001
+\ Bump uses to N=5 across M=3 distinct sessions (cycle 26 enforcement).
+\ NEW-SESSION increments deterministic session_id; per-cand session
+\ tracking dedupes so we need at least M distinct values.
+cand_001
+NEW-SESSION
+cand_001 cand_001
+NEW-SESSION
+cand_001 cand_001
 
 "c17" load CAND-USES "uses17" store
 "uses17" load 5 = "uses-eq-5?" store

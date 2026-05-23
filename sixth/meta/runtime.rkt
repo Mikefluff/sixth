@@ -37,12 +37,17 @@
          cand-status-of
          contamination-of
          session-id-of
+         set-session-id!
          compute-law-hash
          motif-hash
          FORBIDDEN-IN-MOTIF
          COUPLING-N
+         COUPLING-M
          cand-name?
          bump-use-count!
+         cand-sessions-of
+         bump-cand-session!
+         distinct-session-count
          make-cand-dispatch-hook
          ;; cycle 25E energy accounting
          energy-conflict-of
@@ -95,6 +100,8 @@
 (define MEM_ENERGY_SEARCH         '_energy-search)
 (define MEM_ENERGY_REUSE_GAIN     '_energy-reuse-gain)
 (define MEM_ENERGY_SEMANTIC_TRACE '_energy-semantic-trace)
+;; cycle 26: per-cand distinct-session tracking for COUPLING-M check
+(define MEM_CAND_SESSIONS         '_cand-sessions)  ; alist (cand-sym . list-of-session-ids)
 
 ;; Forbidden symbols inside a candidate motif (per docs/mining_protocol.md §4).
 ;; A candidate cannot invoke meta-primitives (would allow self-modifying-meta)
@@ -140,7 +147,14 @@
   (hash-set! mem MEM_ENERGY_SEARCH         (box 0))
   (hash-set! mem MEM_ENERGY_REUSE_GAIN     (box 0))
   (hash-set! mem MEM_ENERGY_SEMANTIC_TRACE (box 0))
+  ;; cycle 26: per-cand distinct session tracking
+  (hash-set! mem MEM_CAND_SESSIONS         (box '()))
   (void))
+
+;; Allow tests / NEW-SESSION primitive to update session_id deterministically.
+;; Test-only API per PREDICTIONS-147.md commitment 6.
+(define (set-session-id! e new-id)
+  (hash-set! (env-memory e) MEM_SESSION_ID new-id))
 
 (define (energy-conflict-of e)
   (hash-ref (env-memory e) MEM_ENERGY_CONFLICT (box 0)))
@@ -177,9 +191,39 @@
 
 ;; Coupling rule constants (per docs/mining_protocol.md §3).
 ;; N=5 uses required for ephemeral → Tier 2 candidate.
-;; M=3 distinct runs required — enforcement currently in-process only;
-;; cross-process distinct-run tracking deferred to cycle 26.
+;; M=3 distinct runs required.  Cycle 26 enforces this in-process
+;; via NEW-SESSION testing primitive that simulates cross-process
+;; restart by mutating session_id; full cross-process persistence
+;; lands in cycle 27.
 (define COUPLING-N 5)
+(define COUPLING-M 3)
+
+;; Per-cand distinct-session tracking.  Returns the box of an alist
+;; (cand-sym . list-of-session-ids-seen-using-this-cand).
+(define (cand-sessions-of e)
+  (hash-ref (env-memory e) MEM_CAND_SESSIONS (box '())))
+
+;; Add session_id to the cand's session list if not already present.
+;; Called by the dispatch hook on each cand_* invocation.
+(define (bump-cand-session! e cand-sym sid)
+  (define b (cand-sessions-of e))
+  (define alist (unbox b))
+  (define existing (assq cand-sym alist))
+  (cond
+    [(not existing)
+     (set-box! b (cons (cons cand-sym (list sid)) alist))]
+    [(member sid (cdr existing))
+     (void)]  ; already recorded
+    [else
+     (define new-list (cons sid (cdr existing)))
+     (set-box! b (cons (cons cand-sym new-list)
+                        (filter (lambda (entry)
+                                  (not (eq? (car entry) cand-sym)))
+                                alist)))]))
+
+(define (distinct-session-count e cand-sym)
+  (define entry (assq cand-sym (unbox (cand-sessions-of e))))
+  (if entry (length (cdr entry)) 0))
 
 ;; A symbol is a candidate id if it begins with "cand_" and matches
 ;; the cand_NNN pattern (3 digits).  Tier 1 emits cand_001, cand_002, ...
@@ -216,7 +260,9 @@
     CAND-USES CAND-STATUS SHADOW-CERT-OF SESSION-ID
     ACTIVE-DICTIONARY CONTAMINATE!
     E-WORLD E-LAW E-TRACE E-CONFLICT E-SEARCH
-    E-REUSE-GAIN E-TOTAL E-SNAPSHOT))
+    E-REUSE-GAIN E-TOTAL E-SNAPSHOT
+    ;; cycle 26 additions:
+    NEW-SESSION WRAP-MOTIF CAND-DISTINCT-SESSIONS TRY-COMMIT))
 
 (define (inspection-op? name)
   (and (memq name INSPECTION-OPS) #t))
@@ -265,6 +311,8 @@
     (cond
       [(cand-name? name)
        (bump-use-count! e name)
+       ;; cycle 26: track distinct sessions per cand
+       (bump-cand-session! e name (session-id-of e))
        (define save (- (expansion-length-of e name) 1))
        (when (> save 0)
          (define rb (energy-reuse-gain-of e))

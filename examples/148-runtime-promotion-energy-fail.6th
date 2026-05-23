@@ -1,0 +1,94 @@
+\ examples/148-runtime-promotion-energy-fail.6th
+\ Cycle 26C — negative test: energy gate must REJECT a length-1
+\ candidate even when coupling (N=5 uses, M=3 sessions) is met.
+\ Pre-reg: PREDICTIONS-147.md (commit e4dd80d).
+\
+\ A length-1 motif (a single existing primitive like MARK) has
+\ reuse_gain = (1 - 1) × use_count = 0.  No matter how many times
+\ it is used, net_delta_e = E_law_cost (1) - 0 = 1 ≥ 0.  Energy
+\ gate must reject.
+\
+\ DETECT-MOTIF cannot produce length-1 motifs (MIN_LEN=2 per
+\ mining_protocol.md §3) so we use the WRAP-MOTIF test helper
+\ to construct the motif manually.
+\
+\ COMMIT-PRIMITIVE raises on energy-gate fail; we use TRY-COMMIT
+\ to catch the rejection symbol without crashing the test.
+
+use prelude
+use debug
+use graph
+
+cr "=== Demo 148 — negative path: length-1 energy gate (cycle 26) ===" . cr
+cr
+
+RESET
+
+\ Construct length-1 motif containing just MARK.
+' MARK WRAP-MOTIF "m1" store
+
+"  constructed motif = " . "m1" load . cr
+
+\ SHADOW-CHECK passes (MARK is in dictionary, not in FORBIDDEN-IN-MOTIF).
+"m1" load SHADOW-CHECK "shadow" store
+"  shadow check pass = " . "shadow" load . cr
+
+\ INDUCE succeeds (non-empty motif).
+"m1" load INDUCE-RUNTIME "c" store
+"  induced cand     = " . "c" load . cr
+
+\ Use cand N=5 times across M=3 sessions.
+\ The cand's name is cand_NNN — we know it's cand_001 (post-RESET).
+cand_001
+NEW-SESSION
+cand_001 cand_001
+NEW-SESSION
+cand_001 cand_001
+
+"c" load CAND-USES               "uses" store
+"c" load CAND-DISTINCT-SESSIONS  "msess" store
+E-LAW                            "el" store
+E-REUSE-GAIN                     "er" store
+
+"  use count           = " . "uses" load . cr
+"  distinct sessions   = " . "msess" load . cr
+"  E-LAW post-induce   = " . "el" load . cr
+"  E-REUSE-GAIN post-5 = " . "er" load . cr
+"  expected net delta  = " . "el" load "er" load - . " (>= 0 → fail)" . cr
+cr
+
+\ Both coupling conditions satisfied (N>=5, M>=3) but energy
+\ gate should reject.  Use TRY-COMMIT to capture the rejection.
+"c" load TRY-COMMIT "commit-result" store
+
+\ Status must remain 'ephemeral-active (not promoted).
+"c" load CAND-STATUS "status" store
+
+"  commit result       = " . "commit-result" load . cr
+"  status post-commit  = " . "status" load . cr
+cr
+
+\ Cleanup: rollback the ephemeral.
+"c" load ROLLBACK-RUNTIME
+"c" load CAND-STATUS "status-rb" store
+"  status post-rollback= " . "status-rb" load . cr
+
+\ Pass conditions per PREDICTIONS-147.md negative path =========
+"shadow"           load 1 = "nc-1-shadow-ok?" store
+"uses"             load 5 = "nc-2-uses-ok?" store
+"msess"            load 3 = "nc-2-sessions-ok?" store
+"er"               load 0 = "nc-3-reuse-zero?" store
+"commit-result"    load 'rejected-energy = "nc-4-rejected-energy?" store
+"status"           load 'ephemeral-active = "nc-4-status-active?" store
+"status-rb"        load 'rolled-back = "nc-6-rollback-clean?" store
+
+"nc-1-shadow-ok?"        load 1 assert-eq  \ nc-1: length-1 motif induces
+"nc-2-uses-ok?"          load 1 assert-eq  \ nc-2: N=5 reached
+"nc-2-sessions-ok?"      load 1 assert-eq  \ nc-2: M=3 reached
+"nc-3-reuse-zero?"       load 1 assert-eq  \ nc-3: reuse_gain=0
+"nc-4-rejected-energy?"  load 1 assert-eq  \ nc-4: gate rejected
+"nc-4-status-active?"    load 1 assert-eq  \ nc-4: status NOT 'committed
+"nc-6-rollback-clean?"   load 1 assert-eq  \ nc-6: rollback restores
+
+cr "Negative-path acceptance: energy gate ACTIVE." . cr
+REPORT

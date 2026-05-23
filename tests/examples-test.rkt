@@ -563,7 +563,23 @@
     ;;      Plus E-SNAPSHOT 10-tuple format sanity.  10 asserts.
     ;;      Energy v0 formula: E_total = E_world + E_law + E_trace
     ;;        + E_conflict + E_search - E_reuse_gain
-    ("146-energy-accounting.6th"                 10)))
+    ("146-energy-accounting.6th"                 10)
+    ;; 147. Cycle 26B — happy-path runtime promotion.  MARK MARK
+    ;;      bi-edge motif (L=3), N=5 uses across M=3 distinct
+    ;;      sessions (via NEW-SESSION), net delta_e = -7 < 0.
+    ;;      COMMIT-PRIMITIVE passes BOTH coupling + energy gates
+    ;;      (cycle 26 activates energy gate enforcement, was dry-run
+    ;;      in cycle 25E).  FREEZE-CANDIDATE stub accepts.  HELD-OUT
+    ;;      stub stays conservative.  12 asserts cover pass conditions
+    ;;      c-1..c-9, c-11 per PREDICTIONS-147.md.
+    ("147-runtime-promotion-happy.6th"           12)
+    ;; 148. Cycle 26C — negative path: length-1 motif via WRAP-MOTIF.
+    ;;      Coupling met (N=5, M=3) but reuse_gain = 0 because
+    ;;      expansion length 1 saves 0 ops per use.  Energy gate
+    ;;      rejects via TRY-COMMIT → 'rejected-energy.  Cand
+    ;;      stays 'ephemeral-active.  Validates that the gate
+    ;;      ACTUALLY gates (not just reports).  7 asserts.
+    ("148-runtime-promotion-energy-fail.6th"      7)))
 
 (define (run-demo file)
   (define out
@@ -588,8 +604,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 2051
-                (format "cumulative ✓ count: ~a (expected 2051)" total-pass)))
+  (check-equal? total-pass 2070
+                (format "cumulative ✓ count: ~a (expected 2070)" total-pass)))
 
-(displayln (format "examples regression: ~a / 2051 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 2070 ✓ across ~a demos"
                    total-pass (length expected)))

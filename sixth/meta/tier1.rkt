@@ -464,32 +464,47 @@
              (current-continuation-marks)
              (current-prim-srcloc)))]
     [else
-     ;; Promote ephemeral-active → committed (next stop: Tier 2 SPECIFY).
-     (define sb (cand-status-of e))
-     (set-box! sb (cons (cons cand-sym 'committed)
-                         (filter (lambda (entry)
-                                   (not (eq? (car entry) cand-sym)))
-                                 (unbox sb))))
-     ;; Cycle 25E DRY-RUN energy gate (observe-only; cycle 26 enforces).
-     ;; Per-cand metrics:
-     ;;   law_cost     = expansion length (added to E_law at INDUCE)
-     ;;   reuse_gain   = use_count * (expansion_length - 1)
-     ;;   net_delta_e  = law_cost - reuse_gain
-     ;;   would_pass   = net_delta_e < 0
+     ;; Cycle 26: enforce M=3 distinct sessions in-process.
+     (define distinct-m (distinct-session-count e cand-sym))
+     ;; Cycle 26: energy gate now ACTIVE (was dry-run in 25E).
      (define exp-len (expansion-length-of e cand-sym))
      (define reuse-gain (* cand-uses (max 0 (- exp-len 1))))
      (define net-delta-e (- exp-len reuse-gain))
-     (define would-pass (< net-delta-e 0))
+     (define would-pass-energy (< net-delta-e 0))
+     ;; Always write the energy-dry-run record for forensic.
      (record-ledger! e (list 'commit-primitive cand-sym
                               cand-uses
                               (compute-law-hash e)
                               (session-id-of e)
-                              'energy-dry-run
+                              'energy-gate-active
                               (list 'law-cost exp-len
                                     'reuse-gain reuse-gain
                                     'net-delta-e net-delta-e
-                                    'would-pass-energy-gate would-pass)))
-     (push! e cand-sym)]))
+                                    'would-pass-energy-gate would-pass-energy
+                                    'distinct-sessions distinct-m)))
+     (cond
+       [(< distinct-m COUPLING-M)
+        (raise (exn:fail:sixth
+                (format "~a — COMMIT-PRIMITIVE: candidate ~a used in ~a distinct sessions (require >= ~a per coupling rule)"
+                        (format-srcloc (current-prim-srcloc))
+                        cand-sym distinct-m COUPLING-M)
+                (current-continuation-marks)
+                (current-prim-srcloc)))]
+       [(not would-pass-energy)
+        (raise (exn:fail:sixth
+                (format "~a — COMMIT-PRIMITIVE: candidate ~a not energetically justified (net delta_e=~a, require < 0; law_cost=~a, reuse_gain=~a)"
+                        (format-srcloc (current-prim-srcloc))
+                        cand-sym net-delta-e exp-len reuse-gain)
+                (current-continuation-marks)
+                (current-prim-srcloc)))]
+       [else
+        ;; Promote ephemeral-active → committed (next stop: Tier 2 SPECIFY).
+        (define sb (cand-status-of e))
+        (set-box! sb (cons (cons cand-sym 'committed)
+                            (filter (lambda (entry)
+                                      (not (eq? (car entry) cand-sym)))
+                                    (unbox sb))))
+        (push! e cand-sym)])]))
 
 ;; ---- LAW-HASH --------------------------------------------------------
 
@@ -606,6 +621,63 @@
   (define sid (session-id-of e))
   (push! e (list w l tr cf sr rg tot wh lh sid)))
 
+;; ---- cycle 26 additions ----
+;;
+;; NEW-SESSION ( -- )  test primitive: increment session_id by 1.
+;;   Simulates "process restart" within one demo run.  Per
+;;   PREDICTIONS-147.md commitment 6: test-only, cycle 27 replaces
+;;   with cross-process persistence and removes this primitive.
+;;
+;; WRAP-MOTIF ( sym -- list )  helper: wrap a single symbol in
+;;   a 1-element LIST.  DETECT-MOTIF cannot produce length-1 motifs
+;;   (MIN_LEN=2 in mining_protocol.md §3) so this lets test demos
+;;   construct known-input negative motifs.
+;;
+;; CAND-DISTINCT-SESSIONS ( cand -- n )  inspection: number of
+;;   distinct session_ids that have invoked this candidate.
+
+(define (prim-new-session e)
+  (set-session-id! e (+ 1 (session-id-of e))))
+
+(define (prim-wrap-motif e)
+  (define s (require-sym (pop! e) 'WRAP-MOTIF))
+  (push! e (list s)))
+
+(define (prim-cand-distinct-sessions e)
+  (define c (require-sym (pop! e) 'CAND-DISTINCT-SESSIONS))
+  (push! e (distinct-session-count e c)))
+
+;; TRY-COMMIT ( cand -- result )  — same as COMMIT-PRIMITIVE but
+;; catches gate-rejection exceptions and pushes a status symbol
+;; instead of raising.  Used by negative demos to assert that the
+;; gate correctly REJECTS without crashing the test.
+;;
+;; Returns: cand-sym on success, or a 'rejected-* symbol on
+;; rejection.  Rejection reason is parsed from the exception message.
+(define (prim-try-commit e)
+  (define c (require-sym (pop! e) 'TRY-COMMIT))
+  (with-handlers
+    ([exn:fail:sixth?
+      (lambda (ex)
+        (define msg (exn-message ex))
+        (define kind
+          (cond
+            [(regexp-match? #px"not energetically justified" msg)
+             'rejected-energy]
+            [(regexp-match? #px"distinct sessions" msg)
+             'rejected-coupling-m]
+            [(regexp-match? #px"coupling rule" msg)
+             'rejected-coupling-n]
+            [(regexp-match? #px"rolled-back" msg)
+             'rejected-rolled-back]
+            [(regexp-match? #px"contaminated" msg)
+             'rejected-contaminated]
+            [else 'rejected-other]))
+        (record-ledger! e (list 'try-commit-rejected c kind))
+        (push! e kind))])
+    (push! e c)
+    (prim-commit-primitive e)))
+
 ;; Helper: get current world hash without going through primitive
 ;; dispatch (avoid double-counting in inspection).
 (define (require-hash-world e)
@@ -655,7 +727,12 @@
         (cons 'E-SEARCH          prim-e-search)
         (cons 'E-REUSE-GAIN      prim-e-reuse-gain)
         (cons 'E-TOTAL           prim-e-total)
-        (cons 'E-SNAPSHOT        prim-e-snapshot)))
+        (cons 'E-SNAPSHOT        prim-e-snapshot)
+        ;; cycle 26 additions: M=3 + energy-gate test infrastructure
+        (cons 'NEW-SESSION                prim-new-session)
+        (cons 'WRAP-MOTIF                 prim-wrap-motif)
+        (cons 'CAND-DISTINCT-SESSIONS     prim-cand-distinct-sessions)
+        (cons 'TRY-COMMIT                 prim-try-commit)))
 
 (define (register-tier1! e)
   (for ([entry (in-list TIER1-TABLE)])

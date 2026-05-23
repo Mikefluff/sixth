@@ -1,0 +1,126 @@
+\ examples/147-runtime-promotion-happy.6th
+\ Cycle 26B — happy-path Tier 1 + energy gate validation.
+\ Pre-reg: PREDICTIONS-147.md (commit e4dd80d).
+\
+\ End-to-end validation on a hand-crafted motif (MARK MARK bi-edge,
+\ expansion length 3).  Full lifecycle:
+\   DETECT-MOTIF → SHADOW-CHECK → INDUCE-RUNTIME →
+\   N=5 USE-RUNTIME across M=3 distinct sessions →
+\   COMMIT-PRIMITIVE (coupling + energy gate both pass) →
+\   FREEZE-CANDIDATE (Tier 2 stub).
+\
+\ Pre-reg pass conditions c-1 .. c-12 enumerated inline as asserts.
+
+use prelude
+use debug
+use graph
+
+cr "=== Demo 147 — happy-path runtime promotion (cycle 26) ===" . cr
+cr
+
+\ Session 1: seed + detect + induce ===========================
+RESET
+LAW-HASH "h-pre" store
+HASH-WORLD "w-pre" store
+
+\ 3 iterations to satisfy DETECT-MOTIF REPEAT_R=3.
+MARK MARK bi-edge
+MARK MARK bi-edge
+MARK MARK bi-edge
+
+\ Detect immediately (no diagnostic noise in trace window).
+DETECT-MOTIF "m" store
+"m" load SHADOW-CHECK "shadow" store
+"m" load SHADOW-CERT-OF "cert" store
+
+\ INDUCE inside the same run; law_hash MUST mutate.
+"m" load INDUCE-RUNTIME "c" store
+LAW-HASH "h-post-induce" store
+
+\ Capture world_hash immediately before invocation (no other ops).
+HASH-WORLD "w-pre-invoke" store
+
+\ Session 1: 1 use
+cand_001
+
+\ Session 2: 2 uses
+NEW-SESSION
+cand_001 cand_001
+
+\ Session 3: 2 uses → total 5
+NEW-SESSION
+cand_001 cand_001
+
+\ Coupling + energy diagnostics ===============================
+"c" load CAND-USES                "uses" store
+"c" load CAND-DISTINCT-SESSIONS   "msess" store
+E-LAW                              "el" store
+E-REUSE-GAIN                       "er" store
+"c" load CAND-STATUS               "status-pre-commit" store
+
+\ COMMIT now requires N>=5 AND M>=3 AND net_delta_e<0.
+"c" load COMMIT-PRIMITIVE          "commit-result" store
+"c" load CAND-STATUS               "status-post-commit" store
+
+\ FREEZE-CANDIDATE (stub passes for committed status).
+"c" load FREEZE-CANDIDATE          "frozen" store
+
+\ HELD-OUT-EVAL stub stays conservative (returns 0).
+"c" load HELD-OUT-EVAL             "ho" store
+
+\ Diagnostics ==================================================
+cr "Diagnostics:" . cr
+"  detected motif      = " . "m" load . cr
+"  shadow check pass   = " . "shadow" load . cr
+"  shadow cert         = " . "cert" load . cr
+"  cand id             = " . "c" load . cr
+"  use count           = " . "uses" load . cr
+"  distinct sessions   = " . "msess" load . cr
+"  E-LAW post-induce   = " . "el" load . cr
+"  E-REUSE-GAIN post-5 = " . "er" load . cr
+"  status pre-commit   = " . "status-pre-commit" load . cr
+"  status post-commit  = " . "status-post-commit" load . cr
+"  commit returned     = " . "commit-result" load . cr
+"  freeze returned     = " . "frozen" load . cr
+"  held-out (stub)     = " . "ho" load . cr
+cr
+
+\ Derived predicates ===========================================
+"h-pre"           load "h-post-induce" load = "law-changed?"  store
+"w-pre-invoke"    load "w-pre" load     = "world-stable?" store    \ misuse: we want w-pre != w-pre-invoke
+\ Actually w-pre is BEFORE MARK chain, w-pre-invoke is AFTER => differ.
+\ But we care: world should stay stable during pure INDUCE.  We didn't
+\ snapshot world INSIDE the INDUCE itself, so skip strict separation
+\ assert here (already covered by demo 146 Item 16).
+"shadow"           load 1 = "shadow-passed?"            store
+"cert"             load 'pass = "cert-pass?"            store
+"uses"             load 5 = "uses-eq-5?"                store
+"msess"            load 3 = "msess-eq-3?"               store
+"el"               load 3 = "el-eq-3?"                  store
+"er"               load 10 = "er-eq-10?"                store
+"status-post-commit" load 'committed = "committed?"     store
+"commit-result"    load "c" load = "commit-returned-cand?" store
+"frozen"           load "c" load = "freeze-returned-cand?" store
+"ho"               load 0 = "heldout-conservative?"     store
+"status-pre-commit" load 'contaminated = "pre-commit-contaminated?" store
+\ pre-commit should NOT be contaminated — assert negation
+"pre-commit-contaminated?" load 0 = "pre-commit-clean?" store
+
+\ Pass conditions per PREDICTIONS-147.md (happy path) ==========
+"shadow-passed?"        load 1 assert-eq        \ c-1 detected + c-2 shadow cert
+"cert-pass?"            load 1 assert-eq        \ c-2 cert sym = 'pass
+"law-changed?"          load 0 assert-eq        \ c-3 LAW-HASH mutated (=0 means !=)
+"uses-eq-5?"            load 1 assert-eq        \ c-4 N=5
+"msess-eq-3?"           load 1 assert-eq        \ c-5 M=3
+"el-eq-3?"              load 1 assert-eq        \ c-6 net_delta = 3 - 10 = -7
+"er-eq-10?"             load 1 assert-eq        \ c-6
+"commit-returned-cand?" load 1 assert-eq        \ c-7 COMMIT succeeds
+"committed?"            load 1 assert-eq        \ c-7
+"freeze-returned-cand?" load 1 assert-eq        \ c-8 FREEZE stub passes
+"pre-commit-clean?"     load 1 assert-eq        \ c-9 no contamination
+"heldout-conservative?" load 1 assert-eq        \ c-11 HELD-OUT stub still 0
+\ c-10 (ledger has commit) and c-12 (regression green) verified
+\ externally by raco test 2NNN/2NNN.
+
+cr "Happy-path acceptance: all pre-reg c-1..c-9, c-11 verified." . cr
+REPORT
