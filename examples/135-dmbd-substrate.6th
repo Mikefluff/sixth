@@ -1,0 +1,151 @@
+\ examples/135-dmbd-substrate.6th
+\ Cycle 16 — DMBD (Beck-Ramstead 2025) applied to Sixth substrate.
+\ Pre-registered: PREDICTIONS-135.md (attested, commit e3d0537).
+\ Source:        scripts/dmbd_sixth.py (commit 5057891).
+\
+\ === REGIME FF + secondary ELBO signal ===
+\
+\ Primary metric (object_count, pre-registered):
+\   Substrate mean object_count: 2.20
+\   Baseline mean object_count:  2.99
+\   R_objects = 0.7358 → REGIME FF (just inside [0.7, 1.5] null band)
+\
+\ Secondary metric (ELBO fit, pre-registered as sub-prediction):
+\   Substrate mean ELBO:  543.27
+\   Baseline mean ELBO:   364.86
+\   R_ELBO = 1.4890 → +49% better MB-model fit
+\
+\ HONEST READING:
+\   Per pre-registered PRIMARY metric (number of detected
+\   macroscopic objects in substrate trajectory): substrate
+\   produces 26% FEWER distinct objects than random rewrite
+\   baseline.  REGIME FF fires (null finding) — substrate doesn't
+\   emit more emergent structure than random per object-count.
+\
+\   But ELBO secondary metric tells different story: substrate
+\   trajectories fit the MB-structured generative model 49%
+\   better than random trajectories.  Substrate produces MORE
+\   MB-AMENABLE STRUCTURE even with FEWER objects.
+\
+\ INTERPRETATION:
+\   Pattern: structured substrates (cycle, path, complete) under
+\   iterated NSUM produce predictable trajectories that fit any
+\   structural model well — including MB.  Random substrates
+\   produce chaotic trajectories that DMBD partitions into more
+\   labels but with worse overall fit.
+\
+\   Whether 49% ELBO advantage is genuine substrate-of-cognition
+\   signal OR another cycle-13 pattern (structured vs sparse
+\   random) requires cycle 17 cross-validation with degree-
+\   matched baseline.
+\
+\ CATALOGUE STATUS update:
+\   Primary metric pre-reg: REGIME FF fires (null on object emergence)
+\   Secondary metric pre-reg: substantial ELBO signal but weak baseline
+\   First non-null DMBD result, requires cycle 17 to validate
+\   under proper baseline before claim.
+
+use prelude
+use debug
+
+\ ============================================================
+\ Pinned values from scripts/dmbd_sixth.py run 2026-05-22.
+\ ============================================================
+
+\ Mean counts (× 100 for integer arithmetic).
+220 "sub-objs-100x"      store   \ 2.20
+299 "base-objs-100x"     store   \ 2.99
+736 "R-objs-1000x"       store   \ 0.7358 × 1000 ≈ 736
+
+\ Mean ELBOs.
+54327 "sub-elbo-100x"    store   \ 543.27
+36486 "base-elbo-100x"   store   \ 364.86
+1489  "R-elbo-1000x"     store   \ 1.4890 × 1000
+
+\ ============================================================
+\ Regime classification per PREDICTIONS-135.md.
+\ ============================================================
+
+\ Regime EE: R_objects > 1.5 (× 1000 form: > 1500).
+"R-objs-1000x" load 1500 > "regime-EE?" store
+
+\ Regime FF: R_objects ∈ [0.7, 1.5].
+"R-objs-1000x" load 700 >=
+"R-objs-1000x" load 1500 <= * "regime-FF?" store
+
+\ Regime GG: R_objects < 0.7.
+"R-objs-1000x" load 700 < "regime-GG?" store
+
+\ Partition.
+"regime-EE?" load "regime-FF?" load + "regime-GG?" load + "regime-count" store
+
+\ Secondary metric checks.
+"R-elbo-1000x" load 1100 > "R-ELBO>1.1?" store
+"R-elbo-1000x" load 1400 > "R-ELBO>1.4?" store
+
+\ ============================================================
+\ Report.
+\ ============================================================
+
+cr
+"=== Demo 135 — DMBD on Sixth substrate (cycle 16) ===" . cr
+cr
+"Pre-reg: PREDICTIONS-135.md (commit e3d0537, attested)" . cr
+"Method:  Beck-Ramstead (2025) arXiv:2502.21217 via pyDMBD" . cr
+"Source:  scripts/dmbd_sixth.py (commit 5057891)" . cr
+cr
+"Primary metric (object_count):" . cr
+"  Substrate mean × 100: " . "sub-objs-100x" load . "  (2.20)" . cr
+"  Baseline mean × 100:  " . "base-objs-100x" load . "  (2.99)" . cr
+"  R_objects × 1000:     " . "R-objs-1000x" load . "  (0.736)" . cr
+cr
+"Secondary metric (ELBO):" . cr
+"  Substrate mean × 100: " . "sub-elbo-100x" load . "  (543.27)" . cr
+"  Baseline mean × 100:  " . "base-elbo-100x" load . "  (364.86)" . cr
+"  R_ELBO × 1000:        " . "R-elbo-1000x" load . "  (1.489)" . cr
+cr
+"Regime EE (R>1.5, positive):  " . "regime-EE?" load . cr
+"Regime FF (R∈[0.7,1.5], null): " . "regime-FF?" load . cr
+"Regime GG (R<0.7, anti-distinguishing): " . "regime-GG?" load . cr
+cr
+"Secondary: R_ELBO > 1.1: " . "R-ELBO>1.1?" load . cr
+"Secondary: R_ELBO > 1.4: " . "R-ELBO>1.4?" load . cr
+cr
+
+"regime-FF?" load 1 = if
+  ">>> REGIME FF (primary metric) — substrate ≈ random on object" . cr
+  "    emergence per pre-registered classifier.  R_objects=0.74" . cr
+  "    falls just inside [0.7, 1.5] null band." . cr
+  "" . cr
+  "    BUT secondary metric (ELBO) shows substrate trajectories" . cr
+  "    fit MB-structured generative model 49% better than random" . cr
+  "    (R_ELBO=1.489 substantially > 1.1 threshold)." . cr
+  "" . cr
+  "    INTERPRETATION: structured substrates produce predictable" . cr
+  "    trajectories that fit ANY structural model well.  Random" . cr
+  "    substrates fragment into more DMBD-detected objects but" . cr
+  "    fit worse overall.  Whether 49% ELBO advantage is genuine" . cr
+  "    substrate-of-cognition signal OR another cycle-13 pattern" . cr
+  "    (structured vs sparse random) requires cycle 17 cross-" . cr
+  "    validation with degree-matched baseline." . cr
+then
+
+\ ============================================================
+\ Sanity asserts.
+\ ============================================================
+
+\ Exactly one primary regime fires.
+"regime-count" load 1 assert-eq
+"regime-FF?" load 1 assert-eq
+
+\ Secondary metric significantly positive.
+"R-ELBO>1.1?" load 1 assert-eq
+"R-ELBO>1.4?" load 1 assert-eq
+
+\ Pinned values.
+"sub-objs-100x" load 220 assert-eq
+"base-objs-100x" load 299 assert-eq
+"R-objs-1000x" load 736 assert-eq
+"R-elbo-1000x" load 1489 assert-eq
+
+REPORT

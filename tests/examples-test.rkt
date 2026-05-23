@@ -417,15 +417,28 @@
     ;; --- Cycle 15: cycle-topology scaling + chord-breaking ---
     ;; 134: cycle_n at n ∈ {5, 10, 20, 50, 100} vs proper k=2
     ;;      regular baseline; cycle_10 + {0, 1, 2, 5} chords.
-    ;;      Result: REGIME Z (scaling shrinks) + REGIME CC (chord
-    ;;      decays slowly).  Cycle 14's R=2.00 reduced to R=1.14
-    ;;      at n=10 (proper baseline), R=1.04 at n=100 (vanishing
-    ;;      at scale).  Cycle 14's signal was baseline mis-calc
-    ;;      artifact (k=1 instead of k=2 for self-loop-rich cycle).
-    ;;      Honest surviving claim: cycle has ~14% EICS edge over
-    ;;      k=2 random regular at small n, vanishing at scale.
+    ;;      Result: REGIME Z + CC.  Cycle 14's R=2.00 reduced to
+    ;;      R=1.14 at n=10 (proper baseline), R=1.04 at n=100
+    ;;      (vanishing at scale).  Honest surviving claim: cycle
+    ;;      has ~14% EICS edge at small n only.
     ;;      Pre-registered: PREDICTIONS-134.md (commit ce5aa80).
-    ("134-eics-cycle-scaling.6th"                 7)))
+    ("134-eics-cycle-scaling.6th"                 7)
+    ;; --- Cycle 16: DMBD (Beck-Ramstead 2025) on Sixth ---
+    ;; 135: Dynamic Markov Blanket Detection via pyDMBD applied to
+    ;;      Sixth substrate trajectories (iterated NSUM-update T=50).
+    ;;      10 canonical substrates vs M=20 random rewrite baselines.
+    ;;      Primary metric (object_count): R_objects = 0.736 →
+    ;;      REGIME FF (just inside null band [0.7, 1.5]).
+    ;;      Secondary metric (ELBO): R_ELBO = 1.489 → substrate
+    ;;      trajectories fit MB-structured generative model 49%
+    ;;      better than random.  Pattern: structured substrates
+    ;;      produce predictable trajectories that fit ANY structural
+    ;;      model well — including MB.  Whether ELBO advantage is
+    ;;      genuine substrate-of-cognition signal OR cycle-13 pattern
+    ;;      (structured vs sparse random) needs cycle 17 with
+    ;;      degree-matched baseline.
+    ;;      Pre-registered: PREDICTIONS-135.md (commit e3d0537).
+    ("135-dmbd-substrate.6th"                     8)))
 
 (define (run-demo file)
   (define out
@@ -450,8 +463,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1947
-                (format "cumulative ✓ count: ~a (expected 1947)" total-pass)))
+  (check-equal? total-pass 1955
+                (format "cumulative ✓ count: ~a (expected 1955)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1947 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1955 ✓ across ~a demos"
                    total-pass (length expected)))
