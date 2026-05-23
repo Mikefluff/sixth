@@ -19,10 +19,12 @@
          "ast.rkt")
 
 (define-runtime-path stdlib-dir "../stdlib")
+(define-runtime-path substrates-dir "../substrates")
 
 (define current-sixth-path
   (make-parameter
-   (list (path->complete-path stdlib-dir))))
+   (list (path->complete-path stdlib-dir)
+         (path->complete-path substrates-dir))))
 
 ;; Per-env loaded-modules cache, keyed by env identity.
 ;; (Avoids cross-test pollution of a global parameter.)

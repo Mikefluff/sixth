@@ -1,0 +1,253 @@
+\ stdlib/substrate-gen.6th — Sixth-native substrate generators.
+\
+\ Per docs/META-SEMANTICS.md v2: substrate generation must live IN
+\ Sixth, not in external Python.  If Sixth claims self-modifying
+\ runtime, it must also generate its own test worlds.
+\
+\ Generators provided:
+\   make-marks         ( n -- )                  create n fresh nodes
+\   gen-path           ( n -- )                  undirected path of n nodes
+\   gen-cycle          ( n -- )                  undirected cycle of n nodes
+\   gen-er             ( n p-percent seed -- )   ER(n, p/100)
+\   gen-sbm            ( n k p-in p-out seed --) k equal blocks, p-in/p-out as %
+\   gen-motif-triads   ( n seed -- )             ER base + planted triangles
+\   gen-motif-wedges   ( n seed -- )             ER base + planted wedges
+\   gen-hidden-family  ( n k seed -- )           SBM tuned for degree-match
+\
+\ Memory key namespace: all generators use 'sg-*' prefix.
+\ Generators always RESET first; intermediate keys re-initialised.
+
+use prelude
+use graph
+use rand
+
+\ ============================================================
+\ make-marks: create n fresh nodes (ids 0..n-1 after RESET).
+\ Recursive; drops the returned node ids since they are 0..n-1
+\ deterministically post-RESET.
+\ ============================================================
+
+: make-marks ( n -- )
+  dup 0 = if
+    drop
+  else
+    MARK drop 1-
+    make-marks
+  then ;
+
+\ ============================================================
+\ gen-path: undirected path of n nodes via bi-edge chain.
+\   nodes 0..n-1, edges (i, i+1) for i in 0..n-2
+\ ============================================================
+
+\ Node ids are 1-based (MARK returns 1, 2, 3, ...).
+\ For path of n nodes: ids 1..n, edges (i, i+1) for i in 1..n-1.
+
+: gen-path ( n -- )
+  RESET
+  dup "sg-n" store
+  make-marks
+  1 "sg-i" store
+  gp-loop ;
+
+: gp-loop ( -- )
+  "sg-i" load "sg-n" load < if
+    "sg-i" load dup 1+ bi-edge
+    "sg-i" load 1+ "sg-i" store
+    gp-loop
+  then ;
+
+\ ============================================================
+\ gen-cycle: undirected cycle on n nodes.
+\   path + bi-edge (n-1, 0)
+\ ============================================================
+
+\ Cycle: path + bi-edge (n, 1).
+: gen-cycle ( n -- )
+  dup gen-path
+  dup 1 bi-edge
+  drop ;
+
+\ ============================================================
+\ gen-er: Erdős–Rényi G(n, p) with p as integer percent in [0, 100].
+\   Iterates i from 0 to n-1, j from i+1 to n-1.
+\   Adds bi-edge with probability p/100 per pair.
+\ ============================================================
+
+\ ER: ids 1..n, iterate i in 1..n-1, j in i+1..n.
+: gen-er ( n p-percent seed -- )
+  srand
+  "sg-p" store
+  "sg-n" store
+  RESET
+  "sg-n" load make-marks
+  1 "sg-i" store
+  ger-outer ;
+
+: ger-outer ( -- )
+  "sg-i" load "sg-n" load < if
+    "sg-i" load 1+ "sg-j" store
+    ger-inner
+    "sg-i" load 1+ "sg-i" store
+    ger-outer
+  then ;
+
+: ger-inner ( -- )
+  "sg-j" load "sg-n" load <= if
+    100 rand "sg-p" load < if
+      "sg-i" load "sg-j" load bi-edge
+    then
+    "sg-j" load 1+ "sg-j" store
+    ger-inner
+  then ;
+
+\ ============================================================
+\ gen-sbm: Stochastic Block Model with k equal-size blocks.
+\   block(v) = v / (n/k)   (integer division)
+\   p-in / p-out are integer percents in [0, 100].
+\ ============================================================
+
+: gen-sbm ( n k p-in p-out seed -- )
+  srand
+  "sg-pout" store
+  "sg-pin"  store
+  "sg-k"    store
+  "sg-n"    store
+  "sg-n" load "sg-k" load / "sg-bs" store
+  RESET
+  "sg-n" load make-marks
+  1 "sg-i" store
+  gsbm-outer ;
+
+\ ids 1..n; block(v) = (v-1) / block_size  (0-indexed block)
+: gsbm-outer ( -- )
+  "sg-i" load "sg-n" load < if
+    "sg-i" load 1+ "sg-j" store
+    gsbm-inner
+    "sg-i" load 1+ "sg-i" store
+    gsbm-outer
+  then ;
+
+: gsbm-inner ( -- )
+  "sg-j" load "sg-n" load <= if
+    "sg-i" load 1- "sg-bs" load /
+    "sg-j" load 1- "sg-bs" load /
+    = if "sg-pin" load else "sg-pout" load then
+    "sg-thresh" store
+    100 rand "sg-thresh" load < if
+      "sg-i" load "sg-j" load bi-edge
+    then
+    "sg-j" load 1+ "sg-j" store
+    gsbm-inner
+  then ;
+
+\ ============================================================
+\ Triangle planter: three bi-edges (a-b, b-c, a-c).
+\ ============================================================
+
+: plant-triangle ( a b c -- )
+  "sg-tc" store "sg-tb" store "sg-ta" store
+  "sg-ta" load "sg-tb" load bi-edge
+  "sg-tb" load "sg-tc" load bi-edge
+  "sg-ta" load "sg-tc" load bi-edge ;
+
+\ ============================================================
+\ Wedge planter: two bi-edges forming a path of length 2 (a-b, b-c).
+\ ============================================================
+
+: plant-wedge ( a b c -- )
+  "sg-tc" store "sg-tb" store "sg-ta" store
+  "sg-ta" load "sg-tb" load bi-edge
+  "sg-tb" load "sg-tc" load bi-edge ;
+
+\ ============================================================
+\ gen-motif-triads: ER(n, p=10%) base + n/4 planted triangles.
+\   Triangles placed deterministically at random node triplets
+\   (rand-driven) so signature is reproducible.
+\ ============================================================
+
+: gen-motif-triads ( n seed -- )
+  srand
+  "sg-n" store
+  10 "sg-p" store                        \ ER base at 10% density
+  RESET
+  "sg-n" load make-marks
+  1 "sg-i" store
+  ger-outer                              \ uses sg-n, sg-p, current rand state
+  "sg-n" load 4 / "sg-trk" store
+  0 "sg-tn" store
+  gmt-loop ;
+
+\ rand returns 0..n-1; add 1 to get 1..n node ids.
+: gmt-loop ( -- )
+  "sg-tn" load "sg-trk" load < if
+    "sg-n" load rand 1+
+    "sg-n" load rand 1+
+    "sg-n" load rand 1+
+    plant-triangle
+    "sg-tn" load 1+ "sg-tn" store
+    gmt-loop
+  then ;
+
+\ ============================================================
+\ gen-motif-wedges: ER(n, p=10%) base + n/4 planted wedges.
+\ ============================================================
+
+: gen-motif-wedges ( n seed -- )
+  srand
+  "sg-n" store
+  10 "sg-p" store
+  RESET
+  "sg-n" load make-marks
+  1 "sg-i" store
+  ger-outer
+  "sg-n" load 4 / "sg-trk" store
+  0 "sg-tn" store
+  gmw-loop ;
+
+: gmw-loop ( -- )
+  "sg-tn" load "sg-trk" load < if
+    "sg-n" load rand 1+
+    "sg-n" load rand 1+
+    "sg-n" load rand 1+
+    plant-wedge
+    "sg-tn" load 1+ "sg-tn" store
+    gmw-loop
+  then ;
+
+\ ============================================================
+\ gen-hidden-family: SBM tuned so that expected degree per node
+\ is approximately the same across blocks.
+\   k=3 blocks of n/3 each, p-in=30%, p-out=15%.
+\   Expected within-block neighbors: (n/k - 1) * 0.30
+\   Expected cross-block neighbors:  (n - n/k) * 0.15
+\   For n=18, k=3: 5*0.30 + 12*0.15 = 1.5 + 1.8 = 3.3 avg deg.
+\   Degree spread is small relative to block-membership signal,
+\   so degree-grouping should be poor while community-grouping good.
+\ ============================================================
+
+: gen-hidden-family ( n k seed -- )
+  "sg-x-seed" store
+  "sg-x-k"    store
+  "sg-x-n"    store
+  "sg-x-n"    load
+  "sg-x-k"    load
+  30                        \ p-in = 30%
+  15                        \ p-out = 15%
+  "sg-x-seed" load
+  gen-sbm ;
+
+\ ============================================================
+\ Convenience: world-hash and assert-signature.
+\ ============================================================
+
+: world-hash ( -- h )
+  HASH-WORLD ;
+
+: assert-signature ( expected -- )
+  HASH-WORLD = if
+    \ pass: silent
+  else
+    "SIGNATURE MISMATCH" . cr
+    0 1 assert-eq            \ deliberate fail
+  then ;

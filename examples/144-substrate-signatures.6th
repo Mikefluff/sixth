@@ -1,0 +1,135 @@
+\ examples/144-substrate-signatures.6th
+\ Cycle 25B — substrate signature verification + Tier 2 stub smoke.
+\ Per docs/META-SEMANTICS.md v2 §8 (frozen substrate set) and §5
+\ (Tier 2 stubs).
+\
+\ Two parts:
+\   A) Run each of 12 frozen substrate generators; verify HASH-WORLD
+\      matches the signature pinned in substrates/manifest.6th.
+\      Any drift in generator code would surface here as a fail.
+\
+\   B) Smoke test 8 Tier 2 meta-primitives: invoke each on a Tier 1
+\      ephemeral, verify stub behavior matches spec (gate closed,
+\      ledger event recorded, no spurious mutation).
+
+use prelude
+use debug
+use graph
+use substrate-gen
+use manifest
+
+cr "=== Demo 144 — substrate signatures + Tier 2 plumbing (cycle 25B) ===" . cr
+cr
+
+\ ============================================================
+\ Part A: signature verification for 12 substrates.
+\ Each generator pushes its expected signature; we compare to
+\ HASH-WORLD.  Mismatch = generator drift = contamination event.
+\ ============================================================
+
+"Part A — substrate signature checks (12)" . cr
+
+\ Each generator word in manifest.6th ends with the expected sig pushed.
+\ The word leaves the substrate populated AND the sig on stack;
+\ we then HASH-WORLD and =, asserting result.
+
+train-path-n10              HASH-WORLD = "sig-1"  store
+train-cycle-n10             HASH-WORLD = "sig-2"  store
+train-er-n10-p30            HASH-WORLD = "sig-3"  store
+train-er-n20-p15            HASH-WORLD = "sig-4"  store
+train-motif-triads          HASH-WORLD = "sig-5"  store
+train-hidden-family-n18     HASH-WORLD = "sig-6"  store
+heldout-path-n12            HASH-WORLD = "sig-7"  store
+heldout-cycle-n12           HASH-WORLD = "sig-8"  store
+heldout-er-n10-p30          HASH-WORLD = "sig-9"  store
+heldout-er-n20-p15          HASH-WORLD = "sig-10" store
+heldout-motif-wedges        HASH-WORLD = "sig-11" store
+heldout-hidden-family-n24   HASH-WORLD = "sig-12" store
+
+"  sig train_path_n10            = " . "sig-1"  load . cr
+"  sig train_cycle_n10           = " . "sig-2"  load . cr
+"  sig train_ER_n10_p30          = " . "sig-3"  load . cr
+"  sig train_ER_n20_p15          = " . "sig-4"  load . cr
+"  sig train_motif_triads        = " . "sig-5"  load . cr
+"  sig train_hidden_family_n18   = " . "sig-6"  load . cr
+"  sig heldout_path_n12          = " . "sig-7"  load . cr
+"  sig heldout_cycle_n12         = " . "sig-8"  load . cr
+"  sig heldout_ER_n10_p30        = " . "sig-9"  load . cr
+"  sig heldout_ER_n20_p15        = " . "sig-10" load . cr
+"  sig heldout_motif_wedges      = " . "sig-11" load . cr
+"  sig heldout_hidden_family_n24 = " . "sig-12" load . cr
+cr
+
+\ ============================================================
+\ Part B: Tier 2 stub smoke test.
+\ Build a Tier 1 ephemeral via DETECT-MOTIF + INDUCE-RUNTIME,
+\ then probe each Tier 2 stub.  Stubs should:
+\   FREEZE-CANDIDATE  → pass-through cand id
+\   TRAIN-EVAL        → 1 (informational pass)
+\   HELD-OUT-EVAL     → 0 (gate closed in stub)
+\   PROMOTE-STABLE    → 'rejected (gate closed)
+\   RETEST            → 1
+\   ACTIVE-DICTIONARY → integer count
+\ ============================================================
+
+"Part B — Tier 2 stub smoke" . cr
+
+RESET
+ACTIVE-DICTIONARY "dict-pre" store
+
+\ create a Tier 1 ephemeral
+MARK MARK bi-edge
+MARK MARK bi-edge
+MARK MARK bi-edge
+DETECT-MOTIF INDUCE-RUNTIME "cand" store
+
+ACTIVE-DICTIONARY "dict-post-induce" store
+
+\ Tier 2 stubs (cand on stack, see what they return)
+"cand" load FREEZE-CANDIDATE   "frozen-id" store
+"cand" load TRAIN-EVAL         "train-pass" store
+"cand" load HELD-OUT-EVAL      "heldout-pass" store
+"cand" load PROMOTE-STABLE     "promote-status" store
+RETEST                         "retest-pass" store
+
+"  dict-pre              = " . "dict-pre"        load . cr
+"  dict-post-induce      = " . "dict-post-induce" load . cr
+"  FREEZE-CANDIDATE id   = " . "frozen-id"       load . cr
+"  TRAIN-EVAL pass       = " . "train-pass"      load . cr
+"  HELD-OUT-EVAL pass    = " . "heldout-pass"    load . cr
+"  PROMOTE-STABLE status = " . "promote-status"  load . cr
+"  RETEST pass           = " . "retest-pass"     load . cr
+
+\ ROLLBACK-STABLE on the ephemeral cand should not crash (stub)
+"cand" load ROLLBACK-STABLE
+
+\ Cleanup the ephemeral via Tier 1 ROLLBACK-RUNTIME
+"cand" load ROLLBACK-RUNTIME
+
+cr
+
+\ ============================================================
+\ Acceptance asserts
+\ ============================================================
+
+"sig-1"  load 1 assert-eq
+"sig-2"  load 1 assert-eq
+"sig-3"  load 1 assert-eq
+"sig-4"  load 1 assert-eq
+"sig-5"  load 1 assert-eq
+"sig-6"  load 1 assert-eq
+"sig-7"  load 1 assert-eq
+"sig-8"  load 1 assert-eq
+"sig-9"  load 1 assert-eq
+"sig-10" load 1 assert-eq
+"sig-11" load 1 assert-eq
+"sig-12" load 1 assert-eq
+
+\ Tier 2 stub expectations
+"train-pass"     load 1 assert-eq            \ stub always passes train
+"heldout-pass"   load 0 assert-eq            \ stub gate closed
+"retest-pass"   load 1 assert-eq             \ stub regression-OK
+"dict-post-induce" load "dict-pre" load >    \ INDUCE grew dict
+   1 assert-eq
+
+REPORT

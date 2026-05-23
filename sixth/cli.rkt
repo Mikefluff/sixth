@@ -19,7 +19,8 @@
          "primitives/base.rkt"
          "primitives/substrate.rkt"
          "meta/runtime.rkt"
-         "meta/tier1.rkt")
+         "meta/tier1.rkt"
+         "meta/tier2.rkt")
 
 (define no-prelude? (make-parameter #f))
 (define defines    (make-parameter '()))   ; list of (cons KEY VAL)
@@ -50,6 +51,7 @@
   (register-substrate! e)
   (install-meta-runtime! e)
   (register-tier1! e)
+  (register-tier2! e)
   (unless (no-prelude?)
     (use-module! "prelude" e))
   (apply-defines! e)

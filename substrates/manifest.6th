@@ -1,0 +1,36 @@
+\ substrates/manifest.6th — frozen substrate set for primitive induction.
+\
+\ Per docs/META-SEMANTICS.md v2 §8: 12 substrates (6 train + 6 held-out
+\ same families different graphs) form the binding test set.  Generated
+\ at cycle 25B from stdlib/substrate-gen.6th using deterministic seeds.
+\
+\ Each substrate's signature is its HASH-WORLD digest immediately after
+\ generation.  Pinned here; any future change to generators that
+\ produces a different signature is a CONTAMINATION EVENT per
+\ META-SEMANTICS.md v2 §11.
+\
+\ 4 challenge substrates (degree_trap, mega_group_trap,
+\ motif_vs_degree_conflict, random_relabeling_invariance) deferred to
+\ cycle 26 — they require subtler construction patterns and are not
+\ needed for cycle 25 plumbing.
+
+use substrate-gen
+
+\ ============================================================
+\ Generator words — each leaves substrate in target state AND
+\ pushes the expected signature on the stack.
+\ ============================================================
+
+: train-path-n10               10 gen-path                    -661229518696637226 ;
+: train-cycle-n10              10 gen-cycle                   -463110910711324358 ;
+: train-er-n10-p30             10 30 100 gen-er               -586594903440925026 ;
+: train-er-n20-p15             20 15 101 gen-er               -302393144155143382 ;
+: train-motif-triads           12 102 gen-motif-triads         944582691939091218 ;
+: train-hidden-family-n18      18 3 103 gen-hidden-family     -670521109649111552 ;
+
+: heldout-path-n12             12 gen-path                    -468381002020923072 ;
+: heldout-cycle-n12            12 gen-cycle                    879043140884338364 ;
+: heldout-er-n10-p30           10 30 200 gen-er                418767773277748660 ;
+: heldout-er-n20-p15           20 15 201 gen-er                756362701624672797 ;
+: heldout-motif-wedges         12 202 gen-motif-wedges        -364053887139948970 ;
+: heldout-hidden-family-n24    24 4 203 gen-hidden-family      312341993282047911 ;

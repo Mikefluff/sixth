@@ -308,6 +308,31 @@
 (define (prim-REPORT e)
   (substrate-report (sub e)))
 
+;; ---- world hashing ----
+;;
+;; HASH-WORLD ( -- hash )
+;;   Computes a deterministic 64-bit-ish digest of the substrate
+;;   world-state.  Sensitive to: node count, edge set (per-node
+;;   sorted), hedge set.  Insensitive to node-allocation order
+;;   for sets — because we sort out-edge lists before hashing.
+;;
+;;   Used by stdlib substrate generators to sign their output
+;;   (substrates/manifest.6th expects deterministic signatures).
+
+(define (prim-HASH-WORLD e)
+  (define s (sub e))
+  (define n (substrate-node-count s))
+  ;; Collect per-node sorted out-edge lists; this normalises against
+  ;; insertion-order variation in the edge hash.
+  (define edge-summary
+    (for/list ([nid (in-range n)])
+      (cons nid (sort (substrate-outs s nid) <))))
+  (define hedge-summary
+    (sort (substrate-hedges-snapshot s)
+          (lambda (a b)
+            (string<? (format "~a" a) (format "~a" b)))))
+  (push1 e (equal-hash-code (list n edge-summary hedge-summary))))
+
 ;; ---- registration ----
 
 (define (register-substrate! e)
@@ -349,4 +374,5 @@
     (cons 'NSUM         prim-NSUM)
     (cons 'ASSERT       prim-ASSERT)
     (cons 'RESET        prim-RESET)
-    (cons 'REPORT       prim-REPORT)))
+    (cons 'REPORT       prim-REPORT)
+    (cons 'HASH-WORLD   prim-HASH-WORLD)))
