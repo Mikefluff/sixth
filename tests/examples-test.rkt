@@ -472,7 +472,16 @@
     ;;      cycle_n10 dropped L 10->1 (SA found symmetric attractor).
     ;;      Substrate L-monotonic in STRONG sense.  Honest scope:
     ;;      MDL is ONE of 7 candidate losses; cycle 21 = MDL + pred.
-    ("139-mdl-descent-strong.6th"                 5)))
+    ("139-mdl-descent-strong.6th"                 5)
+    ;; 140. Cycle 21 — MDL groups vs predictive quality.  Tests
+    ;;      user reframe: objecthood needs compression AND prediction.
+    ;;      Result: REGIME CCC.  Substrate MDL groups beat random
+    ;;      marginally (+0.0077) but LOSE to degree baseline on 5/5
+    ;;      non-tie substrates (mean delta -0.0045).  Pure MDL = wrong
+    ;;      loss for substrate-of-cognition.  Substrate-derived
+    ;;      NEGATIVE — strongest possible falsification.  Cycle 22
+    ;;      operationalizes combined L = MDL + lambda*pred_error.
+    ("140-mdl-prediction.6th"                     4)))
 
 (define (run-demo file)
   (define out
@@ -497,8 +506,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 1980
-                (format "cumulative ✓ count: ~a (expected 1980)" total-pass)))
+  (check-equal? total-pass 1984
+                (format "cumulative ✓ count: ~a (expected 1984)" total-pass)))
 
-(displayln (format "examples regression: ~a / 1980 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 1984 ✓ across ~a demos"
                    total-pass (length expected)))

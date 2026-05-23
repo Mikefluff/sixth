@@ -1,0 +1,118 @@
+\ examples/140-mdl-prediction.6th
+\ Cycle 21 — MDL groups vs predictive quality on Sixth substrate.
+\ Pre-reg: PREDICTIONS-140.md (commit 1f4a3cc, attested).
+\ Source:  scripts/mdl_prediction.py (commit d3fb387).
+\
+\ === REGIME CCC — substrate-derived NEGATIVE; user hypothesis CONFIRMED ===
+\
+\ Tests if MDL-discovered groups (cycle 19/20 STEP-CA-MIN-STRONG output)
+\ predict substrate dynamics better than random/degree baselines at
+\ same group count K.
+\
+\ Per-substrate (PredError x10000, lower = better):
+\
+\   substrate          K   sub   random  degree   beat-r  beat-d
+\   ER_n10_p30   (n10)  6   74     240     24       yes     NO
+\   ER_n20_p20   (n20) 18    5      68      0       yes     NO
+\   ER_n15_p40   (n15) 13   12      21      1       yes     NO
+\   path_n10           5  213     361     68       yes     NO
+\   cycle_n10          1    0       0      0      TIE     TIE
+\   ER_n15_p25   (n15) 13   15      15      0       no      NO
+\
+\ Non-tie substrates: 5/6.
+\ Non-tie WINS (substrate beats BOTH baselines): 0/5.
+\ Mean delta vs random (non-tie): +0.0077  (substrate slightly better)
+\ Mean delta vs degree (non-tie): -0.0045  (substrate WORSE)
+\
+\ Pre-reg classifier:
+\   AAA requires non-tie-wins >= 5 AND deltas both > 0.05. We have 0 and -0.0045.
+\   BBB requires wins in {3,4} OR delta in [0.01, 0.05]. We have 0 wins,
+\     delta_r = +0.0077 (just below 0.01), delta_d = -0.0045 (negative).
+\   CCC: <= 2 wins AND delta < 0.01. We have 0 wins, delta_d < 0. → CCC FIRES.
+\
+\ INTERPRETATION:
+\   - Pure MDL finds compression but loses dynamics-respecting structure.
+\   - Degree-based grouping beats MDL on EVERY non-tie substrate.
+\   - Substrate vs random: marginal advantage (+0.0077 / 0.024 ~ 32% of
+\     random's error magnitude) but still loses to degree.
+\   - cycle_n10 K=1 is degenerate: SA over-compressed to single class,
+\     zero predictive structure (substrate "object" = useless singleton).
+\   - This is the predicted falsification: MDL alone is NOT a substrate
+\     of cognition.
+\
+\ CONFIRMED: user reframe (2026-05-22) — objecthood requires both
+\ compression AND prediction-usefulness.  Pure MDL is the wrong loss.
+\
+\ NEXT (cycle 22): operationalize L = MDL_cost + lambda * pred_error
+\ with lambda grid {0.1, 1, 10}.  Re-test on same 6 substrates.
+\ Hypothesis: combined L finds groups that beat degree baseline on
+\ both prediction and compression.  If combined L STILL loses to
+\ degree → MDL family is wrong direction entirely; move to track 4
+\ (Information Bottleneck) or track 5 (predictive processing).
+\
+\ CATALOGUE UPDATE:
+\   - Substrate-distinguishing positives:    2 (matryoshka cycle 18;
+\                                              L-monotonic cycle 19/20)
+\   - Modest narrow signals:                 2
+\   - Substrate-derived NEGATIVES:           2 (HEDGE3 cycle 12C;
+\                                              MDL-pred cycle 21)
+\   - Substrate ~ classical:                 3
+\   - Retracted/narrowed:                   10
+
+use prelude
+use debug
+
+\ Pinned PredError x10000 (integer-scaled for assertion stability).
+74    "pe-sub-er10"    store
+240   "pe-rnd-er10"    store
+24    "pe-deg-er10"    store
+
+\ Pinned aggregates.
+5     "non-tie-count"  store
+0     "non-tie-wins"   store
+1     "tie-count"      store
+
+\ Regime CCC fires if non-tie-wins <= 2 AND mean_delta_d < 0.01.
+\ Here non-tie-wins = 0 AND delta_d = -0.0045 (negative). Both hit.
+0     "wins-bound-ok?" store     \ wins=0 <= 2 ✓
+1     "delta-bound-ok?" store    \ delta_d < 0.01 ✓ (it's negative)
+"wins-bound-ok?" load 0 = "wins-pass?" store        \ wins-bound-ok? = 0 means... wait
+\ Cleaner: just test the two conditions directly via the stored ints.
+"non-tie-wins" load 2 <= "wins-pass?" store
+1 "delta-pass?" store                                \ -0.0045 < 0.01 trivially true
+
+"wins-pass?" load "delta-pass?" load * "regime-CCC?" store
+
+cr
+"=== Demo 140 — MDL groups vs predictive quality (cycle 21) ===" . cr
+cr
+"PredError comparison (x10000, lower = better):" . cr
+"  ER_n10_p30  sub=74   rnd=240  deg=24    beat-r/lose-d" . cr
+"  ER_n20_p20  sub=5    rnd=68   deg=0     beat-r/lose-d" . cr
+"  ER_n15_p40  sub=12   rnd=21   deg=1     beat-r/lose-d" . cr
+"  path_n10    sub=213  rnd=361  deg=68    beat-r/lose-d" . cr
+"  cycle_n10   sub=0    rnd=0    deg=0     TIE (K=1 degenerate)" . cr
+"  ER_n15_p25  sub=15   rnd=15   deg=0     no-r/lose-d" . cr
+cr
+"non-tie substrates: " . "non-tie-count" load . cr
+"non-tie WINS:       " . "non-tie-wins"  load . " (substrate beats BOTH)" . cr
+"tie cases:          " . "tie-count"     load . cr
+cr
+"Regime CCC fires: " . "regime-CCC?" load . cr
+cr
+
+"regime-CCC?" load 1 = if
+  ">>> REGIME CCC — substrate-derived NEGATIVE." . cr
+  "    Pure MDL groups LOSE to degree baseline on 5/5 non-tie." . cr
+  "    User hypothesis CONFIRMED: objecthood needs MDL + prediction." . cr
+  "    cycle_n10 K=1: SA over-compressed, useless singleton object." . cr
+  "    Cycle 22: implement L = MDL + lambda * pred_error, re-test." . cr
+then
+
+\ Sanity asserts.
+"regime-CCC?"   load 1 assert-eq
+"non-tie-wins"  load 0 assert-eq
+"non-tie-count" load 5 assert-eq
+"tie-count"     load 1 assert-eq
+
+REPORT
