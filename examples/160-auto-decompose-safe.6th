@@ -1,0 +1,93 @@
+\ examples/160-auto-decompose-safe.6th
+\ Cycle 30A — happy: NEW-EPOCH auto-decomposes a stale-no-dependents
+\ primitive via the dependency-aware AUTO-DECOMPOSE gate.
+\ Pre-reg: PREDICTIONS-160.md (commit 9333c78).
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 160 — auto-decompose without dependents (cycle 30) ===" . cr
+
+RESET
+
+\ ---- Discovery + COMMIT + PROMOTE-STABLE (cycle 28 flow) ----
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+DETECT-MOTIF-AUTO "motif" store
+"motif" load SHADOW-CHECK drop
+"motif" load INDUCE-RUNTIME "c" store
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c" load COMMIT-PRIMITIVE drop
+"c" load HELD-OUT-EVAL drop
+"c" load PROMOTE-STABLE drop
+"c" load CAND-STATUS "status-initial" store
+
+\ ---- Phase 1: 6 productive uses (no NEW-EPOCH yet).
+\      During the epoch, AUTO-DECOMPOSE-SAFE? must return 0
+\      (local m=+9 > STALE_TOLERANCE).
+cand_001 cand_001 cand_001 cand_001 cand_001 cand_001
+"c" load AUTO-DECOMPOSE-SAFE? "safe-during?" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-phase1" store
+
+\ ---- Phase 2: first idle epoch (post-NEW-EPOCH reset → m=-3 → 'stale).
+\      AUTO-DECOMPOSE-SAFE? must return 1 (m < -STALE_TOL, no dependents).
+"c" load AUTO-DECOMPOSE-SAFE? "safe-after-1idle?" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-phase2" store
+
+\ ---- Phase 3: capture pre-decompose hashes, then the auto-decompose
+\      epoch.  cand_001 has no dependents — Pass C fires AUTO-DECOMPOSE
+\      and status becomes 'decomposed in one NEW-EPOCH call.
+HASH-WORLD "w-pre" store
+LAW-HASH   "l-pre" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-phase3" store
+HASH-WORLD "w-post" store
+LAW-HASH   "l-post" store
+
+\ ---- Phase 4: RESTORE round-trip integrity.
+"c" load RESTORE-PRIMITIVE
+LAW-HASH "l-restored" store
+"c" load CAND-STATUS "status-restored" store
+
+cr "Diagnostics:" . cr
+"  status initial    = " . "status-initial" load . cr
+"  status phase1     = " . "status-phase1" load . cr
+"  status phase2     = " . "status-phase2" load . cr
+"  status phase3     = " . "status-phase3" load . cr
+"  status restored   = " . "status-restored" load . cr
+"  safe-during?      = " . "safe-during?" load . cr
+"  safe-after-1idle? = " . "safe-after-1idle?" load . cr
+cr
+
+\ Pass conditions
+"status-initial"    load 'stable-active = "c-1?" store
+"safe-during?"      load 0              = "c-2?" store
+"safe-after-1idle?" load 1              = "c-3?" store
+"status-phase3"     load 'decomposed    = "c-4?" store
+"l-pre"             load "l-post" load = "law-changed?" store
+"w-pre"             load "w-post" load = "world-unchanged?" store
+"l-pre"             load "l-restored" load = "law-restored?" store
+"status-restored"   load 'stable-active = "c-8?" store
+
+"c-1?" load 1 assert-eq                  \ initial promote succeeded
+"c-2?" load 1 assert-eq                  \ predicate=0 during productive use
+"c-3?" load 1 assert-eq                  \ predicate=1 after one idle epoch
+"c-4?" load 1 assert-eq                  \ status='decomposed (auto-fired)
+"law-changed?"      load 0 assert-eq     \ law_hash mutated by AUTO-DECOMPOSE
+"world-unchanged?"  load 1 assert-eq     \ world_hash unchanged
+"law-restored?"     load 1 assert-eq     \ law_hash returns on RESTORE
+"c-8?" load 1 assert-eq                  \ status='stable-active after RESTORE
+
+cr "AUTO-DECOMPOSE-SAFE? gate fired with no dependents to block it." . cr
+REPORT

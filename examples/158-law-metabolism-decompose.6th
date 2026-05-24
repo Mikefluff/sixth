@@ -45,16 +45,17 @@ NEW-EPOCH
 "c" load CAND-STATUS "status-phase2" store
 "c" load LAW-MOMENTUM "m-phase2" store
 
-\ ---- Phase 3: second idle epoch → demotion-candidate ----
-NEW-EPOCH
-"c" load CAND-STATUS "status-phase3" store
-
-\ ---- Phase 4: capture hashes, then DECOMPOSE ----
+\ ---- Phase 3: capture pre-decompose hashes, then second idle NEW-EPOCH.
+\      Under cycle 30 semantics, the second consecutive negative epoch
+\      reaches 'demotion-candidate AND immediately auto-decomposes
+\      (no active dependents → AUTO-DECOMPOSE-SAFE? holds).  The same
+\      decompose mechanics fire; only the trigger is automatic.
 HASH-WORLD "w-pre" store
 LAW-HASH   "l-pre" store
-"c" load DECOMPOSE-PRIMITIVE
+NEW-EPOCH
 HASH-WORLD "w-post" store
 LAW-HASH   "l-post" store
+"c" load CAND-STATUS "status-phase3" store
 "c" load CAND-STATUS "status-decomposed" store
 
 \ ---- Phase 5: RESTORE ----
@@ -77,7 +78,7 @@ cr
 "status-initial"   load 'stable-active = "c-1?" store
 "status-phase1"    load 'stable-active = "c-2?" store
 "status-phase2"    load 'stale         = "c-3?" store
-"status-phase3"    load 'demotion-candidate = "c-4?" store
+"status-phase3"    load 'decomposed         = "c-4?" store
 "status-decomposed" load 'decomposed   = "c-5?" store
 "l-pre"  load "l-post"     load = "law-changed-decompose?" store
 "w-pre"  load "w-post"     load = "world-unchanged-decompose?" store

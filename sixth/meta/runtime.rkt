@@ -73,6 +73,9 @@
          bump-recent-uses!
          bump-recent-reuse!
          bump-recent-fails!
+         ;; cycle 30 lifecycle exports
+         ACTIVE-METAB-STATUSES
+         cand-decompose-snapshot-of
          ;; Re-export the VM trace parameter so meta primitives can
          ;; toggle trace on / off without further requires.
          current-engine-trace
@@ -122,6 +125,8 @@
 (define MEM_CAND_MOMENTUM_HISTORY '_cand-momentum-history)    ; alist (cand . list-of-int)
 (define MEM_CAND_PRESERVED_BODIES '_cand-preserved-bodies)    ; alist (cand . motif) for RESTORE
 (define MEM_EPOCH_COUNTER         '_epoch-counter)            ; box int
+;; cycle 30: dependency-aware AUTO-DECOMPOSE
+(define MEM_CAND_DECOMPOSE_SNAPSHOT '_cand-decompose-snapshot) ; alist (cand-sym . list-of-dependents-at-decompose-time)
 
 ;; Forbidden symbols inside a candidate motif (per docs/mining_protocol.md §4).
 ;; A candidate cannot invoke meta-primitives (would allow self-modifying-meta)
@@ -176,6 +181,8 @@
   (hash-set! mem MEM_CAND_MOMENTUM_HISTORY (box '()))
   (hash-set! mem MEM_CAND_PRESERVED_BODIES (box '()))
   (hash-set! mem MEM_EPOCH_COUNTER         (box 0))
+  ;; cycle 30: AUTO-DECOMPOSE dependency snapshot
+  (hash-set! mem MEM_CAND_DECOMPOSE_SNAPSHOT (box '()))
   (void))
 
 ;; Allow tests / NEW-SESSION primitive to update session_id deterministically.
@@ -293,7 +300,9 @@
     ;; cycle 27: mining (also inspection of trace)
     DETECT-MOTIF-AUTO
     ;; cycle 29: lifecycle inspection (not auto-mutating world)
-    LAW-MOMENTUM))
+    LAW-MOMENTUM
+    ;; cycle 30: dependency-aware decompose inspections
+    AUTO-DECOMPOSE-SAFE? CAND-DEPENDENTS LAW-DEPENDS-ON?))
 
 (define (inspection-op? name)
   (and (memq name INSPECTION-OPS) #t))
@@ -338,6 +347,13 @@
 (define MOMENTUM-STALE-TOLERANCE    1)
 (define MOMENTUM-HISTORY-WINDOW     3)
 
+;; cycle 30: statuses that participate in epoch-driven metabolism
+;; (NEW-EPOCH iterates over cands in these statuses).  'dependency-held
+;; is the cycle 30 addition — a cand whose local momentum is negative
+;; but which is structurally load-bearing for an active dependent.
+(define ACTIVE-METAB-STATUSES
+  '(stable-active stale demotion-candidate dependency-held))
+
 (define (cand-recent-uses-of e)
   (hash-ref (env-memory e) MEM_CAND_RECENT_USES (box '())))
 (define (cand-recent-reuse-of e)
@@ -350,6 +366,9 @@
   (hash-ref (env-memory e) MEM_CAND_PRESERVED_BODIES (box '())))
 (define (epoch-counter-of e)
   (hash-ref (env-memory e) MEM_EPOCH_COUNTER (box 0)))
+;; cycle 30 accessor
+(define (cand-decompose-snapshot-of e)
+  (hash-ref (env-memory e) MEM_CAND_DECOMPOSE_SNAPSHOT (box '())))
 
 ;; Generic alist increment.
 (define (alist-bump! b key delta)

@@ -1,0 +1,95 @@
+\ examples/162-cascade-restore.6th
+\ Cycle 30C — cascade restore: auto-decomposing a load-bearing
+\ primitive breaks dependent callability; RESTORE returns law_hash to
+\ pre-decompose value AND makes the dependent callable again.  Cycle 30
+\ does NOT auto-promote the dependent — it must earn positive momentum
+\ back through its own productive use.
+\ Pre-reg: PREDICTIONS-160.md (commit 9333c78).
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 162 — cascade restore reactivates dependent (cycle 30) ===" . cr
+
+RESET
+
+\ ---- Setup (mirrors demo 161): cand_001=(NODES drop), cand_002=(cand_001 MARK drop) ----
+NODES drop NODES drop NODES drop NODES drop
+DETECT-MOTIF-AUTO "m1" store
+"m1" load SHADOW-CHECK drop
+"m1" load INDUCE-RUNTIME "c1" store
+
+cand_001 MARK drop cand_001 MARK drop cand_001 MARK drop cand_001 MARK drop
+DETECT-MOTIF-AUTO "m2" store
+"m2" load SHADOW-CHECK drop
+"m2" load INDUCE-RUNTIME "c2" store
+
+cand_001 NEW-SESSION cand_001 NEW-SESSION cand_001
+"c1" load COMMIT-PRIMITIVE drop
+"c1" load HELD-OUT-EVAL drop
+"c1" load PROMOTE-STABLE drop
+
+cand_002 cand_002 cand_002 cand_002 cand_002
+NEW-SESSION cand_002 NEW-SESSION cand_002
+"c2" load COMMIT-PRIMITIVE drop
+"c2" load HELD-OUT-EVAL drop
+"c2" load PROMOTE-STABLE drop
+
+\ Snapshot law_hash AFTER both promoted, BEFORE any decompose.
+LAW-HASH "l-baseline" store
+
+\ ---- Drive c2 productively until c1 enters dependency-held, then strand c1. ----
+NEW-EPOCH                                                  \ baseline reset
+cand_002 cand_002 cand_002 cand_002 NEW-EPOCH              \ c1 → stale
+cand_002 cand_002 cand_002 cand_002 NEW-EPOCH              \ c1 → dependency-held
+NEW-EPOCH                                                  \ deps fade → c1 → decomposed
+"c1" load CAND-STATUS "status-c1-pre-restore" store
+
+\ ---- Phase A: cand_002 cannot dispatch — its body still calls the
+\      missing cand_001.  TRY-DISPATCH returns 0 and bumps the
+\      recent_failure counter for cand_002.
+"c2" load TRY-DISPATCH "td-while-broken?" store
+
+\ ---- Phase B: RESTORE cand_001 from preserved body.
+"c1" load RESTORE-PRIMITIVE
+LAW-HASH "l-restored" store
+"c1" load CAND-STATUS "status-c1-after-restore" store
+
+\ ---- Phase C: cand_002 callable again — cascade restore re-wired the
+\      symbol resolution path.  TRY-DISPATCH returns 1.
+"c2" load TRY-DISPATCH "td-after-restore?" store
+
+\ ---- Phase D: drive cand_002 productively one more epoch.  Pass A/B
+\      see positive momentum, status confirms restoration.
+cand_002 cand_002 cand_002 cand_002 NEW-EPOCH
+"c1" load CAND-STATUS "status-c1-final" store
+"c2" load CAND-STATUS "status-c2-final" store
+
+cr "Diagnostics:" . cr
+"  c1 pre-restore    = " . "status-c1-pre-restore" load . cr
+"  td-while-broken?  = " . "td-while-broken?" load . cr
+"  c1 after restore  = " . "status-c1-after-restore" load . cr
+"  td-after-restore? = " . "td-after-restore?" load . cr
+"  c1 final          = " . "status-c1-final" load . cr
+"  c2 final          = " . "status-c2-final" load . cr
+cr
+
+\ Pass conditions
+"status-c1-pre-restore"  load 'decomposed    = "r-1?" store
+"td-while-broken?"       load 0              = "r-2?" store
+"status-c1-after-restore" load 'stable-active = "r-3?" store
+"td-after-restore?"      load 1              = "r-4?" store
+"l-baseline"             load "l-restored" load = "r-5?" store
+"status-c2-final"        load 'stable-active = "r-6?" store
+
+"r-1?" load 1 assert-eq               \ c1 was auto-decomposed (precondition)
+"r-2?" load 1 assert-eq               \ TRY-DISPATCH c2 fails while c1 gone
+"r-3?" load 1 assert-eq               \ RESTORE restored c1 to stable-active
+"r-4?" load 1 assert-eq               \ TRY-DISPATCH c2 succeeds after RESTORE
+"r-5?" load 1 assert-eq               \ law_hash round-trip (full restoration)
+"r-6?" load 1 assert-eq               \ c2 momentum recovered to stable-active
+
+cr "Cascade restore re-wired callability; dependent earned its keep." . cr
+REPORT

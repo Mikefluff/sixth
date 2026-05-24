@@ -728,6 +728,7 @@
 
 ;; ============================================================
 ;; Cycle 29 — Law Metabolism
+;; Cycle 30 — Dependency-aware AUTO-DECOMPOSE + 'dependency-held + cascade restore
 ;; ============================================================
 
 (define (set-status! e cand-sym new-status)
@@ -752,44 +753,159 @@
   (define c (require-sym (pop! e) 'LAW-MOMENTUM))
   (push! e (compute-momentum-for e c)))
 
-;; NEW-EPOCH: compute momentum for all active cands, push to history,
-;; transition statuses, reset recent counters.
+;; ---- cycle 30: dependency graph derived from motif bodies ----
+;;
+;; A `cand_a` depends on `cand_b` iff cand_a's motif (as stored in
+;; _cand-bodies) contains the symbol cand_b.  This is a STATIC
+;; usage graph derived from opcode bodies — deterministic,
+;; rebuildable on demand.  No runtime tracing involved.
+
+(define (cand-depends-on? e cand-a cand-b)
+  (define entry (assq cand-a (unbox (cand-bodies-of e))))
+  (and entry (memq cand-b (cadr entry)) #t))
+
+(define (active-dependents-of e cand)
+  ;; List of cands (excluding cand itself) whose motif contains cand
+  ;; AND whose current status is in ACTIVE-METAB-STATUSES.
+  (for/list ([entry (in-list (unbox (cand-bodies-of e)))]
+             #:when (let ([other (car entry)])
+                      (and (not (eq? other cand))
+                           (memq cand (cadr entry))
+                           (memq (get-status e other)
+                                 ACTIVE-METAB-STATUSES))))
+    (car entry)))
+
+(define (has-positive-dependent-momentum? e cand)
+  (for/or ([d (in-list (active-dependents-of e cand))])
+    (> (compute-momentum-for e d) MOMENTUM-STALE-TOLERANCE)))
+
+(define (prim-auto-decompose-safe? e)
+  (define c (require-sym (pop! e) 'AUTO-DECOMPOSE-SAFE?))
+  (define local-m (compute-momentum-for e c))
+  (cond
+    [(>= local-m (- MOMENTUM-STALE-TOLERANCE))
+     ;; Local momentum has not crossed the negative tolerance band yet.
+     (push! e 0)]
+    [(has-positive-dependent-momentum? e c)
+     ;; Structurally load-bearing for an active dependent.
+     (push! e 0)]
+    [else (push! e 1)]))
+
+(define (prim-cand-dependents e)
+  (define c (require-sym (pop! e) 'CAND-DEPENDENTS))
+  (push! e (active-dependents-of e c)))
+
+(define (prim-law-depends-on? e)
+  (define b (require-sym (pop! e) 'LAW-DEPENDS-ON?))
+  (define a (require-sym (pop! e) 'LAW-DEPENDS-ON?))
+  (push! e (if (cand-depends-on? e a b) 1 0)))
+
+;; Snapshot the active dependents at decompose time, so RESTORE can
+;; emit a cascade-restore ledger event identifying which dependents
+;; had their callability broken.  Cycle 30 does NOT auto-promote
+;; dependents on restore; cascade is forensic + structural only.
+(define (record-pre-decompose-snapshot! e c)
+  (define ds-b (cand-decompose-snapshot-of e))
+  (define deps (active-dependents-of e c))
+  (set-box! ds-b (cons (cons c deps)
+                       (filter (lambda (ent) (not (eq? (car ent) c)))
+                               (unbox ds-b)))))
+
+;; Core decompose mechanics, shared between manual DECOMPOSE-PRIMITIVE
+;; and auto-decompose from NEW-EPOCH.  Assumes status='demotion-candidate
+;; has been verified by the caller.  Records snapshot, preserves body,
+;; removes from dict, sets status, emits ledger event with the given tag.
+(define (do-decompose! e c ledger-tag)
+  (record-pre-decompose-snapshot! e c)
+  (define cb (cand-bodies-of e))
+  (define body-entry (assq c (unbox cb)))
+  (when body-entry
+    (define pb (cand-preserved-bodies-of e))
+    (set-box! pb (cons (cons c (cadr body-entry))
+                       (filter (lambda (ent) (not (eq? (car ent) c)))
+                               (unbox pb)))))
+  (hash-remove! (env-words e) c)
+  (set-box! cb (filter (lambda (ent) (not (eq? (car ent) c))) (unbox cb)))
+  (set-status! e c 'decomposed)
+  (record-ledger! e (list ledger-tag c (compute-law-hash e))))
+
+;; ---- NEW-EPOCH (cycle 30 three-pass version) ----
+;;
+;; Pass A: snapshot active-metab cands, compute their epoch-end momenta,
+;;         push to history (truncated to window).
+;; Pass B: status transitions per cycle 29 rules — applies to ALL active
+;;         metab cands (including 'dependency-held: they re-enter the
+;;         normal track if m recovered, or re-fall into demotion-candidate
+;;         if m still bad).
+;; Pass C: for each cand now 'demotion-candidate, apply the dependency-aware
+;;         AUTO-DECOMPOSE gate:
+;;           - if any active dependent has positive momentum → 'dependency-held
+;;           - else → auto-decompose (do-decompose! with 'auto-decompose tag)
+;;
+;; Counters reset at end so the next epoch starts clean.
 (define (prim-new-epoch e)
   (define ec (epoch-counter-of e))
   (set-box! ec (+ 1 (unbox ec)))
-  ;; Build list of cands currently in bodies that have statuses we care about
-  (for ([entry (in-list (unbox (cand-bodies-of e)))])
-    (define cand-sym (car entry))
-    (define st (get-status e cand-sym))
-    (when (memq st '(stable-active stale demotion-candidate))
-      (define m (compute-momentum-for e cand-sym))
-      (define hb (cand-momentum-history-of e))
-      (define cur-hist (or (let ([x (assq cand-sym (unbox hb))])
-                             (and x (cdr x))) '()))
-      (define new-hist
-        (let ([h (cons m cur-hist)])
-          (if (> (length h) MOMENTUM-HISTORY-WINDOW)
-              (take h MOMENTUM-HISTORY-WINDOW)
-              h)))
-      (set-box! hb (cons (cons cand-sym new-hist)
-                          (filter (lambda (ent) (not (eq? (car ent) cand-sym)))
-                                  (unbox hb))))
-      ;; Status transition
-      (cond
-        [(> m MOMENTUM-STALE-TOLERANCE)
-         (set-status! e cand-sym 'stable-active)]
-        [(<= (abs m) MOMENTUM-STALE-TOLERANCE)
-         (set-status! e cand-sym 'stale)]
-        [else
-         (define last-n (if (>= (length new-hist) MOMENTUM-NEGATIVE-THRESHOLD)
-                            (take new-hist MOMENTUM-NEGATIVE-THRESHOLD)
-                            new-hist))
-         (cond
-           [(and (= (length last-n) MOMENTUM-NEGATIVE-THRESHOLD)
-                 (andmap (lambda (mm) (< mm (- MOMENTUM-STALE-TOLERANCE))) last-n))
-            (set-status! e cand-sym 'demotion-candidate)]
-           [else
-            (set-status! e cand-sym 'stale)])])))
+
+  (define active-cands
+    (for/list ([entry (in-list (unbox (cand-bodies-of e)))]
+               #:when (memq (get-status e (car entry))
+                            ACTIVE-METAB-STATUSES))
+      (car entry)))
+
+  ;; Pass A: compute momentum, push history
+  (for ([c (in-list active-cands)])
+    (define m (compute-momentum-for e c))
+    (define hb (cand-momentum-history-of e))
+    (define cur-hist (or (let ([x (assq c (unbox hb))])
+                           (and x (cdr x))) '()))
+    (define new-hist
+      (let ([h (cons m cur-hist)])
+        (if (> (length h) MOMENTUM-HISTORY-WINDOW)
+            (take h MOMENTUM-HISTORY-WINDOW)
+            h)))
+    (set-box! hb (cons (cons c new-hist)
+                       (filter (lambda (ent) (not (eq? (car ent) c)))
+                               (unbox hb)))))
+
+  ;; Pass B: status transitions based on m + history (cycle 29 rules,
+  ;; uniformly applied including to 'dependency-held cands).
+  (for ([c (in-list active-cands)])
+    (define m (compute-momentum-for e c))
+    (define hb (cand-momentum-history-of e))
+    (define hist (or (let ([x (assq c (unbox hb))]) (and x (cdr x))) '()))
+    (cond
+      [(> m MOMENTUM-STALE-TOLERANCE)
+       (set-status! e c 'stable-active)]
+      [(<= (abs m) MOMENTUM-STALE-TOLERANCE)
+       (set-status! e c 'stale)]
+      [else
+       (define last-n (if (>= (length hist) MOMENTUM-NEGATIVE-THRESHOLD)
+                          (take hist MOMENTUM-NEGATIVE-THRESHOLD)
+                          hist))
+       (cond
+         [(and (= (length last-n) MOMENTUM-NEGATIVE-THRESHOLD)
+               (andmap (lambda (mm) (< mm (- MOMENTUM-STALE-TOLERANCE)))
+                       last-n))
+          (set-status! e c 'demotion-candidate)]
+         [else
+          (set-status! e c 'stale)])]))
+
+  ;; Pass C: dependency-aware AUTO-DECOMPOSE gate for current demotion-candidates.
+  ;; Snapshot the list before any decompose so order is invariant.
+  (define demotion-cands
+    (for/list ([c (in-list active-cands)]
+               #:when (eq? (get-status e c) 'demotion-candidate))
+      c))
+  (for ([c (in-list demotion-cands)])
+    (cond
+      [(has-positive-dependent-momentum? e c)
+       (set-status! e c 'dependency-held)
+       (record-ledger! e (list 'dependency-held c
+                                (active-dependents-of e c)))]
+      [else
+       (do-decompose! e c 'auto-decompose)]))
+
   ;; Reset recent counters for next epoch
   (set-box! (cand-recent-uses-of e) '())
   (set-box! (cand-recent-reuse-of e) '())
@@ -824,20 +940,7 @@
                      (format-srcloc (current-prim-srcloc)) c st)
              (current-continuation-marks) (current-prim-srcloc)))]
     [else
-     ;; Preserve body for RESTORE before removing from dict
-     (define cb (cand-bodies-of e))
-     (define body-entry (assq c (unbox cb)))
-     (when body-entry
-       (define pb (cand-preserved-bodies-of e))
-       (set-box! pb (cons (cons c (cadr body-entry))
-                          (filter (lambda (ent) (not (eq? (car ent) c)))
-                                  (unbox pb)))))
-     ;; Remove from active dict (mutates law_hash)
-     (hash-remove! (env-words e) c)
-     ;; Remove from cand-bodies (so expansion-length-of returns 0)
-     (set-box! cb (filter (lambda (ent) (not (eq? (car ent) c))) (unbox cb)))
-     (set-status! e c 'decomposed)
-     (record-ledger! e (list 'decompose-primitive c (compute-law-hash e)))]))
+     (do-decompose! e c 'decompose-primitive)]))
 
 (define (prim-restore-primitive e)
   (define c (require-sym (pop! e) 'RESTORE-PRIMITIVE))
@@ -866,7 +969,19 @@
         (set-box! cb (cons (list c motif) (unbox cb)))
         (env-register-word! e c w)
         (set-status! e c 'stable-active)
-        (record-ledger! e (list 'restore-primitive c (compute-law-hash e)))])]))
+        (record-ledger! e (list 'restore-primitive c (compute-law-hash e)))
+        ;; Cycle 30: cascade-restore forensic — emit ledger event with
+        ;; the dependents recorded at decompose time, if any.  Structural
+        ;; reactivation of the dependents is automatic (env-words now has
+        ;; this cand back, so their next dispatch resolves), but cycle 30
+        ;; does NOT auto-promote dependents — they must earn their own
+        ;; positive momentum back through normal use.
+        (define ds-b (cand-decompose-snapshot-of e))
+        (define snap-entry (assq c (unbox ds-b)))
+        (when snap-entry
+          (record-ledger! e
+                          (list 'restore-cascade c (cdr snap-entry)
+                                (compute-law-hash e))))])]))
 
 ;; ============================================================
 ;; HELD-OUT-EVAL (cycle 28B real impl, replaces cycle 25B stub)
@@ -921,29 +1036,50 @@
 
 (define (try-dispatch-cand! e cand-sym)
   ;; Dispatch a candidate word once.  Returns #t on success, #f on
-  ;; any raised exception (e.g., stack underflow inside body).
-  ;; Manually invokes the dispatch hook so use_count / reuse_gain
-  ;; tracking fires (we're bypassing the VM's normal op-CALL path).
+  ;; any raised exception (e.g., stack underflow, unbound nested
+  ;; reference after auto-decompose).
   ;;
-  ;; On exception: clean up the half-pushed return frame so subsequent
-  ;; dispatches start with a clean rstack.
-  (define w (env-lookup-word e cand-sym))
+  ;; Hook is fired ONLY on success (cycle 30: a faulting call must not
+  ;; bump reuse_gain — otherwise momentum would credit failed reuses).
+  ;; On failure, the cand's recent_failures counter is bumped so the
+  ;; next NEW-EPOCH momentum reflects the breakage.
   (cond
-    [(not w) #f]
+    [(not (env-lookup-word e cand-sym))
+     ;; Cand absent (e.g. decomposed) — count as failure for callers
+     ;; that meaningfully expected it to exist.
+     (when (cand-name? cand-sym)
+       (bump-recent-fails! e cand-sym))
+     #f]
     [else
+     (define w (env-lookup-word e cand-sym))
      (define hook (current-cand-dispatch-hook))
      (define rstack-snapshot (env-rstack e))
      (define stack-snapshot  (env-stack e))
-     (with-handlers ([(lambda (_) #t)
-                      (lambda (_)
-                        ;; Restore both stacks to pre-dispatch state.
-                        (set-env-rstack! e rstack-snapshot)
-                        (set-env-stack!  e stack-snapshot)
-                        #f)])
-       (when hook (hook e cand-sym))
-       (push-halt-frame! e)
-       (run! (word-opcodes w) e)
-       #t)]))
+     (define result
+       (with-handlers ([(lambda (_) #t)
+                        (lambda (_)
+                          (set-env-rstack! e rstack-snapshot)
+                          (set-env-stack!  e stack-snapshot)
+                          #f)])
+         (push-halt-frame! e)
+         (run! (word-opcodes w) e)
+         #t))
+     (cond
+       [result
+        (when hook (hook e cand-sym))]
+       [else
+        (when (cand-name? cand-sym)
+          (bump-recent-fails! e cand-sym))])
+     result]))
+
+;; TRY-DISPATCH ( cand -- 0|1 )  cycle 30 testing primitive.
+;; Calls try-dispatch-cand! and pushes 1 on success, 0 on failure.
+;; Used by demos that need to observe broken callability without
+;; aborting the program (e.g., demo 162 phase 3 after auto-decompose).
+(define (prim-try-dispatch e)
+  (define c (require-sym (pop! e) 'TRY-DISPATCH))
+  (define result (try-dispatch-cand! e c))
+  (push! e (if result 1 0)))
 
 (define (prim-held-out-eval-real e)
   (define cand-sym (require-sym (pop! e) 'HELD-OUT-EVAL))
@@ -1073,7 +1209,12 @@
         (cons 'MARK-STALE                 prim-mark-stale)
         (cons 'DEMOTE-PRIMITIVE           prim-demote-primitive)
         (cons 'DECOMPOSE-PRIMITIVE        prim-decompose-primitive)
-        (cons 'RESTORE-PRIMITIVE          prim-restore-primitive)))
+        (cons 'RESTORE-PRIMITIVE          prim-restore-primitive)
+        ;; cycle 30: dependency-aware AUTO-DECOMPOSE
+        (cons 'AUTO-DECOMPOSE-SAFE?       prim-auto-decompose-safe?)
+        (cons 'CAND-DEPENDENTS            prim-cand-dependents)
+        (cons 'LAW-DEPENDS-ON?            prim-law-depends-on?)
+        (cons 'TRY-DISPATCH               prim-try-dispatch)))
 
 (define (register-tier1! e)
   (for ([entry (in-list TIER1-TABLE)])

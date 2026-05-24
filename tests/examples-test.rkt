@@ -637,7 +637,28 @@
     ;;      epochs (4 uses each, momentum +5) keep status
     ;;      'stable-active.  Validates: age alone doesn't kill;
     ;;      only negative momentum does.  7 asserts.
-    ("159-law-metabolism-age-resistance.6th"      7)))
+    ("159-law-metabolism-age-resistance.6th"      7)
+    ;; 160. Cycle 30A — happy AUTO-DECOMPOSE.  Stale primitive with
+    ;;      no dependents is auto-decomposed by NEW-EPOCH itself
+    ;;      via the dependency-aware gate.  AUTO-DECOMPOSE-SAFE?
+    ;;      predicate is 0 during productive use and 1 after one
+    ;;      idle epoch.  law_hash mutates on auto-decompose;
+    ;;      world_hash unchanged; RESTORE returns law_hash.  8 asserts.
+    ("160-auto-decompose-safe.6th"                8)
+    ;; 161. Cycle 30B — dependency-held protection.  cand_002
+    ;;      depends on cand_001.  When cand_001 reaches
+    ;;      demotion-candidate with cand_002 still bearing positive
+    ;;      momentum, cand_001 transitions to 'dependency-held
+    ;;      instead of 'decomposed.  When cand_002 fades,
+    ;;      cand_001 auto-decomposes next epoch.  8 asserts.
+    ("161-dependency-held.6th"                    8)
+    ;; 162. Cycle 30C — cascade restore.  After cand_001 is
+    ;;      auto-decomposed, cand_002 dispatches fault (call into
+    ;;      missing reference).  RESTORE cand_001 returns law_hash
+    ;;      to pre-decompose value AND re-wires cand_002 callability.
+    ;;      Cycle 30 does NOT auto-promote the dependent; cand_002
+    ;;      must earn momentum back through its own productive use.  6 asserts.
+    ("162-cascade-restore.6th"                    6)))
 
 (define (run-demo file)
   (define out
@@ -662,8 +683,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 2120
-                (format "cumulative ✓ count: ~a (expected 2120)" total-pass)))
+  (check-equal? total-pass 2142
+                (format "cumulative ✓ count: ~a (expected 2142)" total-pass)))
 
-(displayln (format "examples regression: ~a / 2120 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 2142 ✓ across ~a demos"
                    total-pass (length expected)))

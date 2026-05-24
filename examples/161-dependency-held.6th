@@ -1,0 +1,125 @@
+\ examples/161-dependency-held.6th
+\ Cycle 30B — negative: an active dependent with positive momentum
+\ blocks AUTO-DECOMPOSE of the underlying primitive.  Status moves to
+\ 'dependency-held instead of 'decomposed.
+\ Pre-reg: PREDICTIONS-160.md (commit 9333c78).
+\
+\ cand_001 motif uses (NODES drop) — distinct from cand_002's MARK drop
+\ tail, so DETECT-MOTIF-AUTO in phase 0b unambiguously picks the
+\ longer (cand_001 MARK drop) motif by len-desc tiebreak among equal
+\ frequencies (avoids the (MARK drop)-substring inflation trap).
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 161 — dependent blocks AUTO-DECOMPOSE (cycle 30) ===" . cr
+
+RESET
+
+\ ---- Phase 0a: discover + INDUCE cand_001 = (NODES drop) ----
+NODES drop NODES drop NODES drop NODES drop
+DETECT-MOTIF-AUTO "m1" store
+"m1" load SHADOW-CHECK drop
+"m1" load INDUCE-RUNTIME "c1" store
+
+\ ---- Phase 0b: discover + INDUCE cand_002 from (cand_001 MARK drop) ----
+\ Trace window=20 includes phase 0a tail (4 × NODES drop) + phase 0b
+\ (4 × cand_001 MARK drop).  All three n-grams (NODES drop, MARK drop,
+\ cand_001 MARK drop) tie at freq=4; len-desc tiebreak picks cand_001
+\ MARK drop (len 3).
+cand_001 MARK drop cand_001 MARK drop cand_001 MARK drop cand_001 MARK drop
+DETECT-MOTIF-AUTO "m2" store
+"m2" load SHADOW-CHECK drop
+"m2" load INDUCE-RUNTIME "c2" store
+
+\ ---- Promote cand_001 (5+ uses across 3 sessions) ----
+\ Phase 0b workload already gave cand_001 4 uses.  Add 1 more + sessions.
+cand_001
+NEW-SESSION cand_001
+NEW-SESSION cand_001
+"c1" load COMMIT-PRIMITIVE drop
+"c1" load HELD-OUT-EVAL drop
+"c1" load PROMOTE-STABLE drop
+"c1" load CAND-STATUS "status-c1-init" store
+
+\ ---- Promote cand_002 (5+ uses across 3 sessions) ----
+cand_002 cand_002 cand_002 cand_002 cand_002
+NEW-SESSION cand_002
+NEW-SESSION cand_002
+"c2" load COMMIT-PRIMITIVE drop
+"c2" load HELD-OUT-EVAL drop
+"c2" load PROMOTE-STABLE drop
+"c2" load CAND-STATUS "status-c2-init" store
+
+\ ---- Confirm dependency graph wired correctly BEFORE any decompose ----
+"c2" load "c1" load LAW-DEPENDS-ON? "c2-depends-on-c1?" store
+
+\ ---- Baseline: one NEW-EPOCH to clear setup-phase counters ----
+NEW-EPOCH
+
+\ ---- Phase 1: drive cand_002 productively, do not call cand_001 directly.
+\      Nested cand_001 invocations inside cand_002 body are NOT top-level
+\      → cand_001 recent counters stay at 0 → its momentum drifts negative.
+\      cand_001: m = 0 - carry(2) = -2.
+\      cand_002: m = 4*(L-1=2) - carry(3) = 8 - 3 = +5.
+cand_002 cand_002 cand_002 cand_002
+"c1" load AUTO-DECOMPOSE-SAFE? "safe-mid?" store
+NEW-EPOCH
+"c1" load CAND-STATUS "status-c1-p1" store
+"c2" load CAND-STATUS "status-c2-p1" store
+
+\ ---- Phase 2: same workload — second consecutive negative epoch for
+\      cand_001 → Pass B sets 'demotion-candidate.  Pass C sees positive
+\      dependent cand_002 → cand_001 → 'dependency-held instead of decomposed.
+cand_002 cand_002 cand_002 cand_002
+LAW-HASH "l-pre-dh" store
+NEW-EPOCH
+LAW-HASH "l-post-dh" store
+"c1" load CAND-STATUS "status-c1-p2" store
+"c2" load CAND-STATUS "status-c2-p2" store
+
+\ ---- Phase 3: stop driving cand_002.  Both momenta drop negative.
+\      Pass C re-evaluates cand_001: cand_002 m=-3 not > STALE_TOL,
+\      no positive dependents remain → AUTO-DECOMPOSE fires.
+LAW-HASH "l-pre-auto" store
+NEW-EPOCH
+LAW-HASH "l-post-auto" store
+"c1" load CAND-STATUS "status-c1-p3" store
+"c2" load CAND-STATUS "status-c2-p3" store
+
+cr "Diagnostics:" . cr
+"  c1 initial      = " . "status-c1-init" load . cr
+"  c2 initial      = " . "status-c2-init" load . cr
+"  c2-deps-on-c1?  = " . "c2-depends-on-c1?" load . cr
+"  safe-mid?       = " . "safe-mid?" load . cr
+"  c1 after p1     = " . "status-c1-p1" load . cr
+"  c2 after p1     = " . "status-c2-p1" load . cr
+"  c1 after p2     = " . "status-c1-p2" load . cr
+"  c2 after p2     = " . "status-c2-p2" load . cr
+"  c1 after p3     = " . "status-c1-p3" load . cr
+"  c2 after p3     = " . "status-c2-p3" load . cr
+cr
+
+\ Pass conditions
+"status-c1-init"      load 'stable-active     = "n-1a?" store
+"status-c2-init"      load 'stable-active     = "n-1b?" store
+"c2-depends-on-c1?"   load 1                  = "n-2?"  store
+"safe-mid?"           load 0                  = "n-3?"  store
+"status-c1-p2"        load 'dependency-held   = "n-4?"  store
+"status-c2-p2"        load 'stable-active     = "n-5?"  store
+"l-pre-dh"            load "l-post-dh" load   = "n-6?"  store
+"status-c1-p3"        load 'decomposed        = "n-7?"  store
+
+"n-1a?" load 1 assert-eq                 \ cand_001 promoted
+"n-1b?" load 1 assert-eq                 \ cand_002 promoted
+"n-2?"  load 1 assert-eq                 \ dependency graph: c2 depends on c1
+"n-3?"  load 1 assert-eq                 \ AUTO-DECOMPOSE-SAFE? = 0 (positive dep)
+"n-4?"  load 1 assert-eq                 \ c1 → 'dependency-held (NOT decomposed)
+"n-5?"  load 1 assert-eq                 \ c2 stable-active during c1's DH
+"n-6?"  load 1 assert-eq                 \ law_hash unchanged while DH
+"n-7?"  load 1 assert-eq                 \ after dep fades, c1 auto-decomposes
+
+cr "Dependency-held protected cand_001 while cand_002 was load-bearing." . cr
+REPORT

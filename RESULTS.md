@@ -2037,6 +2037,149 @@ Aggregate: 2120 / 2120 ✓ across 151 demos.
 
 ---
 
+## Cycle 30 — Law Ecology (Dependency-aware AUTO-DECOMPOSE + cascade restore)
+
+**Pre-registered:** PREDICTIONS-160.md (2026-05-23, commit 9333c78).
+**Implemented:** 2026-05-23 (this section).
+
+Cycle 30 closes the symmetry that cycle 28 opened.  Cycle 28 added
+a generalization gate at the ENTRY of stable-active status; cycle 30
+adds the dependency-aware gate at the EXIT.  A stale primitive is
+no longer killed in isolation: its structural role in other active
+laws is checked first.
+
+### Primary invariants enforced
+
+```
+auto_decompose_safe(cand) :=
+  local_momentum(cand) < -STALE_TOLERANCE
+  AND no_active_dependent_with_positive_momentum(cand)
+```
+
+A primitive entering `'demotion-candidate` during `NEW-EPOCH` is
+checked against the gate.  Three outcomes:
+
+- **safe → auto-decompose** (Pass C invokes `do-decompose!` with
+  the `'auto-decompose` ledger tag; law_hash mutates, body
+  preserved in `_cand-preserved-bodies`, world_hash unchanged)
+- **active positive dependent → `'dependency-held`** (new status;
+  callable but flagged; will be re-evaluated each NEW-EPOCH)
+- **manual `DECOMPOSE-PRIMITIVE` still works** for `'demotion-candidate`
+  cands when the user wants explicit control (unchanged from cycle 29).
+
+### New Tier 1 primitives (3)
+
+- `AUTO-DECOMPOSE-SAFE? ( cand -- 0|1 )` — structural predicate
+- `CAND-DEPENDENTS ( cand -- list )` — list of active dependents
+- `LAW-DEPENDS-ON? ( cand-a cand-b -- 0|1 )` — graph query
+
+Plus `TRY-DISPATCH ( cand -- 0|1 )` testing-helper: returns 1 on
+successful dispatch, 0 on failure, bumping `recent_failure_count`
+of the cand on failure.  Used by demo 162 to observe broken
+callability without aborting the program.
+
+### Cascade restore
+
+`RESTORE-PRIMITIVE` re-installs the cand in `env-words` and
+emits a `'restore-cascade` ledger event listing the dependents
+snapshotted at decompose time (`_cand-decompose-snapshot`).
+Cycle 30 does NOT auto-promote dependents — they must earn
+positive momentum back through their own productive use.
+Multi-level cascade (dependents-of-dependents) is DEFERRED to
+cycle 31.
+
+### Dispatch-counting commitment (PREDICTIONS §8)
+
+Nested dispatches do NOT count as top-level uses for momentum
+purposes.  The VM's `trace-append!` is already top-level-gated
+(rstack depth 0 or 1 with no-program halt frame) so the existing
+architecture satisfies the commitment without modification.
+This is the design choice that makes cycle 30 non-trivial: a
+load-bearing primitive's local momentum drifts negative while
+its dependent stays positive, forcing the gate to fire on
+structural cascade safety rather than direct-momentum inheritance.
+
+### Demo 160 — happy auto-decompose (8 asserts)
+- Setup + promote cand_001 (no dependents).
+- `AUTO-DECOMPOSE-SAFE? = 0` during productive use (m=+9 > STALE_TOL)
+- `AUTO-DECOMPOSE-SAFE? = 1` after one idle epoch (m=-3, no deps)
+- Phase 3 NEW-EPOCH: Pass B transitions to demotion-candidate,
+  Pass C fires AUTO-DECOMPOSE → status='decomposed
+- law_hash mutated by auto-decompose; world_hash unchanged
+- RESTORE returns law_hash to baseline; status='stable-active
+
+### Demo 161 — dependency-held protection (8 asserts)
+- Setup TWO promoted primitives: cand_001=(NODES drop),
+  cand_002=(cand_001 MARK drop) — cand_002 structurally depends
+  on cand_001
+- `LAW-DEPENDS-ON? cand_002 cand_001 = 1` (graph correct)
+- Drive cand_002 productively, never cand_001 directly
+- Phase 1: cand_001 → stale (m=-2, 1 negative epoch)
+- Phase 2: cand_001 → 'dependency-held (Pass B: demotion-candidate;
+  Pass C: cand_002 m=+5 > STALE_TOL → cand_001 → DH)
+- `AUTO-DECOMPOSE-SAFE?(cand_001) = 0` (positive dependent)
+- law_hash unchanged during DH (no decompose happened)
+- Phase 3: stop using cand_002 → cand_002 momentum negative →
+  cand_001 has no positive deps → AUTO-DECOMPOSE fires
+
+### Demo 162 — cascade restore (6 asserts)
+- Same setup as demo 161; reach auto-decomposed state
+- `TRY-DISPATCH cand_002 = 0` (calls into missing cand_001)
+- `RESTORE cand_001` → status='stable-active immediately
+- `TRY-DISPATCH cand_002 = 1` (callability re-wired)
+- `l-baseline == l-restored` (round-trip integrity)
+- One productive epoch + NEW-EPOCH → cand_002 status='stable-active
+
+### What cycle 30 demonstrates
+
+- A load-bearing primitive cannot be auto-killed even if its
+  direct momentum is negative — the dependency graph protects it.
+- A dependent cannot indefinitely shield a non-productive primitive:
+  when the dependent itself fades, the gate re-evaluates and
+  auto-decompose proceeds.
+- Decompose is reversible at the structural level (RESTORE) and at
+  the relational level (dependents regain callability).
+- The protection is structural, not magical: cycle 30 does NOT
+  transfer dependent momentum to the protected cand's balance.
+  The cand is alive only because something else needs it; the
+  moment that something else stops earning, the cand goes too.
+
+### What cycle 30 does NOT claim
+
+- Multi-level cascade (A→B→C dependency chains): only direct deps
+  in cycle 30; multi-level deferred to cycle 31+.
+- Categorical / type-theoretic correctness of the dependency
+  graph: it is a USAGE graph from opcode bodies.
+- Ecological wisdom: AUTO-DECOMPOSE respects the structural
+  safety predicate; whether the resulting catalogue is "wise"
+  is not claimed.
+- Biological metabolism: `'dependency-held` is operational
+  ("would-have-decomposed but a structural dependent saved it"),
+  not biological.
+
+### Catalogue (post-cycle-30)
+
+> Cycle 25: закон можно менять.
+> Cycle 26: закон можно закреплять по цене.
+> Cycle 27: кандидат в закон можно находить автоматически.
+> Cycle 28: закон становится стабильным только при энергетической
+>           генерализации на held-out.
+> Cycle 29: закон остаётся живым только пока продолжает платить
+>           свою carrying cost.
+> **Cycle 30: закон может пережить отрицательный momentum, если на нём
+>            держится живая зависимая структура; и переживёт ровно
+>            до того момента, как она сама перестанет окупаться.**
+
+Stable primitive is now formally defined as: runtime-induced law
+candidate that survived equivalence, reuse, multi-session coupling,
+negative energy delta, held-out generalization, AND continues to
+pay positive net momentum over its lifecycle window OR is
+structurally load-bearing for an active dependent that does.
+
+Aggregate: 2142 / 2142 ✓ across 154 demos.
+
+---
+
 ## Pending / future tracks
 
 | Track | Description | ETA |
