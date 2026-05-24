@@ -107,7 +107,7 @@ cr
 "status-c2-init"      load 'stable-active     = "n-1b?" store
 "c2-depends-on-c1?"   load 1                  = "n-2?"  store
 "safe-mid?"           load 0                  = "n-3?"  store
-"status-c1-p2"        load 'dependency-held   = "n-4?"  store
+"status-c1-p2"        load 'dependency-supported = "n-4?" store
 "status-c2-p2"        load 'stable-active     = "n-5?"  store
 "l-pre-dh"            load "l-post-dh" load   = "n-6?"  store
 "status-c1-p3"        load 'decomposed        = "n-7?"  store
@@ -116,7 +116,7 @@ cr
 "n-1b?" load 1 assert-eq                 \ cand_002 promoted
 "n-2?"  load 1 assert-eq                 \ dependency graph: c2 depends on c1
 "n-3?"  load 1 assert-eq                 \ AUTO-DECOMPOSE-SAFE? = 0 (positive dep)
-"n-4?"  load 1 assert-eq                 \ c1 → 'dependency-held (NOT decomposed)
+"n-4?"  load 1 assert-eq                 \ c1 → 'dependency-supported (carry offset by cand_002, cycle 33)
 "n-5?"  load 1 assert-eq                 \ c2 stable-active during c1's DH
 "n-6?"  load 1 assert-eq                 \ law_hash unchanged while DH
 "n-7?"  load 1 assert-eq                 \ after dep fades, c1 auto-decomposes

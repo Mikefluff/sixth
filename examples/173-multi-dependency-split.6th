@@ -1,0 +1,106 @@
+\ examples/173-multi-dependency-split.6th
+\ Cycle 33C — multi-dependency split.  One supporter cand_003
+\ depends on TWO siblings cand_001, cand_002.  Its surplus is
+\ apportioned via floor(m_native / dep_count) so each gets a fair
+\ share, capped at LAW_CARRY.
+\ Pre-reg: PREDICTIONS-171.md (commit d57a3ff).
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 173 — multi-dependency split (cycle 33) ===" . cr
+
+RESET
+
+\ ---- Promote cand_001 = (MARK drop), L=2.
+MARK drop MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "m1" store
+"m1" load SHADOW-CHECK drop
+"m1" load INDUCE-RUNTIME "c1" store
+cand_001 cand_001 cand_001 cand_001 cand_001
+NEW-SESSION cand_001 NEW-SESSION cand_001
+"c1" load COMMIT-PRIMITIVE drop
+"c1" load HELD-OUT-EVAL drop
+"c1" load PROMOTE-STABLE drop
+
+\ ---- Promote cand_002 = (NODES drop), L=2 (independent of cand_001).
+NODES drop NODES drop NODES drop NODES drop
+DETECT-MOTIF-AUTO "m2" store
+"m2" load SHADOW-CHECK drop
+"m2" load INDUCE-RUNTIME "c2" store
+cand_002 cand_002 cand_002 cand_002 cand_002
+NEW-SESSION cand_002 NEW-SESSION cand_002
+"c2" load COMMIT-PRIMITIVE drop
+"c2" load HELD-OUT-EVAL drop
+"c2" load PROMOTE-STABLE drop
+
+\ ---- Promote cand_003 = (cand_001 cand_002), L=2 (depends on BOTH).
+\      16 alternating dispatches push (cand_001 cand_002) to freq=8.
+cand_001 cand_002 cand_001 cand_002 cand_001 cand_002 cand_001 cand_002
+cand_001 cand_002 cand_001 cand_002 cand_001 cand_002 cand_001 cand_002
+DETECT-MOTIF-AUTO "m3" store
+"m3" load SHADOW-CHECK drop
+"m3" load INDUCE-RUNTIME "c3" store
+cand_003 cand_003 cand_003 cand_003 cand_003
+NEW-SESSION cand_003 NEW-SESSION cand_003
+"c3" load COMMIT-PRIMITIVE drop
+"c3" load HELD-OUT-EVAL drop
+"c3" load PROMOTE-STABLE drop
+
+"c1" load CAND-STATUS "c1-init" store
+"c2" load CAND-STATUS "c2-init" store
+"c3" load CAND-STATUS "c3-init" store
+
+NEW-EPOCH
+
+\ ---- Phase 1: drive cand_003 productively (7 dispatches → m_native=+4).
+cand_003 cand_003 cand_003 cand_003 cand_003 cand_003 cand_003
+
+"c3" load DEPENDENCY-COUNT  "depc-c3" store
+"c3" load MOMENTUM-NATIVE   "mn-c3"   store
+"c1" load SUPPORT-CREDIT    "sup-c1"  store
+"c2" load SUPPORT-CREDIT    "sup-c2"  store
+"c1" load MOMENTUM-EFFECTIVE "me-c1"  store
+"c2" load MOMENTUM-EFFECTIVE "me-c2"  store
+
+NEW-EPOCH
+"c1" load CAND-STATUS "c1-p1" store
+"c2" load CAND-STATUS "c2-p1" store
+"c3" load CAND-STATUS "c3-p1" store
+
+cr "Diagnostics:" . cr
+"  c1 / c2 / c3 init   = " . "c1-init" load . " / " . "c2-init" load . " / " . "c3-init" load . cr
+"  DEPENDENCY-COUNT c3 = " . "depc-c3" load . cr
+"  MOMENTUM-NATIVE c3  = " . "mn-c3"   load . cr
+"  SUPPORT-CREDIT c1   = " . "sup-c1"  load . cr
+"  SUPPORT-CREDIT c2   = " . "sup-c2"  load . cr
+"  M-EFFECTIVE c1      = " . "me-c1"   load . cr
+"  M-EFFECTIVE c2      = " . "me-c2"   load . cr
+"  c1 / c2 / c3 after  = " . "c1-p1" load . " / " . "c2-p1" load . " / " . "c3-p1" load . cr
+cr
+
+\ Pass conditions
+"c1-init"  load 'stable-active        = "d-1a?" store
+"c2-init"  load 'stable-active        = "d-1b?" store
+"c3-init"  load 'stable-active        = "d-1c?" store
+"depc-c3"  load 2                     = "d-2?"  store
+"sup-c1"   load 2                     = "d-3?"  store
+"sup-c2"   load 2                     = "d-4?"  store
+"c1-p1"    load 'dependency-supported = "d-5?"  store
+"c2-p1"    load 'dependency-supported = "d-6?"  store
+"c3-p1"    load 'stable-active        = "d-7?"  store
+
+"d-1a?" load 1 assert-eq
+"d-1b?" load 1 assert-eq
+"d-1c?" load 1 assert-eq
+"d-2?"  load 1 assert-eq      \ DEPENDENCY-COUNT counts DISTINCT cands
+"d-3?"  load 1 assert-eq      \ split contribution floor(4/2)=2 capped LAW_CARRY=2
+"d-4?"  load 1 assert-eq      \ both siblings get same split share
+"d-5?"  load 1 assert-eq      \ cand_001 → 'dependency-supported (via cand_003 share)
+"d-6?"  load 1 assert-eq      \ cand_002 → 'dependency-supported (via cand_003 share)
+"d-7?"  load 1 assert-eq      \ cand_003 stays stable-active (its own m_native is positive)
+
+cr "Multi-dep split honored; cap held on both halves." . cr
+REPORT

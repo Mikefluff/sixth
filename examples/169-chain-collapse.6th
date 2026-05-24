@@ -84,7 +84,7 @@ cr
 
 \ Pass conditions
 "c1-after-build"    load 'dependency-held = "cc-1a?" store
-"c2-after-build"    load 'dependency-held = "cc-1b?" store
+"c2-after-build"    load 'dependency-supported = "cc-1b?" store
 "c3-after-build"    load 'stable-active   = "cc-1c?" store
 "c1-after-collapse" load 'decomposed      = "cc-2?"  store
 "c2-after-collapse" load 'decomposed      = "cc-3?"  store
@@ -92,7 +92,7 @@ cr
 "l-pre-collapse"    load "l-post-collapse" load = "law-changed?" store
 
 "cc-1a?" load 1 assert-eq      \ chain assembled correctly
-"cc-1b?" load 1 assert-eq
+"cc-1b?" load 1 assert-eq      \ cycle 33: cand_002 directly supported by cand_003
 "cc-1c?" load 1 assert-eq
 "cc-2?"  load 1 assert-eq      \ cand_001 auto-decomposed on phase 3
 "cc-3?"  load 1 assert-eq      \ cand_002 auto-decomposed on phase 3

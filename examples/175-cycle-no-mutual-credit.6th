@@ -1,0 +1,83 @@
+\ examples/175-cycle-no-mutual-credit.6th
+\ Cycle 33E — negative: two cands in a closed static cycle, neither
+\ natively positive, give EACH OTHER zero support credit.  The
+\ no-profit-inheritance rule (only m_native > STALE_TOL contributes)
+\ prevents the parasitic mutual-life-support failure mode.
+\ Reuses cycle 32's REBIND-CAND-BODY test harness.
+\ Pre-reg: PREDICTIONS-171.md (commit d57a3ff).
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 175 — cycle without anchor: no mutual credit (cycle 33) ===" . cr
+
+RESET
+
+\ ---- Standard two-cand setup, both promoted.
+NODES drop NODES drop NODES drop NODES drop
+DETECT-MOTIF-AUTO "m1" store
+"m1" load SHADOW-CHECK drop
+"m1" load INDUCE-RUNTIME "c1" store
+
+cand_001 NODES drop cand_001 NODES drop cand_001 NODES drop cand_001 NODES drop
+DETECT-MOTIF-AUTO "m2" store
+"m2" load SHADOW-CHECK drop
+"m2" load INDUCE-RUNTIME "c2" store
+
+cand_001 NEW-SESSION cand_001 NEW-SESSION cand_001
+"c1" load COMMIT-PRIMITIVE drop
+"c1" load HELD-OUT-EVAL drop
+"c1" load PROMOTE-STABLE drop
+
+cand_002 cand_002 cand_002 cand_002 cand_002
+NEW-SESSION cand_002 NEW-SESSION cand_002
+"c2" load COMMIT-PRIMITIVE drop
+"c2" load HELD-OUT-EVAL drop
+"c2" load PROMOTE-STABLE drop
+
+\ ---- Enable test-harness; build static cycle via REBIND.
+ENABLE-TEST-HARNESS
+' drop WRAP-MOTIF
+' NODES MOTIF-CONS
+' cand_002 MOTIF-CONS
+"c1" load swap REBIND-CAND-BODY
+DISABLE-TEST-HARNESS
+
+\ ---- Baseline NEW-EPOCH, then probe support credits (no anchor).
+NEW-EPOCH
+"c1" load SUPPORT-CREDIT  "sup-c1" store
+"c2" load SUPPORT-CREDIT  "sup-c2" store
+"c1" load MOMENTUM-NATIVE "mn-c1" store
+"c2" load MOMENTUM-NATIVE "mn-c2" store
+
+\ ---- 2 idle epochs to let the cycle collapse (cycle 32 visited-set
+\      DFS + cycle 33 no support → both decompose).
+NEW-EPOCH
+NEW-EPOCH
+"c1" load CAND-STATUS "c1-final" store
+"c2" load CAND-STATUS "c2-final" store
+
+cr "Diagnostics:" . cr
+"  SUPPORT-CREDIT c1  = " . "sup-c1"   load . cr
+"  SUPPORT-CREDIT c2  = " . "sup-c2"   load . cr
+"  MOMENTUM-NATIVE c1 = " . "mn-c1"    load . cr
+"  MOMENTUM-NATIVE c2 = " . "mn-c2"    load . cr
+"  c1 final           = " . "c1-final" load . cr
+"  c2 final           = " . "c2-final" load . cr
+cr
+
+\ Pass conditions
+"sup-c1"   load 0           = "cy-1?" store
+"sup-c2"   load 0           = "cy-2?" store
+"c1-final" load 'decomposed = "cy-3?" store
+"c2-final" load 'decomposed = "cy-4?" store
+
+"cy-1?" load 1 assert-eq      \ cand_001 gets 0 (no positive supporter in cycle)
+"cy-2?" load 1 assert-eq      \ cand_002 gets 0 (same)
+"cy-3?" load 1 assert-eq      \ cycle 33: no rescue; cycle 32 visited-set DFS confirms
+"cy-4?" load 1 assert-eq      \ both decompose; no mutual life support
+
+cr "Cycle without anchor gave no mutual credit; both collapsed." . cr
+REPORT

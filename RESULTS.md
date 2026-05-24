@@ -2514,6 +2514,206 @@ Aggregate: 2204 / 2204 ✓ across 162 demos.
 
 ---
 
+## Cycle 33 — Dependent Momentum Allocation as Carry Offset
+
+**Pre-registered:** PREDICTIONS-171.md (2026-05-23, commit 3a1b308;
+addendum commit d57a3ff).
+**Implemented:** 2026-05-23 (this section).
+
+Cycle 33 adds the metabolic-economy layer that was conspicuously
+missing from cycle 30/32 protection: a primitive whose dependent is
+natively-earning can have its carry cost OFFSET by a bounded share
+of the dependent's surplus, transitioning to a new status
+`'dependency-supported` that keeps it alive without making it
+profitable.
+
+### Core formulation (binding)
+
+> Dependent momentum allocation is **carry-offset only, not profit
+> inheritance**.  It can prevent decomposition but cannot make a
+> primitive native-positive or allow it to subsidize others.
+
+### Three structural invariants
+
+```
+carry-offset:        support_credit(A) ≤ LAW_CARRY(A)  — hard cap, no aggregation override
+no-profit-inherit:   only m_native(B) > STALE_TOLERANCE contributes
+                     (supported cands do NOT propagate support)
+rented-not-owned:    _support-credit snapshot reset on NEW-EPOCH
+                     (no cross-epoch accumulation)
+```
+
+### Per-supporter contribution + capped aggregation
+
+```
+contribution(B, A) =
+  0                                       if not observed_dep(B, A)
+  0                                       if m_native(B) ≤ STALE_TOLERANCE
+  floor(m_native(B) / dep_count(B))       otherwise
+
+support_credit(A) =
+  min(LAW_CARRY(A), Σ over B: contribution(B, A))
+```
+
+`dep_count(B)` counts DISTINCT cand symbols in B's motif body
+(repeated symbols count once, preventing dilution attacks).
+
+### Pass A.5 + revised Pass B
+
+`prim-new-epoch` now has 5 stages:
+- Pass A: compute m_native for each active cand, push history.
+- **Pass A.5 (new):** snapshot support_credit for each active cand.
+  Order-invariant (uses pre-Pass-B statuses for active_dependents_of).
+- Pass B: status transition based on m_native + m_eff + history.
+  Adds `'dependency-supported` branch: triggered when m_native ≤
+  STALE_TOL but support > 0 and m_eff ≥ -STALE_TOL.  History tracks
+  m_native (intrinsic) not m_eff (rented).
+- Pass C: cycle 32 transitive load-bearing check (UNCHANGED).
+- Reset: counters, observed_deps, AND support_credit snapshot.
+
+### New status: `'dependency-supported`
+
+| concern | answer |
+|---------|--------|
+| callable? | yes (in env-words, dispatch normally) |
+| in ACTIVE-METAB-STATUSES? | yes (pays inflation, participates in NEW-EPOCH) |
+| in STABLE-WORD-STATUSES? | yes (contributes to STABLE-LAW-HASH) |
+| in SANDBOX-STATUSES? | no (stable-track only) |
+| contributes support to others? | NO (only m_native > STALE_TOL counts) |
+
+Distinct from `'dependency-held`:
+- `'dependency-supported` = carry offset applied at Pass B (early intervention)
+- `'dependency-held` = transitive structural protection at Pass C
+  (last-resort when m_eff still negative after support)
+
+Both coexist; cycle 33 demos 167/169 show both statuses present
+simultaneously (cand_002 supported, cand_001 held via transitive chain).
+
+### Four new Tier 1 primitives
+
+```
+MOMENTUM-NATIVE     ( cand -- n )   m_native (intrinsic; alias for LAW-MOMENTUM).
+                                    NEVER includes support.
+SUPPORT-CREDIT      ( cand -- n )   per-epoch support_credit (computed
+                                    on-demand from current state).
+MOMENTUM-EFFECTIVE  ( cand -- n )   m_eff = m_native + support_credit.
+DEPENDENCY-COUNT    ( cand -- n )   distinct cand-count in cand's motif.
+```
+
+The triplet (NATIVE / SUPPORT / EFFECTIVE) is the carry-offset
+invariant's external surface — demos can assert MOMENTUM-NATIVE is
+unchanged across dependent activity, while status transitions
+internally consult MOMENTUM-EFFECTIVE.  Any drift between these
+surfaces is externally detectable.
+
+### Updated cycle 30-32 demos (mechanical status-label shift)
+
+| Demo | cand | cycle 32 status | cycle 33 status | reason |
+|------|------|------------------|-------------------|--------|
+| 161 | cand_001 phase 2 | 'dependency-held | 'dependency-supported | cand_002 natively positive → caught in Pass B |
+| 165 | cand_001 phase 2 | 'dependency-held | 'dependency-supported | same |
+| 167 | cand_002 phase 2 | 'dependency-held | 'dependency-supported | cand_003 directly supports cand_002 |
+| 167 | cand_001 phase 2 | 'dependency-held | 'dependency-held UNCHANGED | cand_002 not natively positive → no support → cycle 32 transitive chain still catches |
+| 169 | cand_002 build | 'dependency-held | 'dependency-supported | same as 167 |
+| 169 | cand_001 build | 'dependency-held | 'dependency-held UNCHANGED | same |
+
+All updated demos pass with new expectations.  The cycle-32 invariants
+(transitive load-bearing, anti-immortal-cycle) remain TRUE — labels
+shift because cycle-33 intervention catches some cases earlier.
+
+### Demo 171 — support-offset happy (9 asserts)
+
+Promote cand_001=(MARK drop) L=2 and cand_002=(cand_001 NODES drop) L=3.
+Drive cand_002 productively (4×).  Inspect:
+- MOMENTUM-NATIVE cand_001 = -3 (unchanged by support: carry-offset invariant)
+- SUPPORT-CREDIT cand_001 = 2 (capped at LAW_CARRY)
+- MOMENTUM-EFFECTIVE cand_001 = -1 (= -3 + 2)
+- After NEW-EPOCH: cand_001 = 'dependency-supported, callable.
+
+### Demo 172 — cap enforces no profit inheritance (6 asserts)
+
+cand_002 with MOMENTUM-NATIVE = +16 (10 dispatches).  Naive proportional
+split would give cand_001 = 16; cap holds at LAW_CARRY = 2.  cand_001 →
+'dependency-supported (NOT 'stable-active).  Surplus stays with cand_002.
+
+### Demo 173 — multi-dependency split (9 asserts)
+
+Three cands where cand_003 = (cand_001 cand_002) statically depends on
+both siblings.  cand_003 m_native=+4; dep_count=2; contribution to each
+= floor(4/2) = 2 capped at LAW_CARRY=2.  Both siblings → 'dependency-supported.
+
+### Demo 174 — dead-dep no credit (4 asserts)
+
+cand_002 warmed up, then stops being driven.  Its m_native = -4 in idle.
+contribution to cand_001 = 0 (m_native ≤ STALE_TOL).  SUPPORT-CREDIT
+cand_001 = 0.  cand_001 auto-decomposes.
+
+### Demo 175 — cycle without anchor (4 asserts)
+
+REBIND-CAND-BODY constructs cand_001 ↔ cand_002 cycle (no external
+positive driver).  Neither natively positive → mutual SUPPORT-CREDIT
+= 0.  Cycle 32 visited-set DFS + cycle 33 no support → both decompose.
+This is the parasitic-mutual-life-support failure mode prevented
+structurally.
+
+### Demo 176 — runtime observation required (5 asserts)
+
+cand_002 warm-up productive, then NEW-EPOCH resets observed_deps.  In
+the next epoch, cand_002 still 'stable-active (status sticky) but
+OBSERVED-DEP? cand_002 cand_001 = 0.  SUPPORT-CREDIT cand_001 = 0.
+"Rented, not owned" — observed_dep does not persist across epochs;
+support must be earned this epoch.
+
+### What cycle 33 demonstrates
+
+- Support is **carry offset**, not profit transfer.  The cap LAW_CARRY
+  is the structural guarantee that no parasitic economy can emerge.
+- The mechanism is **rented per epoch**: an old dependency must keep
+  proving its current use to keep paying for the base.
+- Two protection mechanisms now coexist: cycle 33's early Pass B
+  intervention via support_credit, and cycle 32's late Pass C
+  transitive chain.  Cycle 33 catches cases where the dependent is
+  directly natively-positive; cycle 32 catches cases where the
+  intermediate dependent is itself supported (not natively positive).
+- The triplet MOMENTUM-NATIVE / SUPPORT-CREDIT / MOMENTUM-EFFECTIVE
+  makes the carry-offset semantics machine-observable — future drift
+  toward profit-inheritance would be caught externally.
+
+### What cycle 33 does NOT claim
+
+- Support is "ecologically meaningful" — bookkeeping only.
+- The floor/dep_count apportionment is optimal — minimal defensible.
+- Cycle 33 changes any cycle 28-32 mechanism behaviorally — it only
+  catches some cases earlier (Pass B) that cycle 32 would have caught
+  later (Pass C); both arrive at structurally-correct outcomes.
+- The infrastructure-reservoir failure mode is impossible — it's
+  acknowledged in commitment 11 of the pre-reg as a future risk;
+  cycle 33 does NOT introduce an infrastructure_status or any
+  anti-reservoir mechanism.  If such a class emerges empirically,
+  cycle 34+ will address it.
+
+### Catalogue (post-cycle-33)
+
+> Cycle 25–32: → ...
+> **Cycle 33: живой dependent может оплатить carry базового primitive,
+>            но не может передать ему прибыль; support is rented per
+>            epoch and capped at LAW_CARRY; no profit inheritance, no
+>            cross-epoch accumulation, no parasitic chains.**
+
+Stable primitive is now formally defined as: runtime-induced law
+candidate that — having been INDUCEd under `'conservative` profile —
+survived equivalence, reuse, multi-session coupling, negative energy
+delta, held-out generalization, AND continues to pay positive net
+m_native over its lifecycle window (under the +1 inflation tax) OR
+is structurally load-bearing AND runtime-observed for an active
+dependent chain that terminates in a positive anchor (cycle 32) OR
+has its carry cost offset by a natively-positive observed dependent
+within the LAW_CARRY cap (cycle 33).
+
+Aggregate: 2241 / 2241 ✓ across 168 demos.
+
+---
+
 ## Pending / future tracks
 
 | Track | Description | ETA |

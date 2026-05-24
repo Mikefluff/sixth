@@ -1,0 +1,83 @@
+\ examples/176-runtime-observation-required.6th
+\ Cycle 33F — negative: runtime observation is REQUIRED for support
+\ even if the dependent is alive (lingering 'stable-active from prior
+\ epoch).  observed_deps resets at NEW-EPOCH ("rented, not owned");
+\ this epoch's support depends on this epoch's nested-call evidence.
+\ Pre-reg: PREDICTIONS-171.md (commit d57a3ff).
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 176 — observation required; support is rented (cycle 33) ===" . cr
+
+RESET
+
+MARK drop MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "m1" store
+"m1" load SHADOW-CHECK drop
+"m1" load INDUCE-RUNTIME "c1" store
+
+cand_001 MARK drop cand_001 MARK drop cand_001 MARK drop cand_001 MARK drop
+DETECT-MOTIF-AUTO "m2" store
+"m2" load SHADOW-CHECK drop
+"m2" load INDUCE-RUNTIME "c2" store
+
+cand_001 NEW-SESSION cand_001 NEW-SESSION cand_001
+"c1" load COMMIT-PRIMITIVE drop
+"c1" load HELD-OUT-EVAL drop
+"c1" load PROMOTE-STABLE drop
+
+cand_002 cand_002 cand_002 cand_002 cand_002
+NEW-SESSION cand_002 NEW-SESSION cand_002
+"c2" load COMMIT-PRIMITIVE drop
+"c2" load HELD-OUT-EVAL drop
+"c2" load PROMOTE-STABLE drop
+
+\ ---- Warm-up: drive cand_002 productively, NEW-EPOCH; cand_002 stays
+\      'stable-active in the next epoch (status sticky from past native
+\      positive momentum).
+NEW-EPOCH
+cand_002 cand_002 cand_002 cand_002
+NEW-EPOCH
+"c2" load CAND-STATUS "c2-warmed" store
+
+\ ---- Probe observed_deps AFTER NE-reset, BEFORE any new dispatches.
+\      observed_deps was cleared at end of previous NE; current epoch
+\      has no observation yet.  observed_dep(cand_002, cand_001) = 0
+\      DESPITE the static dep being intact and cand_002 still alive.
+"c2" load "c1" load OBSERVED-DEP?  "obs-c2-c1?" store
+"c2" load "c1" load LAW-DEPENDS-ON? "static-dep?" store
+"c2" load CAND-STATUS              "c2-pre-probe" store
+"c1" load SUPPORT-CREDIT           "sup-c1-no-obs" store
+
+\ ---- NEW-EPOCH now without any dispatches.  No support → cand_001
+\      goes through normal Pass B branches with 0 carry offset.
+NEW-EPOCH
+"c1" load CAND-STATUS "c1-after-noobs-NE" store
+
+cr "Diagnostics:" . cr
+"  c2 status (warmed)     = " . "c2-warmed"          load . cr
+"  LAW-DEPENDS-ON? c2→c1  = " . "static-dep?"        load . cr
+"  OBSERVED-DEP? c2→c1    = " . "obs-c2-c1?"         load . cr
+"  c2 status (pre-probe)  = " . "c2-pre-probe"       load . cr
+"  SUPPORT-CREDIT c1      = " . "sup-c1-no-obs"      load . cr
+"  c1 after no-obs NE     = " . "c1-after-noobs-NE"  load . cr
+cr
+
+\ Pass conditions
+"c2-warmed"        load 'stable-active = "ro-1?" store
+"static-dep?"      load 1              = "ro-2?" store
+"obs-c2-c1?"       load 0              = "ro-3?" store
+"sup-c1-no-obs"    load 0              = "ro-4?" store
+"c1-after-noobs-NE" load 'decomposed   = "ro-5?" store
+
+"ro-1?" load 1 assert-eq        \ cand_002 alive after warm-up
+"ro-2?" load 1 assert-eq        \ static dep intact (motif unchanged)
+"ro-3?" load 1 assert-eq        \ observed_deps reset on NEW-EPOCH (rented!)
+"ro-4?" load 1 assert-eq        \ no observation → no support, even with static dep
+"ro-5?" load 1 assert-eq        \ no support + 2 consecutive negs (warm-up + this) → auto-decompose
+
+cr "Observed dependency required; support is rented per-epoch." . cr
+REPORT

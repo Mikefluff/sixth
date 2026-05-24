@@ -1,0 +1,106 @@
+\ examples/171-support-offset-happy.6th
+\ Cycle 33A — happy: a natively-positive dependent's contribution
+\ offsets the base cand's carry cost, keeping it ALIVE but NOT
+\ making it native-positive.  Status = 'dependency-supported.
+\ The triplet MOMENTUM-NATIVE / SUPPORT-CREDIT / MOMENTUM-EFFECTIVE
+\ exposes the carry-offset semantics machine-observably.
+\ Pre-reg: PREDICTIONS-171.md (commit d57a3ff).
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 171 — support-offset happy (cycle 33) ===" . cr
+
+RESET
+
+\ ---- Setup: cand_001=(MARK drop) L=2, cand_002=(cand_001 NODES drop) L=3 ----
+MARK drop MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "m1" store
+"m1" load SHADOW-CHECK drop
+"m1" load INDUCE-RUNTIME "c1" store
+
+cand_001 MARK drop cand_001 MARK drop cand_001 MARK drop cand_001 MARK drop
+DETECT-MOTIF-AUTO "m2" store
+"m2" load SHADOW-CHECK drop
+"m2" load INDUCE-RUNTIME "c2" store
+
+cand_001 NEW-SESSION cand_001 NEW-SESSION cand_001
+"c1" load COMMIT-PRIMITIVE drop
+"c1" load HELD-OUT-EVAL drop
+"c1" load PROMOTE-STABLE drop
+
+cand_002 cand_002 cand_002 cand_002 cand_002
+NEW-SESSION cand_002 NEW-SESSION cand_002
+"c2" load COMMIT-PRIMITIVE drop
+"c2" load HELD-OUT-EVAL drop
+"c2" load PROMOTE-STABLE drop
+
+"c1" load CAND-STATUS "c1-init" store
+"c2" load CAND-STATUS "c2-init" store
+
+\ Baseline NEW-EPOCH to clear setup-phase counters + observed-deps.
+NEW-EPOCH
+
+\ ---- Phase 1: drive cand_002 productively (4 dispatches).
+\      cand_002 m_native = 4×2 − 3 − 0 − 1 = +4.
+\      cand_001 m_native = 0 − 2 − 0 − 1 = -3 (no top-level uses).
+\      support_credit(cand_001) = min(LAW_CARRY(cand_001)=2,
+\                                      floor(+4 / dep_count(cand_002)=1)) = 2.
+\      m_eff(cand_001) = -3 + 2 = -1.
+cand_002 cand_002 cand_002 cand_002
+
+\ Mid-epoch inspection (BEFORE NEW-EPOCH) — three momentum primitives
+\ expose the carry-offset semantics.
+"c1" load LAW-CARRY           "carry-c1"   store
+"c2" load DEPENDENCY-COUNT    "depc-c2"    store
+"c1" load SUPPORT-CREDIT      "sup-c1"     store
+"c1" load MOMENTUM-NATIVE     "mn-c1"      store
+"c1" load MOMENTUM-EFFECTIVE  "me-c1"      store
+"c2" load MOMENTUM-NATIVE     "mn-c2"      store
+
+NEW-EPOCH
+"c1" load CAND-STATUS "c1-p1" store
+"c2" load CAND-STATUS "c2-p1" store
+
+\ ---- Phase 2: verify cand_001 still callable (TRY-DISPATCH).
+"c1" load TRY-DISPATCH "c1-callable?" store
+
+cr "Diagnostics:" . cr
+"  c1 initial         = " . "c1-init"      load . cr
+"  c2 initial         = " . "c2-init"      load . cr
+"  LAW-CARRY c1       = " . "carry-c1"     load . cr
+"  DEPENDENCY-COUNT c2= " . "depc-c2"      load . cr
+"  SUPPORT-CREDIT c1  = " . "sup-c1"       load . cr
+"  MOMENTUM-NATIVE c1 = " . "mn-c1"        load . cr
+"  MOMENTUM-EFFECTIVE = " . "me-c1"        load . cr
+"  MOMENTUM-NATIVE c2 = " . "mn-c2"        load . cr
+"  c1 after p1        = " . "c1-p1"        load . cr
+"  c2 after p1        = " . "c2-p1"        load . cr
+"  c1 callable post-NE= " . "c1-callable?" load . cr
+cr
+
+\ Pass conditions
+"c1-init"       load 'stable-active        = "o-1a?" store
+"c2-init"       load 'stable-active        = "o-1b?" store
+"sup-c1"        load 2                     = "o-2?"  store
+"depc-c2"       load 1                     = "o-3?"  store
+"mn-c1"         load -3                    = "o-4?"  store
+"me-c1"         load -1                    = "o-5?"  store
+"c1-p1"         load 'dependency-supported = "o-6?"  store
+"c2-p1"         load 'stable-active        = "o-7?"  store
+"c1-callable?"  load 1                     = "o-8?"  store
+
+"o-1a?" load 1 assert-eq
+"o-1b?" load 1 assert-eq
+"o-2?"  load 1 assert-eq        \ support_credit capped at LAW_CARRY=2
+"o-3?"  load 1 assert-eq        \ cand_002 has 1 distinct dep (cand_001)
+"o-4?"  load 1 assert-eq        \ MOMENTUM-NATIVE unchanged by support (carry-offset invariant)
+"o-5?"  load 1 assert-eq        \ MOMENTUM-EFFECTIVE = native + support = -1
+"o-6?"  load 1 assert-eq        \ Pass B routed cand_001 to NEW 'dependency-supported status
+"o-7?"  load 1 assert-eq        \ cand_002 stays stable-active (its native is unchanged)
+"o-8?"  load 1 assert-eq        \ cand_001 still callable post-NEW-EPOCH
+
+cr "Support offset applied; cand_001 alive but NOT native-positive." . cr
+REPORT

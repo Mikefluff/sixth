@@ -95,6 +95,9 @@
          make-cand-nested-hook
          observed-dep?
          current-cand-nested-hook
+         ;; cycle 33 exports — dependent momentum allocation (carry offset)
+         support-credit-of
+         set-support-credit-snapshot!
          ;; Re-export the VM trace parameter so meta primitives can
          ;; toggle trace on / off without further requires.
          current-engine-trace
@@ -151,6 +154,8 @@
 ;; cycle 32: runtime-observed dependencies + opcodes-to-cand lookup
 (define MEM_OBSERVED_DEPS           '_observed-deps)           ; box of alist ((caller . callee) . count) reset per epoch
 (define MEM_OPCODES_TO_CAND         '_opcodes-to-cand)         ; hasheq from word-opcodes vector to cand-sym
+;; cycle 33: support credit snapshot (rented per-epoch; reset on NEW-EPOCH)
+(define MEM_SUPPORT_CREDIT          '_support-credit)          ; box of alist (cand-sym . int) — Pass A.5 snapshot
 
 ;; Forbidden symbols inside a candidate motif (per docs/mining_protocol.md §4).
 ;; A candidate cannot invoke meta-primitives (would allow self-modifying-meta)
@@ -212,6 +217,8 @@
   ;; cycle 32: observed-dep tracking + opcodes reverse-lookup
   (hash-set! mem MEM_OBSERVED_DEPS    (box '()))
   (hash-set! mem MEM_OPCODES_TO_CAND  (make-hasheq))
+  ;; cycle 33: support credit snapshot
+  (hash-set! mem MEM_SUPPORT_CREDIT   (box '()))
   (void))
 
 ;; Allow tests / NEW-SESSION primitive to update session_id deterministically.
@@ -336,7 +343,9 @@
     DISCOVERY-PROFILE PROFILE-BUDGET PROFILE-SCOPE
     STABLE-LAW-HASH SANDBOX-LAW-HASH LAW-CARRY
     ;; cycle 32: observed-dep + load-bearing inspections
-    OBSERVED-DEP? RECENT-LOAD-BEARING? CAND-OBSERVES?))
+    OBSERVED-DEP? RECENT-LOAD-BEARING? CAND-OBSERVES?
+    ;; cycle 33: dependent momentum allocation inspections
+    MOMENTUM-NATIVE MOMENTUM-EFFECTIVE SUPPORT-CREDIT DEPENDENCY-COUNT))
 
 (define (inspection-op? name)
   (and (memq name INSPECTION-OPS) #t))
@@ -382,10 +391,12 @@
 (define MOMENTUM-HISTORY-WINDOW     3)
 
 ;; cycle 30: statuses that participate in epoch-driven metabolism.
-;; cycle 31 extension: 'sandbox-stable also pays inflation and is subject
-;; to auto-decompose, but is filtered out of STABLE-LAW-HASH.
+;; cycle 31 extension: 'sandbox-stable also pays inflation.
+;; cycle 33 extension: 'dependency-supported is the carry-offset
+;;   intermediate (caught in Pass B before reaching demotion-candidate).
 (define ACTIVE-METAB-STATUSES
-  '(stable-active stale demotion-candidate dependency-held sandbox-stable))
+  '(stable-active stale demotion-candidate dependency-held
+    sandbox-stable dependency-supported))
 
 ;; cycle 31: statuses that are part of the SANDBOX (liberal) track —
 ;; never enter STABLE-LAW-HASH, regardless of subsequent transitions.
@@ -396,12 +407,12 @@
   '(experimental sandbox-stable))
 
 ;; cycle 31: statuses that contribute to STABLE-LAW-HASH.  A cand
-;; with status in this set is part of the stable law-state.  Other
-;; statuses (sandbox track, rolled-back, decomposed, etc.) are
-;; filtered out when computing STABLE-LAW-HASH.
+;; with status in this set is part of the stable law-state.
+;; cycle 33: 'dependency-supported is a stable-track status (carry
+;;   offset applied, still callable, still part of the dictionary).
 (define STABLE-WORD-STATUSES
   '(ephemeral-active committed stable-active stale
-    demotion-candidate dependency-held))
+    demotion-candidate dependency-held dependency-supported))
 
 ;; cycle 31: per-cand per-epoch inflation cost on top of carry.
 ;; Hardcoded.  No tuning knob.  Modifications require deprecation cycle.
@@ -504,6 +515,19 @@
 (define (observed-dep? e caller callee)
   (define alist (unbox (observed-deps-of e)))
   (and (assoc (cons caller callee) alist) #t))
+
+;; ============================================================
+;; Cycle 33 — support credit snapshot (rented per epoch).
+;; ============================================================
+
+;; Box of alist (cand-sym . int) computed at end of Pass A in NEW-EPOCH
+;; and consumed by Pass B status decisions.  Reset at end of NEW-EPOCH
+;; ("rented, not owned" — every epoch must re-earn).
+(define (support-credit-of e)
+  (hash-ref (env-memory e) MEM_SUPPORT_CREDIT (box '())))
+
+(define (set-support-credit-snapshot! e alist)
+  (set-box! (support-credit-of e) alist))
 
 ;; Build the nested-call hook.  Called by trace-append! when an op
 ;; fires at non-top-level depth.  Records observation only when both

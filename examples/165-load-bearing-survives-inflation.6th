@@ -90,13 +90,13 @@ cr
 \ Pass conditions
 "c1-init"  load 'stable-active     = "lb-1a?" store
 "c2-init"  load 'stable-active     = "lb-1b?" store
-"c1-p2"    load 'dependency-held   = "lb-2?"  store
+"c1-p2"    load 'dependency-supported = "lb-2?" store
 "c2-p2"    load 'stable-active     = "lb-3?"  store
 "c1-p3"    load 'decomposed        = "lb-4?"  store
 
 "lb-1a?" load 1 assert-eq            \ both promoted
 "lb-1b?" load 1 assert-eq
-"lb-2?"  load 1 assert-eq            \ c1 → 'dependency-held under inflation pressure
+"lb-2?"  load 1 assert-eq            \ c1 → 'dependency-supported (cycle 33 carry offset under inflation)
 "lb-3?"  load 1 assert-eq            \ c2 still stable-active (positive m despite inflation tax)
 "lb-4?"  load 1 assert-eq            \ once dep fades, c1 auto-decomposes (cycle 30 still works)
 

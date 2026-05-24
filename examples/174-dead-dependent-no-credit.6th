@@ -1,0 +1,77 @@
+\ examples/174-dead-dependent-no-credit.6th
+\ Cycle 33D — negative: a dead dependent contributes ZERO support.
+\ Only natively-positive cands count as supporters; once the
+\ dependent's own momentum drops to stale or worse, its contribution
+\ goes to 0 and the base cand is no longer kept alive.
+\ Pre-reg: PREDICTIONS-171.md (commit d57a3ff).
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 174 — dead dependent gives no credit (cycle 33) ===" . cr
+
+RESET
+
+MARK drop MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "m1" store
+"m1" load SHADOW-CHECK drop
+"m1" load INDUCE-RUNTIME "c1" store
+
+cand_001 MARK drop cand_001 MARK drop cand_001 MARK drop cand_001 MARK drop
+DETECT-MOTIF-AUTO "m2" store
+"m2" load SHADOW-CHECK drop
+"m2" load INDUCE-RUNTIME "c2" store
+
+cand_001 NEW-SESSION cand_001 NEW-SESSION cand_001
+"c1" load COMMIT-PRIMITIVE drop
+"c1" load HELD-OUT-EVAL drop
+"c1" load PROMOTE-STABLE drop
+
+cand_002 cand_002 cand_002 cand_002 cand_002
+NEW-SESSION cand_002 NEW-SESSION cand_002
+"c2" load COMMIT-PRIMITIVE drop
+"c2" load HELD-OUT-EVAL drop
+"c2" load PROMOTE-STABLE drop
+
+NEW-EPOCH
+
+\ ---- Phase 1: drive cand_002 productively, cand_001 → 'dependency-supported.
+cand_002 cand_002 cand_002 cand_002
+NEW-EPOCH
+"c1" load CAND-STATUS "c1-p1" store
+"c2" load CAND-STATUS "c2-p1" store
+
+\ ---- Phase 2: stop driving cand_002.  cand_002's own m_native drops
+\      negative this epoch.  Inspect SUPPORT-CREDIT BEFORE NE — should
+\      already be 0 because cand_002's m_native is already non-positive.
+"c2" load MOMENTUM-NATIVE  "mn-c2-idle"   store
+"c1" load SUPPORT-CREDIT   "sup-c1-idle" store
+
+NEW-EPOCH
+"c1" load CAND-STATUS "c1-p2" store
+"c2" load CAND-STATUS "c2-p2" store
+
+cr "Diagnostics:" . cr
+"  c1 after p1        = " . "c1-p1"        load . cr
+"  c2 after p1        = " . "c2-p1"        load . cr
+"  c2 m-native (idle) = " . "mn-c2-idle"   load . cr
+"  SUPPORT-CREDIT c1  = " . "sup-c1-idle" load . cr
+"  c1 after p2        = " . "c1-p2"        load . cr
+"  c2 after p2        = " . "c2-p2"        load . cr
+cr
+
+\ Pass conditions
+"c1-p1"      load 'dependency-supported = "dd-1?" store
+"mn-c2-idle" load -4                    = "dd-2?" store
+"sup-c1-idle" load 0                    = "dd-3?" store
+"c1-p2"      load 'decomposed           = "dd-4?" store
+
+"dd-1?" load 1 assert-eq      \ cycle 33: cand_001 saved by support in p1
+"dd-2?" load 1 assert-eq      \ cand_002 m_native = -4 in idle (carry=3 + inflation=1)
+"dd-3?" load 1 assert-eq      \ dead dep contributes 0 (m_native ≤ STALE_TOL)
+"dd-4?" load 1 assert-eq      \ cand_001 auto-decomposed once support evaporated
+
+cr "Dead dependent gave no credit; base cand decomposed accordingly." . cr
+REPORT

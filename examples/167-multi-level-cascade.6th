@@ -106,7 +106,7 @@ cr
 "lb-c2?"      load 1                  = "m-4?"  store
 "lb-c1?"      load 1                  = "m-5?"  store
 "c1-p2"       load 'dependency-held   = "m-6?"  store
-"c2-p2"       load 'dependency-held   = "m-7?"  store
+"c2-p2"       load 'dependency-supported = "m-7?" store
 "c3-p2"       load 'stable-active     = "m-8?"  store
 
 "m-1a?" load 1 assert-eq
@@ -117,7 +117,7 @@ cr
 "m-4?"  load 1 assert-eq           \ cand_002 protected directly by cand_003
 "m-5?"  load 1 assert-eq           \ cand_001 protected TRANSITIVELY through cand_002 → cand_003
 "m-6?"  load 1 assert-eq           \ Pass C status for cand_001 (transitive DH)
-"m-7?"  load 1 assert-eq           \ Pass C status for cand_002 (direct DH)
+"m-7?"  load 1 assert-eq           \ cand_002 → 'dependency-supported (cycle 33: direct support from cand_003)
 "m-8?"  load 1 assert-eq           \ anchor stays stable
 
 cr "Multi-level chain protected; transitive walk found positive anchor." . cr

@@ -707,7 +707,39 @@
     ;;      gated REBIND-CAND-BODY test harness) cannot mutually
     ;;      protect each other forever.  visited-set DFS terminates
     ;;      cleanly with FALSE; both auto-decompose.  8 asserts.
-    ("170-cycle-without-anchor.6th"               8)))
+    ("170-cycle-without-anchor.6th"               8)
+    ;; 171. Cycle 33A — happy support-offset.  Natively-positive
+    ;;      cand_002 contributes to cand_001's carry offset; status
+    ;;      → 'dependency-supported (NEW); MOMENTUM-NATIVE c1 = -3
+    ;;      remains unchanged by support (carry-offset invariant);
+    ;;      MOMENTUM-EFFECTIVE c1 = -1; cand_001 callable.  9 asserts.
+    ("171-support-offset-happy.6th"               9)
+    ;; 172. Cycle 33B — cap enforces no profit inheritance.  cand_002
+    ;;      m_native=+16; SUPPORT-CREDIT c1 capped at LAW_CARRY=2,
+    ;;      NOT 16; status 'dependency-supported (NOT 'stable-active);
+    ;;      surplus stays with cand_002.  6 asserts.
+    ("172-no-profit-inheritance.6th"              6)
+    ;; 173. Cycle 33C — multi-dependency split.  cand_003 depends on
+    ;;      both cand_001 and cand_002 (DEPENDENCY-COUNT = 2).
+    ;;      Surplus apportioned floor(4/2)=2 per dep, each capped at
+    ;;      LAW_CARRY=2.  9 asserts.
+    ("173-multi-dependency-split.6th"             9)
+    ;; 174. Cycle 33D — dead dependent gives zero credit.  Once
+    ;;      cand_002 stops being driven and its m_native goes
+    ;;      negative, contribution to cand_001 = 0.  cand_001
+    ;;      auto-decomposes one epoch later.  4 asserts.
+    ("174-dead-dependent-no-credit.6th"           4)
+    ;; 175. Cycle 33E — cycle without anchor gives no mutual credit.
+    ;;      REBIND constructs cand_001 ↔ cand_002 cycle; neither
+    ;;      natively positive; SUPPORT-CREDIT = 0 for both; cycle 32
+    ;;      visited-set DFS + cycle 33 no support → both decompose.
+    ;;      4 asserts.
+    ("175-cycle-no-mutual-credit.6th"             4)
+    ;; 176. Cycle 33F — runtime observation REQUIRED for support.
+    ;;      observed_deps reset on NEW-EPOCH ("rented, not owned");
+    ;;      even if cand_002 is still alive from prior epoch, with
+    ;;      no observation this epoch, support_credit = 0.  5 asserts.
+    ("176-runtime-observation-required.6th"       5)))
 
 (define (run-demo file)
   (define out
@@ -732,8 +764,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 2204
-                (format "cumulative ✓ count: ~a (expected 2204)" total-pass)))
+  (check-equal? total-pass 2241
+                (format "cumulative ✓ count: ~a (expected 2241)" total-pass)))
 
-(displayln (format "examples regression: ~a / 2204 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 2241 ✓ across ~a demos"
                    total-pass (length expected)))

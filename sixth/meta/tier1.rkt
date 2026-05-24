@@ -857,6 +857,86 @@
   (define c (require-sym (pop! e) 'RECENT-LOAD-BEARING?))
   (push! e (if (has-recent-load-bearing? e c) 1 0)))
 
+;; ============================================================
+;; Cycle 33 — Dependent momentum allocation as CARRY OFFSET.
+;;
+;; Core formulation (binding):
+;;   support_credit is carry-offset, NOT profit inheritance.
+;;   It can prevent decomposition but cannot make a primitive
+;;   native-positive or allow it to subsidize others.
+;;
+;; Three invariants enforced:
+;;   - carry-offset:        support_credit ≤ LAW_CARRY (cap)
+;;   - no-profit-inherit:   only natively-positive cands contribute
+;;                          (supported cands do NOT propagate support)
+;;   - rented-not-owned:    snapshot reset on NEW-EPOCH
+;; ============================================================
+
+;; Count distinct cand symbols in cand's motif.  Multiple occurrences
+;; of the same cand count once: prevents B = (X X X X X) from inflating
+;; its dependency count to dilute support to X arbitrarily.
+(define (dep-count-of e cand)
+  (define entry (assq cand (unbox (cand-bodies-of e))))
+  (cond
+    [(not entry) 0]
+    [else
+     (define motif (cadr entry))
+     (define cands-only
+       (for/list ([sym (in-list motif)]
+                  #:when (cand-name? sym))
+         sym))
+     ;; remove-duplicates from racket/list
+     (length (remove-duplicates cands-only))]))
+
+;; Per-supporter contribution: returns 0 unless B is observed-dependent
+;; on A AND B is natively positive.  The use of m_native here (not m_eff)
+;; is THE no-profit-inheritance enforcer — supported cands have m_native
+;; ≤ STALE_TOL by definition, so they contribute zero.
+(define (contribution-from e B A)
+  (cond
+    [(not (observed-dep? e B A)) 0]
+    [else
+     (define m-native-B (compute-momentum-for e B))
+     (cond
+       [(<= m-native-B MOMENTUM-STALE-TOLERANCE) 0]
+       [else
+        (define dc (dep-count-of e B))
+        (cond
+          [(zero? dc) 0]
+          [else (quotient m-native-B dc)])])]))
+
+;; Sum contributions from all active dependents, cap at LAW_CARRY(A).
+;; The cap is THE carry-offset enforcer.
+(define (compute-support-credit-for e cand)
+  (define raw
+    (for/sum ([d (in-list (active-dependents-of e cand))])
+      (contribution-from e d cand)))
+  (min (expansion-length-of e cand) raw))
+
+;; Inspection primitives.  All four are pure functions of current
+;; meta-state; do not mutate.
+
+(define (prim-momentum-native e)
+  ;; Alias for LAW-MOMENTUM, exposed under the canonical cycle 33 name.
+  ;; Returns the intrinsic m_native; NEVER includes support.
+  (define c (require-sym (pop! e) 'MOMENTUM-NATIVE))
+  (push! e (compute-momentum-for e c)))
+
+(define (prim-support-credit e)
+  ;; Computed on-demand from current state so demos can probe mid-epoch.
+  ;; Pass B internally uses the snapshot taken at end of Pass A.
+  (define c (require-sym (pop! e) 'SUPPORT-CREDIT))
+  (push! e (compute-support-credit-for e c)))
+
+(define (prim-momentum-effective e)
+  (define c (require-sym (pop! e) 'MOMENTUM-EFFECTIVE))
+  (push! e (+ (compute-momentum-for e c)
+              (compute-support-credit-for e c))))
+
+(define (prim-dependency-count e)
+  (define c (require-sym (pop! e) 'DEPENDENCY-COUNT))
+  (push! e (dep-count-of e c)))
+
 (define (prim-auto-decompose-safe? e)
   (define c (require-sym (pop! e) 'AUTO-DECOMPOSE-SAFE?))
   (define local-m (compute-momentum-for e c))
@@ -950,18 +1030,40 @@
                        (filter (lambda (ent) (not (eq? (car ent) c)))
                                (unbox hb)))))
 
-  ;; Pass B: status transitions based on m + history (cycle 29 rules,
-  ;; uniformly applied including to 'dependency-held cands).
+  ;; Pass A.5 (cycle 33): snapshot support_credit for each active cand.
+  ;; Computed BEFORE Pass B so transitions use a consistent view.
+  ;; "Rented, not owned" — snapshot is reset at end of NEW-EPOCH.
+  (define support-snapshot
+    (for/list ([c (in-list active-cands)])
+      (cons c (compute-support-credit-for e c))))
+  (set-support-credit-snapshot! e support-snapshot)
+
+  ;; Pass B: status transitions based on m_native, m_eff, and history.
+  ;; m_native (intrinsic) drives stable-active and history checks;
+  ;; m_eff = m_native + support drives the safe-zone discrimination,
+  ;; opening the new 'dependency-supported branch when support > 0
+  ;; pulled m_eff up to or above -STALE_TOL.
   (for ([c (in-list active-cands)])
-    (define m (compute-momentum-for e c))
+    (define m-native (compute-momentum-for e c))
+    (define support (let ([x (assq c support-snapshot)])
+                      (if x (cdr x) 0)))
+    (define m-eff (+ m-native support))
     (define hb (cand-momentum-history-of e))
     (define hist (or (let ([x (assq c (unbox hb))]) (and x (cdr x))) '()))
     (cond
-      [(> m MOMENTUM-STALE-TOLERANCE)
+      [(> m-native MOMENTUM-STALE-TOLERANCE)
+       ;; Native productive — support irrelevant for status.
        (set-status! e c 'stable-active)]
-      [(<= (abs m) MOMENTUM-STALE-TOLERANCE)
+      [(and (> support 0) (>= m-eff (- MOMENTUM-STALE-TOLERANCE)))
+       ;; Cycle 33: support pulled effective into safe zone.  Not
+       ;; native-positive, just carry-offset.
+       (set-status! e c 'dependency-supported)]
+      [(<= (abs m-eff) MOMENTUM-STALE-TOLERANCE)
        (set-status! e c 'stale)]
       [else
+       ;; m-eff < -STALE_TOL — support didn't save us.  Check m_native
+       ;; history (intrinsic; support is not history) for the demotion
+       ;; trigger.
        (define last-n (if (>= (length hist) MOMENTUM-NEGATIVE-THRESHOLD)
                           (take hist MOMENTUM-NEGATIVE-THRESHOLD)
                           hist))
@@ -994,6 +1096,8 @@
   (set-box! (cand-recent-fails-of e) '())
   ;; Cycle 32: reset observed-dep tracking for next epoch
   (set-box! (observed-deps-of e) '())
+  ;; Cycle 33: reset support_credit snapshot (rented, not owned)
+  (set-support-credit-snapshot! e '())
   (record-ledger! e (list 'new-epoch (unbox ec))))
 
 (define (prim-mark-stale e)
@@ -1376,7 +1480,12 @@
         ;; cycle 32: runtime-observed deps + transitive load-bearing
         (cons 'OBSERVED-DEP?              prim-observed-dep?)
         (cons 'CAND-OBSERVES?             prim-cand-observes?)
-        (cons 'RECENT-LOAD-BEARING?       prim-recent-load-bearing?)))
+        (cons 'RECENT-LOAD-BEARING?       prim-recent-load-bearing?)
+        ;; cycle 33: dependent momentum allocation (carry offset)
+        (cons 'MOMENTUM-NATIVE            prim-momentum-native)
+        (cons 'MOMENTUM-EFFECTIVE         prim-momentum-effective)
+        (cons 'SUPPORT-CREDIT             prim-support-credit)
+        (cons 'DEPENDENCY-COUNT           prim-dependency-count)))
 
 (define (register-tier1! e)
   (for ([entry (in-list TIER1-TABLE)])

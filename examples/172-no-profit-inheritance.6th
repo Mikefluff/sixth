@@ -1,0 +1,83 @@
+\ examples/172-no-profit-inheritance.6th
+\ Cycle 33B — negative: cap LAW_CARRY enforces no-profit-inheritance.
+\ Even when the dependent has enormous surplus momentum, the base
+\ cand's support_credit cannot exceed its own LAW_CARRY.  Status
+\ stays 'dependency-supported (NOT 'stable-active); surplus stays
+\ with B.
+\ Pre-reg: PREDICTIONS-171.md (commit d57a3ff).
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 172 — cap enforces no profit inheritance (cycle 33) ===" . cr
+
+RESET
+
+\ ---- Same setup as demo 171.
+MARK drop MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "m1" store
+"m1" load SHADOW-CHECK drop
+"m1" load INDUCE-RUNTIME "c1" store
+
+cand_001 MARK drop cand_001 MARK drop cand_001 MARK drop cand_001 MARK drop
+DETECT-MOTIF-AUTO "m2" store
+"m2" load SHADOW-CHECK drop
+"m2" load INDUCE-RUNTIME "c2" store
+
+cand_001 NEW-SESSION cand_001 NEW-SESSION cand_001
+"c1" load COMMIT-PRIMITIVE drop
+"c1" load HELD-OUT-EVAL drop
+"c1" load PROMOTE-STABLE drop
+
+cand_002 cand_002 cand_002 cand_002 cand_002
+NEW-SESSION cand_002 NEW-SESSION cand_002
+"c2" load COMMIT-PRIMITIVE drop
+"c2" load HELD-OUT-EVAL drop
+"c2" load PROMOTE-STABLE drop
+
+NEW-EPOCH
+
+\ ---- Phase 1: drive cand_002 HEAVILY (10 dispatches).
+\      cand_002 m_native = 10×2 − 3 − 0 − 1 = +16.  Huge surplus.
+\      Naive proportional split would give cand_001 = 16.
+\      LAW_CARRY(cand_001) = 2 caps the credit at 2.
+cand_002 cand_002 cand_002 cand_002 cand_002
+cand_002 cand_002 cand_002 cand_002 cand_002
+
+"c2" load MOMENTUM-NATIVE  "mn-c2"   store
+"c1" load LAW-CARRY        "carry-c1" store
+"c1" load SUPPORT-CREDIT   "sup-c1"  store
+"c1" load MOMENTUM-EFFECTIVE "me-c1" store
+
+NEW-EPOCH
+"c1" load CAND-STATUS "c1-p1" store
+"c2" load CAND-STATUS "c2-p1" store
+
+cr "Diagnostics:" . cr
+"  MOMENTUM-NATIVE c2 = " . "mn-c2"     load . cr
+"  LAW-CARRY c1       = " . "carry-c1"  load . cr
+"  SUPPORT-CREDIT c1  = " . "sup-c1"    load . cr
+"  MOMENTUM-EFFECTIVE = " . "me-c1"     load . cr
+"  c1 after p1        = " . "c1-p1"     load . cr
+"  c2 after p1        = " . "c2-p1"     load . cr
+cr
+
+\ Pass conditions
+"mn-c2"     load 16                   = "p-1?" store
+"carry-c1"  load 2                    = "p-2?" store
+"sup-c1"    load 2                    = "p-3?" store
+"me-c1"     load -1                   = "p-4?" store
+"c1-p1"     load 'dependency-supported = "p-5?" store
+"c2-p1"     load 'stable-active        = "p-6?" store
+
+"p-1?" load 1 assert-eq         \ cand_002 has huge surplus m_native=+16
+"p-2?" load 1 assert-eq         \ LAW_CARRY(cand_001) = 2
+"p-3?" load 1 assert-eq         \ SUPPORT-CREDIT CAPPED AT LAW_CARRY (NOT 16)
+"p-4?" load 1 assert-eq         \ m_eff = -3 + 2 = -1 (not -3 + 16 = +13)
+"p-5?" load 1 assert-eq         \ status NOT 'stable-active (surplus did not transfer)
+"p-6?" load 1 assert-eq         \ supplier keeps surplus
+
+cr "Cap enforced. Surplus stays with the supplier. No profit inheritance." . cr
+REPORT
