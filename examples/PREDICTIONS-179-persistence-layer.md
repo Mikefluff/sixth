@@ -255,6 +255,44 @@ default.  Demos 143-176 continue to pass without modification.
 A retrofit pass MAY be performed to add explicit `'fixture` tags,
 but is not required for cycle 35 PASS.
 
+#### Element 7-bis (binding) — Tag derivation rule
+
+> **`source-tag = 'production` MUST be derived from execution
+> context, NOT from cand payload or arbitrary caller argument.**
+
+A demo program cannot self-declare `'production` even by passing
+the literal symbol as INDUCE-RUNTIME's argument.  The runtime
+context decides what tag is admissible:
+
+- If the engine was launched via the blind discovery harness
+  (`stdlib/harness/blind-discovery.6th` or equivalent approved
+  entry point), `'production` is admissible.
+- If the engine was launched via the test harness, an
+  `examples/*.6th` demo file, or any deterministic-demo workload,
+  `'production` is REJECTED at the INDUCE-RUNTIME boundary
+  regardless of what the caller passes.
+- A new runtime parameter `current-run-context-tag` (set at
+  engine entry-point, not modifiable by user code) governs which
+  tags the boundary accepts.
+
+Concretely:
+
+```
+context tag         → admissible source-tags
+'test-harness        → { 'fixture }                       (demos default)
+'demo                → { 'fixture, 'demo }
+'production-harness  → { 'fixture, 'demo, 'production }   (blind harness only)
+```
+
+If a caller passes `source-tag = 'production` from a non-
+production-harness context, `INDUCE-RUNTIME` either:
+- coerces to highest admissible tag in the current context AND
+  records `'source-tag-coerced` event in ledger, OR
+- raises `'source-tag-violation` and refuses to induce.
+
+(35B will pick one of these two behaviors; either is acceptable
+for PASS as long as the rule is mechanically enforced.)
+
 ### Element 8 — Blind discovery harness
 
 `stdlib/harness/blind-discovery.6th` (new file): a substrate
@@ -373,6 +411,42 @@ part of regression:
   cycle 35 has at least one production cand persisted across
   reboots.  (This is the operational enforcement of CLAIM-5.)
 
+- **NEG-7 — Demo path cannot self-declare production.**
+
+  Given:
+    cand_NNN is produced from `examples/`, demos, test fixtures,
+    or scripted deterministic-demo workload (i.e., current
+    `current-run-context-tag` is `'test-harness` or `'demo`).
+
+  When:
+    the demo passes `source-tag = 'production` as the argument
+    to `INDUCE-RUNTIME`.
+
+  Expected (one of two enforcement modes — implementation
+  chooses; both PASS):
+    - **Strict mode:** `INDUCE-RUNTIME` raises
+      `'source-tag-violation`; no cand is induced; ledger event
+      `'source-tag-violation` recorded.
+    - **Coerce mode:** `INDUCE-RUNTIME` silently coerces tag to
+      `'fixture` (or `'demo` if context is `'demo`); ledger event
+      `'source-tag-coerced` recorded; cand is induced with the
+      coerced tag and is EXCLUDED from L2 tally regardless of
+      what the caller intended.
+
+  Verification:
+    Construct a demo that explicitly passes `'production` as the
+    INDUCE-RUNTIME argument.  Assert: regardless of how many gates
+    the cand passes, it does NOT end up in `stdlib/promoted/` with
+    `source_tag = "production"` in its lineage.  Verify ledger
+    contains the violation/coercion event.
+
+  Rationale:
+    The most dangerous exploit is not "demo file mislabeled
+    `'demo`" (NEG-3 catches that) but "demo file lies and labels
+    itself `'production` to inflate the L2 count."  NEG-7 makes
+    this exploit mechanically impossible: tag derivation is
+    runtime-context-bound, not caller-payload-bound.
+
 ---
 
 ## Main pitfall (binding warning)
@@ -409,12 +483,31 @@ results file) as a sanity check against future-self optimism.
 
 - **35A (this pre-reg):** method + 10 elements + invariants +
   PASS/FAIL/NEG + pitfall.  No code.
-- **35B:** implementation.  All 10 elements coded.  Existing demos
-  retrofitted with explicit `'fixture` tag (mechanical change).
-  6 negative tests (NEG-1..NEG-6) added as new demos.
+- **35B:** implementation, in this strict order:
+  1. **Source tagging firewall first** (Element 7 + 7-bis).
+     `current-run-context-tag` parameter, INDUCE-RUNTIME signature
+     change, NEG-7 enforcement.  No cand reaches the persistence
+     path before this firewall exists.
+  2. Lineage JSON schema (Element 4) — code paths to construct,
+     validate, serialize.
+  3. PROMOTE-STABLE atomic write (Element 2) — extends existing
+     PROMOTE-STABLE to write all three files atomically.
+  4. Ledger promote-event extension (Element 3).
+  5. Boot reload + validation (Element 5).
+  6. Metabolism state persistence (Element 6).
+  7. 7 negative-test demos (NEG-1..NEG-7).
+  8. Blind discovery harness (Element 8) — `stdlib/harness/` file.
+  9. Retrofit existing demos with explicit `'fixture` tag
+     (mechanical).
+  10. One full end-to-end protocol run (test harness, fixture-only).
+  
+  **Hard rule for 35B:** No cand reaches `stdlib/promoted/`
+  before step 1 (source-tag enforcement) is complete and tested.
+
 - **35C:** blind discovery harness run.  Reproducible seeded run
   with N ≥ 1000 ops.  Result is whatever it is — could be 0
   production cands (VALID NEGATIVE) or ≥1 (STRONG PASS).
+
 - **35D:** results + CLAIMS.md / META-SEMANTICS.md update with
   L2 occupancy count.  If STRONG PASS, cycle 34A may be considered
   for unblock (separate evaluation).
