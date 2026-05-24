@@ -2031,7 +2031,7 @@ m < -1 sustained 2 epochs → demotion-candidate
 Stable primitive is now formally defined as: runtime-induced law
 candidate that survived equivalence, reuse, multi-session coupling,
 negative energy delta, held-out generalization, AND continues to
-pay positive momentum per epoch.
+pay positive net momentum over its lifecycle window.
 
 Aggregate: 2120 / 2120 ✓ across 151 demos.
 
