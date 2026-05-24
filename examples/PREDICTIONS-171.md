@@ -3,6 +3,59 @@
 **Date pre-registered:** 2026-05-23
 
 **Attested via** `scripts/attest_prediction.sh` per Rule 9.
+Initial attestation: sha256:769eb89726ab... (commit 8d64c7a).
+Addendum re-attestation: see ledger row dated 2026-05-23 (commit 3a1b308+).
+
+---
+
+## CORE FORMULATION (binding, cycle-33-wide)
+
+> Dependent momentum allocation is **carry-offset only, not profit
+> inheritance**.  It can prevent decomposition but cannot make a
+> primitive native-positive or allow it to subsidize others.
+
+Every other commitment in this pre-reg is a corollary of this core.
+If any cycle-33 mechanism violates this — by allowing a supported
+cand to contribute to another's support_credit, by allowing support
+to push m_native upward, or by allowing support_credit to exceed
+LAW_CARRY in any aggregation order — it is a regression, not a feature.
+
+---
+
+## Addendum 2026-05-23 — Three-primitive momentum separation
+
+The pre-reg originally specified two new inspection primitives
+(`SUPPORT-CREDIT` and `DEPENDENCY-COUNT`).  Per user feedback before
+implementation, cycle 33 instead exposes the full triplet so that
+"native" and "effective" momentum are independently observable from
+Sixth-level code:
+
+```
+MOMENTUM-NATIVE     ( cand -- n )   m_native = reuse - carry - fails - inflation
+                                    (alias for LAW-MOMENTUM; the canonical
+                                    name going forward.  LAW-MOMENTUM remains
+                                    callable as a back-compat alias.)
+SUPPORT-CREDIT      ( cand -- n )   support_credit, bounded by LAW_CARRY
+MOMENTUM-EFFECTIVE  ( cand -- n )   m_eff = m_native + support_credit
+```
+
+This makes the carry-offset semantics machine-checkable: a demo can
+assert that `MOMENTUM-NATIVE cand_X` is unchanged across any sequence
+of dependent activity, because support only enters `MOMENTUM-EFFECTIVE`.
+"Native" momentum is intrinsic to the cand; "effective" is what the
+status machine consults for transitions.
+
+Specifically, demo 171 (and all subsequent demos that probe support)
+will assert:
+- `MOMENTUM-NATIVE cand_001` returns the same value with or without
+  cand_002 being active, dispatched, or supportive.
+- Status transitions of cand_001 (via Pass B in NEW-EPOCH) depend on
+  `MOMENTUM-EFFECTIVE`, not `MOMENTUM-NATIVE`.
+
+This protects against the future failure mode where someone could
+quietly redefine momentum to inherit dependent surplus.  The separation
+is now in the public surface area; any drift would be observable
+externally.
 
 ---
 
@@ -125,19 +178,28 @@ _support-credit   alist (cand-sym . int)
 This key is INSPECTION-friendly so demos can read it via
 `SUPPORT-CREDIT ( cand -- n )` primitive.
 
-## New Tier 1 primitives (2)
+## New Tier 1 primitives (4, per addendum)
 
 ```
+MOMENTUM-NATIVE    ( cand -- n )    m_native (intrinsic, no support).
+                                    Canonical alias for LAW-MOMENTUM.
+                                    Cycle 33 demos use this name to
+                                    make carry-offset semantics explicit.
+
 SUPPORT-CREDIT     ( cand -- n )    current support_credit for cand
-                                    (computed lazily on read; reflects
-                                    most recent NEW-EPOCH computation)
+                                    (computed at end of Pass A; reset
+                                    at end of NEW-EPOCH).
+
+MOMENTUM-EFFECTIVE ( cand -- n )    m_eff = m_native + support_credit.
+                                    The value Pass B status transition
+                                    branches consult.
 
 DEPENDENCY-COUNT   ( cand -- n )    distinct-cand count of cand's motif
                                     (e.g., for motif (A A B): 2;
                                     for (A B C D): 4)
 ```
 
-Both are INSPECTION-OPS.
+All four are INSPECTION-OPS.
 
 ## New status (1)
 
@@ -252,11 +314,13 @@ the meta-runtime level.
 | pass | condition |
 |------|-----------|
 | `o-1` | both initial 'stable-active |
-| `o-2` | SUPPORT-CREDIT cand_001 = 2 after phase 1 dispatches (pre-NE inspection) |
-| `o-3` | DEPENDENCY-COUNT cand_002 = 1 (only cand_001 in motif) |
-| `o-4` | after phase 1 NE: cand_001 status = 'dependency-supported (NEW status) |
-| `o-5` | after phase 1 NE: cand_002 status = 'stable-active |
-| `o-6` | cand_001 still callable (TRY-DISPATCH = 1 after NE) |
+| `o-2` | SUPPORT-CREDIT cand_001 = 2 after phase 1 (within bound LAW_CARRY=2) |
+| `o-3` | DEPENDENCY-COUNT cand_002 = 1 (only cand_001 distinct in motif) |
+| `o-4` | MOMENTUM-NATIVE cand_001 = -3 (unchanged by support — carry-offset invariant) |
+| `o-5` | MOMENTUM-EFFECTIVE cand_001 = -1 (= native + support = -3 + 2) |
+| `o-6` | after phase 1 NE: cand_001 status = 'dependency-supported (NEW status) |
+| `o-7` | after phase 1 NE: cand_002 status = 'stable-active |
+| `o-8` | cand_001 still callable (TRY-DISPATCH = 1 after NE) |
 
 ---
 
@@ -437,7 +501,19 @@ positive, so contributes no support; cycle 32 catches it later).
    Cycle 33's support is a separate Pass A.5 computation that affects
    only Pass B status decisions; Pass C still receives whatever cands
    make it to `'demotion-candidate`.
-10. Attestation BEFORE commit.
+10. **Triple-momentum observability:** `MOMENTUM-NATIVE` returns the
+    intrinsic momentum value (reuse − carry − fails − inflation) and
+    is NEVER modified by support computation.  `SUPPORT-CREDIT` is the
+    per-epoch carry offset.  `MOMENTUM-EFFECTIVE` returns native + support.
+    Status transitions consult MOMENTUM-EFFECTIVE; contribution
+    calculations consult MOMENTUM-NATIVE.  Any drift between these
+    two surfaces would be a regression.
+11. **Future-risk acknowledgment (NOT in scope):** multi-dependent
+    support can in principle create infrastructure-reservoir patterns
+    ("too-big-to-decompose").  Cycle 33 does NOT introduce an
+    infrastructure_status or any anti-reservoir mechanism.  If such
+    a class emerges empirically, it becomes cycle 34+ work.
+12. Attestation BEFORE commit (initial + addendum both recorded).
 
 ---
 
