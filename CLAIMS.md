@@ -177,13 +177,88 @@ metaphysical position.
     is pinned; verified by `examples/144-substrate-signatures.6th`
     (16 asserts: 12 signatures + 4 Tier 2 stub probes).
 
-The catalogue formulation now machine-enforced:
+### Tier 1 additions from law-metabolism arc (cycles 27-32)
+
+13. **Automated motif discovery is gated by a frozen mining protocol.**
+    Cycle 27 adds `DETECT-MOTIF-AUTO` doing global top-1 search with
+    pinned hyperparameters (WINDOW_K=20, REPEAT_R=3, MIN_LEN=2,
+    MAX_LEN=5).  Verified by `examples/149-152` (4 demos): happy
+    discovery, negative below-threshold, forbidden-symbol exclusion,
+    laced-discovery rejection.  `docs/mining_protocol.md` is the
+    authoritative spec; hyperparameter changes require deprecation.
+
+14. **`PROMOTE-STABLE` requires held-out generalization.** Cycle 28
+    introduces real `HELD-OUT-EVAL` evaluating a cand against 6 frozen
+    held-out substrates (K=5 dispatches each).  Promotion to
+    `'stable-active` requires `wins >= STABLE_WINS_THRESHOLD = 4`.
+    Verified by `examples/155-promote-stable-happy.6th` (8 asserts)
+    and demo 156 negative (rejects under-generalizing cand).
+
+15. **Stable primitives must keep paying their carry cost (cycle 29
+    metabolism).** Per-cand momentum =
+    `recent_reuse - carry - recent_failures`.  After two consecutive
+    negative epochs the cand transitions to `'demotion-candidate`;
+    `DECOMPOSE-PRIMITIVE` removes it from the active dictionary
+    (mutates `law_hash`, preserves body for `RESTORE-PRIMITIVE`,
+    leaves `world_hash` unchanged).  Verified by demos 158 (happy
+    lifecycle) and 159 (age-resistant: productive use keeps it alive).
+
+16. **`AUTO-DECOMPOSE` is dependency-aware (cycle 30).** `NEW-EPOCH`'s
+    Pass C uses a structural safety predicate: a demotion-candidate
+    is auto-decomposed unless an active dependent is currently
+    earning.  Otherwise it transitions to `'dependency-held`
+    (callable but flagged).  `RESTORE-PRIMITIVE` returns the law-hash
+    to pre-decompose value and re-wires the dependent's callability.
+    Verified by demos 160 (happy auto-decompose), 161 (DH protection),
+    162 (cascade restore).
+
+17. **Two discovery profiles + law inflation (cycle 31).**
+    `'conservative` (default) and `'liberal` profiles; liberal-INDUCEd
+    cands live on a separate status track (`'experimental` →
+    `'sandbox-stable`) that NEVER enters `STABLE-LAW-HASH`.
+    `COMMIT-PRIMITIVE` and `PROMOTE-STABLE` both refuse sandbox cands.
+    No bridge sandbox → stable: to go stable, re-INDUCE under
+    conservative.  Inflation = 1 per cand per epoch is folded into
+    momentum: `m = reuse - carry - fails - 1`.  Verified by demos
+    163 (THE corruption-attempt demo: 5 STABLE-LAW-HASH snapshots
+    through liberal episode, all identical), 164 (inflation forces
+    descent), 165 (inflation respects DH protection), 166 (sandbox
+    rollback leaves stable bit-for-bit identical).
+
+18. **Load-bearing protection requires runtime observation + transitive
+    chain (cycle 32).**  Pass C's predicate is
+    `has-recent-load-bearing?`: an active dependent must have
+    OBSERVED-nested-invoked the cand THIS epoch AND be either a
+    positive anchor OR itself transitively load-bearing.  Visited-set
+    DFS guards against immortal-cycle protection.  Three-tier dep
+    model: `static_dependency` ⊃ `observed_dependency` ⊃
+    `recent_load_bearing`.  Verified by demos 167 (3-level chain
+    transitively protected), 168 (static-only does NOT save),
+    169 (chain collapses when anchor stops), 170 (cycle-without-anchor
+    decomposes via REBIND-CAND-BODY test fixture).
+
+The catalogue formulation (post-cycle-32, machine-enforced):
 
 > primitive ≠ named macro.
 >
-> primitive = runtime-induced law candidate that survived
+> A **stable primitive** is a runtime-induced law candidate that —
+> having been INDUCEd under `'conservative` profile — survived
 > equivalence (SHADOW-CHECK), reuse (N=5 uses), multi-session
-> coupling (M=3), and negative energy delta (`net_delta_e < 0`).
+> coupling (M=3), negative energy delta (`net_delta_e < 0`),
+> held-out generalization (`wins >= 4 / 6`), AND continues to pay
+> positive net momentum over its lifecycle window under the +1
+> inflation tax OR is structurally load-bearing AND
+> runtime-observed for an active dependent chain that terminates
+> in a positive anchor.
+
+Equivalently in terms of negative invariants the protocol enforces:
+
+- liberal-mode activity cannot mutate `STABLE-LAW-HASH` (cycle 31)
+- no stable primitive can sit indefinitely without contributing
+  (cycle 29 + cycle 31 inflation)
+- static dependency alone does not protect (cycle 32)
+- a closed cycle of cands without external positive anchor cannot
+  mutually protect itself (cycle 32 visited-set DFS)
 
 ## Tier 2 — Demonstrated by examples
 
