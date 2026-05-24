@@ -1,0 +1,113 @@
+\ examples/168-static-only-does-not-save.6th
+\ Cycle 32B — negative: static dependency alone does NOT save a
+\ primitive.  cand_002 statically depends on cand_001 (its motif
+\ contains cand_001) but cand_002's body is not executed this epoch.
+\ Without runtime observation, the load-bearing check returns FALSE,
+\ and cand_001 auto-decomposes despite the structural dependency.
+\
+\ Pre-cycle-32 behavior would have protected cand_001 because static
+\ dependency was sufficient.  Cycle 32 tightens to require execution.
+\
+\ Pre-reg: PREDICTIONS-167.md (commit 017fdaf).
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 168 — static-only dep does not save (cycle 32) ===" . cr
+
+RESET
+
+\ ---- Standard two-cand setup (mirrors demo 161) ----
+\ cand_001 = (MARK drop), L=2
+\ cand_002 = (cand_001 NODES drop), L=3, statically depends on cand_001
+MARK drop MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "m1" store
+"m1" load SHADOW-CHECK drop
+"m1" load INDUCE-RUNTIME "c1" store
+
+cand_001 MARK drop cand_001 MARK drop cand_001 MARK drop cand_001 MARK drop
+DETECT-MOTIF-AUTO "m2" store
+"m2" load SHADOW-CHECK drop
+"m2" load INDUCE-RUNTIME "c2" store
+
+cand_001 NEW-SESSION cand_001 NEW-SESSION cand_001
+"c1" load COMMIT-PRIMITIVE drop
+"c1" load HELD-OUT-EVAL drop
+"c1" load PROMOTE-STABLE drop
+
+cand_002 cand_002 cand_002 cand_002 cand_002
+NEW-SESSION cand_002 NEW-SESSION cand_002
+"c2" load COMMIT-PRIMITIVE drop
+"c2" load HELD-OUT-EVAL drop
+"c2" load PROMOTE-STABLE drop
+
+"c1" load CAND-STATUS "c1-init" store
+"c2" load CAND-STATUS "c2-init" store
+
+\ ---- Confirm static dependency exists ----
+"c2" load "c1" load LAW-DEPENDS-ON? "static-dep?" store
+
+\ ---- Baseline NEW-EPOCH (resets observed-deps from setup activity) ----
+NEW-EPOCH
+
+\ ---- Phase 1: 1st idle epoch (no dispatches at all).
+\      Both cands' m goes negative for the first time.
+NEW-EPOCH
+"c1" load CAND-STATUS "c1-p1" store
+"c2" load CAND-STATUS "c2-p1" store
+
+\ Inspect observed-deps + load-bearing BEFORE phase-2 NEW-EPOCH
+\ (still nothing has been dispatched since baseline reset; observation
+\ alist is empty).
+"c2" load "c1" load OBSERVED-DEP? "obs-c2-c1?" store
+"c1" load RECENT-LOAD-BEARING? "lb-c1?" store
+
+\ ---- Phase 2: 2nd idle epoch — both reach 'demotion-candidate;
+\      Pass C runs.  cand_002 has no dependents → auto-decompose.
+\      cand_001 has static dep cand_002, but observed_dep(cand_002,
+\      cand_001) = FALSE because cand_002 did not execute this epoch.
+\      cycle 32 has-recent-load-bearing? returns FALSE → auto-decompose.
+LAW-HASH "l-pre-auto" store
+NEW-EPOCH
+LAW-HASH "l-post-auto" store
+
+"c1" load CAND-STATUS "c1-p2" store
+"c2" load CAND-STATUS "c2-p2" store
+
+cr "Diagnostics:" . cr
+"  c1 initial   = " . "c1-init"      load . cr
+"  c2 initial   = " . "c2-init"      load . cr
+"  static-dep?  = " . "static-dep?"  load . cr
+"  c1 after p1  = " . "c1-p1"        load . cr
+"  c2 after p1  = " . "c2-p1"        load . cr
+"  obs c2→c1?   = " . "obs-c2-c1?"   load . cr
+"  load-bear c1 = " . "lb-c1?"       load . cr
+"  c1 after p2  = " . "c1-p2"        load . cr
+"  c2 after p2  = " . "c2-p2"        load . cr
+cr
+
+\ Pass conditions
+"c1-init"      load 'stable-active = "s-1a?" store
+"c2-init"      load 'stable-active = "s-1b?" store
+"static-dep?"  load 1              = "s-2?"  store
+"c1-p1"        load 'stale         = "s-3a?" store
+"c2-p1"        load 'stale         = "s-3b?" store
+"obs-c2-c1?"  load 0              = "s-4?"  store
+"lb-c1?"      load 0              = "s-5?"  store
+"c1-p2"        load 'decomposed    = "s-6?"  store
+"c2-p2"        load 'decomposed    = "s-7?"  store
+
+"s-1a?" load 1 assert-eq
+"s-1b?" load 1 assert-eq
+"s-2?"  load 1 assert-eq             \ static dep is wired (cand_002 motif has cand_001)
+"s-3a?" load 1 assert-eq             \ 1 idle epoch → both 'stale
+"s-3b?" load 1 assert-eq
+"s-4?"  load 1 assert-eq             \ observed = 0 (cand_002 didn't run this epoch)
+"s-5?"  load 1 assert-eq             \ static-only insufficient → load-bearing = 0
+"s-6?"  load 1 assert-eq             \ cand_001 auto-decomposed despite static dep
+"s-7?"  load 1 assert-eq             \ cand_002 auto-decomposed (no own dependents)
+
+cr "Static-only dependency did NOT save; runtime observation is required." . cr
+REPORT

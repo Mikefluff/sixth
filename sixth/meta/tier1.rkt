@@ -410,6 +410,8 @@
   (set-box! ub (cons (cons cand-sym 0) (unbox ub)))
   ;; law-state mutation:
   (env-register-word! e cand-sym w)
+  ;; cycle 32: opcodes → cand reverse-lookup for find-current-cand
+  (register-cand-opcodes! e cand-sym opcodes)
   ;; trace + ledger:
   (define b (current-engine-trace))
   (when b (set-box! b (cons (cons 'induce cand-sym) (unbox b))))
@@ -457,6 +459,10 @@
      (define cb (cand-bodies-of e))
      (define cand-entry (assq cand-sym (unbox cb)))
      (define motif (and cand-entry (cadr cand-entry)))
+     ;; cycle 32: drop opcodes → cand mapping before removing word
+     (define existing-w (env-lookup-word e cand-sym))
+     (when existing-w
+       (unregister-cand-opcodes! e (word-opcodes existing-w)))
      ;; Remove from words hash.
      (hash-remove! (env-words e) cand-sym)
      ;; cand-bodies: remove entry.
@@ -800,8 +806,56 @@
     (car entry)))
 
 (define (has-positive-dependent-momentum? e cand)
+  ;; Cycle 30 direct-only predicate.  Kept for diagnostics; Pass C
+  ;; uses has-recent-load-bearing? (cycle 32 strengthened version).
   (for/or ([d (in-list (active-dependents-of e cand))])
     (> (compute-momentum-for e d) MOMENTUM-STALE-TOLERANCE)))
+
+;; ============================================================
+;; Cycle 32 — runtime-observed transitive load-bearing predicate.
+;; ============================================================
+;;
+;; A cand is "load-bearing" only if some active dependent OBSERVED
+;; calling it nested this epoch AND that dependent is either
+;; positive-momentum itself OR is supported by its own chain
+;; terminating in a positive anchor.  Visited-set DFS guards against
+;; immortal-cycle protection (a closed cycle of cands without any
+;; external positive anchor cannot mutually save each other).
+;;
+;; Positive anchor predicate: status in {stable-active, sandbox-stable}
+;; AND momentum > MOMENTUM-STALE-TOLERANCE.  Pre-cycle-31 it was just
+;; m > STALE_TOLERANCE; the status filter additionally excludes
+;; intermediate dependency-held / demotion-candidate cands from
+;; being the terminal anchor (they must be transitively traced).
+
+(define (positive-anchor? e cand)
+  (and (memq (get-status e cand) '(stable-active sandbox-stable))
+       (> (compute-momentum-for e cand) MOMENTUM-STALE-TOLERANCE)))
+
+(define (has-recent-load-bearing? e cand)
+  (let walk ([c cand] [visited (list cand)])
+    (define deps (active-dependents-of e c))
+    (for/or ([d (in-list deps)])
+      (cond
+        [(member d visited) #f]                     ; cycle guard
+        [(not (observed-dep? e d c)) #f]            ; observation required
+        [(positive-anchor? e d) #t]                 ; chain terminates here
+        [else (walk d (cons d visited))]))))        ; transitive recurse
+
+(define (prim-observed-dep? e)
+  (define b (require-sym (pop! e) 'OBSERVED-DEP?))
+  (define a (require-sym (pop! e) 'OBSERVED-DEP?))
+  (push! e (if (observed-dep? e a b) 1 0)))
+
+(define (prim-cand-observes? e)
+  ;; Convenience alias for OBSERVED-DEP? with the same arg order.
+  (define b (require-sym (pop! e) 'CAND-OBSERVES?))
+  (define a (require-sym (pop! e) 'CAND-OBSERVES?))
+  (push! e (if (observed-dep? e a b) 1 0)))
+
+(define (prim-recent-load-bearing? e)
+  (define c (require-sym (pop! e) 'RECENT-LOAD-BEARING?))
+  (push! e (if (has-recent-load-bearing? e c) 1 0)))
 
 (define (prim-auto-decompose-safe? e)
   (define c (require-sym (pop! e) 'AUTO-DECOMPOSE-SAFE?))
@@ -838,7 +892,7 @@
 ;; Core decompose mechanics, shared between manual DECOMPOSE-PRIMITIVE
 ;; and auto-decompose from NEW-EPOCH.  Assumes status='demotion-candidate
 ;; has been verified by the caller.  Records snapshot, preserves body,
-;; removes from dict, sets status, emits ledger event with the given tag.
+;; removes from dict (and opcodes-to-cand map), sets status, emits ledger.
 (define (do-decompose! e c ledger-tag)
   (record-pre-decompose-snapshot! e c)
   (define cb (cand-bodies-of e))
@@ -848,6 +902,10 @@
     (set-box! pb (cons (cons c (cadr body-entry))
                        (filter (lambda (ent) (not (eq? (car ent) c)))
                                (unbox pb)))))
+  ;; cycle 32: drop opcodes → cand mapping before removing word
+  (define existing-w (env-lookup-word e c))
+  (when existing-w
+    (unregister-cand-opcodes! e (word-opcodes existing-w)))
   (hash-remove! (env-words e) c)
   (set-box! cb (filter (lambda (ent) (not (eq? (car ent) c))) (unbox cb)))
   (set-status! e c 'decomposed)
@@ -923,7 +981,7 @@
       c))
   (for ([c (in-list demotion-cands)])
     (cond
-      [(has-positive-dependent-momentum? e c)
+      [(has-recent-load-bearing? e c)
        (set-status! e c 'dependency-held)
        (record-ledger! e (list 'dependency-held c
                                 (active-dependents-of e c)))]
@@ -934,6 +992,8 @@
   (set-box! (cand-recent-uses-of e) '())
   (set-box! (cand-recent-reuse-of e) '())
   (set-box! (cand-recent-fails-of e) '())
+  ;; Cycle 32: reset observed-dep tracking for next epoch
+  (set-box! (observed-deps-of e) '())
   (record-ledger! e (list 'new-epoch (unbox ec))))
 
 (define (prim-mark-stale e)
@@ -992,6 +1052,8 @@
         (define cb (cand-bodies-of e))
         (set-box! cb (cons (list c motif) (unbox cb)))
         (env-register-word! e c w)
+        ;; cycle 32: re-register opcodes → cand mapping (new vector created above)
+        (register-cand-opcodes! e c opcodes)
         (set-status! e c 'stable-active)
         (record-ledger! e (list 'restore-primitive c (compute-law-hash e)))
         ;; Cycle 30: cascade-restore forensic — emit ledger event with
@@ -1310,7 +1372,11 @@
         (cons 'PROMOTE-EXPERIMENTAL       prim-promote-experimental)
         (cons 'STABLE-LAW-HASH            prim-stable-law-hash)
         (cons 'SANDBOX-LAW-HASH           prim-sandbox-law-hash)
-        (cons 'LAW-CARRY                  prim-law-carry)))
+        (cons 'LAW-CARRY                  prim-law-carry)
+        ;; cycle 32: runtime-observed deps + transitive load-bearing
+        (cons 'OBSERVED-DEP?              prim-observed-dep?)
+        (cons 'CAND-OBSERVES?             prim-cand-observes?)
+        (cons 'RECENT-LOAD-BEARING?       prim-recent-load-bearing?)))
 
 (define (register-tier1! e)
   (for ([entry (in-list TIER1-TABLE)])

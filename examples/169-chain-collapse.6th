@@ -1,0 +1,103 @@
+\ examples/169-chain-collapse.6th
+\ Cycle 32C — chain collapse: once the external positive anchor stops
+\ being driven, the multi-level protection chain unwinds.  Both
+\ intermediate cands lose runtime observation, has-recent-load-bearing?
+\ returns FALSE for each, and Pass C auto-decomposes them.
+\ Pre-reg: PREDICTIONS-167.md (commit 017fdaf).
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 169 — chain collapse when anchor stops (cycle 32) ===" . cr
+
+RESET
+
+\ ---- Setup mirrors demo 167: cand_001=(MARK drop), cand_002=(cand_001 cand_001),
+\      cand_003=(cand_002 cand_002).
+MARK drop MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "m1" store
+"m1" load SHADOW-CHECK drop
+"m1" load INDUCE-RUNTIME "c1" store
+cand_001 cand_001 cand_001 cand_001 cand_001
+NEW-SESSION cand_001 NEW-SESSION cand_001
+"c1" load COMMIT-PRIMITIVE drop
+"c1" load HELD-OUT-EVAL drop
+"c1" load PROMOTE-STABLE drop
+
+cand_001 cand_001 cand_001 cand_001 cand_001 cand_001 cand_001 cand_001
+cand_001 cand_001 cand_001 cand_001 cand_001 cand_001 cand_001 cand_001
+DETECT-MOTIF-AUTO "m2" store
+"m2" load SHADOW-CHECK drop
+"m2" load INDUCE-RUNTIME "c2" store
+cand_002 cand_002 cand_002 cand_002 cand_002
+NEW-SESSION cand_002 NEW-SESSION cand_002
+"c2" load COMMIT-PRIMITIVE drop
+"c2" load HELD-OUT-EVAL drop
+"c2" load PROMOTE-STABLE drop
+
+cand_002 cand_002 cand_002 cand_002 cand_002 cand_002 cand_002 cand_002
+cand_002 cand_002 cand_002 cand_002 cand_002 cand_002 cand_002 cand_002
+DETECT-MOTIF-AUTO "m3" store
+"m3" load SHADOW-CHECK drop
+"m3" load INDUCE-RUNTIME "c3" store
+cand_003 cand_003 cand_003 cand_003 cand_003
+NEW-SESSION cand_003 NEW-SESSION cand_003
+"c3" load COMMIT-PRIMITIVE drop
+"c3" load HELD-OUT-EVAL drop
+"c3" load PROMOTE-STABLE drop
+
+\ Baseline NEW-EPOCH
+NEW-EPOCH
+
+\ ---- Build the chain protection: 2 productive epochs of cand_003.
+\      After phase 2, cand_001=DH, cand_002=DH, cand_003=stable-active.
+cand_003 cand_003 cand_003 cand_003 cand_003 cand_003
+NEW-EPOCH
+
+cand_003 cand_003 cand_003 cand_003 cand_003 cand_003
+NEW-EPOCH
+
+"c1" load CAND-STATUS "c1-after-build" store
+"c2" load CAND-STATUS "c2-after-build" store
+"c3" load CAND-STATUS "c3-after-build" store
+
+\ ---- Phase 3: stop driving cand_003.  All three observed counters
+\      are empty this epoch; chain protection cannot find any anchor.
+LAW-HASH "l-pre-collapse" store
+NEW-EPOCH
+LAW-HASH "l-post-collapse" store
+
+"c1" load CAND-STATUS "c1-after-collapse" store
+"c2" load CAND-STATUS "c2-after-collapse" store
+"c3" load CAND-STATUS "c3-after-collapse" store
+
+cr "Diagnostics:" . cr
+"  c1 after build    = " . "c1-after-build"    load . cr
+"  c2 after build    = " . "c2-after-build"    load . cr
+"  c3 after build    = " . "c3-after-build"    load . cr
+"  c1 after collapse = " . "c1-after-collapse" load . cr
+"  c2 after collapse = " . "c2-after-collapse" load . cr
+"  c3 after collapse = " . "c3-after-collapse" load . cr
+cr
+
+\ Pass conditions
+"c1-after-build"    load 'dependency-held = "cc-1a?" store
+"c2-after-build"    load 'dependency-held = "cc-1b?" store
+"c3-after-build"    load 'stable-active   = "cc-1c?" store
+"c1-after-collapse" load 'decomposed      = "cc-2?"  store
+"c2-after-collapse" load 'decomposed      = "cc-3?"  store
+"c3-after-collapse" load 'stale           = "cc-4?"  store
+"l-pre-collapse"    load "l-post-collapse" load = "law-changed?" store
+
+"cc-1a?" load 1 assert-eq      \ chain assembled correctly
+"cc-1b?" load 1 assert-eq
+"cc-1c?" load 1 assert-eq
+"cc-2?"  load 1 assert-eq      \ cand_001 auto-decomposed on phase 3
+"cc-3?"  load 1 assert-eq      \ cand_002 auto-decomposed on phase 3
+"cc-4?"  load 1 assert-eq      \ cand_003 → 'stale (1st negative epoch)
+"law-changed?" load 0 assert-eq    \ law_hash mutated by collapse
+
+cr "Chain collapse: protection unwound when anchor stopped earning." . cr
+REPORT

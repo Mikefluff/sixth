@@ -1,0 +1,122 @@
+\ examples/170-cycle-without-anchor.6th
+\ Cycle 32D — anti-immortal-cycle invariant.  Two cands mutually
+\ statically dependent (A→B and B→A) cannot mutually protect each
+\ other forever.  With no external positive-momentum anchor, the
+\ visited-set DFS in has-recent-load-bearing? terminates cleanly with
+\ FALSE for both, and Pass C auto-decomposes both.
+\
+\ This demo uses the TEST-HARNESS module's REBIND-CAND-BODY because
+\ INDUCE-RUNTIME cannot naturally produce a static cycle: a new cand's
+\ motif must reference symbols that already exist.  REBIND-CAND-BODY
+\ is gated behind ENABLE-TEST-HARNESS — any use outside the harness
+\ marks the targeted cand as 'contaminated.
+\
+\ Pre-reg: PREDICTIONS-167.md (commit 017fdaf).
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 170 — cycle without external anchor decomposes (cycle 32) ===" . cr
+
+RESET
+
+\ ---- Standard setup: cand_001 = (NODES drop), cand_002 = (cand_001 NODES drop) ----
+NODES drop NODES drop NODES drop NODES drop
+DETECT-MOTIF-AUTO "m1" store
+"m1" load SHADOW-CHECK drop
+"m1" load INDUCE-RUNTIME "c1" store
+
+cand_001 NODES drop cand_001 NODES drop cand_001 NODES drop cand_001 NODES drop
+DETECT-MOTIF-AUTO "m2" store
+"m2" load SHADOW-CHECK drop
+"m2" load INDUCE-RUNTIME "c2" store
+
+cand_001 NEW-SESSION cand_001 NEW-SESSION cand_001
+"c1" load COMMIT-PRIMITIVE drop
+"c1" load HELD-OUT-EVAL drop
+"c1" load PROMOTE-STABLE drop
+
+cand_002 cand_002 cand_002 cand_002 cand_002
+NEW-SESSION cand_002 NEW-SESSION cand_002
+"c2" load COMMIT-PRIMITIVE drop
+"c2" load HELD-OUT-EVAL drop
+"c2" load PROMOTE-STABLE drop
+
+"c1" load CAND-STATUS "c1-init" store
+"c2" load CAND-STATUS "c2-init" store
+
+\ ---- Enable test-harness; build the static cycle via REBIND.
+\      Rebind cand_001's body from (NODES drop) to (cand_002 NODES drop).
+\      Both directions of static dependency now exist.
+ENABLE-TEST-HARNESS
+TEST-HARNESS? "harness-on?" store
+
+\ Construct motif (cand_002 NODES drop) using MOTIF-CONS helper.
+' drop WRAP-MOTIF              \ stack: (drop)
+' NODES MOTIF-CONS             \ stack: (NODES drop)
+' cand_002 MOTIF-CONS          \ stack: (cand_002 NODES drop)
+"c1" load swap REBIND-CAND-BODY
+
+\ Verify static cycle: cand_001 depends on cand_002 AND cand_002 depends on cand_001.
+"c1" load "c2" load LAW-DEPENDS-ON? "c1-dep-c2?" store
+"c2" load "c1" load LAW-DEPENDS-ON? "c2-dep-c1?" store
+
+DISABLE-TEST-HARNESS
+TEST-HARNESS? "harness-off?" store
+
+\ ---- Baseline NEW-EPOCH (clears setup-phase counters).
+NEW-EPOCH
+
+\ ---- 1st idle epoch: both → 'stale (1 neg).
+NEW-EPOCH
+"c1" load CAND-STATUS "c1-p1" store
+"c2" load CAND-STATUS "c2-p1" store
+
+\ ---- 2nd idle epoch: both reach 'demotion-candidate.  Pass C
+\      tries to find a positive anchor.  The cycle exists (static)
+\      but neither cand was observed this epoch (no dispatches) AND
+\      neither is positive.  Visited-set DFS for cand_001 → visits
+\      cand_002 → would recurse to cand_001 but cand_001 in visited
+\      → returns FALSE.  Same for cand_002.  Both auto-decompose.
+LAW-HASH "l-pre-collapse" store
+NEW-EPOCH
+LAW-HASH "l-post-collapse" store
+"c1" load CAND-STATUS "c1-p2" store
+"c2" load CAND-STATUS "c2-p2" store
+
+cr "Diagnostics:" . cr
+"  c1 initial    = " . "c1-init"    load . cr
+"  c2 initial    = " . "c2-init"    load . cr
+"  harness on    = " . "harness-on?" load . cr
+"  c1 dep c2     = " . "c1-dep-c2?" load . cr
+"  c2 dep c1     = " . "c2-dep-c1?" load . cr
+"  harness off   = " . "harness-off?" load . cr
+"  c1 after p1   = " . "c1-p1"      load . cr
+"  c2 after p1   = " . "c2-p1"      load . cr
+"  c1 after p2   = " . "c1-p2"      load . cr
+"  c2 after p2   = " . "c2-p2"      load . cr
+cr
+
+\ Pass conditions
+"c1-init"     load 'stable-active = "y-1a?" store
+"c2-init"     load 'stable-active = "y-1b?" store
+"harness-on?" load 1              = "y-2?"  store
+"c1-dep-c2?"  load 1              = "y-3?"  store
+"c2-dep-c1?"  load 1              = "y-4?"  store
+"c1-p2"       load 'decomposed    = "y-5?"  store
+"c2-p2"       load 'decomposed    = "y-6?"  store
+"harness-off?" load 0             = "y-7?"  store
+
+"y-1a?" load 1 assert-eq
+"y-1b?" load 1 assert-eq
+"y-2?"  load 1 assert-eq              \ ENABLE-TEST-HARNESS worked
+"y-3?"  load 1 assert-eq              \ rebind installed new direction A→B
+"y-4?"  load 1 assert-eq              \ original direction B→A intact (cycle)
+"y-5?"  load 1 assert-eq              \ cand_001 auto-decomposed despite cycle
+"y-6?"  load 1 assert-eq              \ cand_002 auto-decomposed despite cycle
+"y-7?"  load 1 assert-eq              \ DISABLE-TEST-HARNESS worked
+
+cr "Cycle without external anchor collapsed.  No immortal loop." . cr
+REPORT

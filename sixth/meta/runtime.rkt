@@ -86,6 +86,15 @@
          set-discovery-profile!
          compute-stable-law-hash
          compute-sandbox-law-hash
+         ;; cycle 32 exports — runtime-observed dependencies
+         observed-deps-of
+         opcodes-to-cand-of
+         register-cand-opcodes!
+         unregister-cand-opcodes!
+         find-current-cand
+         make-cand-nested-hook
+         observed-dep?
+         current-cand-nested-hook
          ;; Re-export the VM trace parameter so meta primitives can
          ;; toggle trace on / off without further requires.
          current-engine-trace
@@ -139,6 +148,9 @@
 (define MEM_CAND_DECOMPOSE_SNAPSHOT '_cand-decompose-snapshot) ; alist (cand-sym . list-of-dependents-at-decompose-time)
 ;; cycle 31: discovery profile (default 'conservative)
 (define MEM_DISCOVERY_PROFILE       '_discovery-profile)       ; box of 'conservative | 'liberal
+;; cycle 32: runtime-observed dependencies + opcodes-to-cand lookup
+(define MEM_OBSERVED_DEPS           '_observed-deps)           ; box of alist ((caller . callee) . count) reset per epoch
+(define MEM_OPCODES_TO_CAND         '_opcodes-to-cand)         ; hasheq from word-opcodes vector to cand-sym
 
 ;; Forbidden symbols inside a candidate motif (per docs/mining_protocol.md §4).
 ;; A candidate cannot invoke meta-primitives (would allow self-modifying-meta)
@@ -197,6 +209,9 @@
   (hash-set! mem MEM_CAND_DECOMPOSE_SNAPSHOT (box '()))
   ;; cycle 31: default discovery profile
   (hash-set! mem MEM_DISCOVERY_PROFILE (box 'conservative))
+  ;; cycle 32: observed-dep tracking + opcodes reverse-lookup
+  (hash-set! mem MEM_OBSERVED_DEPS    (box '()))
+  (hash-set! mem MEM_OPCODES_TO_CAND  (make-hasheq))
   (void))
 
 ;; Allow tests / NEW-SESSION primitive to update session_id deterministically.
@@ -319,7 +334,9 @@
     AUTO-DECOMPOSE-SAFE? CAND-DEPENDENTS LAW-DEPENDS-ON?
     ;; cycle 31: profile + sandbox-hash inspections
     DISCOVERY-PROFILE PROFILE-BUDGET PROFILE-SCOPE
-    STABLE-LAW-HASH SANDBOX-LAW-HASH LAW-CARRY))
+    STABLE-LAW-HASH SANDBOX-LAW-HASH LAW-CARRY
+    ;; cycle 32: observed-dep + load-bearing inspections
+    OBSERVED-DEP? RECENT-LOAD-BEARING? CAND-OBSERVES?))
 
 (define (inspection-op? name)
   (and (memq name INSPECTION-OPS) #t))
@@ -419,6 +436,90 @@
 (define (set-discovery-profile! e new-profile)
   (define b (hash-ref (env-memory e) MEM_DISCOVERY_PROFILE (box 'conservative)))
   (set-box! b new-profile))
+
+;; ============================================================
+;; Cycle 32 — runtime-observed dependencies.
+;; ============================================================
+;;
+;; observed-deps-of returns a box of alist ((caller . callee) . count).
+;; Entries are added by the cand-nested-hook when a non-top-level
+;; op-CALL or op-PRIM targets a cand_NNN.  Reset on NEW-EPOCH.
+;;
+;; opcodes-to-cand-of returns a hasheq mapping word-opcodes vectors
+;; (by eq?) to the cand symbol that owns them.  Populated by INDUCE-
+;; RUNTIME and RESTORE-PRIMITIVE via register-cand-opcodes!; purged
+;; by ROLLBACK-RUNTIME and DECOMPOSE-PRIMITIVE.
+;;
+;; find-current-cand walks env-rstack from most-recent, returning the
+;; cand-sym whose opcodes match the topmost frame's program.  This
+;; lets the nested hook attribute observed deps to the correct
+;; containing cand.
+
+(define (observed-deps-of e)
+  (hash-ref (env-memory e) MEM_OBSERVED_DEPS (box '())))
+
+(define (opcodes-to-cand-of e)
+  (hash-ref (env-memory e) MEM_OPCODES_TO_CAND (make-hasheq)))
+
+(define (register-cand-opcodes! e cand-sym opcodes)
+  (hash-set! (opcodes-to-cand-of e) opcodes cand-sym))
+
+(define (unregister-cand-opcodes! e opcodes)
+  (hash-remove! (opcodes-to-cand-of e) opcodes))
+
+;; Walk env-rstack top-down; return the cand-sym whose opcodes match
+;; the most-recent frame's program.  Returns #f if no such frame.
+;;
+;; We rely on dynamic-require to avoid a cyclic module dep on vm.rkt
+;; (vm.rkt does not require runtime.rkt, but runtime.rkt requires
+;; vm.rkt; the frame struct is already accessible since it is provided
+;; from vm.rkt at top of this file via the existing require).
+(define (find-current-cand e)
+  (define oc-map (opcodes-to-cand-of e))
+  (let loop ([frames (env-rstack e)])
+    (cond
+      [(null? frames) #f]
+      [else
+       (define top (car frames))
+       (define prog (frame-program top))
+       (define hit (and prog (hash-ref oc-map prog #f)))
+       (if hit hit (loop (cdr frames)))])))
+
+;; Bump count for (caller . callee) observation.
+(define (record-observed-dep! e caller callee)
+  (define b (observed-deps-of e))
+  (define key (cons caller callee))
+  (define alist (unbox b))
+  (define existing (assoc key alist))
+  (cond
+    [existing
+     (set-box! b
+               (cons (cons key (+ 1 (cdr existing)))
+                     (filter (lambda (ent) (not (equal? (car ent) key)))
+                             alist)))]
+    [else
+     (set-box! b (cons (cons key 1) alist))]))
+
+;; Public predicate: was callee invoked from caller's body this epoch?
+(define (observed-dep? e caller callee)
+  (define alist (unbox (observed-deps-of e)))
+  (and (assoc (cons caller callee) alist) #t))
+
+;; Build the nested-call hook.  Called by trace-append! when an op
+;; fires at non-top-level depth.  Records observation only when both
+;; the callee is a cand and the currently-executing program is a cand
+;; (looked up via opcodes-to-cand reverse map from `current-prog`).
+;;
+;; current-prog is the opcode vector the VM is executing right now —
+;; that is, the body of the cand whose op-CALL fired.  Frame rstack
+;; would only show the cand's CALLER, which is not what we want.
+(define (make-cand-nested-hook)
+  (lambda (e kind name current-prog)
+    (when (cand-name? name)
+      (define caller (and current-prog
+                          (hash-ref (opcodes-to-cand-of e) current-prog #f)))
+      (when (and caller (not (eq? caller name)))
+        (record-observed-dep! e caller name)))))
 
 ;; Generic alist increment.
 (define (alist-bump! b key delta)

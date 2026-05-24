@@ -2330,6 +2330,190 @@ Aggregate: 2170 / 2170 ✓ across 158 demos.
 
 ---
 
+## Cycle 32 — Multi-Level Cascade + Runtime-Observed Load-Bearing
+
+**Pre-registered:** PREDICTIONS-167.md (2026-05-23, commit 017fdaf).
+**Implemented:** 2026-05-23 (this section).
+
+Cycle 32 strengthens the load-bearing predicate from cycle 30 in two
+ways that together eliminate two classes of pathological behavior:
+static-only zombie protection and immortal mutual-cycle loops.
+
+### Three-tier dependency model
+
+```
+static_dependency(A,B)     ≡ symbol B appears in A's motif body
+observed_dependency(A,B)   ≡ static + A's body actually executed this
+                              epoch AND nested-invoked B during that
+                              execution
+recent_load_bearing(A)     ≡ ∃ B ∈ active_dependents_of(A) such that
+                              observed_dependency(B, A) holds
+                              AND (B is a positive anchor
+                                   OR has_recent_load_bearing(B)
+                                      [recursive with visited-set])
+```
+
+Cycle 30/31 used `has_positive_dependent_momentum` (direct + static).
+Cycle 32 replaces it in Pass C with `has_recent_load_bearing?`
+(transitive + observed) — the cycle 30 case `B observed + B positive`
+is a strict subset, so all cycle 30/31 demos pass unchanged.
+
+### Primary invariants enforced
+
+**Observed dependency required:**
+> A cand cannot be dependency-held unless some active dependent's
+> body actually executed this epoch AND nested-invoked it.  Static
+> dependency alone is insufficient (Demo 168).
+
+**Transitive chain protection:**
+> Protection walks through `'dependency-held` intermediates to find
+> a positive anchor.  Multi-level chains (e.g., A → B → C with only
+> C externally productive) protect all intermediates as long as the
+> chain terminates in a positive cand (Demo 167).
+
+**Anti-immortal-cycle:**
+> A closed cycle without an external positive-momentum anchor
+> collapses via visited-set DFS.  No bureaucratic immortality of
+> mutually-protecting dead primitives (Demo 170).
+
+### VM modification
+
+`vm.rkt` adds a second hook parameter `current-cand-nested-hook`.
+`trace-append!` now passes the currently-executing program vector
+into both hook fire paths.  The nested hook uses the program-to-cand
+reverse-lookup (`_opcodes-to-cand`) to identify the containing cand
+at observation time.
+
+### New env-memory keys (2)
+
+```
+_observed-deps     alist ((caller . callee) . count); reset on NEW-EPOCH
+_opcodes-to-cand   hasheq from word-opcodes (eq) to cand-sym
+```
+
+`_opcodes-to-cand` is populated on INDUCE / RESTORE and purged on
+DECOMPOSE / ROLLBACK.
+
+### New Tier 1 primitives (3)
+
+- `OBSERVED-DEP? ( a b -- 0|1 )` — was b invoked from a's body this epoch?
+- `CAND-OBSERVES? ( a b -- 0|1 )` — convenience alias
+- `RECENT-LOAD-BEARING? ( cand -- 0|1 )` — transitive load-bearing check
+
+### Test-harness module (NEW, isolated)
+
+`sixth/meta/test-harness.rkt` ships with `REBIND-CAND-BODY` for
+constructing otherwise-unreachable cyclic dependency fixtures.
+Gated behind explicit `ENABLE-TEST-HARNESS`.  Any unauthorized
+invocation:
+- raises an error,
+- marks the targeted cand as `'contaminated`,
+- logs a `'test-harness-violation` ledger entry.
+
+Legitimate uses log `'test-harness-rebind` (NOT as a law-state event).
+Helper `MOTIF-CONS` ungated (pure list construction).
+
+**CLAIM (file header):** REBIND-CAND-BODY is NOT part of the runtime
+meta-semantics.  Used only to construct otherwise unreachable cyclic
+dependency fixtures.
+
+### Backward-compatibility verified
+
+After the Pass C swap, an early regression run showed 3 failures in
+demos 161 / 165 — turned out to be the `find-current-cand` bug
+(walking rstack frames returns the CALLER's program, not the currently-
+executing program).  Fixed by passing `current-prog` from `run!`
+through `trace-append!` into the nested hook directly.  After that fix,
+2170 / 2170 ✓ — every existing dependent IS observed AND IS positive,
+exactly matching the cycle 30 protection path.
+
+### Demo 167 — multi-level cascade protection (10 asserts)
+
+Three-cand chain `cand_003 → cand_002 → cand_001` (each motif contains
+the next nested).  Only cand_003 dispatched externally productively.
+`OBSERVED-DEP? cand_003 cand_002 = 1` (depth-1 nested observation).
+`OBSERVED-DEP? cand_002 cand_001 = 1` (depth-2 nested observation —
+recursive DFS through cand_002's frame to its program-to-cand mapping).
+`RECENT-LOAD-BEARING? cand_001 = 1` proven TRANSITIVELY through
+cand_002 → cand_003.  Both intermediates → `'dependency-held`,
+anchor stays stable-active.
+
+### Demo 168 — static-only does NOT save (9 asserts)
+
+Two cands with cand_002 static-depending on cand_001 (`LAW-DEPENDS-ON?
+= 1`).  Test phase has NO dispatches.  `OBSERVED-DEP? cand_002 cand_001
+= 0` (cand_002's body did not execute this epoch).  `RECENT-LOAD-BEARING?
+cand_001 = 0` (no observed support).  Both auto-decompose despite the
+static dependency.  Pre-cycle-32 cand_001 would have been protected;
+cycle 32 tightens the gate.
+
+### Demo 169 — chain collapse (7 asserts)
+
+Same 3-cand setup as demo 167.  Build the protection chain via 2
+productive epochs of cand_003 (cand_001=DH, cand_002=DH).  Then STOP
+driving cand_003.  Phase 3 NEW-EPOCH: no observed deps recorded this
+epoch → cand_001 and cand_002 both auto-decompose; cand_003 →
+`'stale` (its first negative epoch).  law_hash mutated by the
+collapse.
+
+### Demo 170 — cycle without anchor decomposes (8 asserts)
+
+Two cands promoted normally, then `ENABLE-TEST-HARNESS` +
+`REBIND-CAND-BODY` constructs the static cycle (`LAW-DEPENDS-ON?
+cand_001 cand_002 = 1` AND `LAW-DEPENDS-ON? cand_002 cand_001 = 1`).
+`DISABLE-TEST-HARNESS` confirms gate works both directions.  Two idle
+NEW-EPOCHs: visited-set DFS for cand_001 visits cand_002, would
+recurse back to cand_001 but visited-set blocks → returns FALSE.
+Same for cand_002.  Both auto-decompose.  **No immortal loop.**
+
+### What cycle 32 demonstrates
+
+- Static motif structure is necessary but not sufficient for protection.
+  The system requires evidence of runtime use.
+- Protection propagates transitively through dependency-held
+  intermediates as long as the chain anchors in a positive cand.
+- Closed cycles without external positive anchors cannot mutually
+  protect each other forever.  The visited-set DFS guards against
+  infinite recursion AND against bureaucratic-immortality patterns.
+- Cycle 30/31 demos pass unchanged: every existing dependent IS
+  observed AND IS positive — the cycle 32 strictness only matters
+  in cases the old demos don't hit.
+
+### What cycle 32 does NOT claim
+
+- Observed dependency is "semantically meaningful" — it's bookkeeping
+  at op-CALL time.
+- The chain walk is computationally optimal — DFS is O(N×D) worst case.
+- Cascade RESTORE for multi-level chains is implemented (DEFERRED).
+- Cycle-without-anchor demos via REBIND-CAND-BODY constitute a
+  production feature — REBIND is explicitly test-only, gated, and
+  documented as fixture-only.
+
+### Catalogue (post-cycle-32)
+
+> Cycle 25: можно менять.
+> Cycle 26: можно закреплять по цене.
+> Cycle 27: можно находить.
+> Cycle 28: стабильность через held-out.
+> Cycle 29: жив пока платит carrying cost.
+> Cycle 30: переживёт отрицательный momentum через живую зависимую структуру.
+> Cycle 31: два режима поиска + инфляция (либеральный не трогает канон).
+> **Cycle 32: защита требует runtime-наблюдаемой нагрузки, проходит
+>            транзитивно через цепочки активных зависимых, и не даёт
+>            замкнутым циклам мёртвых законов держать друг друга вечно.**
+
+Stable primitive is now formally defined as: runtime-induced law
+candidate that — having been INDUCEd under `'conservative` profile —
+survived equivalence, reuse, multi-session coupling, negative energy
+delta, held-out generalization, AND continues to pay positive net
+momentum over its lifecycle window (under the +1 inflation tax) OR
+is structurally load-bearing **AND runtime-observed** for an active
+dependent chain that terminates in a positive anchor.
+
+Aggregate: 2204 / 2204 ✓ across 162 demos.
+
+---
+
 ## Pending / future tracks
 
 | Track | Description | ETA |

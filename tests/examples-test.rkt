@@ -683,7 +683,31 @@
     ;;      cand_001 promoted; liberal cand_002 induced + rolled back.
     ;;      STABLE-LAW-HASH bit-for-bit identical across the entire
     ;;      liberal episode.  7 asserts.
-    ("166-sandbox-rollback-untouched.6th"         7)))
+    ("166-sandbox-rollback-untouched.6th"         7)
+    ;; 167. Cycle 32A — multi-level cascade chain protection.  Three-
+    ;;      cand chain cand_003 → cand_002 → cand_001; only cand_003
+    ;;      dispatched externally.  has-recent-load-bearing? walks
+    ;;      transitively through the chain to find cand_003 as positive
+    ;;      anchor.  Both intermediates → 'dependency-held.  10 asserts.
+    ("167-multi-level-cascade.6th"               10)
+    ;; 168. Cycle 32B — negative: static dependency alone does NOT save
+    ;;      a primitive.  cand_002 statically depends on cand_001 but
+    ;;      neither is dispatched in the test phase.  Without runtime
+    ;;      observation, has-recent-load-bearing? returns FALSE and
+    ;;      both auto-decompose.  9 asserts.
+    ("168-static-only-does-not-save.6th"          9)
+    ;; 169. Cycle 32C — chain collapse: once the external positive
+    ;;      anchor stops being driven, the multi-level protection chain
+    ;;      unwinds.  Both intermediates lose runtime observation,
+    ;;      load-bearing returns FALSE, Pass C auto-decomposes them.
+    ;;      7 asserts.
+    ("169-chain-collapse.6th"                     7)
+    ;; 170. Cycle 32D — anti-immortal-cycle invariant.  Two cands
+    ;;      mutually statically dependent (A→B and B→A constructed via
+    ;;      gated REBIND-CAND-BODY test harness) cannot mutually
+    ;;      protect each other forever.  visited-set DFS terminates
+    ;;      cleanly with FALSE; both auto-decompose.  8 asserts.
+    ("170-cycle-without-anchor.6th"               8)))
 
 (define (run-demo file)
   (define out
@@ -708,8 +732,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 2170
-                (format "cumulative ✓ count: ~a (expected 2170)" total-pass)))
+  (check-equal? total-pass 2204
+                (format "cumulative ✓ count: ~a (expected 2204)" total-pass)))
 
-(displayln (format "examples regression: ~a / 2170 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 2204 ✓ across ~a demos"
                    total-pass (length expected)))

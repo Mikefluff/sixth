@@ -1,0 +1,124 @@
+\ examples/167-multi-level-cascade.6th
+\ Cycle 32A — multi-level cascade chain protection.  Three-cand chain
+\ cand_003 → cand_002 → cand_001 (each containing the next nested).
+\ Only cand_003 is dispatched externally.  cand_001 and cand_002 are
+\ both protected as 'dependency-held via TRANSITIVE walk through the
+\ chain to cand_003's positive momentum.
+\ Pre-reg: PREDICTIONS-167.md (commit 017fdaf).
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 167 — multi-level cascade protection (cycle 32) ===" . cr
+
+RESET
+
+\ ---- Phase 0a: INDUCE + PROMOTE cand_001 = (MARK drop) ----
+MARK drop MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "m1" store
+"m1" load SHADOW-CHECK drop
+"m1" load INDUCE-RUNTIME "c1" store
+cand_001 cand_001 cand_001 cand_001 cand_001
+NEW-SESSION cand_001 NEW-SESSION cand_001
+"c1" load COMMIT-PRIMITIVE drop
+"c1" load HELD-OUT-EVAL drop
+"c1" load PROMOTE-STABLE drop
+"c1" load CAND-STATUS "c1-init" store
+
+\ ---- Phase 0b: INDUCE cand_002 = (cand_001 cand_001) ----
+\ 16 top-level cand_001 dispatches push held-out trace tail out of window.
+cand_001 cand_001 cand_001 cand_001 cand_001 cand_001 cand_001 cand_001
+cand_001 cand_001 cand_001 cand_001 cand_001 cand_001 cand_001 cand_001
+DETECT-MOTIF-AUTO "m2" store
+"m2" load SHADOW-CHECK drop
+"m2" load INDUCE-RUNTIME "c2" store
+
+cand_002 cand_002 cand_002 cand_002 cand_002
+NEW-SESSION cand_002 NEW-SESSION cand_002
+"c2" load COMMIT-PRIMITIVE drop
+"c2" load HELD-OUT-EVAL drop
+"c2" load PROMOTE-STABLE drop
+"c2" load CAND-STATUS "c2-init" store
+
+\ ---- Phase 0c: INDUCE + PROMOTE cand_003 = (cand_002 cand_002) ----
+cand_002 cand_002 cand_002 cand_002 cand_002 cand_002 cand_002 cand_002
+cand_002 cand_002 cand_002 cand_002 cand_002 cand_002 cand_002 cand_002
+DETECT-MOTIF-AUTO "m3" store
+"m3" load SHADOW-CHECK drop
+"m3" load INDUCE-RUNTIME "c3" store
+
+cand_003 cand_003 cand_003 cand_003 cand_003
+NEW-SESSION cand_003 NEW-SESSION cand_003
+"c3" load COMMIT-PRIMITIVE drop
+"c3" load HELD-OUT-EVAL drop
+"c3" load PROMOTE-STABLE drop
+"c3" load CAND-STATUS "c3-init" store
+
+\ ---- Baseline NEW-EPOCH to clear setup-phase counters ----
+NEW-EPOCH
+
+\ ---- Phase 1: drive cand_003 productively (6 dispatches).
+\      cand_003 m = 6×1 - 2 - 0 - 1 = +3 > STALE_TOL → stable-active.
+\      cand_002 m = 0 - 2 - 0 - 1 = -3 → 'stale (1st neg).
+\      cand_001 m = -3 same → 'stale.
+\      Inside each cand_003 dispatch: nested op-CALL cand_002 (twice).
+\      Inside each cand_002 dispatch: nested op-CALL cand_001 (twice).
+cand_003 cand_003 cand_003 cand_003 cand_003 cand_003
+NEW-EPOCH
+"c1" load CAND-STATUS "c1-p1" store
+"c2" load CAND-STATUS "c2-p1" store
+"c3" load CAND-STATUS "c3-p1" store
+
+\ ---- Phase 2: drive cand_003 productively again.  cand_001/002 hit
+\      2 consecutive negs → demotion-candidate → Pass C runs the
+\      transitive load-bearing check.
+cand_003 cand_003 cand_003 cand_003 cand_003 cand_003
+
+\ Snapshot observation predicates BEFORE NEW-EPOCH (Pass C reads same).
+"c3" load "c2" load OBSERVED-DEP? "obs-c3-c2?" store
+"c2" load "c1" load OBSERVED-DEP? "obs-c2-c1?" store
+"c2" load RECENT-LOAD-BEARING? "lb-c2?" store
+"c1" load RECENT-LOAD-BEARING? "lb-c1?" store
+
+NEW-EPOCH
+"c1" load CAND-STATUS "c1-p2" store
+"c2" load CAND-STATUS "c2-p2" store
+"c3" load CAND-STATUS "c3-p2" store
+
+cr "Diagnostics:" . cr
+"  c1/c2/c3 initial  = " . "c1-init" load . " / " . "c2-init" load . " / " . "c3-init" load . cr
+"  after p1          = " . "c1-p1"   load . " / " . "c2-p1"   load . " / " . "c3-p1"   load . cr
+"  OBSERVED c3→c2    = " . "obs-c3-c2?" load . cr
+"  OBSERVED c2→c1    = " . "obs-c2-c1?" load . cr
+"  LOAD-BEARING c2   = " . "lb-c2?"     load . cr
+"  LOAD-BEARING c1   = " . "lb-c1?"     load . cr
+"  after p2          = " . "c1-p2"   load . " / " . "c2-p2"   load . " / " . "c3-p2"   load . cr
+cr
+
+\ Pass conditions
+"c1-init"     load 'stable-active     = "m-1a?" store
+"c2-init"     load 'stable-active     = "m-1b?" store
+"c3-init"     load 'stable-active     = "m-1c?" store
+"obs-c3-c2?"  load 1                  = "m-2?"  store
+"obs-c2-c1?"  load 1                  = "m-3?"  store
+"lb-c2?"      load 1                  = "m-4?"  store
+"lb-c1?"      load 1                  = "m-5?"  store
+"c1-p2"       load 'dependency-held   = "m-6?"  store
+"c2-p2"       load 'dependency-held   = "m-7?"  store
+"c3-p2"       load 'stable-active     = "m-8?"  store
+
+"m-1a?" load 1 assert-eq
+"m-1b?" load 1 assert-eq
+"m-1c?" load 1 assert-eq
+"m-2?"  load 1 assert-eq           \ runtime nested hook records depth-1 observation
+"m-3?"  load 1 assert-eq           \ runtime nested hook records depth-2 observation
+"m-4?"  load 1 assert-eq           \ cand_002 protected directly by cand_003
+"m-5?"  load 1 assert-eq           \ cand_001 protected TRANSITIVELY through cand_002 → cand_003
+"m-6?"  load 1 assert-eq           \ Pass C status for cand_001 (transitive DH)
+"m-7?"  load 1 assert-eq           \ Pass C status for cand_002 (direct DH)
+"m-8?"  load 1 assert-eq           \ anchor stays stable
+
+cr "Multi-level chain protected; transitive walk found positive anchor." . cr
+REPORT

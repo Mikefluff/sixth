@@ -17,7 +17,11 @@
   vm-step!
   push-halt-frame!
   current-engine-trace
-  current-cand-dispatch-hook)
+  current-cand-dispatch-hook
+  current-cand-nested-hook
+  frame
+  frame-program
+  frame-pc)
 
 ;; current-engine-trace: parameter holding either #f (default; zero
 ;; overhead) or a `box` of a list of (cons kind name) trace entries
@@ -36,21 +40,39 @@
 ;; when a `cand_NNN` word actually executes (not merely registered).
 (define current-cand-dispatch-hook (make-parameter #f))
 
+;; Parameter for nested-call hook (cycle 32).  If bound, called as
+;; (hook e kind name) on every NON-top-level CALL / PRIM dispatch.
+;; Used by meta-runtime to record runtime-observed dependencies:
+;; when cand_B's body executes and within it cand_A is invoked nested,
+;; this hook records the (caller=cand_B, callee=cand_A) observation.
+;; The hook implementation walks rstack to identify the containing cand.
+(define current-cand-nested-hook (make-parameter #f))
+
 ;; Log only TOP-LEVEL ops (rstack empty or just halt-sentinel).  When
-;; inside a word body, rstack has the caller's frame, so further CALLs
-;; are body-internal and not part of the user-visible motif.
-(define (trace-append! e kind name)
+;; inside a word body, rstack has the CALLER's frame (back-pointer for
+;; return); the currently-executing program is the `prog` parameter
+;; in run!'s loop, not on the rstack.  Cycle 32 passes `current-prog`
+;; into trace-append! so the nested hook can identify the containing
+;; cand directly via the opcodes-to-cand reverse-lookup.
+(define (trace-append! e kind name current-prog)
   (define top-level?
     (let ([depth (length (env-rstack e))])
       (or (= depth 0)
           (and (= depth 1)
                (not (frame-program (car (env-rstack e))))))))
-  (when top-level?
-    (define b (current-engine-trace))
-    (when b
-      (set-box! b (cons (cons kind name) (unbox b))))
-    (define hook (current-cand-dispatch-hook))
-    (when hook (hook e name))))
+  (cond
+    [top-level?
+     (define b (current-engine-trace))
+     (when b
+       (set-box! b (cons (cons kind name) (unbox b))))
+     (define hook (current-cand-dispatch-hook))
+     (when hook (hook e name))]
+    [else
+     ;; Cycle 32: nested call within a cand body.  Fire the nested
+     ;; hook if installed.  Does NOT append to user-visible trace
+     ;; (only top-level events are user-observable for motif mining).
+     (define nh (current-cand-nested-hook))
+     (when nh (nh e kind name current-prog))]))
 
 (require "opcodes.rkt"
          "env.rkt"
@@ -74,7 +96,7 @@
           (env-push! e (op-arg instr))
           (loop prog (+ pc 1))]
          [(= code op-CALL)
-          (trace-append! e 'call (op-arg instr))
+          (trace-append! e 'call (op-arg instr) prog)
           (handle-call e prog pc instr loop)]
          [(= code op-JZ)
           (define v (env-pop! e (op-srcloc instr)))
@@ -85,7 +107,7 @@
           (pop-return-frame e (lambda (next-prog next-pc)
                                  (loop next-prog next-pc)))]
          [(= code op-PRIM)
-          (trace-append! e 'prim (op-arg instr))
+          (trace-append! e 'prim (op-arg instr) prog)
           (call-prim! e (op-arg instr) (op-srcloc instr))
           (loop prog (+ pc 1))]
          [else

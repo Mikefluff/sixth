@@ -20,7 +20,8 @@
          "primitives/substrate.rkt"
          "meta/runtime.rkt"
          "meta/tier1.rkt"
-         "meta/tier2.rkt")
+         "meta/tier2.rkt"
+         "meta/test-harness.rkt")
 
 (define no-prelude? (make-parameter #f))
 (define defines    (make-parameter '()))   ; list of (cons KEY VAL)
@@ -52,6 +53,10 @@
   (install-meta-runtime! e)
   (register-tier1! e)
   (register-tier2! e)
+  ;; Cycle 32: test-harness primitives are always REGISTERED but
+  ;; GATED behind ENABLE-TEST-HARNESS.  Without that call, any
+  ;; REBIND-CAND-BODY invocation raises + contaminates the target.
+  (register-test-harness! e)
   (unless (no-prelude?)
     (use-module! "prelude" e))
   (apply-defines! e)
@@ -78,11 +83,13 @@
 
 (define (cmd-run path)
   (define e (make-runtime-env))
-  ;; Bind both meta-runtime hooks:
+  ;; Bind all three meta-runtime hooks:
   ;;   - current-engine-trace populates env's _trace box (cycle 25A)
   ;;   - current-cand-dispatch-hook bumps cand use counter (25D item 10)
-  (parameterize ([current-engine-trace (trace-of e)]
-                 [current-cand-dispatch-hook (make-cand-dispatch-hook)])
+  ;;   - current-cand-nested-hook records runtime-observed deps (cycle 32)
+  (parameterize ([current-engine-trace      (trace-of e)]
+                 [current-cand-dispatch-hook (make-cand-dispatch-hook)]
+                 [current-cand-nested-hook   (make-cand-nested-hook)])
     (load-file path e)))
 
 (define (cmd-test)
