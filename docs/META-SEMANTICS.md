@@ -826,3 +826,154 @@ require infrastructure for "long-run" measurement, not just snapshot).
   energy integration
 - Demo 146 `examples/146-energy-accounting.6th` — items 16-20
   asserts (10 passes)
+
+---
+
+## §18. Ontological Five-Layer Separation (added cycle 34D, 2026-05-24)
+
+Sections §1–§17 specify what the runtime DOES.  This section
+specifies what the system's vocabulary IS, separated by ontological
+origin.  The two are orthogonal: operational primitives (Tier 1 /
+Tier 2 dispatch entries) are an engineering surface; ontological
+classification distinguishes who placed each entity into the system
+and what kind of thing it is.
+
+Sources: cycle 34C bootstrap-alphabet archaeology
+(`RESULTS-178-bootstrap-alphabet-archaeology.md`) and cycle 34C-bis
+substrate-discovered audit
+(`RESULTS-179-substrate-discovered-alphabet.md`).  Pre-reg:
+`examples/PREDICTIONS-178-alphabet-archaeology.md`.
+
+### §18.1 The five layers
+
+| layer | content | source |
+|-------|---------|--------|
+| **L0 — Substrate axioms** | distinction, boundary, trace, collapse | bootloader (engineer, pre-cycle-25) |
+| **L1 — Protocol grammar** | commit, shadow-check, contaminate (irreducible) + promote-stable, held-out-eval (derived from L1 primitives + governance) | machinery (engineer, cycle 25-26 spec) |
+| **L2 — Discovered candidates** | cand_NNN that passed full pipeline AND persisted | SYSTEM (via DETECT-MOTIF-AUTO + protocol) |
+| **L3 — Diagnostics** | `'stale`, `'demotion-candidate`, `'dependency-held`, `'dependency-supported`, `'subsidized` (proposed) | engineer (cycles 29+) |
+| **L4 — Implementation** | counters, ttl, thresholds, credit, specific arithmetic | engineer (cycles 25-34) |
+
+### §18.2 L2 occupancy: current count = 0
+
+Per the substrate-discovered audit (cycle 34C-bis, 2026-05-24):
+
+> The system currently has a bootstrap alphabet but NO durable
+> substrate-discovered alphabet.  Every cand_NNN entity in the
+> codebase is a test fixture inside an isolated demo file.  None
+> has been auto-detected over an engineer-blind workload.  None
+> has been persisted across runs.  None has been loaded by any
+> production substrate use.
+
+Verifiable by:
+- `ls stdlib/promoted/` → directory does not exist
+- `grep -rn "cand_[0-9]" stdlib/` → zero matches
+- `attestations/ledger.txt` → zero `'promote-stable` events
+
+This is **not a failure**.  It is the honest current state.  The
+protocol for discovery (verified by demos 143-157) and the
+INSTANCES OF DISCOVERY (zero so far) are different claims.
+
+### §18.3 Binding archaeology rule (cycle 34B)
+
+> **A primitive is not something useful.  A primitive is a
+> distinction that cannot be removed without destroying the
+> system's ability to make distinctions.**
+
+> **A discovered primitive must have a lineage.  No lineage,
+> no discovery.**
+
+> **Hand-authored machinery (L0/L1/L3/L4) cannot be counted as
+> discovered primitive.**
+
+### §18.4 Hard rules for future cycles
+
+1. **No new primitive without archaeology evidence.**  Any cycle
+   proposing a new entity for L0 or L1 must produce per-entity
+   records per the cycle 34B binding schema (named occurrence,
+   unnamed occurrence, minimal distinction, dependencies,
+   classification, anti-circular reason, evidence).
+2. **No diagnostic label may participate in any truth gate.**
+   L3 labels (`'stale`, `'subsidized`, etc.) are inspectable in
+   the ledger and via `CAND-STATUS`; they have no role in
+   `PROMOTE-STABLE`, `HELD-OUT-EVAL`, `COMMIT-PRIMITIVE`,
+   `SHADOW-CHECK`, or `compute-support-credit-for`.
+3. **No implementation_detail may be cited as ontology.**  L4
+   entries (constants, counters, specific formulas) are
+   engineering knobs.  A claim "the system has support_credit"
+   is a claim about *the current implementation's arithmetic*,
+   not about the substrate's ontology.
+4. **Folk terms are rejected.**  `flow`, `energy_balance`,
+   `repair`, `resolve`, `inscribe`, `forget` are not substrate
+   concepts.  Naming does not create them.
+
+### §18.5 Promotion remains organic-only (reinforced invariant)
+
+> **`PROMOTE-STABLE`, `COMMIT-PRIMITIVE`, `HELD-OUT-EVAL`,
+> `SHADOW-CHECK`, and `compute-support-credit-for` ALL consult
+> only `MOMENTUM-NATIVE` (≡ `ORGANIC-MOMENTUM`).  Never
+> `MOMENTUM-EFFECTIVE`.  Never `SUBSIDIZED-MOMENTUM`.  Never any
+> sum that includes external_credit or support_credit.**
+
+Ontologically: only `m_native` measures intrinsic productivity.
+External support can preserve form (delay auto-decompose) but
+cannot prove life (cannot pass any truth gate).
+
+### §18.6 Cycle 34A status: BLOCKED
+
+PREDICTIONS-177 (external energy + capacity + subsidized) was
+attested as pre-reg (commit `2aef3f7`) but **implementation is
+blocked**.
+
+Reason: 34A proposes mechanisms to modulate survival of L2
+entities.  L2 is currently empty.  Implementing 34A now would
+only add machinery around fixtures and demo-only cand_NNN.
+
+34A unblocks AFTER cycle 35 (proposed) builds the persistence
+layer that allows L2 to be non-empty.
+
+### §18.7 Cycle 35 (proposed): persistence layer for L2
+
+See `docs/CYCLE-35-PROPOSAL-persistence.md`.
+
+Minimum scope:
+- `stdlib/promoted/<cycle>/cand_NNN.6th` file-write step in
+  `PROMOTE-STABLE` (already promised in §6, never built)
+- `'promote-stable` event in `attestations/ledger.txt`
+- per-cand lineage record (workload hash, discovery cycle,
+  motif body, held-out result, attestation row)
+- cross-run dictionary persistence (load promoted cands at
+  engine boot via standard `use` mechanism)
+- metabolism survival check across sessions (preserved or
+  reset on identity?)
+- fixture / demo / production source tagging on every cand_NNN
+
+Without these, L2 cannot ever be non-empty regardless of how
+many demos pass.
+
+### §18.8 What §18 does NOT claim
+
+- That non-primitive entities should be removed from the dispatch
+  table.  They remain operationally critical; the reclassification
+  is ontological, not engineering.
+- That the bootstrap is "small."  L0 + L1 + L3 + L4 are large.
+  Only L2 — substrate-discovered — is small (currently empty).
+- That cycle 35 is the immediate next cycle by default.  It is
+  the proposed next cycle iff the team agrees that populating L2
+  is the right priority before adding more mechanism over an
+  empty L2.
+- That the engineering Tier 1 / Tier 2 separation in
+  `CLAIMS.md` should change.  §18 adds a parallel ontological
+  taxonomy, not a replacement.
+
+### §18.9 Cross-references
+
+- `examples/PREDICTIONS-178-alphabet-archaeology.md` — pre-reg
+- `RESULTS-178-bootstrap-alphabet-archaeology.md` — bootstrap audit
+- `RESULTS-179-substrate-discovered-alphabet.md` — L2 audit
+  (count = 0)
+- `CLAIMS.md` — Ontological Classification section (mirror)
+- `docs/CYCLE-35-PROPOSAL-persistence.md` — forward design
+- `attestations/ledger.txt` — pre-reg attestation log
+- User spec 2026-05-24 — bootstrap-vs-discovered separation;
+  no lineage no discovery; L2 empty

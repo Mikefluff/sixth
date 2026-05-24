@@ -260,6 +260,66 @@ Equivalently in terms of negative invariants the protocol enforces:
 - a closed cycle of cands without external positive anchor cannot
   mutually protect itself (cycle 32 visited-set DFS)
 
+### Tier 1 honest negatives — discovery status (cycle 34C-bis, 2026-05-24)
+
+The following Tier-1 statements are **honest negatives**: claims
+about what the system has NOT yet demonstrated, mechanically
+verifiable by inspection.  Failure of any one of them — i.e.,
+finding evidence to the contrary — is a falsification trigger for
+the corresponding negative claim.
+
+These claims are the result of the substrate-discovered alphabet
+audit (`RESULTS-179-substrate-discovered-alphabet.md`).  They
+distinguish the WORKING PROTOCOL FOR DISCOVERY (verified) from
+ACTUAL DISCOVERIES (zero so far).
+
+**CLAIM-1.** Sixth has a bootstrap substrate and protocol
+machinery.  49 object-level + 33 meta-level primitives; the 4-tuple
+runtime model (world_state, law_state, trace, ledger) plus the
+cycle-25E observational energy bucket; the two-tier ephemeral
+/ stable lifecycle.  Verified by items 1, 7-12, 13-18 above.
+
+**CLAIM-2.** Sixth has a working candidate-discovery pipeline
+demonstrated on fixtures and demo runs.  `DETECT-MOTIF-AUTO` finds
+motifs; `SHADOW-CHECK` verifies equivalence; the N=5 / M=3 coupling
+gate operates; the `net_delta_e < 0` energy gate operates;
+`HELD-OUT-EVAL` returns `wins >= 4/6` for passing cands and rejects
+under-generalizing cands; `PROMOTE-STABLE` mutates `law_hash`.
+Verified by demos 143-157.
+
+**CLAIM-3 (honest negative).** Sixth does NOT yet have durable
+substrate-discovered primitives persisted across real cross-run
+metabolism.  Verifiable by:
+
+  - `ls stdlib/promoted/` → directory does not exist
+  - `grep -rn "cand_[0-9]" stdlib/` → zero matches
+  - `attestations/ledger.txt` → zero `'promote-stable` events
+    for any cand_NNN (only PREDICTIONS pre-reg attestation rows)
+
+Every cand_NNN in the codebase is a test fixture inside an isolated
+demo file in `examples/*.6th`; each is constructed by hand-written
+workload, INDUCEd from that workload, possibly promoted within the
+single test run, and discarded at `REPORT`.
+
+**CLAIM-4.** A cand_NNN is not "discovered" unless it has
+**lineage**: auto-detected (not hand-authored motif), passed
+SHADOW-CHECK, passed coupling gate (N=5, M=3), passed energy gate,
+passed HELD-OUT-EVAL, got PROMOTE-STABLE, persisted in active
+dictionary across metabolism cycles, NOT fixture-only, NOT
+demo-only.  No lineage, no discovery.
+
+**CLAIM-5.** External-energy mechanisms (cycle 34A pre-reg
+PREDICTIONS-177: external_credit, capacity, subsidized,
+energy-leaked) are BLOCKED until persistent L2 entities exist to
+modulate.  Implementing 34A over the current empty-L2 substrate
+would only add machinery around fixtures and demo-only candidates.
+
+These five claims together form an honest description: Sixth is a
+**research system with a working discovery protocol and zero
+discoveries to date**.  The protocol-verification claim is
+non-trivial and remains intact.  The discovery-claim is honestly
+negative.
+
 ## Tier 2 — Demonstrated by examples
 
 Statements in this tier are exhibited on synthetic or toy substrates
@@ -362,3 +422,116 @@ The substrate stands on Tier 1. Tiers 2 and 3 build on it but their
 empirical adequacy is independently falsifiable. Failure of any
 Tier-3 conjecture does not invalidate Tier 1; failure of Tier 1
 collapses Tier 2 and Tier 3 with it.
+
+---
+
+## Ontological five-layer separation (cycle 34D, 2026-05-24)
+
+**Orthogonal to the epistemic Tier 1 / 2 / 3 structure above.**
+This section classifies the system's vocabulary by ontological
+origin: who put each entity into the system, and what kind of
+thing it is.
+
+Source of audits: cycle 34C archaeology
+(`RESULTS-178-bootstrap-alphabet-archaeology.md`) and cycle 34C-bis
+substrate-discovered audit
+(`RESULTS-179-substrate-discovered-alphabet.md`).  Pre-reg:
+`examples/PREDICTIONS-178-alphabet-archaeology.md`.
+
+### The five layers (binding)
+
+| layer | content | source | population |
+|-------|---------|--------|------------|
+| **L0 — Substrate axioms** | distinction, boundary, trace, collapse | bootloader (engineer, pre-cycle-25) | 4 |
+| **L1 — Protocol grammar** | commit, shadow-check, contaminate, promote-stable, held-out-eval | machinery (engineer, cycle 25-26 spec) | 3 (irreducible: commit, shadow-check, contaminate; the other two are derived but operationally L1) |
+| **L2 — Discovered candidates** | cand_NNN that passed full pipeline AND persisted | **SYSTEM** (via DETECT-MOTIF-AUTO + protocol) | **0** (current state) |
+| **L3 — Diagnostics** | `'stale`, `'demotion-candidate`, `'dependency-held`, `'dependency-supported`, `'subsidized` (proposed) | engineer (cycles 29+) | 5 status labels |
+| **L4 — Implementation** | counters, ttl, thresholds, credit, specific arithmetic | engineer (cycles 25-34) | many |
+
+### Binding rules
+
+1. **Hand-authored machinery (L0/L1/L3/L4) cannot be counted as
+   discovered primitive.**  Only L2 entries qualify as "primitives
+   the system itself found."
+2. **A discovered primitive must have a lineage.**  No lineage, no
+   discovery.  (See CLAIM-4 above.)
+3. **No new primitive enters the ontology without independent
+   archaeology evidence** per the cycle 34B binding schema
+   (`first_named_occurrence`, `first_unnamed_occurrence`,
+   `minimal_distinction`, `depends_on`, `classification`, `reason`,
+   `evidence`).
+4. **No diagnostic label may participate in any truth gate**
+   (`PROMOTE-STABLE`, `HELD-OUT-EVAL`, `COMMIT-PRIMITIVE`,
+   `SHADOW-CHECK`, or the cycle-33 `compute-support-credit-for`
+   positive-anchor predicate).  Diagnostic labels are inspectable
+   in the ledger; they have no epistemic weight.
+5. **No implementation_detail may be cited as ontology.**  A
+   constant or specific arithmetic is an engineering knob, not a
+   distinction.
+
+### Promotion remains organic-only (reinforced)
+
+> **`PROMOTE-STABLE`, `COMMIT-PRIMITIVE`, `HELD-OUT-EVAL`,
+> `SHADOW-CHECK`, and `compute-support-credit-for` ALL consult
+> only `MOMENTUM-NATIVE` (≡ `ORGANIC-MOMENTUM`).  Never
+> `MOMENTUM-EFFECTIVE`.  Never `SUBSIDIZED-MOMENTUM`.  Never any
+> sum that includes external_credit or support_credit.**
+
+External support can preserve form (delay auto-decompose) but
+cannot prove life (cannot pass any truth gate).  Internal support
+(cycle 33 carry offset) can keep a primitive callable but cannot
+make it stable-active or feed downstream support contributions.
+Only `m_native` (organic productivity) is admissible signal for
+promotion or for serving as a support anchor.
+
+### Rejected entities (folk terms, not substrate concepts)
+
+`flow`, `energy_balance`, `repair`, `resolve`, `inscribe`,
+`forget` — these terms appear in narrative or pre-reg discussions
+but have no substrate mechanism realizing them.  Naming does not
+create them.  Not admitted to any layer.
+
+### What L2 = 0 means
+
+Sixth is, at the time of this writing, a research system that has:
+- a working protocol for discovery (Tier 1 fact, CLAIM-2)
+- zero instances of discovery (Tier 1 honest negative, CLAIM-3)
+- a rich engineering bootstrap (L0 + L1) and diagnostic / impl
+  surfaces (L3 + L4)
+
+The protocol-verification claim is real and non-trivial.  The
+discovery-as-fact claim is honestly null.  Cycle 35 is proposed to
+build the persistence layer (`stdlib/promoted/`, cross-run cand
+lineage, ledger promote events) that would allow L2 to ever
+become non-empty.
+
+See `docs/CYCLE-35-PROPOSAL-persistence.md` for the design sketch.
+
+### Audit-derived guidance for future cycles
+
+1. Any cycle introducing a new STATUS LABEL must declare it as
+   L3 `diagnostic_label` and may not claim it as primitive.
+2. Any cycle introducing a new ARITHMETIC FORMULA over existing
+   counters must declare it as L4 `implementation_detail` or
+   `derived`.
+3. Any cycle proposing a new PRIMITIVE (L0 or L1) must produce
+   archaeology evidence per the cycle 34B binding schema.
+4. Folk-philosophical terms are not admitted to ontology without
+   a substrate mechanism realizing them.
+5. New L1 grammar operations (e.g., `INJECT-ENERGY` proposed in
+   cycle 34A) may be implemented as controlled verbs over L4
+   values, but cannot claim L1-primitive status without separate
+   archaeology evidence per rule 3.
+
+### Cycle 34A status (BLOCKED)
+
+PREDICTIONS-177 (external energy + capacity + subsidized) remains
+**implementation-blocked** because:
+
+- It proposes mechanisms (`external_credit`, `capacity`,
+  `'subsidized`) to modulate survival of L2 entities.
+- L2 is currently empty.
+- Implementing 34A now would only add machinery around fixtures
+  and demo-only cand_NNN, not real substrate-discovered laws.
+
+34A unblocks AFTER cycle 35 makes L2 capable of having occupants.
