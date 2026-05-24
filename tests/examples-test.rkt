@@ -626,7 +626,18 @@
     ;;      motif (EDGE+ drop).  Same outcome: wins 0/6, rejected.
     ;;      Demonstrates held-out gate is general across stack-hungry
     ;;      motif shapes.  5 asserts.
-    ("157-stable-promotion-heldout-absent.6th"    7)))
+    ("157-stable-promotion-heldout-absent.6th"    7)
+    ;; 158. Cycle 29C — law metabolism happy path.  Stable-active →
+    ;;      stale (1 idle epoch) → demotion-candidate (2nd idle) →
+    ;;      decomposed → restored.  Verifies law_hash mutates on
+    ;;      decompose, world_hash unchanged, law_hash restores on
+    ;;      RESTORE-PRIMITIVE.  9 asserts.
+    ("158-law-metabolism-decompose.6th"           9)
+    ;; 159. Cycle 29D — age-resistance negative.  5 productive
+    ;;      epochs (4 uses each, momentum +5) keep status
+    ;;      'stable-active.  Validates: age alone doesn't kill;
+    ;;      only negative momentum does.  7 asserts.
+    ("159-law-metabolism-age-resistance.6th"      7)))
 
 (define (run-demo file)
   (define out
@@ -651,8 +662,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 2104
-                (format "cumulative ✓ count: ~a (expected 2104)" total-pass)))
+  (check-equal? total-pass 2120
+                (format "cumulative ✓ count: ~a (expected 2120)" total-pass)))
 
-(displayln (format "examples regression: ~a / 2104 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 2120 ✓ across ~a demos"
                    total-pass (length expected)))

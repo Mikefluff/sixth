@@ -1954,6 +1954,89 @@ unseen-by-discovery substrates without becoming a net cost".
 
 ---
 
+## Cycle 29 — Law Metabolism (decay, demote, decompose)
+
+**Pre-reg:** `PREDICTIONS-158.md` (commit `48589a9`, attested
+ledger sha `fdd31a3b`).
+
+**Primary claim** (verified):
+
+> A stable-active primitive transitions to `'demotion-candidate`
+> when `law_momentum < -STALE_TOLERANCE` across `MOMENTUM_NEGATIVE_
+> THRESHOLD = 2` consecutive epochs.  `DECOMPOSE-PRIMITIVE` requires
+> that status, removes from active dict (mutates law_hash, world_hash
+> unchanged), preserves body for `RESTORE-PRIMITIVE` rollback.
+
+### Formula
+
+```
+law_momentum(cand) = recent_reuse_gain - carry_cost - recent_failure_count
+carry_cost(cand)   = expansion_length(cand)   (constant per cand)
+
+Break-even per epoch for L=3 motif: N≥2 uses
+```
+
+### Status transitions (per NEW-EPOCH)
+
+```
+m > +1               → stable-active
+|m| ≤ 1              → stale
+m < -1 sustained 2 epochs → demotion-candidate
+```
+
+### 6 new Tier 1 primitives
+
+`NEW-EPOCH`, `LAW-MOMENTUM`, `MARK-STALE`, `DEMOTE-PRIMITIVE`,
+`DECOMPOSE-PRIMITIVE`, `RESTORE-PRIMITIVE`.
+
+### Demo 158 — happy decomposition flow (9 asserts)
+- stable-active → stale (1 idle) → demotion-candidate (2nd idle)
+- DECOMPOSE: law_hash mutates, world_hash unchanged
+- RESTORE: law_hash returns to pre-decompose value
+
+### Demo 159 — age-resistance negative (7 asserts)
+- 5 consecutive productive epochs (4 uses each) keep status
+  `'stable-active`.  Age alone doesn't trigger demotion.
+
+### What cycle 29 demonstrates
+
+- A stable primitive that stops paying its carrying cost
+  mechanically transitions through stale → demotion-candidate
+- DECOMPOSE-PRIMITIVE is gated: only `'demotion-candidate` may
+  decompose.  No back-door.
+- RESTORE-PRIMITIVE is reversible: law_hash returns to exact
+  pre-decompose value, demonstrating round-trip integrity.
+- Age alone is harmless: high-use primitive stays stable-active
+  across many epochs.
+
+### What cycle 29 does NOT claim
+
+- Auto-decompose without explicit primitive invocation: deferred
+  to cycle 30+.
+- Dependent-primitive cascade: cycle 29 has no multi-level
+  primitives; deferred.
+- Carry cost = expansion_length is "right": it's the structurally
+  honest v0 proxy.
+
+### Catalogue (post-cycle-29)
+
+> Cycle 25: закон можно менять.
+> Cycle 26: закон можно закреплять по цене.
+> Cycle 27: кандидат в закон можно находить автоматически.
+> Cycle 28: закон становится стабильным только при энергетической
+>           генерализации на held-out.
+> **Cycle 29: закон остаётся живым только пока продолжает платить
+>           свою carrying cost.**
+
+Stable primitive is now formally defined as: runtime-induced law
+candidate that survived equivalence, reuse, multi-session coupling,
+negative energy delta, held-out generalization, AND continues to
+pay positive momentum per epoch.
+
+Aggregate: 2120 / 2120 ✓ across 151 demos.
+
+---
+
 ## Pending / future tracks
 
 | Track | Description | ETA |

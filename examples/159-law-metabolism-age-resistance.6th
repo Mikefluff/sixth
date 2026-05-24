@@ -1,0 +1,81 @@
+\ examples/159-law-metabolism-age-resistance.6th
+\ Cycle 29D — negative: high-use primitive resists decomposition.
+\ Age alone doesn't kill; only negative momentum does.
+\ Pre-reg: PREDICTIONS-158.md (commit 48589a9).
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 159 — age-resistant primitive (cycle 29 negative) ===" . cr
+
+RESET
+
+\ Standard setup: discover, commit, promote-stable
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+DETECT-MOTIF-AUTO "motif" store
+"motif" load SHADOW-CHECK drop
+"motif" load INDUCE-RUNTIME "c" store
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c" load COMMIT-PRIMITIVE drop
+"c" load HELD-OUT-EVAL drop
+"c" load PROMOTE-STABLE drop
+
+\ 5 productive epochs: 4 uses each (L=3, reuse=8, carry=3, m=+5)
+cand_001 cand_001 cand_001 cand_001 NEW-EPOCH
+"c" load CAND-STATUS "s1" store "c" load LAW-MOMENTUM "m1" store
+cand_001 cand_001 cand_001 cand_001 NEW-EPOCH
+"c" load CAND-STATUS "s2" store
+cand_001 cand_001 cand_001 cand_001 NEW-EPOCH
+"c" load CAND-STATUS "s3" store
+cand_001 cand_001 cand_001 cand_001 NEW-EPOCH
+"c" load CAND-STATUS "s4" store
+cand_001 cand_001 cand_001 cand_001 NEW-EPOCH
+"c" load CAND-STATUS "s5" store
+"c" load LAW-MOMENTUM "m5" store
+
+cr "After 5 productive epochs:" . cr
+"  status s1 = " . "s1" load . "  m1 = " . "m1" load . cr
+"  status s5 = " . "s5" load . "  m5 = " . "m5" load . cr
+
+\ Pass conditions
+"s1" load 'stable-active = "nc-1?" store
+"s5" load 'stable-active = "nc-3?" store
+
+"nc-1?" load 1 assert-eq                  \ first productive epoch stable
+"s2" load 'stable-active = "s2?" store
+"s2?" load 1 assert-eq
+"s3" load 'stable-active = "s3?" store
+"s3?" load 1 assert-eq
+"s4" load 'stable-active = "s4?" store
+"s4?" load 1 assert-eq
+"nc-3?" load 1 assert-eq                  \ 5 epochs, still stable
+\ NOTE: LAW-MOMENTUM reads CURRENT-epoch counters which were just
+\ reset by NEW-EPOCH.  The status='stable-active above already
+\ proves the epoch-end momentum was positive (otherwise transition
+\ would have moved status to stale/demotion-candidate).
+
+\ Now forced demote works (status is stable-active)
+"c" load DEMOTE-PRIMITIVE
+"c" load CAND-STATUS "s-demoted" store
+"s-demoted" load 'demotion-candidate = "nc-4?" store
+"nc-4?" load 1 assert-eq
+
+\ Then decompose + restore
+"c" load DECOMPOSE-PRIMITIVE
+"c" load RESTORE-PRIMITIVE
+"c" load CAND-STATUS "s-restored" store
+"s-restored" load 'stable-active = "nc-5?" store
+"nc-5?" load 1 assert-eq
+
+cr "Age-resistance verified: high-use primitive survives many epochs." . cr
+REPORT

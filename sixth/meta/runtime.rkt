@@ -60,6 +60,19 @@
          INSPECTION-OPS
          inspection-op?
          expansion-length-of
+         ;; cycle 29 lifecycle exports
+         MOMENTUM-NEGATIVE-THRESHOLD
+         MOMENTUM-STALE-TOLERANCE
+         MOMENTUM-HISTORY-WINDOW
+         cand-recent-uses-of
+         cand-recent-reuse-of
+         cand-recent-fails-of
+         cand-momentum-history-of
+         cand-preserved-bodies-of
+         epoch-counter-of
+         bump-recent-uses!
+         bump-recent-reuse!
+         bump-recent-fails!
          ;; Re-export the VM trace parameter so meta primitives can
          ;; toggle trace on / off without further requires.
          current-engine-trace
@@ -102,6 +115,13 @@
 (define MEM_ENERGY_SEMANTIC_TRACE '_energy-semantic-trace)
 ;; cycle 26: per-cand distinct-session tracking for COUPLING-M check
 (define MEM_CAND_SESSIONS         '_cand-sessions)  ; alist (cand-sym . list-of-session-ids)
+;; cycle 29: lifecycle metabolism
+(define MEM_CAND_RECENT_USES      '_cand-recent-uses)         ; alist (cand . int)
+(define MEM_CAND_RECENT_REUSE     '_cand-recent-reuse-gain)   ; alist (cand . int)
+(define MEM_CAND_RECENT_FAILS     '_cand-recent-failures)     ; alist (cand . int)
+(define MEM_CAND_MOMENTUM_HISTORY '_cand-momentum-history)    ; alist (cand . list-of-int)
+(define MEM_CAND_PRESERVED_BODIES '_cand-preserved-bodies)    ; alist (cand . motif) for RESTORE
+(define MEM_EPOCH_COUNTER         '_epoch-counter)            ; box int
 
 ;; Forbidden symbols inside a candidate motif (per docs/mining_protocol.md §4).
 ;; A candidate cannot invoke meta-primitives (would allow self-modifying-meta)
@@ -149,6 +169,13 @@
   (hash-set! mem MEM_ENERGY_SEMANTIC_TRACE (box 0))
   ;; cycle 26: per-cand distinct session tracking
   (hash-set! mem MEM_CAND_SESSIONS         (box '()))
+  ;; cycle 29: lifecycle metabolism
+  (hash-set! mem MEM_CAND_RECENT_USES      (box '()))
+  (hash-set! mem MEM_CAND_RECENT_REUSE     (box '()))
+  (hash-set! mem MEM_CAND_RECENT_FAILS     (box '()))
+  (hash-set! mem MEM_CAND_MOMENTUM_HISTORY (box '()))
+  (hash-set! mem MEM_CAND_PRESERVED_BODIES (box '()))
+  (hash-set! mem MEM_EPOCH_COUNTER         (box 0))
   (void))
 
 ;; Allow tests / NEW-SESSION primitive to update session_id deterministically.
@@ -264,7 +291,9 @@
     ;; cycle 26 additions:
     NEW-SESSION WRAP-MOTIF CAND-DISTINCT-SESSIONS TRY-COMMIT
     ;; cycle 27: mining (also inspection of trace)
-    DETECT-MOTIF-AUTO))
+    DETECT-MOTIF-AUTO
+    ;; cycle 29: lifecycle inspection (not auto-mutating world)
+    LAW-MOMENTUM))
 
 (define (inspection-op? name)
   (and (memq name INSPECTION-OPS) #t))
@@ -301,6 +330,46 @@
      (unbox (energy-search-of e))
      (- (unbox (energy-reuse-gain-of e)))))
 
+;; ============================================================
+;; Cycle 29: law metabolism — accessors and counter mutators.
+;; ============================================================
+
+(define MOMENTUM-NEGATIVE-THRESHOLD 2)
+(define MOMENTUM-STALE-TOLERANCE    1)
+(define MOMENTUM-HISTORY-WINDOW     3)
+
+(define (cand-recent-uses-of e)
+  (hash-ref (env-memory e) MEM_CAND_RECENT_USES (box '())))
+(define (cand-recent-reuse-of e)
+  (hash-ref (env-memory e) MEM_CAND_RECENT_REUSE (box '())))
+(define (cand-recent-fails-of e)
+  (hash-ref (env-memory e) MEM_CAND_RECENT_FAILS (box '())))
+(define (cand-momentum-history-of e)
+  (hash-ref (env-memory e) MEM_CAND_MOMENTUM_HISTORY (box '())))
+(define (cand-preserved-bodies-of e)
+  (hash-ref (env-memory e) MEM_CAND_PRESERVED_BODIES (box '())))
+(define (epoch-counter-of e)
+  (hash-ref (env-memory e) MEM_EPOCH_COUNTER (box 0)))
+
+;; Generic alist increment.
+(define (alist-bump! b key delta)
+  (define alist (unbox b))
+  (define existing (assq key alist))
+  (define cur (if existing (cdr existing) 0))
+  (define rest (if existing
+                   (filter (lambda (e) (not (eq? (car e) key))) alist)
+                   alist))
+  (set-box! b (cons (cons key (+ cur delta)) rest)))
+
+(define (bump-recent-uses! e cand-sym)
+  (alist-bump! (cand-recent-uses-of e) cand-sym 1))
+
+(define (bump-recent-reuse! e cand-sym delta)
+  (alist-bump! (cand-recent-reuse-of e) cand-sym delta))
+
+(define (bump-recent-fails! e cand-sym)
+  (alist-bump! (cand-recent-fails-of e) cand-sym 1))
+
 ;; Build a cand-dispatch-hook closure suitable for
 ;; current-cand-dispatch-hook parameter.  Per cycle 25E, the hook
 ;; also handles energy accounting:
@@ -313,17 +382,17 @@
     (cond
       [(cand-name? name)
        (bump-use-count! e name)
-       ;; cycle 26: track distinct sessions per cand
        (bump-cand-session! e name (session-id-of e))
        (define save (- (expansion-length-of e name) 1))
        (when (> save 0)
          (define rb (energy-reuse-gain-of e))
          (set-box! rb (+ (unbox rb) save)))
-       ;; Also count as semantic (the cand IS a semantic op).
        (define stb (energy-semantic-trace-of e))
-       (set-box! stb (+ (unbox stb) 1))]
+       (set-box! stb (+ (unbox stb) 1))
+       ;; cycle 29: bump per-epoch recent counters
+       (bump-recent-uses! e name)
+       (when (> save 0) (bump-recent-reuse! e name save))]
       [(inspection-op? name)
-       ;; do not bump E_semantic_trace
        (void)]
       [else
        (define stb (energy-semantic-trace-of e))

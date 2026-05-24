@@ -1,0 +1,98 @@
+\ examples/158-law-metabolism-decompose.6th
+\ Cycle 29C — happy: stable-active → stale → demotion-candidate
+\ → decomposed → restored.  Pre-reg: PREDICTIONS-158.md.
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 158 — law metabolism happy path (cycle 29) ===" . cr
+
+RESET
+
+\ ---- Discovery + COMMIT + PROMOTE-STABLE (reuse cycle 28 flow) ----
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+DETECT-MOTIF-AUTO "motif" store
+"motif" load SHADOW-CHECK drop
+"motif" load INDUCE-RUNTIME "c" store
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c" load COMMIT-PRIMITIVE drop
+"c" load HELD-OUT-EVAL drop
+"c" load PROMOTE-STABLE drop
+"c" load CAND-STATUS "status-initial" store
+
+\ ---- Phase 1: productive epoch (6 uses, L=3 → reuse=12, carry=3 → m=+9) ----
+\ Reset recent counters first via a no-op NEW-EPOCH (epoch 1 reset)
+cand_001 cand_001 cand_001 cand_001 cand_001 cand_001
+NEW-EPOCH
+"c" load CAND-STATUS "status-phase1" store
+"c" load LAW-MOMENTUM "m-phase1" store
+
+\ Reset by NEW-EPOCH; need fresh productive bump for momentum to register
+\ Actually NEW-EPOCH already computed momentum from accumulated counters.
+
+\ ---- Phase 2: idle epoch (0 uses → reuse=0, carry=3 → m=-3) ----
+NEW-EPOCH
+"c" load CAND-STATUS "status-phase2" store
+"c" load LAW-MOMENTUM "m-phase2" store
+
+\ ---- Phase 3: second idle epoch → demotion-candidate ----
+NEW-EPOCH
+"c" load CAND-STATUS "status-phase3" store
+
+\ ---- Phase 4: capture hashes, then DECOMPOSE ----
+HASH-WORLD "w-pre" store
+LAW-HASH   "l-pre" store
+"c" load DECOMPOSE-PRIMITIVE
+HASH-WORLD "w-post" store
+LAW-HASH   "l-post" store
+"c" load CAND-STATUS "status-decomposed" store
+
+\ ---- Phase 5: RESTORE ----
+"c" load RESTORE-PRIMITIVE
+LAW-HASH "l-restored" store
+"c" load CAND-STATUS "status-restored" store
+
+cr "Diagnostics:" . cr
+"  status initial      = " . "status-initial" load . cr
+"  status phase1       = " . "status-phase1" load . cr
+"  momentum phase1     = " . "m-phase1" load . cr
+"  status phase2       = " . "status-phase2" load . cr
+"  momentum phase2     = " . "m-phase2" load . cr
+"  status phase3       = " . "status-phase3" load . cr
+"  status decomposed   = " . "status-decomposed" load . cr
+"  status restored     = " . "status-restored" load . cr
+cr
+
+\ Pass conditions
+"status-initial"   load 'stable-active = "c-1?" store
+"status-phase1"    load 'stable-active = "c-2?" store
+"status-phase2"    load 'stale         = "c-3?" store
+"status-phase3"    load 'demotion-candidate = "c-4?" store
+"status-decomposed" load 'decomposed   = "c-5?" store
+"l-pre"  load "l-post"     load = "law-changed-decompose?" store
+"w-pre"  load "w-post"     load = "world-unchanged-decompose?" store
+"status-restored" load 'stable-active = "c-8?" store
+"l-pre"  load "l-restored" load = "law-restored?" store
+
+"c-1?" load 1 assert-eq
+"c-2?" load 1 assert-eq
+"c-3?" load 1 assert-eq
+"c-4?" load 1 assert-eq
+"c-5?" load 1 assert-eq
+"law-changed-decompose?"  load 0 assert-eq   \ law_hash mutated
+"world-unchanged-decompose?" load 1 assert-eq \ world_hash same
+"c-8?" load 1 assert-eq
+"law-restored?" load 1 assert-eq             \ law_hash back to pre-decompose
+
+cr "Law metabolism happy path: full lifecycle traversed." . cr
+REPORT

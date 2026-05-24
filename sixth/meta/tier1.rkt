@@ -727,6 +727,148 @@
   (push! e (distinct-session-count e c)))
 
 ;; ============================================================
+;; Cycle 29 — Law Metabolism
+;; ============================================================
+
+(define (set-status! e cand-sym new-status)
+  (define sb (cand-status-of e))
+  (set-box! sb (cons (cons cand-sym new-status)
+                      (filter (lambda (ent) (not (eq? (car ent) cand-sym)))
+                              (unbox sb)))))
+
+(define (get-status e cand-sym)
+  (define x (assq cand-sym (unbox (cand-status-of e))))
+  (if x (cdr x) 'unknown))
+
+(define (alist-lookup b key) (let ([x (assq key (unbox b))]) (if x (cdr x) 0)))
+
+(define (compute-momentum-for e cand-sym)
+  (define reuse (alist-lookup (cand-recent-reuse-of e) cand-sym))
+  (define fails (alist-lookup (cand-recent-fails-of e) cand-sym))
+  (define carry (expansion-length-of e cand-sym))
+  (- reuse carry fails))
+
+(define (prim-law-momentum e)
+  (define c (require-sym (pop! e) 'LAW-MOMENTUM))
+  (push! e (compute-momentum-for e c)))
+
+;; NEW-EPOCH: compute momentum for all active cands, push to history,
+;; transition statuses, reset recent counters.
+(define (prim-new-epoch e)
+  (define ec (epoch-counter-of e))
+  (set-box! ec (+ 1 (unbox ec)))
+  ;; Build list of cands currently in bodies that have statuses we care about
+  (for ([entry (in-list (unbox (cand-bodies-of e)))])
+    (define cand-sym (car entry))
+    (define st (get-status e cand-sym))
+    (when (memq st '(stable-active stale demotion-candidate))
+      (define m (compute-momentum-for e cand-sym))
+      (define hb (cand-momentum-history-of e))
+      (define cur-hist (or (let ([x (assq cand-sym (unbox hb))])
+                             (and x (cdr x))) '()))
+      (define new-hist
+        (let ([h (cons m cur-hist)])
+          (if (> (length h) MOMENTUM-HISTORY-WINDOW)
+              (take h MOMENTUM-HISTORY-WINDOW)
+              h)))
+      (set-box! hb (cons (cons cand-sym new-hist)
+                          (filter (lambda (ent) (not (eq? (car ent) cand-sym)))
+                                  (unbox hb))))
+      ;; Status transition
+      (cond
+        [(> m MOMENTUM-STALE-TOLERANCE)
+         (set-status! e cand-sym 'stable-active)]
+        [(<= (abs m) MOMENTUM-STALE-TOLERANCE)
+         (set-status! e cand-sym 'stale)]
+        [else
+         (define last-n (if (>= (length new-hist) MOMENTUM-NEGATIVE-THRESHOLD)
+                            (take new-hist MOMENTUM-NEGATIVE-THRESHOLD)
+                            new-hist))
+         (cond
+           [(and (= (length last-n) MOMENTUM-NEGATIVE-THRESHOLD)
+                 (andmap (lambda (mm) (< mm (- MOMENTUM-STALE-TOLERANCE))) last-n))
+            (set-status! e cand-sym 'demotion-candidate)]
+           [else
+            (set-status! e cand-sym 'stale)])])))
+  ;; Reset recent counters for next epoch
+  (set-box! (cand-recent-uses-of e) '())
+  (set-box! (cand-recent-reuse-of e) '())
+  (set-box! (cand-recent-fails-of e) '())
+  (record-ledger! e (list 'new-epoch (unbox ec))))
+
+(define (prim-mark-stale e)
+  (define c (require-sym (pop! e) 'MARK-STALE))
+  (set-status! e c 'stale)
+  (record-ledger! e (list 'mark-stale c)))
+
+(define (prim-demote-primitive e)
+  (define c (require-sym (pop! e) 'DEMOTE-PRIMITIVE))
+  (define st (get-status e c))
+  (cond
+    [(not (memq st '(stable-active stale)))
+     (raise (exn:fail:sixth
+             (format "~a — DEMOTE-PRIMITIVE: cannot demote ~a (status=~a)"
+                     (format-srcloc (current-prim-srcloc)) c st)
+             (current-continuation-marks) (current-prim-srcloc)))]
+    [else
+     (set-status! e c 'demotion-candidate)
+     (record-ledger! e (list 'demote-primitive c st))]))
+
+(define (prim-decompose-primitive e)
+  (define c (require-sym (pop! e) 'DECOMPOSE-PRIMITIVE))
+  (define st (get-status e c))
+  (cond
+    [(not (eq? st 'demotion-candidate))
+     (raise (exn:fail:sixth
+             (format "~a — DECOMPOSE-PRIMITIVE: cand ~a status=~a (require 'demotion-candidate)"
+                     (format-srcloc (current-prim-srcloc)) c st)
+             (current-continuation-marks) (current-prim-srcloc)))]
+    [else
+     ;; Preserve body for RESTORE before removing from dict
+     (define cb (cand-bodies-of e))
+     (define body-entry (assq c (unbox cb)))
+     (when body-entry
+       (define pb (cand-preserved-bodies-of e))
+       (set-box! pb (cons (cons c (cadr body-entry))
+                          (filter (lambda (ent) (not (eq? (car ent) c)))
+                                  (unbox pb)))))
+     ;; Remove from active dict (mutates law_hash)
+     (hash-remove! (env-words e) c)
+     ;; Remove from cand-bodies (so expansion-length-of returns 0)
+     (set-box! cb (filter (lambda (ent) (not (eq? (car ent) c))) (unbox cb)))
+     (set-status! e c 'decomposed)
+     (record-ledger! e (list 'decompose-primitive c (compute-law-hash e)))]))
+
+(define (prim-restore-primitive e)
+  (define c (require-sym (pop! e) 'RESTORE-PRIMITIVE))
+  (define st (get-status e c))
+  (cond
+    [(not (eq? st 'decomposed))
+     (raise (exn:fail:sixth
+             (format "~a — RESTORE-PRIMITIVE: cand ~a status=~a (require 'decomposed)"
+                     (format-srcloc (current-prim-srcloc)) c st)
+             (current-continuation-marks) (current-prim-srcloc)))]
+    [else
+     (define pb (cand-preserved-bodies-of e))
+     (define p-entry (assq c (unbox pb)))
+     (cond
+       [(not p-entry)
+        (raise (exn:fail:sixth
+                (format "~a — RESTORE-PRIMITIVE: no preserved body for ~a"
+                        (format-srcloc (current-prim-srcloc)) c)
+                (current-continuation-marks) (current-prim-srcloc)))]
+       [else
+        (define motif (cdr p-entry))
+        (define opcodes (build-motif-opcodes motif))
+        (define w (word c opcodes (current-prim-srcloc)))
+        ;; Restore body and dict entry
+        (define cb (cand-bodies-of e))
+        (set-box! cb (cons (list c motif) (unbox cb)))
+        (env-register-word! e c w)
+        (set-status! e c 'stable-active)
+        (record-ledger! e (list 'restore-primitive c (compute-law-hash e)))])]))
+
+;; ============================================================
 ;; HELD-OUT-EVAL (cycle 28B real impl, replaces cycle 25B stub)
 ;; ============================================================
 ;;
@@ -924,7 +1066,14 @@
         ;; cycle 27: automated discovery mining engine
         (cons 'DETECT-MOTIF-AUTO          prim-detect-motif-auto)
         ;; cycle 28: real held-out evaluation (replaces Tier 2 stub)
-        (cons 'HELD-OUT-EVAL              prim-held-out-eval-real)))
+        (cons 'HELD-OUT-EVAL              prim-held-out-eval-real)
+        ;; cycle 29: law metabolism
+        (cons 'NEW-EPOCH                  prim-new-epoch)
+        (cons 'LAW-MOMENTUM               prim-law-momentum)
+        (cons 'MARK-STALE                 prim-mark-stale)
+        (cons 'DEMOTE-PRIMITIVE           prim-demote-primitive)
+        (cons 'DECOMPOSE-PRIMITIVE        prim-decompose-primitive)
+        (cons 'RESTORE-PRIMITIVE          prim-restore-primitive)))
 
 (define (register-tier1! e)
   (for ([entry (in-list TIER1-TABLE)])
