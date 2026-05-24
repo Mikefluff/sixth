@@ -393,9 +393,18 @@
   ;; bodies registry first (so rollback can remove cleanly)
   (define bb (cand-bodies-of e))
   (set-box! bb (cons (list cand-sym motif) (unbox bb)))
-  ;; status registry: candidate becomes 'ephemeral-active
+  ;; status registry: branches on cycle 31 discovery profile.
+  ;; - conservative (default): status = 'ephemeral-active (cycle 25 flow,
+  ;;   pre-promotion pipeline; can be COMMIT'd then PROMOTE-STABLE'd)
+  ;; - liberal: status = 'experimental (sandbox track, callable but
+  ;;   filtered out of STABLE-LAW-HASH; cannot COMMIT or PROMOTE-STABLE;
+  ;;   can be PROMOTE-EXPERIMENTAL'd to 'sandbox-stable)
+  (define init-status
+    (case (discovery-profile-of e)
+      [(liberal)      'experimental]
+      [else           'ephemeral-active]))
   (define sb (cand-status-of e))
-  (set-box! sb (cons (cons cand-sym 'ephemeral-active) (unbox sb)))
+  (set-box! sb (cons (cons cand-sym init-status) (unbox sb)))
   ;; use counter initialised to 0
   (define ub (cand-use-counts-of e))
   (set-box! ub (cons (cons cand-sym 0) (unbox ub)))
@@ -533,6 +542,15 @@
      (raise (exn:fail:sixth
              (format "~a — COMMIT-PRIMITIVE: candidate ~a is contaminated; cannot commit"
                      (format-srcloc (current-prim-srcloc)) cand-sym)
+             (current-continuation-marks)
+             (current-prim-srcloc)))]
+    [(memq cand-status SANDBOX-STATUSES)
+     ;; Cycle 31: liberal-track cand cannot be committed.  Only
+     ;; conservative-INDUCEd cands (status 'ephemeral-active) are
+     ;; eligible for the COMMIT → PROMOTE-STABLE pipeline.
+     (raise (exn:fail:sixth
+             (format "~a — COMMIT-PRIMITIVE: candidate ~a is sandbox-track (status=~a); not eligible (rejected-not-conservative)"
+                     (format-srcloc (current-prim-srcloc)) cand-sym cand-status)
              (current-continuation-marks)
              (current-prim-srcloc)))]
     [(or (not cand-uses) (< cand-uses COUPLING-N))
@@ -744,10 +762,16 @@
 (define (alist-lookup b key) (let ([x (assq key (unbox b))]) (if x (cdr x) 0)))
 
 (define (compute-momentum-for e cand-sym)
+  ;; Cycle 31: every active primitive pays INFLATION-COST-PER-CAND=1
+  ;; per epoch on top of its expansion-length carry.  The +1 penalty
+  ;; never changes any cycle 29/30 demo transition (analytically
+  ;; verified in PREDICTIONS-163.md backward-compat contract) but
+  ;; prevents stable primitives from sitting forever without
+  ;; contributing.
   (define reuse (alist-lookup (cand-recent-reuse-of e) cand-sym))
   (define fails (alist-lookup (cand-recent-fails-of e) cand-sym))
   (define carry (expansion-length-of e cand-sym))
-  (- reuse carry fails))
+  (- reuse carry fails INFLATION-COST-PER-CAND))
 
 (define (prim-law-momentum e)
   (define c (require-sym (pop! e) 'LAW-MOMENTUM))
@@ -1081,6 +1105,67 @@
   (define result (try-dispatch-cand! e c))
   (push! e (if result 1 0)))
 
+;; ============================================================
+;; Cycle 31 — Discovery profiles + sandbox track + LAW-CARRY
+;; ============================================================
+
+(define (prim-set-discovery-profile e)
+  (define p (require-sym (pop! e) 'SET-DISCOVERY-PROFILE))
+  (cond
+    [(memq p '(conservative liberal))
+     (set-discovery-profile! e p)
+     (record-ledger! e (list 'set-discovery-profile p (session-id-of e)))]
+    [else
+     (raise (exn:fail:sixth
+             (format "~a — SET-DISCOVERY-PROFILE: profile must be 'conservative or 'liberal, got ~v"
+                     (format-srcloc (current-prim-srcloc)) p)
+             (current-continuation-marks) (current-prim-srcloc)))]))
+
+(define (prim-discovery-profile e)
+  (push! e (discovery-profile-of e)))
+
+(define (prim-profile-budget e)
+  (push! e
+         (case (discovery-profile-of e)
+           [(liberal)      PROFILE-BUDGET-LIBERAL]
+           [else           PROFILE-BUDGET-CONSERVATIVE])))
+
+(define (prim-profile-scope e)
+  (push! e
+         (case (discovery-profile-of e)
+           [(liberal)      'sandbox]
+           [else           'stable])))
+
+(define (prim-promote-experimental e)
+  (define c (require-sym (pop! e) 'PROMOTE-EXPERIMENTAL))
+  (define st (get-status e c))
+  (cond
+    [(not (eq? st 'experimental))
+     (raise (exn:fail:sixth
+             (format "~a — PROMOTE-EXPERIMENTAL: cand ~a status=~a (require 'experimental)"
+                     (format-srcloc (current-prim-srcloc)) c st)
+             (current-continuation-marks) (current-prim-srcloc)))]
+    [else
+     (set-status! e c 'sandbox-stable)
+     (record-ledger! e (list 'promote-experimental c
+                              (compute-law-hash e)
+                              (session-id-of e)))
+     (push! e c)]))
+
+(define (prim-stable-law-hash e)
+  (push! e (compute-stable-law-hash e)))
+
+(define (prim-sandbox-law-hash e)
+  (push! e (compute-sandbox-law-hash e)))
+
+(define (prim-law-carry e)
+  ;; Returns expansion_length of cand (which is the carry_cost
+  ;; component of momentum bookkeeping).  Inflation is not added
+  ;; here — LAW-CARRY is the structural cost, momentum reflects
+  ;; the full tax.
+  (define c (require-sym (pop! e) 'LAW-CARRY))
+  (push! e (expansion-length-of e c)))
+
 (define (prim-held-out-eval-real e)
   (define cand-sym (require-sym (pop! e) 'HELD-OUT-EVAL))
   (define exp-len (expansion-length-of e cand-sym))
@@ -1138,6 +1223,8 @@
              'rejected-rolled-back]
             [(regexp-match? #px"contaminated" msg)
              'rejected-contaminated]
+            [(regexp-match? #px"rejected-not-conservative" msg)
+             'rejected-not-conservative]
             [else 'rejected-other]))
         (record-ledger! e (list 'try-commit-rejected c kind))
         (push! e kind))])
@@ -1214,7 +1301,16 @@
         (cons 'AUTO-DECOMPOSE-SAFE?       prim-auto-decompose-safe?)
         (cons 'CAND-DEPENDENTS            prim-cand-dependents)
         (cons 'LAW-DEPENDS-ON?            prim-law-depends-on?)
-        (cons 'TRY-DISPATCH               prim-try-dispatch)))
+        (cons 'TRY-DISPATCH               prim-try-dispatch)
+        ;; cycle 31: discovery profiles + sandbox track + inflation forensics
+        (cons 'SET-DISCOVERY-PROFILE      prim-set-discovery-profile)
+        (cons 'DISCOVERY-PROFILE          prim-discovery-profile)
+        (cons 'PROFILE-BUDGET             prim-profile-budget)
+        (cons 'PROFILE-SCOPE              prim-profile-scope)
+        (cons 'PROMOTE-EXPERIMENTAL       prim-promote-experimental)
+        (cons 'STABLE-LAW-HASH            prim-stable-law-hash)
+        (cons 'SANDBOX-LAW-HASH           prim-sandbox-law-hash)
+        (cons 'LAW-CARRY                  prim-law-carry)))
 
 (define (register-tier1! e)
   (for ([entry (in-list TIER1-TABLE)])

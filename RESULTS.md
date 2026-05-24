@@ -2180,6 +2180,156 @@ Aggregate: 2142 / 2142 ✓ across 154 demos.
 
 ---
 
+## Cycle 31 — Discovery Profiles + Law Inflation (the triad)
+
+**Pre-registered:** PREDICTIONS-163.md (2026-05-23, commit 5fd043b).
+**Implemented:** 2026-05-23 (this section).
+
+Cycle 31 is the first cycle that changes the *class* of the system
+rather than deepening an existing mechanism.  Two interlocked layers:
+
+```
+conservative  = канон     (default profile; current stable path)
+liberal       = лаборатория (sandbox track; cannot mutate STABLE-LAW-HASH)
+inflation     = давление времени (every active cand pays 1/epoch on top of carry)
+```
+
+### Primary invariants enforced
+
+**Profile integrity (THE corruption-attempt invariant):**
+
+> Under `'liberal` profile, no sequence of cycle 31 primitives can
+> mutate `STABLE-LAW-HASH`.  Liberal-INDUCEd cands live on the
+> sandbox track (`'experimental` → `'sandbox-stable`), are callable
+> through `env-words`, but are filtered out of the stable hash view.
+> `COMMIT-PRIMITIVE` rejects sandbox cands with
+> `'rejected-not-conservative`; `PROMOTE-STABLE` rejects them with
+> `'rejected-sandbox-cand`.  No bridge sandbox → stable: to go
+> stable, the user must switch profile and re-INDUCE (new cand_NNN).
+
+**Non-immortality (inflation as carrying tax):**
+
+> `compute-momentum-for(cand) := reuse − carry − fails − 1`
+>
+> where the trailing `−1` is `INFLATION_COST_PER_CAND` (hardcoded,
+> no tuning knob).  Applies to all cands in `ACTIVE-METAB-STATUSES`
+> (now including `'sandbox-stable`).  No primitive can sit forever
+> without contributing — once it stops being used, inflation
+> drags it through `'stale → 'demotion-candidate →` (cycle 30
+> gate) auto-decompose or `'dependency-held`.
+
+### Backward-compatibility contract (verified)
+
+Demo 158 phase 1 momentum diagnostic: cycle 30 was `+9`, cycle 31 is
+`+8` (m=12-3-0-1).  All status transitions in cycle 29/30 demos
+remain identical — the +1 penalty shifts magnitudes but does not
+cross any threshold.  The pre-reg's analytical table proved this
+demo-by-demo; the regression confirmed it (2142 / 2142 ✓ after
+cycle 31B/C land, before any new demo is added).
+
+### New Tier 1 primitives (8)
+
+- `SET-DISCOVERY-PROFILE ( sym -- )` — switch mode
+- `DISCOVERY-PROFILE ( -- sym )` — inspection
+- `PROFILE-BUDGET ( -- n )` — illustrative search-budget value
+  (100 conservative / 1000 liberal; inspection only; budget
+  enforcement deferred to cycle 32+)
+- `PROFILE-SCOPE ( -- sym )` — `'stable` or `'sandbox`
+- `PROMOTE-EXPERIMENTAL ( cand -- )` — `'experimental` →
+  `'sandbox-stable`; only transition within sandbox track
+- `STABLE-LAW-HASH ( -- n )` — filtered hash excluding sandbox cands
+- `SANDBOX-LAW-HASH ( -- n )` — filtered hash of sandbox cands only
+- `LAW-CARRY ( cand -- n )` — expansion_length inspection
+
+### New statuses (2)
+
+- `'experimental` — liberal-INDUCE result; callable; NOT in
+  `ACTIVE-METAB-STATUSES` (no inflation tax yet, pre-promotion)
+- `'sandbox-stable` — `PROMOTE-EXPERIMENTAL` result; metabolism
+  participant (pays inflation, can auto-decompose); never in
+  `STABLE-LAW-HASH`
+
+### Demo 163 — liberal cannot corrupt STABLE-LAW-HASH (9 asserts)
+
+THE main demo of cycle 31.  Five separate `STABLE-LAW-HASH`
+snapshots through: pre-liberal, post-liberal-INDUCE, post-rejected-
+COMMIT, post-PROMOTE-EXPERIMENTAL, post-rejected-PROMOTE-STABLE.
+All five identical.  Every corruption pathway probed and rejected
+with the documented rejection symbol.
+
+### Demo 164 — inflation: no free immortality (7 asserts)
+
+Promoted cand_001 with L=2 sees m = -3 after one NEW-EPOCH idle
+(was -2 pre-cycle-31; the +1 difference IS the inflation tax
+fingerprint).  Two idle epochs trigger cycle 30 auto-decompose.
+
+### Demo 165 — load-bearing survives inflation (5 asserts)
+
+Two-cand setup (same as demo 161): cand_001=(NODES drop),
+cand_002=(cand_001 MARK drop).  cand_002 momentum +4 under
+inflation (was +5 pre-31) — still above STALE_TOL, stays
+stable-active.  cand_001 hits demotion-candidate; Pass C routes
+it to `'dependency-held` because cand_002 is positive.  When
+cand_002 fades, cand_001 auto-decomposes.  Inflation accelerated
+the descent; cycle 30 gate caught it.
+
+### Demo 166 — sandbox rolled back, stable untouched (7 asserts)
+
+Conservative cand_001 promoted; switch to liberal; INDUCE cand_002;
+ROLLBACK-RUNTIME cand_002; switch back to conservative; assert
+`STABLE-LAW-HASH` bit-for-bit identical across the entire episode
+(three snapshots: pre-liberal, post-INDUCE, post-ROLLBACK).
+
+### What cycle 31 demonstrates
+
+- The system has a canon (conservative-track stable cands) and a
+  lab (liberal-track sandbox cands), structurally separated at
+  the hash level.
+- A sandbox cand can never *graduate* — it must be re-discovered
+  under conservative as a new cand_NNN.  This is the
+  «гипотеза может родиться где угодно, но публикабельный
+  результат должен пройти строгий протокол» invariant.
+- Every active primitive starts each epoch in debt.  Stability is
+  earned per epoch, not awarded once.
+- Cycle 30 protection still works under inflation — load-bearing
+  primitives are not killed by tax alone.
+
+### What cycle 31 does NOT claim
+
+- Liberal discovery FINDS better motifs — only that liberal
+  cannot CORRUPT stable.
+- Inflation rate = 1 is "right" — it's the minimal uniform
+  pressure that breaks immortal-primitive dogma.
+- Search-budget enforcement (PROFILE-BUDGET is inspection-only;
+  no gate uses it in cycle 31).
+- Drawdown tolerance for liberal cands.
+- Biological / ecological realism.
+
+### Catalogue (post-cycle-31)
+
+> Cycle 25: закон можно менять.
+> Cycle 26: закон можно закреплять по цене.
+> Cycle 27: кандидат можно находить автоматически.
+> Cycle 28: стабильность только через held-out.
+> Cycle 29: жив только пока платит carrying cost.
+> Cycle 30: переживёт отрицательный momentum только если на нём
+>           держится живая зависимая структура.
+> **Cycle 31: у law-state теперь два режима поиска и собственная
+>            инфляция: либеральный режим может фантазировать в
+>            sandbox, но не имеет права переписать канон, а
+>            консервативный канон не имеет права на бессмертие.**
+
+Stable primitive is now formally defined as: runtime-induced law
+candidate that — having been INDUCEd under `'conservative` profile —
+survived equivalence, reuse, multi-session coupling, negative energy
+delta, held-out generalization, AND continues to pay positive net
+momentum over its lifecycle window (under the +1 inflation tax) OR
+is structurally load-bearing for an active dependent that does.
+
+Aggregate: 2170 / 2170 ✓ across 158 demos.
+
+---
+
 ## Pending / future tracks
 
 | Track | Description | ETA |

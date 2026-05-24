@@ -1,0 +1,104 @@
+\ examples/165-load-bearing-survives-inflation.6th
+\ Cycle 31C — connector demo: inflation tax + cycle 30 dependency
+\ protection interact correctly.  A load-bearing primitive whose
+\ local momentum goes negative under inflation is STILL protected
+\ as 'dependency-held while its active dependent earns positive
+\ momentum.  Inflation accelerates the descent — it does NOT
+\ override the structural safety gate.
+\ Pre-reg: PREDICTIONS-163.md (commit 5fd043b).
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 165 — load-bearing survives inflation (cycle 31) ===" . cr
+
+RESET
+
+\ ---- Same two-cand setup as demo 161: cand_001=(NODES drop) L=2,
+\      cand_002=(cand_001 MARK drop) L=3.
+NODES drop NODES drop NODES drop NODES drop
+DETECT-MOTIF-AUTO "m1" store
+"m1" load SHADOW-CHECK drop
+"m1" load INDUCE-RUNTIME "c1" store
+
+cand_001 MARK drop cand_001 MARK drop cand_001 MARK drop cand_001 MARK drop
+DETECT-MOTIF-AUTO "m2" store
+"m2" load SHADOW-CHECK drop
+"m2" load INDUCE-RUNTIME "c2" store
+
+cand_001 NEW-SESSION cand_001 NEW-SESSION cand_001
+"c1" load COMMIT-PRIMITIVE drop
+"c1" load HELD-OUT-EVAL drop
+"c1" load PROMOTE-STABLE drop
+
+cand_002 cand_002 cand_002 cand_002 cand_002
+NEW-SESSION cand_002 NEW-SESSION cand_002
+"c2" load COMMIT-PRIMITIVE drop
+"c2" load HELD-OUT-EVAL drop
+"c2" load PROMOTE-STABLE drop
+
+"c1" load CAND-STATUS "c1-init" store
+"c2" load CAND-STATUS "c2-init" store
+
+\ ---- Baseline reset.
+NEW-EPOCH
+
+\ ---- Phase 1: drive cand_002 productively.
+\      With inflation: cand_002 m = 4*2 - 3 - 0 - 1 = +4 (was +5 pre-cycle-31).
+\      cand_001 m = 0 - 2 - 0 - 1 = -3 (was -2).
+\      cand_002 still above STALE_TOLERANCE → stable.
+\      cand_001 → 'stale (1 negative epoch, hist length 1).
+cand_002 cand_002 cand_002 cand_002
+NEW-EPOCH
+"c1" load CAND-STATUS "c1-p1" store
+"c2" load CAND-STATUS "c2-p1" store
+"c2" load LAW-MOMENTUM "c2-m-p1" store
+
+\ ---- Phase 2: same workload.  cand_001 hits 2 consecutive negatives
+\      → Pass B sets 'demotion-candidate; Pass C sees positive dependent
+\      cand_002 → 'dependency-held.  This is THE invariant: inflation
+\      did NOT bypass the structural protection gate.
+cand_002 cand_002 cand_002 cand_002
+NEW-EPOCH
+"c1" load CAND-STATUS "c1-p2" store
+"c2" load CAND-STATUS "c2-p2" store
+"c2" load LAW-MOMENTUM "c2-m-p2" store
+
+\ ---- Phase 3: stop using cand_002.  Both momenta go negative.
+\      cand_002 m=-4 → stale.  cand_001 has no positive dep →
+\      AUTO-DECOMPOSE fires.  Inflation accelerates by 1, but the
+\      auto-decompose trigger is still cycle 30's structural gate.
+NEW-EPOCH
+"c1" load CAND-STATUS "c1-p3" store
+"c2" load CAND-STATUS "c2-p3" store
+
+cr "Diagnostics:" . cr
+"  c1 initial      = " . "c1-init" load . cr
+"  c2 initial      = " . "c2-init" load . cr
+"  c1 after p1     = " . "c1-p1"   load . cr
+"  c2 after p1     = " . "c2-p1"   load . cr
+"  c2 m after p1   = " . "c2-m-p1" load . cr
+"  c1 after p2     = " . "c1-p2"   load . cr
+"  c2 after p2     = " . "c2-p2"   load . cr
+"  c2 m after p2   = " . "c2-m-p2" load . cr
+"  c1 after p3     = " . "c1-p3"   load . cr
+"  c2 after p3     = " . "c2-p3"   load . cr
+cr
+
+\ Pass conditions
+"c1-init"  load 'stable-active     = "lb-1a?" store
+"c2-init"  load 'stable-active     = "lb-1b?" store
+"c1-p2"    load 'dependency-held   = "lb-2?"  store
+"c2-p2"    load 'stable-active     = "lb-3?"  store
+"c1-p3"    load 'decomposed        = "lb-4?"  store
+
+"lb-1a?" load 1 assert-eq            \ both promoted
+"lb-1b?" load 1 assert-eq
+"lb-2?"  load 1 assert-eq            \ c1 → 'dependency-held under inflation pressure
+"lb-3?"  load 1 assert-eq            \ c2 still stable-active (positive m despite inflation tax)
+"lb-4?"  load 1 assert-eq            \ once dep fades, c1 auto-decomposes (cycle 30 still works)
+
+cr "Inflation pressured; dependency protection held; cleanup proceeded." . cr
+REPORT

@@ -76,6 +76,16 @@
          ;; cycle 30 lifecycle exports
          ACTIVE-METAB-STATUSES
          cand-decompose-snapshot-of
+         ;; cycle 31 exports — discovery profiles + law inflation
+         INFLATION-COST-PER-CAND
+         PROFILE-BUDGET-CONSERVATIVE
+         PROFILE-BUDGET-LIBERAL
+         SANDBOX-STATUSES
+         STABLE-WORD-STATUSES
+         discovery-profile-of
+         set-discovery-profile!
+         compute-stable-law-hash
+         compute-sandbox-law-hash
          ;; Re-export the VM trace parameter so meta primitives can
          ;; toggle trace on / off without further requires.
          current-engine-trace
@@ -127,6 +137,8 @@
 (define MEM_EPOCH_COUNTER         '_epoch-counter)            ; box int
 ;; cycle 30: dependency-aware AUTO-DECOMPOSE
 (define MEM_CAND_DECOMPOSE_SNAPSHOT '_cand-decompose-snapshot) ; alist (cand-sym . list-of-dependents-at-decompose-time)
+;; cycle 31: discovery profile (default 'conservative)
+(define MEM_DISCOVERY_PROFILE       '_discovery-profile)       ; box of 'conservative | 'liberal
 
 ;; Forbidden symbols inside a candidate motif (per docs/mining_protocol.md §4).
 ;; A candidate cannot invoke meta-primitives (would allow self-modifying-meta)
@@ -183,6 +195,8 @@
   (hash-set! mem MEM_EPOCH_COUNTER         (box 0))
   ;; cycle 30: AUTO-DECOMPOSE dependency snapshot
   (hash-set! mem MEM_CAND_DECOMPOSE_SNAPSHOT (box '()))
+  ;; cycle 31: default discovery profile
+  (hash-set! mem MEM_DISCOVERY_PROFILE (box 'conservative))
   (void))
 
 ;; Allow tests / NEW-SESSION primitive to update session_id deterministically.
@@ -302,7 +316,10 @@
     ;; cycle 29: lifecycle inspection (not auto-mutating world)
     LAW-MOMENTUM
     ;; cycle 30: dependency-aware decompose inspections
-    AUTO-DECOMPOSE-SAFE? CAND-DEPENDENTS LAW-DEPENDS-ON?))
+    AUTO-DECOMPOSE-SAFE? CAND-DEPENDENTS LAW-DEPENDS-ON?
+    ;; cycle 31: profile + sandbox-hash inspections
+    DISCOVERY-PROFILE PROFILE-BUDGET PROFILE-SCOPE
+    STABLE-LAW-HASH SANDBOX-LAW-HASH LAW-CARRY))
 
 (define (inspection-op? name)
   (and (memq name INSPECTION-OPS) #t))
@@ -347,12 +364,37 @@
 (define MOMENTUM-STALE-TOLERANCE    1)
 (define MOMENTUM-HISTORY-WINDOW     3)
 
-;; cycle 30: statuses that participate in epoch-driven metabolism
-;; (NEW-EPOCH iterates over cands in these statuses).  'dependency-held
-;; is the cycle 30 addition — a cand whose local momentum is negative
-;; but which is structurally load-bearing for an active dependent.
+;; cycle 30: statuses that participate in epoch-driven metabolism.
+;; cycle 31 extension: 'sandbox-stable also pays inflation and is subject
+;; to auto-decompose, but is filtered out of STABLE-LAW-HASH.
 (define ACTIVE-METAB-STATUSES
-  '(stable-active stale demotion-candidate dependency-held))
+  '(stable-active stale demotion-candidate dependency-held sandbox-stable))
+
+;; cycle 31: statuses that are part of the SANDBOX (liberal) track —
+;; never enter STABLE-LAW-HASH, regardless of subsequent transitions.
+;; A cand can never cross from sandbox track to stable track within
+;; one INDUCE lifecycle; to go stable the user must re-INDUCE under
+;; conservative (producing a new cand_NNN).
+(define SANDBOX-STATUSES
+  '(experimental sandbox-stable))
+
+;; cycle 31: statuses that contribute to STABLE-LAW-HASH.  A cand
+;; with status in this set is part of the stable law-state.  Other
+;; statuses (sandbox track, rolled-back, decomposed, etc.) are
+;; filtered out when computing STABLE-LAW-HASH.
+(define STABLE-WORD-STATUSES
+  '(ephemeral-active committed stable-active stale
+    demotion-candidate dependency-held))
+
+;; cycle 31: per-cand per-epoch inflation cost on top of carry.
+;; Hardcoded.  No tuning knob.  Modifications require deprecation cycle.
+(define INFLATION-COST-PER-CAND 1)
+
+;; cycle 31: illustrative search-budget values per profile.  Inspection
+;; only in cycle 31 — no gate enforces them.  Budget enforcement is
+;; DEFERRED to cycle 32+.
+(define PROFILE-BUDGET-CONSERVATIVE 100)
+(define PROFILE-BUDGET-LIBERAL      1000)
 
 (define (cand-recent-uses-of e)
   (hash-ref (env-memory e) MEM_CAND_RECENT_USES (box '())))
@@ -369,6 +411,14 @@
 ;; cycle 30 accessor
 (define (cand-decompose-snapshot-of e)
   (hash-ref (env-memory e) MEM_CAND_DECOMPOSE_SNAPSHOT (box '())))
+
+;; cycle 31 accessor + mutator for discovery profile
+(define (discovery-profile-of e)
+  (unbox (hash-ref (env-memory e) MEM_DISCOVERY_PROFILE (box 'conservative))))
+
+(define (set-discovery-profile! e new-profile)
+  (define b (hash-ref (env-memory e) MEM_DISCOVERY_PROFILE (box 'conservative)))
+  (set-box! b new-profile))
 
 ;; Generic alist increment.
 (define (alist-bump! b key delta)
@@ -458,6 +508,70 @@
   ;; (Racket's hash function does not use per-process salt for
   ;; equal-hash-code on lists/strings/symbols).
   (define names (sort (hash-keys (env-words e)) symbol<?))
+  (define pairs
+    (for/list ([n (in-list names)])
+      (cons n (canonical-word-fingerprint (hash-ref (env-words e) n)))))
+  (equal-hash-code pairs))
+
+;; ============================================================
+;; Cycle 31 — STABLE vs SANDBOX filtered law-hash views.
+;; ============================================================
+;;
+;; STABLE-LAW-HASH excludes cand_NNN words whose status is in
+;; SANDBOX-STATUSES.  Non-cand words always contribute (they are
+;; user-defined dictionary entries from `: ... ;` etc.).
+;;
+;; SANDBOX-LAW-HASH includes only cand_NNN words whose status is in
+;; SANDBOX-STATUSES.  Non-cand words are NOT in sandbox view.
+;;
+;; INVARIANT: the union of contributing word-sets equals env-words.
+;; A cand is in exactly one view (depending on its status); non-cand
+;; words are only in the stable view.
+;;
+;; STABLE-LAW-HASH on a fresh process equals compute-law-hash because
+;; no cands exist yet.  Once liberal-INDUCE creates an 'experimental
+;; cand, compute-law-hash and STABLE-LAW-HASH diverge.
+
+(define (cand-current-status e cand-sym)
+  ;; Helper: look up status without exporting from tier1.rkt (avoids
+  ;; cyclic module dependency).  Returns 'unknown if not in alist.
+  (define alist (unbox (cand-status-of e)))
+  (define hit (assq cand-sym alist))
+  (if hit (cdr hit) 'unknown))
+
+(define (in-stable-view? e name)
+  (cond
+    [(not (cand-name? name)) #t]  ; non-cand words always in stable view
+    [else
+     (define st (cand-current-status e name))
+     (and (memq st STABLE-WORD-STATUSES) #t)]))
+
+(define (in-sandbox-view? e name)
+  (cond
+    [(not (cand-name? name)) #f]  ; only cands can be in sandbox
+    [else
+     (define st (cand-current-status e name))
+     (and (memq st SANDBOX-STATUSES) #t)]))
+
+(define (compute-stable-law-hash e)
+  (define names
+    (sort
+     (for/list ([n (in-list (hash-keys (env-words e)))]
+                #:when (in-stable-view? e n))
+       n)
+     symbol<?))
+  (define pairs
+    (for/list ([n (in-list names)])
+      (cons n (canonical-word-fingerprint (hash-ref (env-words e) n)))))
+  (equal-hash-code pairs))
+
+(define (compute-sandbox-law-hash e)
+  (define names
+    (sort
+     (for/list ([n (in-list (hash-keys (env-words e)))]
+                #:when (in-sandbox-view? e n))
+       n)
+     symbol<?))
   (define pairs
     (for/list ([n (in-list names)])
       (cons n (canonical-word-fingerprint (hash-ref (env-words e) n)))))

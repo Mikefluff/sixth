@@ -1,0 +1,82 @@
+\ examples/166-sandbox-rollback-untouched.6th
+\ Cycle 31D — sandbox isolation under rollback.  A liberal-mode
+\ experimental cand can be ROLLBACK-RUNTIME'd freely; the stable
+\ track remains bit-for-bit untouched.
+\ Pre-reg: PREDICTIONS-163.md (commit 5fd043b).
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 166 — sandbox cand rolled back, stable untouched (cycle 31) ===" . cr
+
+RESET
+
+\ ---- Phase 0: conservative-profile baseline.  Promote cand_001
+\      normally so STABLE-LAW-HASH has content.
+MARK drop MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "m1" store
+"m1" load SHADOW-CHECK drop
+"m1" load INDUCE-RUNTIME "c1" store
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c1" load COMMIT-PRIMITIVE drop
+"c1" load HELD-OUT-EVAL drop
+"c1" load PROMOTE-STABLE drop
+"c1" load CAND-STATUS "c1-init" store
+
+\ Snapshot STABLE-LAW-HASH AFTER cand_001 is stable-active.
+STABLE-LAW-HASH "l-stable-pre" store
+
+\ ---- Phase 1: switch to liberal, induce experimental cand_002.
+'liberal SET-DISCOVERY-PROFILE
+
+\ Workload that produces a clean motif distinct from cand_001's body.
+NODES drop NODES drop NODES drop NODES drop
+DETECT-MOTIF-AUTO "m2" store
+"m2" load SHADOW-CHECK drop
+"m2" load INDUCE-RUNTIME "c2" store
+"c2" load CAND-STATUS "c2-after-induce" store
+
+STABLE-LAW-HASH "l-stable-after-liberal-induce" store
+
+\ ---- Phase 2: ROLLBACK-RUNTIME on experimental cand.
+"c2" load ROLLBACK-RUNTIME
+"c2" load CAND-STATUS "c2-after-rollback" store
+
+STABLE-LAW-HASH "l-stable-after-rollback" store
+
+\ ---- Phase 3: switch back to conservative; verify cand_001 still stable.
+'conservative SET-DISCOVERY-PROFILE
+"c1" load CAND-STATUS "c1-final" store
+
+STABLE-LAW-HASH "l-stable-final" store
+
+cr "Diagnostics:" . cr
+"  c1 initial            = " . "c1-init"                load . cr
+"  c2 after liberal INDUCE = " . "c2-after-induce"      load . cr
+"  c2 after rollback     = " . "c2-after-rollback"      load . cr
+"  c1 final              = " . "c1-final"               load . cr
+cr
+
+\ Pass conditions: STABLE-LAW-HASH unchanged across the whole episode.
+"c1-init"           load 'stable-active = "r-1?" store
+"c2-after-induce"   load 'experimental  = "r-2?" store
+"c2-after-rollback" load 'rolled-back   = "r-3?" store
+"c1-final"          load 'stable-active = "r-4?" store
+"l-stable-pre"      load "l-stable-after-liberal-induce" load = "r-5a?" store
+"l-stable-pre"      load "l-stable-after-rollback"       load = "r-5b?" store
+"l-stable-pre"      load "l-stable-final"                load = "r-5c?" store
+
+"r-1?"  load 1 assert-eq      \ cand_001 stable-promoted under conservative
+"r-2?"  load 1 assert-eq      \ liberal INDUCE produced 'experimental
+"r-3?"  load 1 assert-eq      \ ROLLBACK-RUNTIME on experimental works
+"r-4?"  load 1 assert-eq      \ cand_001 untouched through liberal episode
+"r-5a?" load 1 assert-eq      \ STABLE-LAW-HASH unchanged after liberal INDUCE
+"r-5b?" load 1 assert-eq      \ STABLE-LAW-HASH unchanged after sandbox rollback
+"r-5c?" load 1 assert-eq      \ STABLE-LAW-HASH unchanged after returning to conservative
+
+cr "Sandbox isolation under rollback: STABLE view bit-for-bit identical." . cr
+REPORT

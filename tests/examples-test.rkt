@@ -658,7 +658,32 @@
     ;;      to pre-decompose value AND re-wires cand_002 callability.
     ;;      Cycle 30 does NOT auto-promote the dependent; cand_002
     ;;      must earn momentum back through its own productive use.  6 asserts.
-    ("162-cascade-restore.6th"                    6)))
+    ("162-cascade-restore.6th"                    6)
+    ;; 163. Cycle 31A — THE corruption-attempt demo.  Liberal-mode
+    ;;      INDUCE produces 'experimental cand; COMMIT-PRIMITIVE
+    ;;      rejects with 'rejected-not-conservative; PROMOTE-STABLE
+    ;;      rejects with 'rejected-sandbox-cand; PROMOTE-EXPERIMENTAL
+    ;;      transitions to 'sandbox-stable.  STABLE-LAW-HASH unchanged
+    ;;      throughout the entire liberal episode.  9 asserts.
+    ("163-liberal-stable-corruption-attempt.6th"  9)
+    ;; 164. Cycle 31B — inflation forces ongoing payment.  A promoted
+    ;;      primitive with no recent use sees m=-3 (L=2 + inflation=1)
+    ;;      after one NEW-EPOCH and descends through 'stale →
+    ;;      auto-decompose in two consecutive idle epochs.  The
+    ;;      cycle 31 fingerprint is the exact m=-3 vs the cycle 30
+    ;;      m=-2 for the same primitive.  7 asserts.
+    ("164-inflation-no-free-immortality.6th"      7)
+    ;; 165. Cycle 31C — connector: inflation + cycle 30 protection.
+    ;;      Load-bearing cand_001 hits demotion-candidate faster
+    ;;      under inflation, but Pass C still routes it to
+    ;;      'dependency-held while cand_002 has positive momentum.
+    ;;      Once cand_002 fades, auto-decompose fires.  5 asserts.
+    ("165-load-bearing-survives-inflation.6th"    5)
+    ;; 166. Cycle 31D — sandbox isolation under rollback.  Conservative
+    ;;      cand_001 promoted; liberal cand_002 induced + rolled back.
+    ;;      STABLE-LAW-HASH bit-for-bit identical across the entire
+    ;;      liberal episode.  7 asserts.
+    ("166-sandbox-rollback-untouched.6th"         7)))
 
 (define (run-demo file)
   (define out
@@ -683,8 +708,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 2142
-                (format "cumulative ✓ count: ~a (expected 2142)" total-pass)))
+  (check-equal? total-pass 2170
+                (format "cumulative ✓ count: ~a (expected 2170)" total-pass)))
 
-(displayln (format "examples regression: ~a / 2142 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 2170 ✓ across ~a demos"
                    total-pass (length expected)))

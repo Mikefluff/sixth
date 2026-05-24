@@ -1,0 +1,101 @@
+\ examples/163-liberal-stable-corruption-attempt.6th
+\ Cycle 31A — THE main demo: liberal-mode discovery cannot corrupt
+\ STABLE-LAW-HASH.  COMMIT-PRIMITIVE and PROMOTE-STABLE both reject
+\ sandbox-track cands.  PROMOTE-EXPERIMENTAL works but produces
+\ 'sandbox-stable, which still does not cross into the stable view.
+\ Pre-reg: PREDICTIONS-163.md (commit 5fd043b).
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 163 — liberal cannot corrupt STABLE-LAW-HASH (cycle 31) ===" . cr
+
+RESET
+
+\ ---- Phase 0: confirm default profile is 'conservative.
+DISCOVERY-PROFILE "profile-init" store
+
+\ Snapshot baseline STABLE-LAW-HASH before any liberal activity.
+STABLE-LAW-HASH "l-stable-baseline" store
+SANDBOX-LAW-HASH "l-sandbox-baseline" store
+
+\ ---- Phase 1: switch to liberal mode.
+'liberal SET-DISCOVERY-PROFILE
+DISCOVERY-PROFILE "profile-liberal" store
+PROFILE-SCOPE "scope-liberal" store
+
+\ ---- Phase 2: discover + INDUCE under liberal.
+\      Motif (MARK drop) — any clean motif works for the test.
+MARK drop MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "motif" store
+"motif" load SHADOW-CHECK drop
+"motif" load INDUCE-RUNTIME "c" store
+"c" load CAND-STATUS "status-after-induce" store
+
+\ ---- Phase 3: STABLE-LAW-HASH must still be unchanged
+\      (the cand exists in env-words but is filtered out by status).
+STABLE-LAW-HASH "l-stable-after-induce" store
+SANDBOX-LAW-HASH "l-sandbox-after-induce" store
+
+\ ---- Phase 4: corruption attempt #1 — COMMIT-PRIMITIVE.
+\      Must reject with 'rejected-not-conservative.
+\      First need uses for coupling rule so we hit the *profile* gate,
+\      not the coupling gate.  Drive cand and sessions enough.
+cand_001 cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c" load TRY-COMMIT "commit-result" store
+
+\ STABLE-LAW-HASH still unchanged after the rejected commit attempt.
+STABLE-LAW-HASH "l-stable-after-commit" store
+
+\ ---- Phase 5: PROMOTE-EXPERIMENTAL transitions sandbox track.
+"c" load PROMOTE-EXPERIMENTAL drop
+"c" load CAND-STATUS "status-after-prom-exp" store
+
+\ ---- Phase 6: corruption attempt #2 — PROMOTE-STABLE on 'sandbox-stable.
+\      PROMOTE-STABLE returns a rejection symbol (does not raise),
+\      so we read it directly.
+"c" load PROMOTE-STABLE "promote-stable-result" store
+
+\ ---- Phase 7: final STABLE-LAW-HASH check.
+\      Through INDUCE + TRY-COMMIT + PROMOTE-EXPERIMENTAL + PROMOTE-STABLE,
+\      not a single mutation may have leaked into the stable view.
+STABLE-LAW-HASH "l-stable-final" store
+SANDBOX-LAW-HASH "l-sandbox-final" store
+
+cr "Diagnostics:" . cr
+"  profile (initial)        = " . "profile-init"             load . cr
+"  profile (after switch)   = " . "profile-liberal"          load . cr
+"  scope                    = " . "scope-liberal"            load . cr
+"  status after INDUCE      = " . "status-after-induce"      load . cr
+"  TRY-COMMIT result        = " . "commit-result"            load . cr
+"  status after PROMOTE-EXP = " . "status-after-prom-exp"    load . cr
+"  PROMOTE-STABLE result    = " . "promote-stable-result"    load . cr
+cr
+
+\ Pass conditions
+"profile-init"           load 'conservative           = "p-1?" store
+"status-after-induce"    load 'experimental           = "p-2?" store
+"commit-result"          load 'rejected-not-conservative = "p-3?" store
+"status-after-prom-exp"  load 'sandbox-stable         = "p-4?" store
+"promote-stable-result"  load 'rejected-sandbox-cand  = "p-5?" store
+"l-stable-baseline"      load "l-stable-after-induce" load = "p-6a?" store
+"l-stable-baseline"      load "l-stable-after-commit" load = "p-6b?" store
+"l-stable-baseline"      load "l-stable-final"        load = "p-6c?" store
+"l-sandbox-baseline"     load "l-sandbox-final"       load = "p-7?" store
+
+"p-1?"  load 1 assert-eq             \ default = 'conservative
+"p-2?"  load 1 assert-eq             \ liberal INDUCE → 'experimental
+"p-3?"  load 1 assert-eq             \ COMMIT-PRIMITIVE rejects with 'rejected-not-conservative
+"p-4?"  load 1 assert-eq             \ PROMOTE-EXPERIMENTAL → 'sandbox-stable
+"p-5?"  load 1 assert-eq             \ PROMOTE-STABLE rejects with 'rejected-sandbox-cand
+"p-6a?" load 1 assert-eq             \ STABLE-LAW-HASH unchanged after liberal INDUCE
+"p-6b?" load 1 assert-eq             \ STABLE-LAW-HASH unchanged after rejected commit
+"p-6c?" load 1 assert-eq             \ STABLE-LAW-HASH unchanged through entire episode
+"p-7?"  load 0 assert-eq             \ SANDBOX-LAW-HASH DID change (it tracks sandbox)
+
+cr "Integrity invariant held: STABLE-LAW-HASH did not flinch." . cr
+REPORT

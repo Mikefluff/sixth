@@ -132,6 +132,14 @@
     [(eq? cs 'ephemeral-active)
      (stub-event! e 'promote-stable-rejected (list c 'no-commit))
      (push! e 'rejected-no-commit)]
+    [(memq cs SANDBOX-STATUSES)
+     ;; Cycle 31: sandbox-track cands (status 'experimental or
+     ;; 'sandbox-stable, induced under liberal profile) cannot enter
+     ;; the stable law-state.  To go stable the user must switch to
+     ;; conservative profile and re-INDUCE (producing a new cand_NNN).
+     ;; No bridge sandbox → stable.
+     (stub-event! e 'promote-stable-rejected (list c 'sandbox-cand cs))
+     (push! e 'rejected-sandbox-cand)]
     [(not (eq? cs 'committed))
      (stub-event! e 'promote-stable-rejected (list c 'unknown-status))
      (push! e 'rejected-unknown-status)]

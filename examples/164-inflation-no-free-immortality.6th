@@ -1,0 +1,82 @@
+\ examples/164-inflation-no-free-immortality.6th
+\ Cycle 31B — inflation forces every active primitive to keep
+\ contributing.  A stable primitive that stops being used drifts
+\ negative one cycle faster (penalty -1 per epoch) and descends
+\ through 'stale → 'demotion-candidate → auto-decompose.
+\ Pre-reg: PREDICTIONS-163.md (commit 5fd043b).
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 164 — inflation: no free immortality (cycle 31) ===" . cr
+
+RESET
+
+\ ---- Conservative profile (default).  Promote cand_001 = (MARK drop), L=2.
+MARK drop MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "motif" store
+"motif" load SHADOW-CHECK drop
+"motif" load INDUCE-RUNTIME "c" store
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c" load COMMIT-PRIMITIVE drop
+"c" load HELD-OUT-EVAL drop
+"c" load PROMOTE-STABLE drop
+
+"c" load CAND-STATUS "status-init"  store
+"c" load LAW-CARRY   "carry-init"   store
+
+\ ---- Probe: with 0 uses since reset, momentum already negative
+\      from inflation alone.  m = 0 - 2 - 0 - 1 = -3.  Without
+\      inflation it would be -2.  The exact -3 is the cycle 31 fingerprint.
+NEW-EPOCH
+"c" load LAW-MOMENTUM "m-after-baseline-reset" store
+
+\ ---- Phase 1: one idle NEW-EPOCH.
+\      Pass A pushes m=-3; Pass B sets status='stale (1 negative epoch,
+\      history length 1 < N=2).
+NEW-EPOCH
+"c" load CAND-STATUS "status-p1" store
+
+\ ---- Phase 2: second idle NEW-EPOCH.
+\      history=[-3,-3]; Pass B → 'demotion-candidate; Pass C with no
+\      dependents → AUTO-DECOMPOSE.  Cycle 30 gate mechanics intact;
+\      inflation is the driver that prevented this primitive from
+\      sitting forever on past glory.
+LAW-HASH "l-pre-auto" store
+NEW-EPOCH
+LAW-HASH "l-post-auto" store
+"c" load CAND-STATUS "status-p2"            store
+"c" load LAW-CARRY   "carry-post-decompose" store
+
+cr "Diagnostics:" . cr
+"  status (initial)      = " . "status-init"            load . cr
+"  LAW-CARRY (initial)   = " . "carry-init"             load . cr
+"  m after baseline-NE   = " . "m-after-baseline-reset" load . cr
+"  status (1 idle)       = " . "status-p1"              load . cr
+"  status (2 idle)       = " . "status-p2"              load . cr
+"  LAW-CARRY (post-dec)  = " . "carry-post-decompose"   load . cr
+cr
+
+\ Pass conditions
+"status-init"            load 'stable-active = "i-1?" store
+"carry-init"             load 2              = "i-2?" store
+"m-after-baseline-reset" load -3             = "i-3?" store
+"status-p1"              load 'stale         = "i-4?" store
+"status-p2"              load 'decomposed    = "i-5?" store
+"l-pre-auto"             load "l-post-auto" load = "law-changed?" store
+"carry-post-decompose"   load 0              = "i-7?" store
+
+"i-1?" load 1 assert-eq            \ promoted to stable-active
+"i-2?" load 1 assert-eq            \ LAW-CARRY = expansion_length = 2
+"i-3?" load 1 assert-eq            \ m = -(L + inflation) = -3 confirms inflation fired
+"i-4?" load 1 assert-eq            \ 1 idle epoch → 'stale
+"i-5?" load 1 assert-eq            \ 2 idle epochs → auto-decomposed (cycle 30 gate)
+"law-changed?" load 0 assert-eq    \ law_hash mutated by auto-decompose
+"i-7?" load 1 assert-eq            \ LAW-CARRY = 0 after decompose (body removed)
+
+cr "Inflation enforced.  No primitive sits forever on past glory." . cr
+REPORT
