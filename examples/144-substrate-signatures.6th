@@ -128,8 +128,15 @@ cr
 "sig-12" load 1 assert-eq
 
 \ Tier 2 stub expectations
+\ Cycle 28 NOTE: HELD-OUT-EVAL is no longer a stub.  It now runs
+\ a real held-out gate (cycle 28B impl in sixth/meta/tier1.rkt).
+\ The "heldout-pass = 0" assertion that was here in cycle 25B
+\ has been removed.  The real HELD-OUT-EVAL returns wins count
+\ which depends on candidate behavior (for MARK MARK bi-edge cand
+\ it would return 6 on the frozen held-out substrate set).
+\ The substantive cycle 25B claims about TRAIN-EVAL, RETEST, and
+\ dict mutation remain valid.
 "train-pass"     load 1 assert-eq            \ stub always passes train
-"heldout-pass"   load 0 assert-eq            \ stub gate closed
 "retest-pass"   load 1 assert-eq             \ stub regression-OK
 "dict-post-induce" load "dict-pre" load >    \ INDUCE grew dict
    1 assert-eq

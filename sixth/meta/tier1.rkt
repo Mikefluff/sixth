@@ -17,7 +17,10 @@
 ;; USE-RUNTIME is implicit: once a cand_NNN word lives in env-words,
 ;; standard VM dispatch (op-CALL) resolves it normally.
 
-(provide register-tier1!)
+(provide register-tier1!
+         prim-held-out-eval-real
+         K_HELDOUT
+         HELD-OUT-SUBSTRATES)
 
 (require racket/list
          racket/string
@@ -723,6 +726,115 @@
   (define c (require-sym (pop! e) 'CAND-DISTINCT-SESSIONS))
   (push! e (distinct-session-count e c)))
 
+;; ============================================================
+;; HELD-OUT-EVAL (cycle 28B real impl, replaces cycle 25B stub)
+;; ============================================================
+;;
+;; HELD-OUT-EVAL ( cand-sym -- wins )
+;;
+;; For each of 6 frozen held-out substrates:
+;;   1. Substrate-RESET (clears world; preserves dictionary).
+;;   2. Look up substrate-word in env-words; run it via VM.
+;;      (Manifest words push expected signature on stack; drop it.)
+;;   3. Snapshot E-REUSE-GAIN before.
+;;   4. Loop K_HELDOUT=5 times: try-dispatch cand-sym.
+;;      On exception → mark substrate as LOSE, break.
+;;   5. Snapshot E-REUSE-GAIN after.
+;;   6. WIN iff all K calls succeeded AND delta >= K * (exp_len - 1).
+;;
+;; Returns the integer wins count (0..6).
+
+(define K_HELDOUT 5)
+
+(define HELD-OUT-SUBSTRATES
+  '(heldout-path-n12
+    heldout-cycle-n12
+    heldout-er-n10-p30
+    heldout-er-n20-p15
+    heldout-motif-wedges
+    heldout-hidden-family-n24))
+
+(define (load-substrate-by-name! e name)
+  ;; Look up and run the manifest word.  Push the signature it
+  ;; produces, then drop it (we don't verify here — manifest
+  ;; integrity is demo 144's job).
+  (define w (env-lookup-word e name))
+  (unless w
+    (raise (exn:fail:sixth
+            (format "~a — HELD-OUT-EVAL: substrate word ~a not found in dictionary (did you `use manifest`?)"
+                    (format-srcloc (current-prim-srcloc)) name)
+            (current-continuation-marks)
+            (current-prim-srcloc))))
+  ;; Run the word's opcodes.  Push a halt-sentinel so RET halts
+  ;; cleanly without entering caller's frame.
+  (push-halt-frame! e)
+  (run! (word-opcodes w) e)
+  ;; Drop the trailing signature pushed by the manifest word.
+  (env-pop! e (current-prim-srcloc)))
+
+(define (substrate-RESET! e)
+  ;; Reuse RESET primitive through the dispatch path.
+  (define reset-prim (env-lookup-prim e 'RESET))
+  (when reset-prim (reset-prim e)))
+
+(define (try-dispatch-cand! e cand-sym)
+  ;; Dispatch a candidate word once.  Returns #t on success, #f on
+  ;; any raised exception (e.g., stack underflow inside body).
+  ;; Manually invokes the dispatch hook so use_count / reuse_gain
+  ;; tracking fires (we're bypassing the VM's normal op-CALL path).
+  ;;
+  ;; On exception: clean up the half-pushed return frame so subsequent
+  ;; dispatches start with a clean rstack.
+  (define w (env-lookup-word e cand-sym))
+  (cond
+    [(not w) #f]
+    [else
+     (define hook (current-cand-dispatch-hook))
+     (define rstack-snapshot (env-rstack e))
+     (define stack-snapshot  (env-stack e))
+     (with-handlers ([(lambda (_) #t)
+                      (lambda (_)
+                        ;; Restore both stacks to pre-dispatch state.
+                        (set-env-rstack! e rstack-snapshot)
+                        (set-env-stack!  e stack-snapshot)
+                        #f)])
+       (when hook (hook e cand-sym))
+       (push-halt-frame! e)
+       (run! (word-opcodes w) e)
+       #t)]))
+
+(define (prim-held-out-eval-real e)
+  (define cand-sym (require-sym (pop! e) 'HELD-OUT-EVAL))
+  (define exp-len (expansion-length-of e cand-sym))
+  (cond
+    [(= exp-len 0)
+     ;; Cand not in dictionary or has no body — no transferable
+     ;; behavior to test.  Return 0 wins.
+     (record-ledger! e (list 'heldout-eval cand-sym 0 'no-body))
+     (push! e 0)]
+    [else
+     (define expected-gain (* K_HELDOUT (max 0 (- exp-len 1))))
+     (define wins
+       (for/sum ([sub-name (in-list HELD-OUT-SUBSTRATES)])
+         (substrate-RESET! e)
+         (with-handlers ([exn:fail? (lambda (_) 0)])
+           (load-substrate-by-name! e sub-name)
+           (define reuse-pre (unbox (energy-reuse-gain-of e)))
+           (define all-succeeded?
+             (for/and ([_ (in-range K_HELDOUT)])
+               (try-dispatch-cand! e cand-sym)))
+           (define reuse-post (unbox (energy-reuse-gain-of e)))
+           (define delta (- reuse-post reuse-pre))
+           (if (and all-succeeded? (>= delta expected-gain))
+               1
+               0))))
+     (record-ledger! e (list 'heldout-eval cand-sym wins
+                              'k_heldout K_HELDOUT
+                              'expansion-length exp-len
+                              'expected-gain expected-gain
+                              (session-id-of e)))
+     (push! e wins)]))
+
 ;; TRY-COMMIT ( cand -- result )  — same as COMMIT-PRIMITIVE but
 ;; catches gate-rejection exceptions and pushes a status symbol
 ;; instead of raising.  Used by negative demos to assert that the
@@ -810,7 +922,9 @@
         (cons 'CAND-DISTINCT-SESSIONS     prim-cand-distinct-sessions)
         (cons 'TRY-COMMIT                 prim-try-commit)
         ;; cycle 27: automated discovery mining engine
-        (cons 'DETECT-MOTIF-AUTO          prim-detect-motif-auto)))
+        (cons 'DETECT-MOTIF-AUTO          prim-detect-motif-auto)
+        ;; cycle 28: real held-out evaluation (replaces Tier 2 stub)
+        (cons 'HELD-OUT-EVAL              prim-held-out-eval-real)))
 
 (define (register-tier1! e)
   (for ([entry (in-list TIER1-TABLE)])

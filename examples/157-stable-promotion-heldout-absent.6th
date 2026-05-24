@@ -1,0 +1,93 @@
+\ examples/157-stable-promotion-heldout-absent.6th
+\ Cycle 28D — second negative: held-out absence via different motif.
+\ Pre-reg: PREDICTIONS-155.md (commit 371c7ba).
+\
+\ Demonstrates the held-out gate is general across stack-hungry
+\ motif shapes.  Candidate motif `(EDGE+ drop)` consumes 3 stack
+\ items per call (2 for EDGE+, 1 for drop).  On train: workload
+\ feeds pairs of node ids.  On held-out: stack empty → all calls
+\ fail → wins=0 → PROMOTE-STABLE rejects.
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 157 — held-out absent (cycle 28 negative) ===" . cr
+cr
+
+RESET
+
+\ Pre-load 16 nodes (4 iter × 3 stack per iter, with margin).
+MARK MARK MARK MARK MARK MARK MARK MARK MARK MARK MARK MARK MARK MARK MARK MARK
+
+\ Workload: EDGE+ drop x 4 with NODES drop noise.
+EDGE+ drop
+NODES drop
+EDGE+ drop
+NODES drop
+EDGE+ drop
+NODES drop
+EDGE+ drop
+
+DETECT-MOTIF-AUTO "motif" store
+"  discovered motif    = " . "motif" load . cr
+
+"motif" load 0 = "motif-empty?" store
+"motif-empty?" load 0 assert-eq
+
+"motif" load SHADOW-CHECK "shadow" store
+"shadow" load 1 assert-eq
+
+"motif" load INDUCE-RUNTIME "c" store
+
+\ Train: pre-load stack with pairs so cand_001 fires K=5 across M=3 sessions.
+\ Each cand_001 = (EDGE+ drop) consumes 3 stack items.
+MARK MARK MARK  cand_001
+NEW-SESSION
+MARK MARK MARK  cand_001
+MARK MARK MARK  cand_001
+NEW-SESSION
+MARK MARK MARK  cand_001
+MARK MARK MARK  cand_001
+
+"c" load CAND-USES                "uses"  store
+"c" load CAND-DISTINCT-SESSIONS   "msess" store
+"  train uses           = " . "uses" load . cr
+"  distinct sessions    = " . "msess" load . cr
+
+"c" load COMMIT-PRIMITIVE "commit" store
+"  commit result        = " . "commit" load . cr
+
+\ Held-out: each held-out substrate has nodes/edges (from gen-*) but
+\ HELD-OUT-EVAL invokes cand_001 with empty stack → EDGE+ underflows
+\ → all 6 substrates LOSE.
+"c" load HELD-OUT-EVAL    "wins"     store
+"  held-out wins        = " . "wins" load . " / 6 (expect 0)" . cr
+
+"c" load PROMOTE-STABLE   "promote-result" store
+"c" load CAND-STATUS      "final-status"   store
+
+"  promote result       = " . "promote-result" load . cr
+"  final status         = " . "final-status" load . cr
+cr
+
+"commit"         load "c" load = "nc-1?" store
+"wins"           load 0 = "nc-2?" store
+"promote-result" load 'rejected-heldout-insufficient = "nc-3?" store
+"final-status"   load 'committed = "nc-4?" store
+
+"nc-1?" load 1 assert-eq                     \ committed on train
+"nc-2?" load 1 assert-eq                     \ wins=0 on held-out
+"nc-3?" load 1 assert-eq                     \ rejected by gate
+"nc-4?" load 1 assert-eq                     \ stays committed (not stable)
+
+\ Cleanup
+"c" load ROLLBACK-RUNTIME
+"c" load CAND-STATUS "rb" store
+"rb" load 'rolled-back = "nc-5?" store
+"nc-5?" load 1 assert-eq
+
+cr "Negative demo 157: PROMOTE-STABLE REJECTED" . cr
+cr "  different stack-hungry motif, same generalization failure." . cr
+REPORT

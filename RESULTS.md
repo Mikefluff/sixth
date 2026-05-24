@@ -1838,6 +1838,122 @@ generalization claim.
 
 ---
 
+## Cycle 28 — Held-out Generalization + Stable Promotion
+
+**Pre-reg:** `examples/PREDICTIONS-155.md` (commit `371c7ba`,
+attested ledger sha `cf89523c`).
+
+**Single primary claim** (verified):
+
+> A Tier 1 committed candidate can be promoted to `'stable-active`
+> via `PROMOTE-STABLE` if and only if it satisfies
+> `HELD-OUT-EVAL wins ≥ 4 / 6` (per-held-out-substrate net energy
+> gain), AND the existing coupling + energy gates already
+> satisfied by `COMMIT-PRIMITIVE`.
+
+### What was implemented
+
+`HELD-OUT-EVAL` Tier 1 primitive (`sixth/meta/tier1.rkt`):
+- replaces the cycle 25B stub (which returned 0)
+- iterates over 6 frozen held-out substrates from
+  `substrates/manifest.6th`
+- per substrate: `RESET` → load via `env-lookup-word + run!` →
+  drop trailing signature → invoke cand K=5 times with
+  try-handlers → snapshot `E-REUSE-GAIN` delta
+- substrate wins iff all K succeeded AND delta ≥ K×(L-1)
+- returns wins count (0..6)
+
+`PROMOTE-STABLE` Tier 2 primitive (`sixth/meta/tier2.rkt`):
+- replaces the cycle 25B stub (which returned `'rejected-*`)
+- requires `status == 'committed`
+- calls `HELD-OUT-EVAL` internally; requires `wins ≥ 4`
+- on success: `status → 'stable-active`, ledger event;
+  pushes cand-sym
+- on rejection: pushes specific reason symbol
+  (`'rejected-heldout-insufficient`, etc.)
+
+Cycle 28 amends demo 144 (cycle 25B): the `heldout-pass = 0`
+assertion (which expected the stub) is removed because the
+stub is replaced.  Demo 144 count: 16 → 15 asserts.  No
+contamination — cycle 25B's claim was about stub behavior,
+cycle 28 explicitly supersedes that.
+
+### Demo 155 — happy path
+
+Cycle 27 workload discovers `(MARK MARK bi-edge)` via
+`DETECT-MOTIF-AUTO`, runs through SHADOW + INDUCE + N=5/M=3
+COMMIT.  Then `HELD-OUT-EVAL` invokes cand_001 K=5 on each of
+6 held-out substrates.  Stateless motif → ALL 6 substrates win
+→ `PROMOTE-STABLE` returns cand_001, status `'stable-active`.
+5 asserts pass.
+
+### Demo 156 — train-overfit negative
+
+Workload constructs stack-hungry motif `(bi-edge drop)` via
+natural top-level repetition.  Per-iter consumes 3 stack
+items; demo pre-loads 12 nodes for 4 workload iterations.
+N=5/M=3 COMMIT succeeds on train.  `HELD-OUT-EVAL` calls cand
+on each held-out substrate with empty stack → `bi-edge`
+underflows → all 6 LOSE → wins=0 → `PROMOTE-STABLE` returns
+`'rejected-heldout-insufficient`.  Status stays `'committed`,
+not advanced.  7 asserts pass.
+
+### Demo 157 — second negative (different motif)
+
+Same mechanism with different motif `(EDGE+ drop)`.  Confirms
+the held-out gate is **general across stack-hungry motif
+shapes**, not specific to bi-edge.  7 asserts pass.
+
+### What cycle 28 demonstrates
+
+- First non-stub `PROMOTE-STABLE`: the gate actually advances
+  status to `'stable-active` only when held-out generalization
+  succeeds.
+- Held-out evaluation is mechanical and deterministic: same
+  candidate + same substrate set → same wins count.
+- Stack-hungry candidates (train-overfit pattern) are caught
+  by held-out via try-handlers; clean state restoration
+  (env-rstack + env-stack snapshots) prevents pollution
+  across attempts.
+
+### What cycle 28 does NOT claim
+
+- Cumulative E_ledger non-stagnation (active_balance,
+  E_WINDOW, E_MOMENTUM) — deferred to cycle 29.
+- Lifecycle states beyond `'committed` / `'stable-active`
+  (`'stable-degraded`, `'needs-revalidation`, `'deprecated-law`)
+  — deferred to cycle 29.
+- The 4-of-6 threshold is "the right" value — it mirrors
+  META-SEMANTICS §9 stable gate as committed via pre-reg.
+- META-SEMANTICS §9 requirements `runtime_overhead ≤ 1.5×`,
+  `passes_random_relabeling_invariance`, and
+  `wins_on_at_least_2_challenge` — deferred to cycle 29+
+  (need substrate snapshot infrastructure).
+
+### Aggregate state after cycle 28
+
+- Regression: **2104 / 2104 ✓ across 149 demos**.
+- 6 frozen held-out substrates ratified as ground for
+  generalization tests.
+- `PROMOTE-STABLE` gate operational; first time a candidate can
+  legitimately reach `'stable-active` status.
+- Demo 144 amended (1 assert removed) per cycle 28 stub
+  supersession.
+
+### Catalogue formulation (post-cycle-28)
+
+> Cycle 25: закон можно менять.
+> Cycle 26: закон можно закреплять по цене.
+> Cycle 27: кандидат в закон можно находить автоматически.
+> **Cycle 28: закон становится стабильным только при
+> энергетической генерализации на held-out.**
+
+This is the first machine-verifiable generalization claim:
+not just "cand worked on train" but "cand transfers to
+unseen-by-discovery substrates without becoming a net cost".
+
+---
+
 ## Pending / future tracks
 
 | Track | Description | ETA |

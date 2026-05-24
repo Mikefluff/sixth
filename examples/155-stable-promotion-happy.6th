@@ -1,0 +1,72 @@
+\ examples/155-stable-promotion-happy.6th
+\ Cycle 28B — happy path: candidate transfers to held-out, gets STABLE.
+\ Pre-reg: PREDICTIONS-155.md (commit 371c7ba).
+\
+\ Validates that a Tier 1 committed candidate (cycle 26 demo 147 flow)
+\ also survives held-out evaluation across 6 frozen substrates
+\ (cycle 25B manifest) and gets promoted via PROMOTE-STABLE.
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 155 — stable promotion happy path (cycle 28) ===" . cr
+cr
+
+RESET
+
+\ Build natural top-level repetition (same workload pattern as cycle 27).
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+DETECT-MOTIF-AUTO "motif" store
+
+\ Run cycle-26 pipeline: SHADOW + INDUCE + N=5 across M=3 sessions + COMMIT.
+"motif" load SHADOW-CHECK drop
+"motif" load INDUCE-RUNTIME "c" store
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c" load COMMIT-PRIMITIVE "commit-result" store
+"c" load CAND-STATUS      "status-pre-promote" store
+
+\ Cycle 28: run held-out evaluation + stable promotion.
+"c" load HELD-OUT-EVAL    "heldout-wins"   store
+"c" load PROMOTE-STABLE   "promote-result" store
+"c" load CAND-STATUS      "status-post-promote" store
+
+LEDGER-COUNT "ledger-final" store
+
+cr "Diagnostics:" . cr
+"  discovered motif      = " . "motif" load . cr
+"  cand id               = " . "c" load . cr
+"  commit result         = " . "commit-result" load . cr
+"  status pre-promote    = " . "status-pre-promote" load . cr
+"  held-out wins         = " . "heldout-wins" load . " / 6" . cr
+"  promote-stable result = " . "promote-result" load . cr
+"  status post-promote   = " . "status-post-promote" load . cr
+"  ledger count          = " . "ledger-final" load . cr
+cr
+
+\ Pre-reg pass conditions per PREDICTIONS-155.md happy path.
+"commit-result"      load "c" load = "c-1-committed?"          store
+"heldout-wins"       load 6        = "c-2-wins-6-of-6?"        store
+"promote-result"     load "c" load = "c-3-promoted?"           store
+"status-post-promote" load 'stable-active = "c-4-stable?"      store
+"ledger-final"       load 0  >       "c-5-ledger-grew?"        store
+
+"c-1-committed?"     load 1 assert-eq                   \ c-1
+"c-2-wins-6-of-6?"   load 1 assert-eq                   \ c-2
+"c-3-promoted?"      load 1 assert-eq                   \ c-3
+"c-4-stable?"        load 1 assert-eq                   \ c-4
+"c-5-ledger-grew?"   load 1 assert-eq                   \ c-5
+
+cr "Happy path: STABLE PROMOTION via held-out generalization." . cr
+cr "  Candidate survived: Tier 1 train + held-out wins 6/6." . cr
+cr "  Status is now 'stable-active.  This is NOT a cognition claim." . cr
+REPORT

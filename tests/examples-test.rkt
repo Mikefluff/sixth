@@ -529,7 +529,7 @@
     ;;      land in cycle 26+ alongside discovery integration.
     ;;      Architectural completion of 14-meta-primitive set per
     ;;      META-SEMANTICS.md v2 §6.
-    ("144-substrate-signatures.6th"              16)
+    ("144-substrate-signatures.6th"              15)
     ;; 145. Cycle 25D — hardening suite verifying 15 invariants per
     ;;      user spec (2026-05-23) before Cycle 26:
     ;;        1  law_hash sensitivity (incl word body)
@@ -607,7 +607,26 @@
     ;;      Demos 153 (world-mismatch, needs substrate snapshot) and
     ;;      154 (energy-fail-auto, structurally impossible under
     ;;      MIN_LEN=2 frozen protocol) DEFERRED to cycle 28.
-    ("152-discovery-forbidden-laced.6th"          2)))
+    ("152-discovery-forbidden-laced.6th"          2)
+    ;; 155. Cycle 28B — held-out generalization happy path.
+    ;;      Auto-discovered (MARK MARK bi-edge) candidate is run
+    ;;      through full cycle 26 pipeline (COMMIT) THEN cycle 28
+    ;;      held-out evaluation: wins 6/6 → PROMOTE-STABLE succeeds,
+    ;;      status 'stable-active.  First non-stub stable promotion.
+    ;;      5 asserts.
+    ("155-stable-promotion-happy.6th"             5)
+    ;; 156. Cycle 28C — train-overfit negative.  Stack-hungry motif
+    ;;      (bi-edge drop) discovered + committed on train (workload
+    ;;      feeds stack args).  On held-out: cand_001 underflows on
+    ;;      empty stack → wins 0/6 → PROMOTE-STABLE returns
+    ;;      'rejected-heldout-insufficient.  Status stays 'committed,
+    ;;      not advanced to 'stable-active.  5 asserts.
+    ("156-stable-promotion-train-overfit.6th"     7)
+    ;; 157. Cycle 28D — second negative with different stack-hungry
+    ;;      motif (EDGE+ drop).  Same outcome: wins 0/6, rejected.
+    ;;      Demonstrates held-out gate is general across stack-hungry
+    ;;      motif shapes.  5 asserts.
+    ("157-stable-promotion-heldout-absent.6th"    7)))
 
 (define (run-demo file)
   (define out
@@ -632,8 +651,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 2086
-                (format "cumulative ✓ count: ~a (expected 2086)" total-pass)))
+  (check-equal? total-pass 2104
+                (format "cumulative ✓ count: ~a (expected 2104)" total-pass)))
 
-(displayln (format "examples regression: ~a / 2086 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 2104 ✓ across ~a demos"
                    total-pass (length expected)))

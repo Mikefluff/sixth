@@ -32,7 +32,8 @@
          "../env.rkt"
          "../errors.rkt"
          "../vm.rkt"
-         "runtime.rkt")
+         "runtime.rkt"
+         (only-in "tier1.rkt" prim-held-out-eval-real))
 
 (define (push! e v) (env-push! e v))
 (define (pop! e) (env-pop! e (current-prim-srcloc)))
@@ -90,32 +91,74 @@
   (push! e 1))
 
 ;; ---- HELD-OUT-EVAL ---------------------------------------------------
-;; Stub: cycle 26 will run candidate against substrates/heldout/*.6th
-;; with append-only iron rule.  Here returns 0 (gate closed) to prevent
-;; over-promotion in cycle 25 testing.
+;; Cycle 28: real implementation lives in tier1.rkt (prim-held-out-eval-real)
+;; and is registered there.  This stub function is unused but kept here
+;; for historical reference; it is NOT registered in TIER2-TABLE.
 (define (prim-held-out-eval e)
   (define c (require-sym (pop! e) 'HELD-OUT-EVAL))
-  (stub-event! e 'held-out-eval c)
+  (stub-event! e 'held-out-eval-stub-DEAD c)
   (push! e 0))
 
-;; ---- PROMOTE-STABLE --------------------------------------------------
-;; Stub-with-defence (25D item 11): gate closed in cycle 25; returns
-;; 'rejected for any input.  BUT for non-committed or contaminated
-;; candidates, returns specific reject reason for trace inspection.
-;; Cycle 26 replaces with full multi-criterion gate.
+;; ---- PROMOTE-STABLE (cycle 28 real gate) -----------------------------
+;;
+;; PROMOTE-STABLE ( cand-sym -- status )
+;;
+;; Real gate per PREDICTIONS-155.md:
+;;   - status must be 'committed
+;;   - HELD-OUT-EVAL wins must be >= STABLE_WINS_THRESHOLD (4 of 6)
+;;
+;; On success: status → 'stable-active, ledger event recorded,
+;;             pushes cand-sym.
+;; On reject:  status unchanged, ledger event with reason, pushes
+;;             reject symbol.
+;;
+;; runtime_overhead, relabel_invariance, challenge wins from
+;; META-SEMANTICS §9 are DEFERRED to cycle 29 (substrate snapshot).
+
+(define STABLE_WINS_THRESHOLD 4)
+(define HELD_OUT_TOTAL 6)
+
 (define (prim-promote-stable e)
   (define c (require-sym (pop! e) 'PROMOTE-STABLE))
   (define status-alist (unbox (cand-status-of e)))
   (define cs (let ([x (assq c status-alist)]) (and x (cdr x))))
-  (define reason
-    (cond
-      [(eq? cs 'rolled-back)    'rejected-rolled-back]
-      [(eq? cs 'contaminated)   'rejected-contaminated]
-      [(eq? cs 'ephemeral-active) 'rejected-no-commit]
-      [(eq? cs 'committed)      'rejected-no-heldout-in-25D]
-      [else                      'rejected-unknown-status]))
-  (stub-event! e 'promote-stable (list c reason))
-  (push! e reason))
+  (cond
+    [(eq? cs 'rolled-back)
+     (stub-event! e 'promote-stable-rejected (list c 'rolled-back))
+     (push! e 'rejected-rolled-back)]
+    [(eq? cs 'contaminated)
+     (stub-event! e 'promote-stable-rejected (list c 'contaminated))
+     (push! e 'rejected-contaminated)]
+    [(eq? cs 'ephemeral-active)
+     (stub-event! e 'promote-stable-rejected (list c 'no-commit))
+     (push! e 'rejected-no-commit)]
+    [(not (eq? cs 'committed))
+     (stub-event! e 'promote-stable-rejected (list c 'unknown-status))
+     (push! e 'rejected-unknown-status)]
+    [else
+     ;; status == 'committed.  Run held-out evaluation.
+     ;; HELD-OUT-EVAL primitive consumes a cand-sym from stack and
+     ;; pushes the wins count.
+     (env-push! e c)
+     (prim-held-out-eval-real e)
+     (define wins (env-pop! e (current-prim-srcloc)))
+     (cond
+       [(>= wins STABLE_WINS_THRESHOLD)
+        ;; Promote to stable.
+        (define sb (cand-status-of e))
+        (set-box! sb (cons (cons c 'stable-active)
+                            (filter (lambda (entry)
+                                      (not (eq? (car entry) c)))
+                                    (unbox sb))))
+        (stub-event! e 'promote-stable-success
+                     (list c 'wins wins 'threshold STABLE_WINS_THRESHOLD
+                           'of HELD_OUT_TOTAL))
+        (push! e c)]
+       [else
+        (stub-event! e 'promote-stable-rejected
+                     (list c 'heldout-insufficient
+                           'wins wins 'threshold STABLE_WINS_THRESHOLD))
+        (push! e 'rejected-heldout-insufficient)])]))
 
 ;; ---- RETEST ----------------------------------------------------------
 ;; Stub: cycle 26 will shell out to `raco test`.  Here pushes 1
@@ -152,7 +195,9 @@
 (define TIER2-TABLE
   (list (cons 'FREEZE-CANDIDATE   prim-freeze-candidate)
         (cons 'TRAIN-EVAL         prim-train-eval)
-        (cons 'HELD-OUT-EVAL      prim-held-out-eval)
+        ;; HELD-OUT-EVAL moved to Tier 1 (cycle 28); real impl
+        ;; lives in tier1.rkt prim-held-out-eval-real and is
+        ;; registered there.
         (cons 'PROMOTE-STABLE     prim-promote-stable)
         (cons 'RETEST             prim-retest)
         (cons 'ATTEST-PRIMITIVE   prim-attest-primitive)

@@ -1,0 +1,111 @@
+\ examples/156-stable-promotion-train-overfit.6th
+\ Cycle 28C — negative: stack-hungry candidate fails held-out.
+\ Pre-reg: PREDICTIONS-155.md (commit 371c7ba).
+\
+\ Candidate motif `(bi-edge drop)` consumes 2 + 1 stack items per call.
+\ On train: demo manually pushes pairs of nodes to satisfy the motif.
+\   Coupling N=5 / M=3 reached.  Energy passes (length 2, net = -3).
+\   COMMIT succeeds.
+\ On held-out: each held-out substrate-word leaves a signature on stack
+\   which is dropped by HELD-OUT-EVAL.  Substrate has nodes but stack
+\   is empty.  Each cand_001 invocation: first `bi-edge` call underflows
+\   → exception → that substrate counts as LOSE.
+\ Expected: wins = 0 → PROMOTE-STABLE rejects → status stays 'committed.
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 156 — train-overfit candidate (cycle 28 negative) ===" . cr
+cr
+
+RESET
+
+\ Build workload that naturally produces `(bi-edge drop)` motif
+\ via DETECT-MOTIF-AUTO (length 2, frequency >= 3).
+\ Each `bi-edge drop` iteration consumes 3 stack items
+\ (2 for bi-edge, 1 for drop), so we pre-load 12 MARKs (4 per iter
+\ x 3 iters, with margin).
+
+\ Pre-populate substrate + stack with 12 nodes (4 iter × 3 stack per iter).
+MARK MARK MARK MARK MARK MARK MARK MARK MARK MARK MARK MARK
+
+\ Workload: bi-edge drop x 4 with NODES/drop noise.
+\ Window K=20 captures last 20 ops; with 4 iterations of (bi-edge drop)
+\ that's freq 4, beating (MARK MARK) which falls off the window edge
+\ to freq 2.  NODES filtered as INSPECTION-OPS.
+bi-edge drop
+NODES drop
+bi-edge drop
+NODES drop
+bi-edge drop
+NODES drop
+bi-edge drop
+
+DETECT-MOTIF-AUTO "motif" store
+
+"  discovered motif    = " . "motif" load . cr
+
+\ Verify motif is (bi-edge drop)
+"motif" load 0 = "motif-empty?" store
+"motif-empty?" load 0 assert-eq                     \ motif must be found
+
+"motif" load SHADOW-CHECK "shadow" store
+"shadow" load 1 assert-eq                            \ shadow passes
+
+"motif" load INDUCE-RUNTIME "c" store
+
+\ Train: pre-load stack with pairs so cand_001 fires successfully.
+\ Each cand_001 invocation consumes 3 stack items (2 for bi-edge + 1 for drop).
+\ For N=5 we need 15 nodes on stack across uses.
+MARK MARK 7  cand_001                          \ use 1
+NEW-SESSION
+MARK MARK 7  cand_001
+MARK MARK 7  cand_001                           \ uses 2-3, session 2
+NEW-SESSION
+MARK MARK 7  cand_001
+MARK MARK 7  cand_001                           \ uses 4-5, session 3
+
+"c" load CAND-USES                "uses"  store
+"c" load CAND-DISTINCT-SESSIONS   "msess" store
+"  train uses           = " . "uses" load . cr
+"  distinct sessions    = " . "msess" load . cr
+
+\ COMMIT should succeed on train.
+"c" load COMMIT-PRIMITIVE "commit" store
+"  commit result        = " . "commit" load . cr
+
+\ Held-out: each substrate-word loads nodes/edges but stack is empty.
+\ cand_001 underflows on first bi-edge → all 6 substrates LOSE.
+"c" load HELD-OUT-EVAL    "wins"     store
+"  held-out wins        = " . "wins" load . " / 6 (expect 0)" . cr
+
+\ PROMOTE-STABLE rejects.
+"c" load PROMOTE-STABLE   "promote-result" store
+"c" load CAND-STATUS      "final-status"   store
+
+"  promote result       = " . "promote-result" load . cr
+"  final status         = " . "final-status" load . cr
+cr
+
+\ Pre-reg pass conditions for demo 156.
+"commit"        load "c" load = "nc-1-committed?" store
+"wins"          load 0 = "nc-2-zero-wins?" store
+"promote-result" load 'rejected-heldout-insufficient = "nc-3-rejected?" store
+"final-status"  load 'committed = "nc-4-still-committed?" store
+
+"nc-1-committed?"     load 1 assert-eq
+"nc-2-zero-wins?"     load 1 assert-eq
+"nc-3-rejected?"      load 1 assert-eq
+"nc-4-still-committed?" load 1 assert-eq
+
+\ Cleanup: rollback candidate.
+"c" load ROLLBACK-RUNTIME
+"c" load CAND-STATUS "rb" store
+"rb" load 'rolled-back = "nc-5-cleanup?" store
+"nc-5-cleanup?" load 1 assert-eq
+
+cr "Negative demo 156: PROMOTE-STABLE REJECTED" . cr
+cr "  stack-hungry candidate cannot transfer to held-out." . cr
+REPORT
