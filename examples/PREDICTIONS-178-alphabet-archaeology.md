@@ -7,6 +7,65 @@ Initial attestation: see ledger row dated 2026-05-24.
 
 ---
 
+## SCOPE CLARIFICATION (post-execution addendum 2026-05-24)
+
+This pre-reg's scope is **bootstrap alphabet** — the hand-written
+engineering foundation of the system — NOT the substrate-discovered
+alphabet (cand_NNN entities the system itself auto-detected and
+promoted through the protocol).
+
+Per user clarification mid-cycle (after 34C execution):
+
+> We don't count primitives you added by hand — only those that
+> were found in the process.
+
+The 32-entity candidate list in this pre-reg includes hand-authored
+meta-primitives (commit, shadow-check, held-out-eval, etc.) and
+substrate axioms (distinction, boundary, trace, collapse) plus the
+later-added statuses and counters.  All 32 are engineer-introduced;
+none was discovered by the substrate.
+
+**Renamed deliverable:** `RESULTS-178-bootstrap-alphabet-archaeology.md`
+(was `RESULTS-178-alphabet-archaeology.md`).
+
+**Result status:**
+- PASS as bootstrap audit
+- NOT PASS as substrate-discovered audit
+
+A separate substrate-discovered audit is performed under cycle 34C-bis,
+output `RESULTS-179-substrate-discovered-alphabet.md`.
+
+### Five-layer ontological architecture (binding for future cycles)
+
+| layer | content | source |
+|-------|---------|--------|
+| **L0 — Substrate axioms** | distinction, boundary, trace, collapse | bootloader (engineer) |
+| **L1 — Protocol grammar** | commit, shadow-check, contaminate, promote-stable, held-out-eval | machinery (engineer) |
+| **L2 — Discovered candidates** | cand_NNN that passed full pipeline AND persisted | SYSTEM (via DETECT-MOTIF-AUTO + protocol) |
+| **L3 — Diagnostics** | stale, subsidized, dependency-supported, etc. | engineer |
+| **L4 — Implementation** | counters, ttl, credit, thresholds | engineer |
+
+**Binding rules:**
+
+1. Hand-authored machinery (L0/L1/L3/L4) **cannot be counted as
+   discovered primitive.**  This pre-reg's audit covers L0/L1/L3/L4
+   classification only.
+2. A discovered primitive (L2) must have a **lineage**: AUTO-DETECTED
+   via DETECT-MOTIF-AUTO, passed SHADOW-CHECK, passed coupling gate
+   (N=5, M=3), passed energy gate, passed HELD-OUT-EVAL, got
+   PROMOTE-STABLE, persisted in active dictionary across metabolism
+   cycles, NOT fixture-only.
+3. **No lineage, no discovery.**
+4. Bootstrap and discovered alphabets are tracked separately;
+   conflating them obscures whether the system has produced any
+   genuine alphabet of its own.
+
+These rules supersede the original pre-reg's "primitive" language
+where ambiguous.  The original schema remains valid; only the SCOPE
+INTERPRETATION is clarified.
+
+---
+
 ## This is NOT a feature cycle
 
 Cycles 25–34A added mechanism after mechanism: laws, metabolism,

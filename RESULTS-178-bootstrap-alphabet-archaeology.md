@@ -1,4 +1,4 @@
-# RESULTS-178 — Alphabet Archaeology (cycle 34C)
+# RESULTS-178 — **Bootstrap** Alphabet Archaeology (cycle 34C)
 
 **Date executed:** 2026-05-24
 **Pre-reg:** `examples/PREDICTIONS-178-alphabet-archaeology.md`
@@ -6,6 +6,62 @@
 **Method:** evidence-first, classification-last.  For each entity:
 named occurrence → unnamed occurrence (or NOT_FOUND) → minimal
 distinction → dependencies → classification.
+
+---
+
+## CRITICAL SCOPE CORRECTION (2026-05-24, post-execution)
+
+This audit was originally framed as "the system's alphabet."
+**That framing was wrong.**  The audit's actual scope was the
+hand-written engineering bootstrap, NOT the substrate-discovered
+alphabet.
+
+Per user clarification mid-cycle:
+
+> We don't count primitives you added by hand — only those that
+> were found in the process.
+
+All 7 entities classified `primitive` in this audit
+(distinction, boundary, trace, commit, shadow-check, collapse,
+contaminate) are either substrate axioms provided by the
+bootloader (cycle 0 legacy) or hand-written meta-primitives
+introduced in cycle 25 META-SEMANTICS.  None was AUTO-DETECTED
+via `DETECT-MOTIF-AUTO`, INDUCEd through `INDUCE-RUNTIME`, or
+promoted via the cycle-28 PROMOTE-STABLE protocol.
+
+The substrate-discovered alphabet is audited separately in
+`RESULTS-179-substrate-discovered-alphabet.md`.
+
+### Status reclassification
+
+- **PASS** as bootstrap / engineering-foundation audit.
+- **NOT PASS** as substrate-discovered audit.
+
+The audit's findings remain valid in their original scope:
+the engineering surface has 7 irreducible bootstrap primitives
+(3 alphabet nouns + 4 grammar verbs) and 25 non-primitive entries
+that are derived / diagnostic / implementation / rejected.  But
+calling these "the system's alphabet" without qualification
+would conflate bootstrap-axioms with substrate-discoveries.
+
+### Five-layer ontological architecture (post-correction)
+
+| layer | what it contains | who put it there |
+|-------|------------------|-------------------|
+| **Layer 0 — Substrate axioms** | distinction, boundary, trace, collapse | bootloader (engineer, pre-cycle-25) |
+| **Layer 1 — Protocol grammar** | commit, shadow-check, contaminate, promote-stable, held-out-eval | machinery (engineer, cycle 25-26 spec) |
+| **Layer 2 — Discovered candidates** | cand_NNN that passed pipeline AND persisted | SYSTEM (via DETECT-MOTIF-AUTO + protocol) |
+| **Layer 3 — Diagnostics** | stale, subsidized, dependency-supported, etc. | engineer (cycles 29+) |
+| **Layer 4 — Implementation** | counters, ttl, credit, thresholds | engineer (cycles 25-34) |
+
+**Hard rule:** **hand-authored machinery (Layers 0/1/3/4) cannot
+be counted as discovered primitive.**  Only Layer 2 entries qualify.
+
+> **A discovered primitive must have a lineage.  No lineage, no discovery.**
+
+This audit's 7 primitives are Layer 0 (distinction, boundary,
+trace, collapse) and Layer 1 (commit, shadow-check, contaminate).
+It does NOT cover Layer 2.
 
 ---
 
@@ -643,7 +699,7 @@ This audit has now classified:
 3. The proposed Pass A.3 (positive_epochs counter) is itself a counter persistence mechanism.  Earned-capacity reading requires it.
 
 4. **Cycle 34A may proceed to implementation, but `CLAIMS.md` updates must reflect this audit:**
-   - `INJECT-ENERGY` → Tier 1 primitive (genuinely new grammar operation)
+   - `INJECT-ENERGY` → **new Tier 1 grammar operation candidate, NOT alphabet primitive without separate archaeology evidence.**  It may be implemented as a controlled operation over implementation_detail values (external_credit, ttl, capacity), but cannot claim primitivity by virtue of being a new verb in the dispatch table.  Per the binding rule from cycle 34B: naming does not create primitives.  If `INJECT-ENERGY` is to be classified as primitive in a future audit, it must independently survive the same evidence-first archaeology applied to the 32 candidates here.
    - All other 8 cycle-34A primitives → Tier 1 INSPECTION-OP entries with no ontological-primitivity claim
    - `'subsidized` → status label, not primitive distinction
    - `capacity`, `external_credit` → implementation knobs, not primitive distinctions

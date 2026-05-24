@@ -7,6 +7,80 @@ Initial attestation: see ledger row dated 2026-05-24.
 
 ---
 
+## CYCLE 34C / 34C-bis / 34D AUDIT IMPACT NOTE (2026-05-24)
+
+**Implementation of this pre-reg is currently DEFERRED** pending two
+audits (already completed) and one synthesis (not yet done):
+
+1. **Bootstrap audit (34C):** `RESULTS-178-bootstrap-alphabet-archaeology.md`
+   — classified hand-written engineering primitives.  PASS as bootstrap
+   audit; NOT PASS as substrate-discovered audit (wrong original framing).
+2. **Substrate-discovered audit (34C-bis):**
+   `RESULTS-179-substrate-discovered-alphabet.md` — searched for
+   cand_NNN that auto-detected, promoted, and persisted.  Result:
+   **discovered alphabet count = 0** (no cand_NNN persists across
+   runs; `stdlib/promoted/` was never created; all cand_NNN in
+   codebase are test fixtures).
+3. **Synthesis (34D):** PENDING.  Will update CLAIMS.md and
+   META-SEMANTICS.md with bootstrap-vs-discovered separation and the
+   demotion list from RESULTS-178.
+
+The bootstrap audit reclassified entities proposed in THIS pre-reg
+as follows:
+
+- `INJECT-ENERGY` → **new Tier 1 grammar operation candidate** (Layer 1),
+  NOT alphabet primitive without separate archaeology evidence
+- `EXTERNAL-CREDIT`, `ENERGY-BUFFER`, `ENERGY-CAPACITY`, `ENERGY-LEAK`,
+  `ENERGY-SOURCE`, `SUBSIDIZED?`, `ORGANIC-MOMENTUM`,
+  `SUBSIDIZED-MOMENTUM` → inspections of Layer 3/4 values
+  (derived / implementation_detail), NOT primitives
+- `'subsidized` status → **Layer 3 diagnostic_label** (status label,
+  not life-state primitive; NEG-2 explicit: subsidized ≠ alive)
+- `capacity` → **derived** (Layer 4: sum of three earned signals)
+- `external_credit` → **Layer 4 implementation_detail** (specific
+  arithmetic floor(rem/ttl))
+
+The substrate-discovered audit raised a **deeper concern about
+scope:**
+
+This pre-reg's mechanisms (external_credit, capacity, subsidized,
+energy-leaked) are designed to **modulate the survival of Layer 2
+entities (cand_NNN)** — but Layer 2 is currently EMPTY.  All
+cand_NNN occurrences in the codebase are fixtures in `examples/*.6th`
+that vanish at `REPORT`.  No cand_NNN has ever survived across runs.
+
+**Implication:** the 34A external-energy mechanism is currently being
+specified for a population that does not exist.  The first
+substrate-discovered cand_NNN that survives PROMOTE-STABLE AND a
+persistence-layer implementation (currently missing) would be the
+first real subject of 34A's mechanism.
+
+**When this pre-reg is unblocked for implementation:**
+
+1. The implementation may proceed as specified mechanically.
+2. The accompanying `CLAIMS.md` / `META-SEMANTICS.md` references
+   MUST use the audit-corrected labels (no false primitivity claims).
+3. The four binding invariants (truth-immune, capacity-from-selection,
+   no-subsidized-support-contribution, leak-not-conflict) remain
+   intact; the audit reinforced them.
+4. PROMOTE-STABLE and all truth gates remain ORGANIC-ONLY.
+5. CLAIMS.md must NOT claim "Sixth discovers its own primitives" as
+   Tier 1 fact — only the PROTOCOL FOR DISCOVERY is verified by demos;
+   actual discoveries (Layer 2 occupants) require persistence + an
+   engineer-blind workload.
+
+**Reason for delay:** writing the implementation before the language
+patch (34D) would cement the pre-audit vocabulary in code comments,
+docstrings, and dispatch-table conventions.  Cycle 34D updates
+`CLAIMS.md` and `META-SEMANTICS.md` first so that 34A code is
+written in the post-audit vocabulary from the start.
+
+**Open question for 34D synthesis:** should 34A be implemented at
+all before cycle 35 builds the missing persistence layer that would
+allow Layer 2 to ever be non-empty?
+
+---
+
 ## CORE FORMULATION (binding, cycle-34-wide)
 
 > External energy can buy runway, not validity.  Selected stable
