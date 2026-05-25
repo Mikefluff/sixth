@@ -1,9 +1,50 @@
-# PREDICTIONS-179 — Persistence Layer for Discovered Candidates (cycle 35A)
+# PREDICTIONS-179 — Persistence Layer for Discovered Candidates (DEFERRED)
 
 **Date pre-registered:** 2026-05-24
 
 **Attested via** `scripts/attest_prediction.sh` per Rule 9.
 Initial attestation: see ledger row dated 2026-05-24.
+
+---
+
+## DEFERRAL NOTICE (2026-05-25, per user spec)
+
+**This pre-reg is DEFERRED, not retracted.**  It remains attested
+in the ledger and remains a valid binding spec for a FUTURE cycle.
+But cycle 35 has been retitled.
+
+User reasoning (2026-05-25):
+
+> The source-tag firewall is useful later, when there's durable L2
+> persistence.  Right now it leads into compliance / gate-keeping,
+> not into substance.
+>
+> The current main line of Sixth is not "who has the right to call
+> themselves production."
+>
+> The current main line is:
+>   - runtime sees a deficit
+>   - runtime mutates law-state
+>   - runtime verifies the new law
+>   - runtime pays / does not pay energy
+>   - runtime sustains / decays / supports / mutates further
+>
+> So cycle 35 should NOT be source-tag firewall.  This is a side
+> security task.
+
+**Cycle 35 is retitled:** Deficit-Driven Composite Communication.
+See `examples/PREDICTIONS-180-deficit-communication.md`.
+
+**When this pre-reg becomes active again:** when there is durable
+L2 persistence in place AND the substrate has produced at least
+one production-tagged cand_NNN.  At that point the source-tag
+firewall becomes a meaningful protection.  Until then it would
+be a guard at an empty warehouse.
+
+**Original 10-element + NEG-7 + 35B order specification below is
+preserved unchanged for future reference.**
+
+---
 
 ---
 

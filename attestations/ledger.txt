@@ -44,3 +44,5 @@
 2026-05-24T04:09:39Z  87c8221016d2d9b16c774e135f548f3a67344f11bbb4a1ab29e3d534253d53d4  examples/PREDICTIONS-178-alphabet-archaeology.md  bd2054a
 2026-05-24T04:22:21Z  ef2565168eca50b15b8ed69b26c3202dec85c7b7d6fd7c11a241653bfe18aedd  examples/PREDICTIONS-179-persistence-layer.md  175face
 2026-05-24T04:27:05Z  23946960c27f20be64034ef3edde8a71ba73a8c32a96de4652852b5ddade024c  examples/PREDICTIONS-179-persistence-layer.md  65d582e
+2026-05-25T19:26:25Z  f8c3049de36eac3006514ef4f7abb3fb5ee3ccaa54b47c9bced268670f8fc1f7  examples/PREDICTIONS-179-persistence-layer.md  5cbf5bd
+2026-05-25T19:26:25Z  3e698b8a53d38d85d8a47bf016cb9f10c355a70bf17afec2cff11868c9bf4591  examples/PREDICTIONS-180-deficit-communication.md  5cbf5bd
