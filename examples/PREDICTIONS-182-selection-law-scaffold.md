@@ -325,21 +325,71 @@ BOOTSTRAP-RESET ( -- )
   ; to launching a fresh runtime with only the inclusion list
   ; above loaded.  Used at start of every genesis-arena run.
 
-  ; Reset semantics:
+  ; Reset semantics — FULL EMPTY-STATE (binding):
   ;   1. Clear all cand_NNN entries from active dictionary
   ;   2. Reset all cand-bodies / status / counters / momentum-history
-  ;   3. Reset _energy-* counters
-  ;   4. Reset _support-credit, _observed-deps, etc.
-  ;   5. Reset _session-id alist (but generate new session id)
-  ;   6. Preserve only bootstrap primitives + inclusion list
+  ;   3. Reset _energy-* counters (cycle 25E budget state)
+  ;   4. Reset _support-credit, _observed-deps, _support_credit_per_cand
+  ;   5. Reset _reuse counters / recent_reuse / native momentum buckets
+  ;   6. Reset _session-id alist (but generate new session id)
+  ;   7. Reset _heldout-wins / _heldout-attempts per cand
+  ;   8. Reset _positive-epochs / _negative-epochs history windows
+  ;   9. Reset _contamination flags (cycle 30)
+  ;  10. Reset _sandbox dictionaries / sandbox-stable artifacts
+  ;  11. Reset L2 state to empty (no promoted Tier 2 cands)
+  ;  12. Reset comm ledger / request queue (cycle 35-comm deferred
+  ;       state, if any test scaffolding ever instantiated it)
+  ;  13. Reset cycle 34A capacity / 'subsidized state (blocked but
+  ;       must be zero anyway)
+  ;  14. Preserve only bootstrap primitives + INCLUDED inclusion list
   ;
-  ; Implementation: probably via fresh-env factory rather than
-  ; in-place mutation, to avoid edge cases.
+  ; Implementation: fresh-env factory (NOT in-place mutation).
+  ; In-place reset is error-prone — silent leftover state from
+  ; closures, mutable hashes, parameter cells defeats the whole
+  ; fairness invariant.  Build a new engine instance each time.
 ```
 
 This helper is itself part of the meta-protocol M (frozen at
 cycle 36 commit).  Selector candidates cannot modify
 BOOTSTRAP-RESET semantics.
+
+### Identical bootstrap law-hash invariant (binding)
+
+After `BOOTSTRAP-RESET`, before any selector workload runs, the
+engine MUST produce the SAME `BOOTSTRAP-LAW-HASH` for every
+profile A through E.
+
+```
+BOOTSTRAP-LAW-HASH ( -- hash )
+  ; Canonical hash over:
+  ;   - sorted inclusion list of base + Tier 1 + Tier 2 minimum
+  ;   - empty cand dictionary
+  ;   - empty counter state
+  ;   - empty support / energy / momentum state
+  ;   - empty L2 dictionary
+  ;   - empty sandbox state
+  ;   - frozen meta-protocol M version tag
+  ; Excludes:
+  ;   - session id (per-run nonce)
+  ;   - workload seed (per-run input)
+  ;   - selector profile id (per-profile parameter, not state)
+```
+
+Pre-flight gate for any genesis-arena run:
+
+```
+profile_a_bootstrap_hash == profile_b_bootstrap_hash
+                         == profile_c_bootstrap_hash
+                         == profile_d_bootstrap_hash
+                         == profile_e_bootstrap_hash
+```
+
+If hashes differ before workload runs, the comparison is dead on
+arrival.  Arena MUST refuse to start and emit
+`'asymmetric-bootstrap-hash` to the ledger.
+
+**This is the operational test that minimal-origin fairness is
+actually enforced**, not merely declared.
 
 ---
 
@@ -674,9 +724,17 @@ for future evaluation.
 8. 36D comparison metrics file written (5 profiles × 10 metrics
    × 3 seeds, all in genesis-arena mode).
 9. NO selector promoted to canon.
-10. `BOOTSTRAP-RESET` verified empty-state via inspection: zero
-    cand_NNN entries, zero accumulated counters, only the
-    minimal bootstrap inclusion list present.
+10. `BOOTSTRAP-RESET` verified FULL empty-state via inspection:
+    zero cand_NNN entries, zero accumulated counters (reuse,
+    support credit, observed deps, energy buffers, heldout
+    wins/attempts, positive/negative epoch history), zero
+    sandbox artifacts, zero contamination flags, zero L2
+    entries, zero comm/request state, only the minimal
+    bootstrap inclusion list present.
+11. **Identical bootstrap law-hash:** all five profiles produce
+    IDENTICAL `BOOTSTRAP-LAW-HASH` immediately after their
+    respective `BOOTSTRAP-RESET` calls, before any workload
+    runs.  Pre-flight gate enforced mechanically.
 
 ### FAIL (any one triggers)
 
@@ -700,6 +758,14 @@ for future evaluation.
 10. Profile A in genesis-arena run is compared against profiles
     B-E using DIFFERENT initial law-state (any source of
     inherited-vocabulary asymmetry).
+11. Any profile produces a `BOOTSTRAP-LAW-HASH` after
+    `BOOTSTRAP-RESET` that differs from any other profile's
+    bootstrap hash.  (Mechanical pre-flight gate must fire.)
+12. `BOOTSTRAP-RESET` leaves residual state in ANY of:
+    cand dictionary, reuse counter, support credit, observed
+    deps, energy buffers, heldout wins/attempts, positive/
+    negative epoch history, sandbox dictionary, contamination
+    flags, L2 dictionary, comm ledger, cycle-34A capacity.
 
 ### VALID NEGATIVE RESULT
 
@@ -713,7 +779,7 @@ promotion requires the full cycle 37+ amendment protocol.
 
 ---
 
-## Six negative tests (binding)
+## Eight negative tests (binding)
 
 To be implemented as cycle 36B demos:
 
@@ -757,21 +823,55 @@ cycle 36, error: `'amendment-out-of-scope`.
 ### NEG-7 — Inherited-vocabulary in genesis-arena rejected
 
 Attempt: a genesis-arena run skips `BOOTSTRAP-RESET` (or starts
-with a non-empty cand dictionary).
+with a non-empty cand dictionary, lingering counters, or any
+non-zero state from the FULL empty-state list above).
 
 Expected: arena rejects the run with
 `'genesis-arena-impure-start`; metrics for that run are NOT
 recorded; ledger event documents the rejection.
 
-Verification:
-- Construct a test that pre-promotes a cand_NNN, then attempts
-  a genesis-arena run without BOOTSTRAP-RESET.
-- Assert: the arena either auto-resets (preferred) or fails with
-  the documented error.
-- Assert: no leaked cand reaches the metric computation.
+Verification — all sub-cases must fail at the boundary:
+
+1. Pre-promote a `cand_NNN`, then start genesis-arena WITHOUT
+   `BOOTSTRAP-RESET`.  Assert: rejected.
+2. Run `BOOTSTRAP-RESET`, then manually poke a non-zero reuse
+   counter / support-credit / observed-dep / energy buffer /
+   heldout-wins / momentum-history entry, then start arena.
+   Assert: rejected (each axis tested as separate sub-case).
+3. Pre-load a sandbox-stable artifact or contamination flag,
+   then `BOOTSTRAP-RESET`, then verify it is actually cleared
+   (i.e., reset is comprehensive, not selective).
+4. Inject a stale comm-ledger or request-queue entry, then
+   verify reset wipes it.
+
+Assert: in all sub-cases, no leaked state reaches the metric
+computation; ledger documents the rejection axis.
 
 Rationale: this is the operational enforcement of Invariant 6
-(minimal-origin fairness).
+(minimal-origin fairness).  Tested per-axis, not just "did the
+cand dictionary clear" — the whole empty-state list matters.
+
+### NEG-8 — Asymmetric bootstrap hash across profiles rejected
+
+Attempt: profiles A through E produce DIFFERENT
+`BOOTSTRAP-LAW-HASH` values after their respective
+`BOOTSTRAP-RESET` calls (e.g., a profile's parameter override
+accidentally leaks into the bootstrap state, or a profile
+constructor smuggles a hidden cand).
+
+Expected: arena pre-flight gate rejects the comparison run
+with `'asymmetric-bootstrap-hash`; no workload runs; ledger
+documents which profile pair's hash differed.
+
+Verification:
+- Construct a test where profile B's wiring accidentally
+  pre-binds a stdlib word that A does not have.
+- Assert: pre-flight gate fires BEFORE workload execution.
+- Assert: ledger event names the divergent profile.
+
+Rationale: identical-bootstrap-hash is the mechanical proof
+that all profiles share the same starting line.  If hashes
+diverge, the comparison is meaningless and must not proceed.
 
 ---
 
@@ -839,17 +939,33 @@ recursive corruption or canon mutation.
 ## Phase breakdown (intended)
 
 - **36A (this pre-reg):** method + 5 profiles + 10 metrics +
-  6 NEG tests + invariants + pitfall.  No code.
+  8 NEG tests + 6 invariants (including minimal-origin
+  fairness + identical-bootstrap-hash) + pitfall.  No code.
 
-- **36B:** implementation:
-  1. SelectionProfile struct + canon = baseline (no functional change)
-  2. Existing cycle 25-33 constants routed through profile accessors
-  3. Regression check: 2269/2269 ✓
-  4. Sandbox runtime mode (parameterized engine flag)
-  5. `with-profile` helper
-  6. 6 NEG test demos
-  7. Blind arena workload generator (`stdlib/harness/blind-arena-workload.6th`)
-  8. `RUN-BLIND-ARENA`, `REPORT-METRICS` harness words
+- **36B:** implementation, in this strict order:
+  1. **`BOOTSTRAP-RESET` first.** Fresh-engine factory, not
+     in-place mutation.  Full empty-state per the 14-item
+     binding list (cands, counters, support credit, energy,
+     heldout, momentum history, sandbox, contamination, L2,
+     comm, cycle 34A capacity).
+  2. **`BOOTSTRAP-LAW-HASH` second.**  Canonical hash over the
+     inclusion list + meta-protocol version + all-zero state.
+     Excludes session id, workload seed, profile id.
+  3. **NEG-7 (per-axis) and NEG-8 (hash symmetry) third.**
+     Before any selector comparison code, prove the floor is
+     clean: every empty-state axis tested, all five profile
+     hashes identical.  If NEG-7 / NEG-8 are not iron, no
+     downstream metric is valid.
+  4. SelectionProfile struct + canon = baseline (no functional change).
+  5. Existing cycle 25-33 constants routed through profile accessors.
+  6. Regression check: 2269/2269 ✓ (canon-regression mode).
+  7. Sandbox runtime mode (parameterized engine flag).
+  8. `with-profile` helper.
+  9. Remaining NEG-1 through NEG-6 demos.
+  10. Blind arena workload generator (`stdlib/harness/blind-arena-workload.6th`).
+  11. `RUN-BLIND-ARENA`, `REPORT-METRICS` harness words.
+  12. Pre-flight gate that verifies identical bootstrap hash
+      across all 5 profiles before any workload runs.
 
 - **36C:** baseline characterization run (3 seeds, profile A only).
   Results in `RESULTS-182-cycle36-baseline.md`.
@@ -873,13 +989,14 @@ recursive corruption or canon mutation.
       test; constitution/sandbox/amendment hierarchy)
 - [x] Rule 3: deterministic — SelectionProfile is data,
       sandbox isolation is mechanical, metrics are pure functions
-- [x] Rule 4: pass/fail partition outcome space across 6 NEG
+- [x] Rule 4: pass/fail partition outcome space across 8 NEG
       tests + baseline characterization + comparison
 - [x] Rule 5: blind workload generator is real, reproducible
 - [x] Rule 6: regression count update post-result; new demos
       registered
-- [x] Rule 7: NEG-1..NEG-6 prevent selector self-promotion,
-      sandbox escape, meta-protocol mutation
+- [x] Rule 7: NEG-1..NEG-8 prevent selector self-promotion,
+      sandbox escape, meta-protocol mutation, inherited-
+      vocabulary starts, asymmetric bootstrap hash
 - [x] Rule 8: scope = parameterization + sandbox + harness;
       0 new alphabet primitives, 0 new env-keys outside
       _active-selection-profile + sandbox-isolation flag
