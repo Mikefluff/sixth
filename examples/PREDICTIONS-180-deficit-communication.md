@@ -1,9 +1,55 @@
-# PREDICTIONS-180 — Deficit-Driven Composite Communication (cycle 35, retitled)
+# PREDICTIONS-180 — Deficit-Driven Composite Communication (DEFERRED)
 
 **Date pre-registered:** 2026-05-25
 
 **Attested via** `scripts/attest_prediction.sh` per Rule 9.
 Initial attestation: see ledger row dated 2026-05-25.
+
+---
+
+## DEFERRAL NOTICE (2026-05-25, second user pivot)
+
+**This pre-reg is DEFERRED, not retracted.**  It remains attested
+and remains a valid binding spec for a future cycle.  But cycle 35
+has been retitled again.
+
+User reasoning (2026-05-25, after reviewing this pre-reg):
+
+> We've gone too far into superstructure: profiles, support,
+> communication, capabilities, ledger, budgets.  All important,
+> but the vocabulary is inflating faster than we understand
+> primary selection.
+>
+> We need to back up closer to genesis.
+>
+> Not "how does a composite communicate" but:
+> how does the first stable primitive emerge from the primary
+> stream at all?
+>
+> Before law.  Before capability.  Before request.  Before
+> support.  Before stable.  Before communication.
+>
+> Bare question: there's a stream of ops, there are mutations,
+> there's energy, there's decay — what pattern survives FIRST?
+
+**Cycle 35 is retitled again:** Proto-Primitive Natural Selection.
+See `examples/PREDICTIONS-181-proto-primitive-selection.md`.
+
+> Before communication, there must be metabolism.
+> Before metabolism of composites, there must be selection of
+> proto-primitives.
+
+**When this pre-reg becomes active again:** after the genesis
+study (cycle 35 retitled #2) has illuminated which selection
+pressures actually shape early L2 candidates.  At that point,
+composite communication becomes a meaningful addition to systems
+that have a real population of selected primitives.  Until then,
+adding capabilities to fixtures is bureaucracy.
+
+**Original 5-invariant + 7-primitive + 6-demo specification
+below is preserved unchanged for future reference.**
+
+---
 
 ---
 

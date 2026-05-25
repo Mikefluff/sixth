@@ -46,3 +46,5 @@
 2026-05-24T04:27:05Z  23946960c27f20be64034ef3edde8a71ba73a8c32a96de4652852b5ddade024c  examples/PREDICTIONS-179-persistence-layer.md  65d582e
 2026-05-25T19:26:25Z  f8c3049de36eac3006514ef4f7abb3fb5ee3ccaa54b47c9bced268670f8fc1f7  examples/PREDICTIONS-179-persistence-layer.md  5cbf5bd
 2026-05-25T19:26:25Z  3e698b8a53d38d85d8a47bf016cb9f10c355a70bf17afec2cff11868c9bf4591  examples/PREDICTIONS-180-deficit-communication.md  5cbf5bd
+2026-05-25T19:32:40Z  05baa78cdbc3657c9a5bf0f01209c454c8e7a63b9e66f5f637587ed9a30dfd0e  examples/PREDICTIONS-180-deficit-communication.md  b8fb890
+2026-05-25T19:32:40Z  57f5f423e64bdd4cf762b3d0ab146ad801ff987153e5b33d5ef2b6470068496e  examples/PREDICTIONS-181-proto-primitive-selection.md  b8fb890
