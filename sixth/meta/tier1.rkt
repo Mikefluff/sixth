@@ -30,7 +30,8 @@
          "../opcodes.rkt"
          "../substrate/core.rkt"
          "../vm.rkt"
-         "runtime.rkt")
+         "runtime.rkt"
+         (only-in "profiles.rkt" profile-inflation-cost))
 
 ;; ---- mining params (frozen here for cycle 25; will move to
 ;;      mining_protocol.md attestation in cycle 25C) ----
@@ -768,16 +769,17 @@
 (define (alist-lookup b key) (let ([x (assq key (unbox b))]) (if x (cdr x) 0)))
 
 (define (compute-momentum-for e cand-sym)
-  ;; Cycle 31: every active primitive pays INFLATION-COST-PER-CAND=1
-  ;; per epoch on top of its expansion-length carry.  The +1 penalty
-  ;; never changes any cycle 29/30 demo transition (analytically
-  ;; verified in PREDICTIONS-163.md backward-compat contract) but
-  ;; prevents stable primitives from sitting forever without
-  ;; contributing.
+  ;; Cycle 31: every active primitive pays inflation cost per epoch on
+  ;; top of its expansion-length carry.  Baseline = 1.  Cycle 36B
+  ;; routed through (profile-inflation-cost): a selector profile may
+  ;; override (e.g. Profile B = 0, Profile C = 3) when run inside
+  ;; with-profile.  Outside with-profile current-profile is
+  ;; BASELINE-PROFILE so behavior is identical to canon (regression
+  ;; gate 2278/2278 ✓ enforces this).
   (define reuse (alist-lookup (cand-recent-reuse-of e) cand-sym))
   (define fails (alist-lookup (cand-recent-fails-of e) cand-sym))
   (define carry (expansion-length-of e cand-sym))
-  (- reuse carry fails INFLATION-COST-PER-CAND))
+  (- reuse carry fails (profile-inflation-cost)))
 
 (define (prim-law-momentum e)
   (define c (require-sym (pop! e) 'LAW-MOMENTUM))
