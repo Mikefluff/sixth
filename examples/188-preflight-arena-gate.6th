@@ -1,0 +1,59 @@
+\ examples/188-preflight-arena-gate.6th
+\ Cycle 36B — Pre-flight arena gate: identical BOOTSTRAP-LAW-HASH
+\ across all 5 profiles after their respective BOOTSTRAP-RESET, BEFORE
+\ any workload runs.
+\
+\ Mechanical enforcement of Invariant 6 (minimal-origin fairness).
+\ Per spec NEG-8 and the explicit user-added requirement:
+\   "Before profile comparison, assert identical BOOTSTRAP-LAW-HASH
+\    across all profiles after BOOTSTRAP-RESET."
+\
+\ Pre-reg: examples/PREDICTIONS-182-selection-law-scaffold.md
+
+use prelude
+use debug
+
+cr "=== Demo 188 — pre-flight arena gate (5-profile hash symmetry) ===" . cr
+
+\ ---- Profile inventory verification -----------------------------------
+ARENA-PROFILE-COUNT "n-profiles" store
+
+\ ---- Pre-flight gate: 5-profile hash symmetry -------------------------
+\ ARENA-IDENTICAL-HASH? iterates ALL-PROFILES, runs BOOTSTRAP-RESET
+\ under each profile, collects BOOTSTRAP-LAW-HASH, asserts they
+\ are all equal.  Returns 1 on success, 0 on divergence (no raise).
+ARENA-IDENTICAL-HASH? "preflight-result" store
+
+\ ---- PREFLIGHT-ARENA: stricter version that raises on divergence -----
+\ Should succeed (push 1) because all 5 profiles share the same
+\ bootstrap inclusion list — profile name does not enter
+\ BOOTSTRAP-LAW-HASH.  After successful gate, baseline is restored.
+PREFLIGHT-ARENA "preflight-strict-result" store
+PROFILE-ACTIVE  "active-after-gate" store
+
+\ ---- Diagnostics ------------------------------------------------------
+cr "Profile inventory:" . cr
+"  count                   = " . "n-profiles"             load . cr
+cr "Pre-flight gate results:" . cr
+"  identical hash?         = " . "preflight-result"       load . cr
+"  PREFLIGHT-ARENA result  = " . "preflight-strict-result" load . cr
+"  active profile after    = " . "active-after-gate"     load . cr
+cr
+
+\ ---- Assertions -------------------------------------------------------
+\ 5 profiles defined (A, B, C, D, E).
+"n-profiles" load 5 assert-eq
+
+\ Hash symmetry holds across the full 5-profile set.
+"preflight-result" load 1 assert-eq
+
+\ Strict gate also passes.
+"preflight-strict-result" load 1 assert-eq
+
+\ Baseline restored after the gate.
+"active-after-gate" load 'A assert-eq
+
+cr "Pre-flight gate confirmed: all 5 profiles share identical" . cr
+cr "                           BOOTSTRAP-LAW-HASH after RESET." . cr
+cr "                           Genesis-arena comparison is fair." . cr
+REPORT

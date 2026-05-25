@@ -407,7 +407,10 @@
     ;; for accounting purposes only; actual world/meta mutation
     ;; happens inside bootstrap-reset!.
     BOOTSTRAP-RESET BOOTSTRAP-LAW-HASH
-    BOOTSTRAP-EMPTY? BOOTSTRAP-RESIDUAL))
+    BOOTSTRAP-EMPTY? BOOTSTRAP-RESIDUAL
+    ;; cycle 36B arena: selector profile + pre-flight gate.
+    PROFILE-ACTIVE PROFILE-SET PROFILE-RESET-CANON
+    PREFLIGHT-ARENA ARENA-IDENTICAL-HASH? ARENA-PROFILE-COUNT))
 
 (define (inspection-op? name)
   (and (memq name INSPECTION-OPS) #t))

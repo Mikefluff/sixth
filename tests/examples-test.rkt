@@ -774,7 +774,17 @@
     ;; 187. NEG-8 — BOOTSTRAP-LAW-HASH symmetry: two sequential resets
     ;;      yield identical hash; induce-then-reset yields same hash;
     ;;      INDUCE-RUNTIME diverges hash.  3 asserts.
-    ("187-neg8-bootstrap-hash-symmetry.6th"       3)))
+    ("187-neg8-bootstrap-hash-symmetry.6th"       3)
+    ;; 188. Pre-flight arena gate: identical BOOTSTRAP-LAW-HASH across
+    ;;      all 5 selector profiles after BOOTSTRAP-RESET, before any
+    ;;      workload runs.  Operational enforcement of Invariant 6.
+    ;;      4 asserts.
+    ("188-preflight-arena-gate.6th"               4)
+    ;; 189. Sandbox isolation across profiles: profile switch +
+    ;;      BOOTSTRAP-RESET sandbox boundary prevents state leak.
+    ;;      Covers NEG-2 (canon not mutated) and NEG-6 (no promotion).
+    ;;      8 asserts.
+    ("189-arena-sandbox-isolation.6th"            8)))
 
 (define (run-demo file)
   (define out
@@ -799,8 +809,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 2278
-                (format "cumulative ✓ count: ~a (expected 2278)" total-pass)))
+  (check-equal? total-pass 2290
+                (format "cumulative ✓ count: ~a (expected 2290)" total-pass)))
 
-(displayln (format "examples regression: ~a / 2278 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 2290 ✓ across ~a demos"
                    total-pass (length expected)))

@@ -22,7 +22,8 @@
          "meta/tier1.rkt"
          "meta/tier2.rkt"
          "meta/test-harness.rkt"
-         "meta/bootstrap.rkt")
+         "meta/bootstrap.rkt"
+         "meta/arena.rkt")
 
 (define no-prelude? (make-parameter #f))
 (define defines    (make-parameter '()))   ; list of (cons KEY VAL)
@@ -60,6 +61,7 @@
   (register-test-harness! e)
   ;; Cycle 36B: BOOTSTRAP-RESET / BOOTSTRAP-LAW-HASH primitives.
   (register-bootstrap! e)
+  (register-arena! e)
   (unless (no-prelude?)
     (use-module! "prelude" e))
   (apply-defines! e)

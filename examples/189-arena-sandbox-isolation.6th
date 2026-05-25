@@ -1,0 +1,92 @@
+\ examples/189-arena-sandbox-isolation.6th
+\ Cycle 36B — Sandbox isolation: profile switch + BOOTSTRAP-RESET
+\ between profile runs prevents state leak across profiles.
+\
+\ Covers operational essence of NEG-2 (sandbox cannot mutate canon)
+\ and NEG-6 (amendment out of scope: no promotion in cycle 36).
+\
+\ Mechanism:
+\   - PROFILE-SET switches active selector profile.
+\   - BOOTSTRAP-RESET wipes cand_NNN dictionary + all counters.
+\   - PROFILE-RESET-CANON restores BASELINE-PROFILE (A).
+\   - Cycle 36 NEVER calls PROMOTE-STABLE-TO-CANON (no such primitive
+\     exists — amendment requires cycle 37+ separate pre-reg).
+
+use prelude
+use debug
+
+cr "=== Demo 189 — sandbox isolation across profiles ===" . cr
+
+\ ---- Profile B run: high-inflation pressure -------------------------
+BOOTSTRAP-RESET
+'B PROFILE-SET
+PROFILE-ACTIVE "active-during-B" store
+
+\ workload under B (inflation=0): induce a short motif
+MARK drop MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "m-B" store
+"m-B" load SHADOW-CHECK drop
+"m-B" load INDUCE-RUNTIME "c-B" store
+
+\ snapshot state under B
+BOOTSTRAP-EMPTY? "empty-after-B-induce" store
+
+\ ---- Sandbox boundary: BOOTSTRAP-RESET + profile reset ----------------
+BOOTSTRAP-RESET
+PROFILE-RESET-CANON
+PROFILE-ACTIVE "active-after-reset" store
+BOOTSTRAP-EMPTY? "empty-after-reset" store
+
+\ ---- Profile C run: low-inflation pressure --------------------------
+'C PROFILE-SET
+PROFILE-ACTIVE "active-during-C" store
+
+\ workload under C (inflation=3)
+MARK drop MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "m-C" store
+"m-C" load SHADOW-CHECK drop
+"m-C" load INDUCE-RUNTIME "c-C" store
+
+BOOTSTRAP-EMPTY? "empty-after-C-induce" store
+
+\ ---- Final reset back to canon --------------------------------------
+BOOTSTRAP-RESET
+PROFILE-RESET-CANON
+PROFILE-ACTIVE "active-final" store
+BOOTSTRAP-EMPTY? "empty-final" store
+
+\ ---- Diagnostics ----------------------------------------------------
+cr "Profile B run:" . cr
+"  active            = " . "active-during-B"     load . cr
+"  empty after induce= " . "empty-after-B-induce" load . cr
+cr "Sandbox boundary:" . cr
+"  active after reset= " . "active-after-reset"  load . cr
+"  empty after reset = " . "empty-after-reset"   load . cr
+cr "Profile C run:" . cr
+"  active            = " . "active-during-C"     load . cr
+"  empty after induce= " . "empty-after-C-induce" load . cr
+cr "Final state:" . cr
+"  active            = " . "active-final"        load . cr
+"  empty             = " . "empty-final"         load . cr
+cr
+
+\ ---- Assertions -----------------------------------------------------
+\ Profile switching observable.
+"active-during-B"   load 'B  assert-eq
+"active-after-reset" load 'A assert-eq
+"active-during-C"   load 'C  assert-eq
+"active-final"      load 'A  assert-eq
+
+\ Induction inside a profile dirty state (cand_NNN added).
+"empty-after-B-induce" load 0 assert-eq
+"empty-after-C-induce" load 0 assert-eq
+
+\ BOOTSTRAP-RESET between profiles cleanly restores empty floor.
+"empty-after-reset" load 1 assert-eq
+"empty-final"       load 1 assert-eq
+
+cr "Sandbox isolation confirmed: profiles do not leak state via" . cr
+cr "                              BOOTSTRAP-RESET sandbox boundary." . cr
+cr "                              Canon (BASELINE) restored after each." . cr
+cr "                              No promotion primitive invoked (NEG-6)." . cr
+REPORT
