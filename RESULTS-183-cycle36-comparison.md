@@ -7,6 +7,40 @@ Workload: `stdlib/harness/blind-arena-workload.6th` (frozen)
 
 ---
 
+## NOTE — track deprecated 2026-05-25
+
+User direction after this writeup: selector-arena framing was
+**over-engineered**.  Comparing constitutions before observing
+whether ANY fixed physics produces durable evolution is premature.
+
+**Selector-arena track is DEPRECATED for active development.**
+
+Preserved for reference but OFF the active roadmap:
+- SelectionProfile struct + 5 named profiles (A–E)
+- PROFILE-SET / PROFILE-RESET-CANON / PROFILE-ACTIVE
+- RUN-WORKLOAD-PROFILE
+- Hyperparameter routing through `(profile-*)` accessors
+- Cycle 37+ amendment protocol (not pursued)
+
+**Preserved as floor for future cycles:**
+- BOOTSTRAP-RESET (full empty-state in-place reset)
+- BOOTSTRAP-LAW-HASH (canonical fingerprint)
+- BOOTSTRAP-EMPTY? / BOOTSTRAP-RESIDUAL
+- PREFLIGHT-ARENA / ARENA-IDENTICAL-HASH? (clean-start verification)
+
+New direction: **PREDICTIONS-184 cycle 36R — Fixed-Physics Genesis
+Runs.** Single canon rule-set, multiple seeded workloads, observe
+what motif shapes survive across seeds.  Base criteria
+(equivalence, energy, time, transfer, decay, memory, canon
+boundary) are physics, not candidates.
+
+The data below stands as forensic record of what the arena
+scaffold DID; the framing it operated under is set aside.
+
+---
+
+---
+
 ## What this cycle delivers
 
 The 5-profile blind arena comparison runs end-to-end:

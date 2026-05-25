@@ -7,6 +7,29 @@ Initial attestation: see ledger row dated 2026-05-25.
 
 ---
 
+## STATUS — TRACK DEPRECATED 2026-05-25
+
+User direction post-implementation: selector-arena framing was
+over-engineered.  Premature to compare constitutions before
+observing whether ANY fixed physics produces durable repeatable
+evolution.
+
+**Active track replacement:** `PREDICTIONS-184-cycle36R-fixed-
+physics-genesis.md`.
+
+Scaffold preserved (regression green, 2297 ✓) for reference but
+NOT on active roadmap.  Floor primitives (BOOTSTRAP-RESET /
+BOOTSTRAP-LAW-HASH / PREFLIGHT-ARENA) remain useful for any
+future cycle requiring clean-start guarantees.
+
+The 5 named profiles + RUN-WORKLOAD-PROFILE machinery sits in
+the codebase as deferred — to be revisited only if cycle 36R+
+forensic evidence shows that fixed-physics genesis is
+fundamentally under-determined and requires constitutional
+selection.
+
+---
+
 ## Cycle context — the meta-selection question
 
 Cycle 35 (genesis) studied L1 selection: GIVEN fixed selection
