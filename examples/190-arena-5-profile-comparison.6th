@@ -1,0 +1,83 @@
+\ examples/190-arena-5-profile-comparison.6th
+\ Cycle 36D — 5-profile blind arena comparison run.
+\
+\ Single deterministic blind workload (stdlib/harness/blind-arena-
+\ workload.6th) is executed under each of the 5 selector profiles
+\ A, B, C, D, E.  For each profile we collect two summary metrics:
+\
+\   - cand_count: number of cand_NNN entries in env-words after run
+\   - promoted?: 1 if any cand reached 'stable-active, else 0
+\
+\ Metrics are computed by the frozen meta-protocol
+\ (prim-run-workload-profile in sixth/meta/arena.rkt), NOT by the
+\ selector profile.  Selector profile is read-only data; metric
+\ computation is in Racket.  NEG-5 enforcement.
+\
+\ Pre-flight gate first: assert all 5 profiles share identical
+\ BOOTSTRAP-LAW-HASH before any workload runs.
+\
+\ NO PROMOTION: this demo never promotes a non-baseline profile
+\ to canon.  The data informs cycle 37+ amendment design ONLY.
+\ Per spec NEG-6.
+\
+\ Pre-reg: examples/PREDICTIONS-182-selection-law-scaffold.md
+\          §"What cycle 36 IS / What cycle 36 is NOT"
+
+use prelude
+use debug
+use harness/blind-arena-workload
+
+cr "=== Demo 190 — 36D: 5-profile blind arena comparison ===" . cr
+
+\ ---- Pre-flight gate ------------------------------------------------
+PREFLIGHT-ARENA "preflight" store
+
+\ ---- Run workload under each profile -------------------------------
+'A 'blind-arena-workload RUN-WORKLOAD-PROFILE
+"A-promoted?" store "A-cand-count" store
+
+'B 'blind-arena-workload RUN-WORKLOAD-PROFILE
+"B-promoted?" store "B-cand-count" store
+
+'C 'blind-arena-workload RUN-WORKLOAD-PROFILE
+"C-promoted?" store "C-cand-count" store
+
+'D 'blind-arena-workload RUN-WORKLOAD-PROFILE
+"D-promoted?" store "D-cand-count" store
+
+'E 'blind-arena-workload RUN-WORKLOAD-PROFILE
+"E-promoted?" store "E-cand-count" store
+
+\ ---- Diagnostics ----------------------------------------------------
+cr "Pre-flight gate     = " . "preflight" load . cr
+cr
+cr "5-profile arena results (cand_count, promoted?):" . cr
+"  Profile A baseline       : " . "A-cand-count" load . " / " . "A-promoted?" load . cr
+"  Profile B low-inflation  : " . "B-cand-count" load . " / " . "B-promoted?" load . cr
+"  Profile C high-inflation : " . "C-cand-count" load . " / " . "C-promoted?" load . cr
+"  Profile D long-memory    : " . "D-cand-count" load . " / " . "D-promoted?" load . cr
+"  Profile E strict-coupling: " . "E-cand-count" load . " / " . "E-promoted?" load . cr
+cr
+
+\ ---- Assertions -----------------------------------------------------
+\ Pre-flight gate passed: all 5 profiles same bootstrap hash.
+"preflight" load 1 assert-eq
+
+\ All profiles ran the workload and produced ≥1 cand.  This is the
+\ minimal liveness check: the harness actually executes the workload
+\ under each profile binding.
+"A-cand-count" load 0 > 1 assert-eq
+"B-cand-count" load 0 > 1 assert-eq
+"C-cand-count" load 0 > 1 assert-eq
+"D-cand-count" load 0 > 1 assert-eq
+"E-cand-count" load 0 > 1 assert-eq
+
+\ Active profile after RUN-WORKLOAD-PROFILE returned to baseline
+\ (dynamic-extent restoration).
+PROFILE-ACTIVE 'A assert-eq
+
+cr "5-profile blind arena comparison complete." . cr
+cr "All 5 profiles ran the same workload under their own selection laws." . cr
+cr "Metrics computed by frozen meta-protocol (NEG-5)." . cr
+cr "No selector promoted to canon (NEG-6)." . cr
+REPORT

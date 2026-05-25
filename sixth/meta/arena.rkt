@@ -37,7 +37,8 @@
          "../vm.rkt"
          "runtime.rkt"
          "profiles.rkt"
-         "bootstrap.rkt")
+         "bootstrap.rkt"
+         (only-in "../vm.rkt" run!))
 
 (define (push! e v) (env-push! e v))
 (define (pop! e) (env-pop! e (current-prim-srcloc)))
@@ -134,15 +135,72 @@
 (define (prim-arena-profile-count e)
   (push! e (length ALL-PROFILES)))
 
+;; ---- RUN-WORKLOAD-PROFILE -----------------------------------------
+;;
+;; Stack effect: ( profile-sym workload-word-sym -- cand_count promoted? )
+;;
+;; Driver primitive: looks up workload-word-sym in env-words, runs it
+;; inside (with-profile <profile>) + BOOTSTRAP-RESET'd state, then
+;; collects two summary metrics:
+;;   - cand_count: count of cand_NNN entries in env-words after run
+;;   - promoted?: 1 if any cand has status 'stable-active, else 0
+;;
+;; Metrics are computed by the frozen meta-protocol (this function),
+;; NOT by the selector profile.  Selector profile data has no metric
+;; computation path — operational enforcement of NEG-5.
+
+(define (prim-run-workload-profile e)
+  (define wname (pop! e))
+  (define pname (pop! e))
+  (define p (lookup-profile-by-name pname))
+  (define w (env-lookup-word e wname))
+  (unless p
+    (raise (exn:fail:sixth
+            (format "RUN-WORKLOAD-PROFILE: unknown profile ~v" pname)
+            (current-continuation-marks)
+            (current-prim-srcloc))))
+  (unless w
+    (raise (exn:fail:sixth
+            (format "RUN-WORKLOAD-PROFILE: word ~v not defined; load workload module first"
+                    wname)
+            (current-continuation-marks)
+            (current-prim-srcloc))))
+  ;; Use dynamic-wind to ensure baseline is restored even on
+  ;; workload exception (NEG-2: canon cannot stay mutated).
+  (parameterize ([current-profile p])
+    (bootstrap-reset! e)
+    (with-handlers ([exn:fail?
+                     (lambda (ex)
+                       (current-profile BASELINE-PROFILE)
+                       (raise ex))])
+      ;; Run the workload word body.
+      (run! (word-opcodes w) e)))
+  ;; After dynamic extent exits, current-profile is BASELINE again
+  ;; via parameterize.  Now collect metrics from the post-workload
+  ;; state — BEFORE another BOOTSTRAP-RESET would wipe them.
+  (define cand-count
+    (for/sum ([k (in-list (hash-keys (env-words e)))]
+              #:when (cand-name? k))
+      1))
+  (define statuses (unbox (cand-status-of e)))
+  (define promoted?
+    (if (for/or ([row (in-list statuses)])
+          (eq? (cdr row) 'stable-active))
+        1
+        0))
+  (push! e cand-count)
+  (push! e promoted?))
+
 ;; ---- registration ----------------------------------------------------
 
 (define ARENA-TABLE
-  (list (cons 'PROFILE-ACTIVE        prim-profile-active)
-        (cons 'PROFILE-SET           prim-profile-set)
-        (cons 'PROFILE-RESET-CANON   prim-profile-reset-canon)
-        (cons 'PREFLIGHT-ARENA       prim-preflight-arena)
-        (cons 'ARENA-IDENTICAL-HASH? prim-arena-identical-hash?)
-        (cons 'ARENA-PROFILE-COUNT   prim-arena-profile-count)))
+  (list (cons 'PROFILE-ACTIVE         prim-profile-active)
+        (cons 'PROFILE-SET            prim-profile-set)
+        (cons 'PROFILE-RESET-CANON    prim-profile-reset-canon)
+        (cons 'PREFLIGHT-ARENA        prim-preflight-arena)
+        (cons 'ARENA-IDENTICAL-HASH?  prim-arena-identical-hash?)
+        (cons 'ARENA-PROFILE-COUNT    prim-arena-profile-count)
+        (cons 'RUN-WORKLOAD-PROFILE   prim-run-workload-profile)))
 
 (define (register-arena! e)
   (for ([entry (in-list ARENA-TABLE)])

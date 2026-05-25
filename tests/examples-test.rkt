@@ -784,7 +784,13 @@
     ;;      BOOTSTRAP-RESET sandbox boundary prevents state leak.
     ;;      Covers NEG-2 (canon not mutated) and NEG-6 (no promotion).
     ;;      8 asserts.
-    ("189-arena-sandbox-isolation.6th"            8)))
+    ("189-arena-sandbox-isolation.6th"            8)
+    ;; 190. 36D 5-profile blind arena comparison: pre-flight gate +
+    ;;      RUN-WORKLOAD-PROFILE × 5 profiles on a single blind
+    ;;      workload (stdlib/harness/blind-arena-workload.6th).
+    ;;      Metrics: cand_count + promoted? per profile.  NO promotion
+    ;;      of any selector to canon.  7 asserts.
+    ("190-arena-5-profile-comparison.6th"         7)))
 
 (define (run-demo file)
   (define out
@@ -809,8 +815,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 2290
-                (format "cumulative ✓ count: ~a (expected 2290)" total-pass)))
+  (check-equal? total-pass 2297
+                (format "cumulative ✓ count: ~a (expected 2297)" total-pass)))
 
-(displayln (format "examples regression: ~a / 2290 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 2297 ✓ across ~a demos"
                    total-pass (length expected)))

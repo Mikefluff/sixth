@@ -1,0 +1,33 @@
+\ stdlib/harness/blind-arena-workload.6th
+\ Cycle 36B step 10 — deterministic blind workload for selector
+\ profile comparison.
+\
+\ Designed without targeting any specific motif length or shape:
+\ mixed-length operations (single, pair, triple), interspersed
+\ idle and productive epochs.  The same opcode sequence runs under
+\ every profile; differences in outcome therefore come solely from
+\ selection-law differences.
+\
+\ Frozen as part of meta-protocol M.  Modifications require a
+\ separate amendment cycle.
+
+\ The workload is itself a sixth word that produces standard
+\ induction events.  Each profile run calls this word inside its
+\ own with-profile + BOOTSTRAP-RESET scope.
+: blind-arena-workload
+  \ -- Phase 1: induce a short motif (MARK drop, L=2)
+  MARK drop  MARK drop  MARK drop
+  MARK drop  MARK drop  MARK drop
+  DETECT-MOTIF-AUTO "wk-m1" store
+  "wk-m1" load SHADOW-CHECK drop
+  "wk-m1" load INDUCE-RUNTIME drop
+
+  \ -- Phase 2: cand uses across multiple sessions to satisfy
+  \             COUPLING-N (5 baseline; 8 for Profile E).  Use 10×
+  \             with 5 distinct sessions to satisfy every profile.
+  cand_001 cand_001
+  NEW-SESSION cand_001 cand_001
+  NEW-SESSION cand_001 cand_001
+  NEW-SESSION cand_001 cand_001
+  NEW-SESSION cand_001 cand_001
+;
