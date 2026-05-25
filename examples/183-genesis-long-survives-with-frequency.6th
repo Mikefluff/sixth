@@ -1,0 +1,95 @@
+\ examples/183-genesis-long-survives-with-frequency.6th
+\ Cycle 35 — Genesis demo H1 (positive control): IDENTICAL motif
+\ as demo 182 (L=3 = MARK MARK bi-edge).  ONLY difference: K=8
+\ sustained instead of K=1.  Same motif body, same promotion flow,
+\ same metabolism mechanism.
+\
+\ For L=3, K=8: m_native = 8*(L-1) - L - inflation = 16 - 3 - 1 = +12.
+\ Comfortably positive; survives every NE cycle.
+\
+\ Hypothesis H1 (continued): given the same length-3 motif, sufficient
+\ sustained frequency repays carry+inflation and the cand survives.
+\
+\ Demo 182 vs demo 183: same motif, frequency-only variable → opposite
+\ outcome.  This isolates H1's frequency axis from confounding.
+\
+\ Pre-reg: PREDICTIONS-181-proto-primitive-selection.md
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 183 — genesis: motif L=3 survives at K=8 sustained ===" . cr
+
+RESET
+
+\ ---- Identical induction workload to demo 182 ----
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+DETECT-MOTIF-AUTO "motif" store
+"motif" load SHADOW-CHECK drop
+"motif" load INDUCE-RUNTIME "c" store
+
+\ ---- COMMIT path ----
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c" load COMMIT-PRIMITIVE drop
+"c" load HELD-OUT-EVAL drop
+"c" load PROMOTE-STABLE drop
+"c" load CAND-STATUS "status-initial" store
+
+\ ---- Drain NE ----
+NEW-EPOCH
+"c" load CAND-STATUS "status-drain" store
+
+\ ---- Phase 1: K=8 sustained → m=+12 ----
+cand_001 cand_001 cand_001 cand_001
+cand_001 cand_001 cand_001 cand_001
+"c" load LAW-MOMENTUM "m-phase1-pre" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-phase1" store
+
+\ ---- Phase 2: K=8 sustained ----
+cand_001 cand_001 cand_001 cand_001
+cand_001 cand_001 cand_001 cand_001
+NEW-EPOCH
+"c" load CAND-STATUS "status-phase2" store
+
+\ ---- Phase 3: K=8 sustained ----
+cand_001 cand_001 cand_001 cand_001
+cand_001 cand_001 cand_001 cand_001
+NEW-EPOCH
+"c" load CAND-STATUS "status-phase3" store
+
+cr "Diagnostics (motif L=3, K=8 sustained):" . cr
+"  status initial    = " . "status-initial" load . cr
+"  status drain      = " . "status-drain"   load . cr
+"  m phase1 pre-NE   = " . "m-phase1-pre"   load . " (= 16 - 3 - 1 = +12)" . cr
+"  status phase1     = " . "status-phase1"  load . cr
+"  status phase2     = " . "status-phase2"  load . cr
+"  status phase3     = " . "status-phase3"  load . cr
+cr
+
+\ Pass conditions
+"status-initial" load 'stable-active = "g-1?" store
+"m-phase1-pre"   load 12             = "g-2?" store
+"status-phase1"  load 'stable-active = "g-3?" store
+"status-phase2"  load 'stable-active = "g-4?" store
+"status-phase3"  load 'stable-active = "g-5?" store
+
+"g-1?" load 1 assert-eq    \ promoted
+"g-2?" load 1 assert-eq    \ K=8 yields m=+12 (comfortable positive)
+"g-3?" load 1 assert-eq    \ phase 1 survives
+"g-4?" load 1 assert-eq    \ phase 2 survives
+"g-5?" load 1 assert-eq    \ phase 3 survives
+
+cr "H1 confirmed: same L=3 motif survives under sustained K=8." . cr
+cr "Comparison with demo 182: K=1 → decompose; K=8 → survive." . cr
+REPORT

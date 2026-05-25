@@ -1,0 +1,83 @@
+\ examples/181-genesis-rare-dies.6th
+\ Cycle 35 — Genesis demo H2: identical motif as demo 180, but after
+\ promotion the cand is IDLE.  Without continued reuse, momentum
+\ drops by carry+inflation each epoch and the cand decays through
+\ 'stale → 'demotion-candidate → 'decomposed (cycle 29 metabolism +
+\ cycle 30 auto-decompose).
+\
+\ Motif: (MARK drop), length L=2.
+\ Idle momentum: m_native = 0 - 2 - 0 - 1 = -3 each idle epoch.
+\
+\ Hypothesis tested: H2 reuse-frequency necessity.
+\ Rare motifs decay regardless of semantic validity.  Promotion is
+\ not permanent; it must be repaid every epoch.
+\
+\ Pre-reg: PREDICTIONS-181-proto-primitive-selection.md
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 181 — genesis: same motif rare → decays to decomposed ===" . cr
+
+RESET
+
+\ ---- Identical promotion flow to demo 180 ----
+MARK drop MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "motif" store
+"motif" load SHADOW-CHECK drop
+"motif" load INDUCE-RUNTIME "c" store
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c" load COMMIT-PRIMITIVE drop
+"c" load HELD-OUT-EVAL drop
+"c" load PROMOTE-STABLE drop
+"c" load CAND-STATUS "status-initial" store
+
+\ ---- Drain epoch: inducement-flow accumulated recent_reuse from
+\      HELD-OUT-EVAL's internal cand_001 invocations.  A first NE
+\      consumes that counter, sets the baseline.  m at this NE
+\      is large-positive → status stays 'stable-active.
+NEW-EPOCH
+"c" load CAND-STATUS "status-drain" store
+
+\ ---- Phase 1: first idle epoch (K=0 uses).  Capture m BEFORE NE. ----
+"c" load LAW-MOMENTUM "m-idle1-pre" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-idle1" store
+
+\ ---- Phase 2: second idle epoch.  History (-3, -3, +drain) trimmed
+\      to window=3, last 2 are both < -STALE_TOL → 'demotion-candidate.
+\      Pass C: no active dependents → auto-decompose. ----
+NEW-EPOCH
+"c" load CAND-STATUS "status-idle2" store
+
+cr "Diagnostics (short motif L=2, K=0 idle):" . cr
+"  status initial = " . "status-initial" load . cr
+"  status drain   = " . "status-drain"   load . cr
+"  m idle1 pre-NE = " . "m-idle1-pre"    load . cr
+"  status idle1   = " . "status-idle1"   load . cr
+"  status idle2   = " . "status-idle2"   load . cr
+cr
+
+\ Pass conditions
+"status-initial" load 'stable-active = "g-1?" store
+"status-idle1"   load 'stale         = "g-2?" store
+"m-idle1-pre"    load -3             = "g-3?" store
+"status-idle2"   load 'decomposed    = "g-4?" store
+
+"g-1?" load 1 assert-eq    \ promoted
+"g-2?" load 1 assert-eq    \ first idle → stale (|m|=3 > STALE_TOL=1 actually
+                            \ wait: m_eff = -3, abs(m_eff)=3, STALE_TOL=1.
+                            \ Per Pass B: if support>0 ... etc.  We expect
+                            \ first idle epoch only has 1 negative in history,
+                            \ so falls through to else branch: history check
+                            \ requires N=2 consecutive; only 1 → 'stale.)
+"g-3?" load 1 assert-eq    \ m_native = -3
+"g-4?" load 1 assert-eq    \ second idle: 2 consecutive neg → demotion-cand
+                            \ → Pass C: no deps → auto-decompose
+
+cr "H2 confirmed: rare motif decomposes after MOMENTUM-NEGATIVE-THRESHOLD epochs." . cr
+REPORT

@@ -1,0 +1,107 @@
+\ examples/185-genesis-inflation-window.6th
+\ Cycle 35 — Genesis demo H4: cycle-31 inflation=1 establishes an
+\ observable productive/decay boundary within this fixture family.
+\ Productive cands above break-even survive; idle cands fall through
+\ to auto-decompose in MOMENTUM-NEGATIVE-THRESHOLD=2 epochs.
+\
+\ Narrowed claim (per user refinement 2026-05-25):
+\   "Cycle-31 inflation=1 behaves as an operational middle in this
+\    fixture family."
+\
+\ NOT claiming:
+\   - that inflation=1 is universally optimal
+\   - that this is the only viable inflation rate
+\   - that other rates would produce qualitatively different
+\     behavior (would require runtime override = out of scope)
+\
+\ The full "life-window" comparison (inflation=0 / =1 / =5 sweeps)
+\ requires runtime knob and is deferred to a future cycle.  This
+\ demo demonstrates the EXISTING inflation pressure as observable
+\ middle in the current fixed-parameter system.
+\
+\ Pre-reg: PREDICTIONS-181-proto-primitive-selection.md
+\ User narrowing: cycle 35A acceptance 2026-05-25
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 185 — genesis: inflation=1 productive/decay boundary observed ===" . cr
+
+RESET
+
+\ ---- Standard promotion of (MARK drop), L=2 ----
+MARK drop MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "motif" store
+"motif" load SHADOW-CHECK drop
+"motif" load INDUCE-RUNTIME "c" store
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c" load COMMIT-PRIMITIVE drop
+"c" load HELD-OUT-EVAL drop
+"c" load PROMOTE-STABLE drop
+"c" load CAND-STATUS "status-initial" store
+
+\ ---- Drain NE: consume inducement-flow counters ----
+NEW-EPOCH
+"c" load CAND-STATUS "status-drain" store
+
+\ ---- Productive sequence: K=6, m_native = 6 - 2 - 1 = +3 ----
+\ Phase P1 (capture m pre-NE)
+cand_001 cand_001 cand_001 cand_001 cand_001 cand_001
+"c" load LAW-MOMENTUM "m-P1-pre" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-P1" store
+
+\ Phase P2
+cand_001 cand_001 cand_001 cand_001 cand_001 cand_001
+"c" load LAW-MOMENTUM "m-P2-pre" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-P2" store
+
+\ ---- Now switch to idle phases: K=0, m_native = 0 - 2 - 1 = -3 ----
+\ Phase I1: first idle → stale (1 neg in history)
+"c" load LAW-MOMENTUM "m-I1-pre" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-I1" store
+
+\ Phase I2: second idle → history (-3,-3) → demotion-cand → decompose
+NEW-EPOCH
+"c" load CAND-STATUS "status-I2" store
+
+cr "Diagnostics (inflation=1 boundary observation):" . cr
+"  status initial      = " . "status-initial" load . cr
+"  status drain        = " . "status-drain"   load . cr
+"  m P1 pre-NE (K=6)   = " . "m-P1-pre"  load . " (= K*(L-1) - L - inflation = 6 - 2 - 1 = +3)" . cr
+"  status P1           = " . "status-P1" load . cr
+"  m P2 pre-NE (K=6)   = " . "m-P2-pre"  load . cr
+"  status P2           = " . "status-P2" load . cr
+"  m I1 pre-NE (K=0)   = " . "m-I1-pre"  load . " (= 0 - L - inflation = -3)" . cr
+"  status I1           = " . "status-I1" load . cr
+"  status I2           = " . "status-I2" load . cr
+cr
+
+\ Pass conditions
+"status-initial" load 'stable-active = "g-1?" store
+"status-P1"      load 'stable-active = "g-2?" store
+"m-P1-pre"       load 3              = "g-3?" store
+"status-P2"      load 'stable-active = "g-4?" store
+"status-I1"      load 'stale         = "g-5?" store
+"m-I1-pre"       load -3             = "g-6?" store
+"status-I2"      load 'decomposed    = "g-7?" store
+
+"g-1?" load 1 assert-eq    \ promoted
+"g-2?" load 1 assert-eq    \ K=6 above break-even
+"g-3?" load 1 assert-eq    \ m=+3 (barely productive, inflation cuts margin)
+"g-4?" load 1 assert-eq    \ sustained productive
+"g-5?" load 1 assert-eq    \ first idle → stale (1 neg)
+"g-6?" load 1 assert-eq    \ idle m=-3, inflation contributes 1 of the carry
+"g-7?" load 1 assert-eq    \ 2 idle epochs → demotion-cand → decompose
+
+cr "H4 confirmed (narrowed): inflation=1 establishes an observable" . cr
+cr "                          productive/decay boundary in this fixture." . cr
+cr "                          Productive cands clear at K=6; idle cands" . cr
+cr "                          decompose after MOMENTUM-NEGATIVE-THRESHOLD=2." . cr
+REPORT

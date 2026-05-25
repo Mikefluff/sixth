@@ -1,0 +1,92 @@
+\ examples/182-genesis-long-costly-dies.6th
+\ Cycle 35 — Genesis demo H1: motif L=3 (longer than baseline L=2
+\ in demo 180) requires higher reuse to clear inflation+carry, and
+\ DIES when sustained frequency drops below break-even.
+\
+\ Motif: (MARK MARK bi-edge), length L=3.
+\
+\ For L=3: m_native = K*(L-1) - L - inflation = 2K - 4
+\   K=1: m = -2 (negative; below STALE_TOL=1)
+\   K=3: m = +2 (above STALE_TOL; productive)
+\
+\ Phase plan: drain inducement; sustain K=1 → m=-2 each epoch →
+\ history accumulates negatives → demotion-cand → auto-decompose.
+\
+\ Hypothesis H1 (length-energy tradeoff): a longer motif's
+\ break-even reuse threshold is higher than a shorter motif's.
+\ Even sustained K=1 (which would be break-even for L=2: m = 1 - 2 - 1 = -2,
+\ also -2) is insufficient for L=3 to survive.
+\
+\ Comparison: demo 180 (L=2) survives at K=6; demo 183 (same L=3
+\ as here) survives at K=8.  The threshold scales with length.
+\
+\ Pre-reg: PREDICTIONS-181-proto-primitive-selection.md
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 182 — genesis: motif L=3 dies under insufficient K ===" . cr
+
+RESET
+
+\ ---- Workload: (MARK MARK bi-edge) alternating with (NODES drop)
+\      ensures DETECT-MOTIF-AUTO picks length-3 motif as in demo 158. ----
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+DETECT-MOTIF-AUTO "motif" store
+"motif" load SHADOW-CHECK drop
+"motif" load INDUCE-RUNTIME "c" store
+
+\ ---- COMMIT path ----
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c" load COMMIT-PRIMITIVE drop
+"c" load HELD-OUT-EVAL drop
+"c" load PROMOTE-STABLE drop
+"c" load CAND-STATUS "status-initial" store
+
+\ ---- Drain NE: consume inducement-flow counters ----
+NEW-EPOCH
+"c" load CAND-STATUS "status-drain" store
+
+\ ---- Phase 1: low-frequency sustained (K=1) → m=-2 ----
+cand_001
+"c" load LAW-MOMENTUM "m-lowfreq-pre" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-lowfreq1" store
+
+\ ---- Phase 2: continue K=1 → m=-2; history (-2,-2,+drain) → demotion-cand ----
+cand_001
+NEW-EPOCH
+"c" load CAND-STATUS "status-lowfreq2" store
+
+cr "Diagnostics (motif L=3, K=1 sustained):" . cr
+"  status initial      = " . "status-initial"   load . cr
+"  status drain        = " . "status-drain"     load . cr
+"  m lowfreq pre-NE    = " . "m-lowfreq-pre"    load . " (= K*(L-1) - L - inflation = 2 - 3 - 1 = -2)" . cr
+"  status lowfreq1     = " . "status-lowfreq1"  load . cr
+"  status lowfreq2     = " . "status-lowfreq2"  load . cr
+cr
+
+\ Pass conditions
+"status-initial"  load 'stable-active = "g-1?" store
+"m-lowfreq-pre"   load -2             = "g-2?" store
+"status-lowfreq2" load 'decomposed    = "g-3?" store
+
+"g-1?" load 1 assert-eq    \ promoted to stable-active
+"g-2?" load 1 assert-eq    \ K=1 on L=3 yields m=-2 (insufficient)
+"g-3?" load 1 assert-eq    \ 2 epochs at m=-2 → demotion-cand → decompose
+
+cr "H1 confirmed: longer motif L=3 dies under insufficient K=1 sustained." . cr
+cr "                 (Same K=1 on baseline L=2 would also die, but the" . cr
+cr "                  break-even K differs: L=2 needs K>=2 to clear -1," . cr
+cr "                  L=3 needs K>=3 to clear -1.)" . cr
+REPORT

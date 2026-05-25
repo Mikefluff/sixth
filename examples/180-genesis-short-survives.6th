@@ -1,0 +1,87 @@
+\ examples/180-genesis-short-survives.6th
+\ Cycle 35 — Genesis demo H1+H2: short motif with sufficient reuse
+\ survives across multiple metabolism cycles.
+\
+\ Motif: (MARK drop), length L=2.
+\ With K=6 uses per productive epoch under cycle-31 inflation=1:
+\   m_native = K*(L-1) - L - fails - inflation
+\           = 6*1 - 2 - 0 - 1 = +3   (productive)
+\
+\ Hypothesis tested: short motifs at adequate repetition rate cross
+\ the break-even threshold and survive across NE cycles.  This is
+\ the FIRST observable selection: enough use repays law cost before
+\ inflation tax + carry decay kills it.
+\
+\ Pre-reg: PREDICTIONS-181-proto-primitive-selection.md
+\ NO new primitives.  Existing cycle 25-33 machinery only.
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 180 — genesis: short motif with adequate reuse survives ===" . cr
+
+RESET
+
+\ ---- Discovery + promotion (standard cycle 25-28 flow) ----
+MARK drop MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "motif" store
+"motif" load SHADOW-CHECK drop
+"motif" load INDUCE-RUNTIME "c" store
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c" load COMMIT-PRIMITIVE drop
+"c" load HELD-OUT-EVAL drop
+"c" load PROMOTE-STABLE drop
+"c" load CAND-STATUS "status-initial" store
+
+\ ---- Phase 1: productive epoch (K=6 uses).
+\      Capture m BEFORE NE so we see the accumulating productive
+\      momentum (recent counters are reset by Pass A inside NE). ----
+cand_001 cand_001 cand_001 cand_001 cand_001 cand_001
+"c" load LAW-MOMENTUM "m-phase1-pre" store
+NEW-EPOCH
+"c" load CAND-STATUS  "status-phase1" store
+
+\ ---- Phase 2: another productive epoch (K=6 uses) ----
+cand_001 cand_001 cand_001 cand_001 cand_001 cand_001
+"c" load LAW-MOMENTUM "m-phase2-pre" store
+NEW-EPOCH
+"c" load CAND-STATUS  "status-phase2" store
+
+\ ---- Phase 3: third productive epoch (K=6 uses) ----
+cand_001 cand_001 cand_001 cand_001 cand_001 cand_001
+"c" load LAW-MOMENTUM "m-phase3-pre" store
+NEW-EPOCH
+"c" load CAND-STATUS  "status-phase3" store
+
+cr "Diagnostics (short motif L=2, K=6 per epoch):" . cr
+"  status initial   = " . "status-initial" load . cr
+"  m phase1 pre-NE  = " . "m-phase1-pre"   load . " (= 6*1 - 2 - 1 = +3 expected)" . cr
+"  status phase1    = " . "status-phase1"  load . cr
+"  m phase2 pre-NE  = " . "m-phase2-pre"   load . cr
+"  status phase2    = " . "status-phase2"  load . cr
+"  m phase3 pre-NE  = " . "m-phase3-pre"   load . cr
+"  status phase3    = " . "status-phase3"  load . cr
+cr
+
+\ Pass conditions
+"status-initial" load 'stable-active = "g-1?" store
+"status-phase1"  load 'stable-active = "g-2?" store
+"status-phase2"  load 'stable-active = "g-3?" store
+"status-phase3"  load 'stable-active = "g-4?" store
+"m-phase2-pre"   load 3              = "g-5?" store
+
+\ NB on phase1 momentum: m-phase1-pre is inflated by promotion-flow
+\ uses (HELD-OUT-EVAL ran cand_001 on 6 held-out substrates).  Clean
+\ K=6 reading appears at phase2 since recent counters reset after NE.
+"g-1?" load 1 assert-eq    \ promoted to stable-active
+"g-2?" load 1 assert-eq    \ phase 1 productive survives
+"g-3?" load 1 assert-eq    \ phase 2 productive survives
+"g-4?" load 1 assert-eq    \ phase 3 productive survives
+"g-5?" load 1 assert-eq    \ phase2 m_native = K*(L-1) - L - inflation = 6-2-1 = +3
+
+cr "H1+H2 confirmed: short motif at K=6 survives 3 productive NE cycles." . cr
+REPORT

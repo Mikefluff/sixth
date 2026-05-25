@@ -1,0 +1,95 @@
+\ examples/184-genesis-shadow-fail-dies.6th
+\ Cycle 35 — Genesis demo H3: high-frequency motif whose behavior
+\ does NOT generalize is REJECTED at the held-out gate, regardless
+\ of how often it was used during discovery.  Semantic correctness
+\ is a hard filter that frequency cannot bypass.
+\
+\ Mechanism overlap acknowledged: demo 156 (cycle 28C) tests a
+\ similar negative path for stack-hungry candidates.  Demo 184's
+\ angle is different: explicitly demonstrate that DRIVING MORE
+\ FREQUENCY does NOT rescue a semantically-fragile cand.  Even
+\ with 8+ uses (well past COUPLING-N=5), the held-out evaluation
+\ still rejects.
+\
+\ Hypothesis H3 (shadow stability requirement): the gate filter
+\ is binary — passes or fails — and frequency above the coupling
+\ threshold does not move the held-out result.
+\
+\ Pre-reg: PREDICTIONS-181-proto-primitive-selection.md
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 184 — genesis: behavior-fragile cand rejected despite high freq ===" . cr
+
+RESET
+
+\ ---- Pre-stack with values so stack-consuming motif can run on train ----
+MARK MARK MARK MARK MARK MARK MARK MARK MARK MARK MARK MARK MARK MARK
+MARK MARK MARK MARK MARK MARK MARK MARK MARK MARK
+
+\ ---- Workload: (bi-edge drop) appearing many times.  Length 2. ----
+bi-edge drop
+NODES drop
+bi-edge drop
+NODES drop
+bi-edge drop
+NODES drop
+bi-edge drop
+
+DETECT-MOTIF-AUTO "motif" store
+"motif" load SHADOW-CHECK "shadow-pass" store
+"motif" load INDUCE-RUNTIME "c" store
+
+\ ---- Drive HIGH frequency: K=8 uses (vs 5 in demo 156).
+\      Hypothesis: extra uses don't help; held-out gate is binary. ----
+MARK MARK 7  cand_001
+NEW-SESSION
+MARK MARK 7  cand_001
+MARK MARK 7  cand_001
+NEW-SESSION
+MARK MARK 7  cand_001
+MARK MARK 7  cand_001
+MARK MARK 7  cand_001
+MARK MARK 7  cand_001
+MARK MARK 7  cand_001
+
+"c" load CAND-USES              "uses"  store
+
+\ COMMIT passes (energy gate fine on length 2).
+"c" load COMMIT-PRIMITIVE drop
+
+\ Held-out: empty stack on each held-out substrate → underflow → 0 wins.
+"c" load HELD-OUT-EVAL "wins" store
+
+\ PROMOTE-STABLE rejects regardless of high uses.
+"c" load PROMOTE-STABLE "promote-result" store
+"c" load CAND-STATUS    "final-status"   store
+
+cr "Diagnostics (high-freq fragile cand):" . cr
+"  shadow pass    = " . "shadow-pass"    load . cr
+"  total uses     = " . "uses"           load . cr
+"  held-out wins  = " . "wins"           load . " / 6 (expect 0)" . cr
+"  promote result = " . "promote-result" load . cr
+"  final status   = " . "final-status"   load . cr
+cr
+
+\ Pass conditions
+"shadow-pass"    load 1 = "g-1?" store
+"wins"           load 0 = "g-2?" store
+"promote-result" load 'rejected-heldout-insufficient = "g-3?" store
+"final-status"   load 'committed = "g-4?" store
+
+\ Cleanup
+"c" load ROLLBACK-RUNTIME
+
+"g-1?" load 1 assert-eq    \ shadow passed on train (semantic-local check OK)
+"g-2?" load 1 assert-eq    \ held-out wins = 0 (behavior doesn't generalize)
+"g-3?" load 1 assert-eq    \ promote rejected even though freq above threshold
+"g-4?" load 1 assert-eq    \ status stays 'committed (didn't reach 'stable-active)
+
+cr "H3 confirmed: frequency above COUPLING-N does NOT rescue a" . cr
+cr "                 semantically-fragile cand.  Held-out gate is binary." . cr
+REPORT

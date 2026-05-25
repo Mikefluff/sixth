@@ -739,7 +739,33 @@
     ;;      observed_deps reset on NEW-EPOCH ("rented, not owned");
     ;;      even if cand_002 is still alive from prior epoch, with
     ;;      no observation this epoch, support_credit = 0.  5 asserts.
-    ("176-runtime-observation-required.6th"       5)))
+    ("176-runtime-observation-required.6th"       5)
+    ;; ---- Cycle 35 GENESIS arc (proto-primitive natural selection) ----
+    ;; PREDICTIONS-181-proto-primitive-selection.md.  Demos use only
+    ;; existing cycle-25-33 primitives; no new mechanism.  Hypothesis-
+    ;; driven study of first selection pressures.
+    ;;
+    ;; 180. H1+H2 — short motif (L=2) at K=6 survives 3 NE cycles.
+    ;;      5 asserts.
+    ("180-genesis-short-survives.6th"             5)
+    ;; 181. H2 — same motif idle → stale → demotion-cand → decompose
+    ;;      after MOMENTUM-NEGATIVE-THRESHOLD epochs.  4 asserts.
+    ("181-genesis-rare-dies.6th"                  4)
+    ;; 182. H1 — motif L=3 (longer than baseline L=2 in demo 180)
+    ;;      dies under K=1 sustained (m=-2 each epoch → demotion).
+    ;;      Same motif as demo 183; frequency-only variable.  3 asserts.
+    ("182-genesis-long-costly-dies.6th"           3)
+    ;; 183. H1 (positive control) — SAME L=3 motif as 182, sustained
+    ;;      K=8 yields m=+12; survives all NE cycles.  5 asserts.
+    ("183-genesis-long-survives-with-frequency.6th" 5)
+    ;; 184. H3 — high-frequency stack-fragile cand fails HELD-OUT-EVAL;
+    ;;      PROMOTE rejects despite uses above COUPLING-N.  4 asserts.
+    ("184-genesis-shadow-fail-dies.6th"           4)
+    ;; 185. H4 (narrowed) — inflation=1 establishes observable productive/
+    ;;      decay boundary.  Productive K=6 → +3 stable; idle K=0 → -3
+    ;;      decompose in 2 epochs.  Full life-window comparison deferred.
+    ;;      7 asserts.
+    ("185-genesis-inflation-window.6th"           7)))
 
 (define (run-demo file)
   (define out
@@ -764,8 +790,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 2241
-                (format "cumulative ✓ count: ~a (expected 2241)" total-pass)))
+  (check-equal? total-pass 2269
+                (format "cumulative ✓ count: ~a (expected 2269)" total-pass)))
 
-(displayln (format "examples regression: ~a / 2241 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 2269 ✓ across ~a demos"
                    total-pass (length expected)))
