@@ -28,6 +28,7 @@
 ;; whenever INDUCE-RUNTIME or ROLLBACK-RUNTIME touches the dictionary.
 
 (provide install-meta-runtime!
+         reset-meta-state!
          trace-of
          ledger-of
          cand-counter-of
@@ -221,6 +222,58 @@
   (hash-set! mem MEM_SUPPORT_CREDIT   (box '()))
   (void))
 
+;; In-place reset of every meta-runtime slot to its initial empty
+;; value, WITHOUT replacing box identity.  This is critical for
+;; cycle 36B BOOTSTRAP-RESET: the cli `run` path captures references
+;; to _trace / _ledger / _opcodes-to-cand etc. as parameters; replacing
+;; the box would leave the parameter pointing at orphaned state.
+;;
+;; Uses set-box! / hash-clear! on the existing storage.  Each entry
+;; mirrors install-meta-runtime! exactly.  If install-meta-runtime!
+;; gains a new field, this procedure must add a matching reset.
+(define (reset-meta-state! e)
+  (define mem (env-memory e))
+  (define (reset-box! key initial)
+    (define b (hash-ref mem key #f))
+    (if (box? b)
+        (set-box! b initial)
+        (hash-set! mem key (box initial))))
+  (define (reset-hash! key)
+    (define h (hash-ref mem key #f))
+    (if (and h (hash? h))
+        (hash-clear! h)
+        (hash-set! mem key (make-hasheq))))
+  (reset-box! MEM_TRACE                   '())
+  (reset-box! MEM_LEDGER                  '())
+  (reset-box! MEM_CAND_COUNTER            0)
+  (reset-box! MEM_CAND_BODIES             '())
+  (reset-box! MEM_SHADOW_CERTS            '())
+  (reset-box! MEM_CAND_USE_COUNTS         '())
+  (reset-box! MEM_CAND_STATUS             '())
+  (reset-box! MEM_CONTAMINATION           '())
+  ;; Re-derive session id from current env-words (post any cand cleanup).
+  (hash-set! mem MEM_SESSION_ID
+             (equal-hash-code
+              (cons 'session
+                    (sort (hash-keys (env-words e)) symbol<?))))
+  (reset-box! MEM_ENERGY_CONFLICT         0)
+  (reset-box! MEM_ENERGY_SEARCH           0)
+  (reset-box! MEM_ENERGY_REUSE_GAIN       0)
+  (reset-box! MEM_ENERGY_SEMANTIC_TRACE   0)
+  (reset-box! MEM_CAND_SESSIONS           '())
+  (reset-box! MEM_CAND_RECENT_USES        '())
+  (reset-box! MEM_CAND_RECENT_REUSE       '())
+  (reset-box! MEM_CAND_RECENT_FAILS       '())
+  (reset-box! MEM_CAND_MOMENTUM_HISTORY   '())
+  (reset-box! MEM_CAND_PRESERVED_BODIES   '())
+  (reset-box! MEM_EPOCH_COUNTER           0)
+  (reset-box! MEM_CAND_DECOMPOSE_SNAPSHOT '())
+  (reset-box! MEM_DISCOVERY_PROFILE       'conservative)
+  (reset-box! MEM_OBSERVED_DEPS           '())
+  (reset-hash! MEM_OPCODES_TO_CAND)
+  (reset-box! MEM_SUPPORT_CREDIT          '())
+  (void))
+
 ;; Allow tests / NEW-SESSION primitive to update session_id deterministically.
 ;; Test-only API per PREDICTIONS-147.md commitment 6.
 (define (set-session-id! e new-id)
@@ -345,7 +398,16 @@
     ;; cycle 32: observed-dep + load-bearing inspections
     OBSERVED-DEP? RECENT-LOAD-BEARING? CAND-OBSERVES?
     ;; cycle 33: dependent momentum allocation inspections
-    MOMENTUM-NATIVE MOMENTUM-EFFECTIVE SUPPORT-CREDIT DEPENDENCY-COUNT))
+    MOMENTUM-NATIVE MOMENTUM-EFFECTIVE SUPPORT-CREDIT DEPENDENCY-COUNT
+    ;; cycle 36B: bootstrap reset + hash + empty-state inspection.
+    ;; BOOTSTRAP-RESET mutates state by definition, but the dispatch
+    ;; itself must not bump energy counters — otherwise reset's own
+    ;; call leaves residual semantic-trace = 1, violating the empty-
+    ;; state invariant it just established.  Treating as inspection
+    ;; for accounting purposes only; actual world/meta mutation
+    ;; happens inside bootstrap-reset!.
+    BOOTSTRAP-RESET BOOTSTRAP-LAW-HASH
+    BOOTSTRAP-EMPTY? BOOTSTRAP-RESIDUAL))
 
 (define (inspection-op? name)
   (and (memq name INSPECTION-OPS) #t))

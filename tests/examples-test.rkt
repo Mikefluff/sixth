@@ -765,7 +765,16 @@
     ;;      decay boundary.  Productive K=6 → +3 stable; idle K=0 → -3
     ;;      decompose in 2 epochs.  Full life-window comparison deferred.
     ;;      7 asserts.
-    ("185-genesis-inflation-window.6th"           7)))
+    ("185-genesis-inflation-window.6th"           7)
+    ;; --- Cycle 36B — NEG floor for selection-law scaffold ---
+    ;; 186. NEG-7 — BOOTSTRAP-RESET produces full empty-state floor.
+    ;;      Three sub-cases (fresh, post-induction, post-second-reset)
+    ;;      × (empty? + residual axis) = 6 asserts.
+    ("186-neg7-bootstrap-empty-state.6th"         6)
+    ;; 187. NEG-8 — BOOTSTRAP-LAW-HASH symmetry: two sequential resets
+    ;;      yield identical hash; induce-then-reset yields same hash;
+    ;;      INDUCE-RUNTIME diverges hash.  3 asserts.
+    ("187-neg8-bootstrap-hash-symmetry.6th"       3)))
 
 (define (run-demo file)
   (define out
@@ -790,8 +799,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 2269
-                (format "cumulative ✓ count: ~a (expected 2269)" total-pass)))
+  (check-equal? total-pass 2278
+                (format "cumulative ✓ count: ~a (expected 2278)" total-pass)))
 
-(displayln (format "examples regression: ~a / 2269 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 2278 ✓ across ~a demos"
                    total-pass (length expected)))

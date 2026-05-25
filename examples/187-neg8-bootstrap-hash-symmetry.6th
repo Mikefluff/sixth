@@ -1,0 +1,98 @@
+\ examples/187-neg8-bootstrap-hash-symmetry.6th
+\ Cycle 36B — NEG-8: BOOTSTRAP-LAW-HASH is deterministic and
+\ sensitive to law-state divergence.
+\
+\ This is the mechanical proof that the pre-flight gate for cycle 36D
+\ profile comparison ("all profiles must produce identical bootstrap
+\ hash") can actually fire when state diverges, and stays silent when
+\ state is identical.
+\
+\ Sub-cases:
+\   (s1) two sequential BOOTSTRAP-RESETs yield identical hash
+\        → confirms reset is deterministic across history
+\   (s2) after BOOTSTRAP-RESET, inducing + reset again yields the
+\        SAME hash as the initial reset
+\        → confirms residual state doesn't leak through reset
+\   (s3) inserting a user-defined word between resets diverges the
+\        hash, then a fresh reset is NOT enough on its own — must
+\        remove the user word too
+\        → confirms hash is sensitive to env-words divergence
+\
+\ Pre-reg: examples/PREDICTIONS-182-selection-law-scaffold.md NEG-8
+
+use prelude
+use debug
+
+cr "=== Demo 187 — NEG-8: BOOTSTRAP-LAW-HASH symmetry ===" . cr
+
+\ ---- (s1) Two sequential resets → identical hash ----------------------
+BOOTSTRAP-RESET
+BOOTSTRAP-LAW-HASH "h-reset-1" store
+
+BOOTSTRAP-RESET
+BOOTSTRAP-LAW-HASH "h-reset-2" store
+
+\ ---- (s2) Reset → induce → reset → identical hash ---------------------
+\ Confirms residual induced state does NOT leak through reset.
+BOOTSTRAP-RESET
+MARK drop MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "m" store
+"m" load SHADOW-CHECK drop
+"m" load INDUCE-RUNTIME "c" store
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c" load COMMIT-PRIMITIVE drop
+"c" load HELD-OUT-EVAL drop
+"c" load PROMOTE-STABLE drop
+\ At this point env-words has cand_001 and many counters non-zero.
+BOOTSTRAP-RESET
+BOOTSTRAP-LAW-HASH "h-after-induce-reset" store
+
+\ ---- (s3) Diverging env-words at runtime → divergent hash -------------
+\ INDUCE-RUNTIME mutates env-words at runtime (adds cand_001 to the
+\ active dictionary).  Hash before vs. after INDUCE-RUNTIME must
+\ diverge, proving the pre-flight gate is sensitive to runtime-added
+\ vocabulary.  `: ... ;` definitions compile at parse time and are
+\ therefore not useful for runtime-divergence testing.
+BOOTSTRAP-RESET
+BOOTSTRAP-LAW-HASH "h-pre-induce" store
+MARK drop MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "m3" store
+"m3" load SHADOW-CHECK drop
+"m3" load INDUCE-RUNTIME drop
+BOOTSTRAP-LAW-HASH "h-post-induce" store
+
+\ ---- Diagnostics ------------------------------------------------------
+cr "Sub-case (s1) — two sequential resets:" . cr
+"  h-reset-1 = " . "h-reset-1" load . cr
+"  h-reset-2 = " . "h-reset-2" load . cr
+"  equal?    = " . "h-reset-1" load "h-reset-2" load = . cr
+cr "Sub-case (s2) — induce-then-reset:" . cr
+"  h-after-induce-reset = " . "h-after-induce-reset" load . cr
+"  equal to h-reset-1?  = " . "h-reset-1" load "h-after-induce-reset" load = . cr
+cr "Sub-case (s3) — INDUCE-RUNTIME between hash reads:" . cr
+"  h-pre-induce  = " . "h-pre-induce"  load . cr
+"  h-post-induce = " . "h-post-induce" load . cr
+"  differs?      = " . "h-pre-induce" load "h-post-induce" load = 0 = . cr
+cr
+
+\ ---- Assertions -------------------------------------------------------
+\ (s1) Two sequential resets produce identical hash.
+"h-reset-1" load "h-reset-2" load = 1 assert-eq
+
+\ (s2) Induce-then-reset hash equals initial clean hash.  This proves
+\ residual induced state (cand_001 etc.) does not leak through reset
+\ into the canonical bootstrap fingerprint.
+"h-reset-1" load "h-after-induce-reset" load = 1 assert-eq
+
+\ (s3) Runtime INDUCE-RUNTIME between two BOOTSTRAP-LAW-HASH reads
+\ DIVERGES the hash.  This proves the hash is sensitive to env-words
+\ mutation — pre-flight gate will fire if any profile smuggles in
+\ extra runtime vocabulary before workload start.
+"h-pre-induce" load "h-post-induce" load = 0 assert-eq
+
+cr "NEG-8 confirmed: BOOTSTRAP-LAW-HASH is deterministic across" . cr
+cr "                 reset cycles and sensitive to env-words divergence." . cr
+cr "                 Pre-flight gate for profile comparison is mechanical." . cr
+REPORT

@@ -21,7 +21,8 @@
          "meta/runtime.rkt"
          "meta/tier1.rkt"
          "meta/tier2.rkt"
-         "meta/test-harness.rkt")
+         "meta/test-harness.rkt"
+         "meta/bootstrap.rkt")
 
 (define no-prelude? (make-parameter #f))
 (define defines    (make-parameter '()))   ; list of (cons KEY VAL)
@@ -57,6 +58,8 @@
   ;; GATED behind ENABLE-TEST-HARNESS.  Without that call, any
   ;; REBIND-CAND-BODY invocation raises + contaminates the target.
   (register-test-harness! e)
+  ;; Cycle 36B: BOOTSTRAP-RESET / BOOTSTRAP-LAW-HASH primitives.
+  (register-bootstrap! e)
   (unless (no-prelude?)
     (use-module! "prelude" e))
   (apply-defines! e)

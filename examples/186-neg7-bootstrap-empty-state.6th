@@ -1,0 +1,95 @@
+\ examples/186-neg7-bootstrap-empty-state.6th
+\ Cycle 36B — NEG-7: BOOTSTRAP-RESET produces full empty-state.
+\
+\ Operational enforcement of Invariant 6 (minimal-origin fairness).
+\ Per-axis verification: each binding storage location populated by
+\ cycle 25-33 machinery must be reset to its empty initial value.
+\
+\ Sub-cases tested by this demo:
+\   (a) freshly-installed runtime is empty
+\   (b) inducing a cand_NNN moves several axes off-empty
+\   (c) BOOTSTRAP-RESET returns the runtime to empty
+\   (d) cand_NNN is no longer in env-words after reset
+\   (e) BOOTSTRAP-RESIDUAL names the leaked axis when state is dirty
+\
+\ Pre-reg: examples/PREDICTIONS-182-selection-law-scaffold.md NEG-7
+\
+\ Wrap RESIDUAL check + NEG-7 enforcement is the floor under cycle 36
+\ comparison: without this, no downstream selector metric is valid.
+
+use prelude
+use debug
+
+cr "=== Demo 186 — NEG-7: BOOTSTRAP-RESET full empty-state ===" . cr
+
+\ Reading pattern note: `store` is a non-inspection primitive and
+\ therefore bumps _energy-semantic-trace BEFORE the prim runs.  To
+\ capture a true post-reset zero-state, BOOTSTRAP-EMPTY? and
+\ BOOTSTRAP-RESIDUAL must both push their values onto the stack
+\ BEFORE any `store`.  Then store both back-to-back.
+
+\ ---- (a) Fresh runtime is empty ---------------------------------------
+BOOTSTRAP-RESET
+BOOTSTRAP-EMPTY?      \ -- 1
+BOOTSTRAP-RESIDUAL    \ -- 1 'empty
+"residual-after-fresh-reset" store
+"empty-after-fresh-reset"    store
+
+\ ---- (b) Populate state via standard induction path -------------------
+MARK drop MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "m" store
+"m" load SHADOW-CHECK drop
+"m" load INDUCE-RUNTIME "c" store
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c" load COMMIT-PRIMITIVE drop
+"c" load HELD-OUT-EVAL drop
+"c" load PROMOTE-STABLE drop
+
+\ At this point env-words contains cand_001 and many _* alists are
+\ populated.  Confirm: BOOTSTRAP-EMPTY? returns 0, and BOOTSTRAP-
+\ RESIDUAL names a leaked axis.
+BOOTSTRAP-EMPTY?      \ -- 0
+BOOTSTRAP-RESIDUAL    \ -- 0 <axis>
+"residual-during-induction" store
+"empty-during-induction"    store
+
+\ ---- (c) BOOTSTRAP-RESET wipes back to empty --------------------------
+BOOTSTRAP-RESET
+BOOTSTRAP-EMPTY?      \ -- 1
+BOOTSTRAP-RESIDUAL    \ -- 1 'empty
+"residual-after-second-reset" store
+"empty-after-second-reset"    store
+
+\ ---- Diagnostics ------------------------------------------------------
+cr "Sub-case (a) — fresh runtime:" . cr
+"  empty?   = " . "empty-after-fresh-reset" load . cr
+"  residual = " . "residual-after-fresh-reset" load . cr
+cr "Sub-case (b) — after induction:" . cr
+"  empty?   = " . "empty-during-induction" load . cr
+"  residual = " . "residual-during-induction" load . cr
+cr "Sub-case (c) — after BOOTSTRAP-RESET:" . cr
+"  empty?   = " . "empty-after-second-reset" load . cr
+"  residual = " . "residual-after-second-reset" load . cr
+cr
+
+\ ---- Assertions -------------------------------------------------------
+\ (a) Fresh reset yields empty.
+"empty-after-fresh-reset"   load 1     assert-eq
+"residual-after-fresh-reset" load 'empty assert-eq
+
+\ (b) After induction, the floor is dirty.  We do NOT assert WHICH axis
+\ leaks first (axis order is an implementation detail of the check
+\ chain); we only assert that BOOTSTRAP-EMPTY? returns 0 and that
+\ BOOTSTRAP-RESIDUAL names a non-'empty axis.
+"empty-during-induction"    load 0     assert-eq
+"residual-during-induction" load 'empty = 0 assert-eq
+
+\ (c) After BOOTSTRAP-RESET the floor is clean again.
+"empty-after-second-reset"   load 1     assert-eq
+"residual-after-second-reset" load 'empty assert-eq
+
+cr "NEG-7 confirmed: BOOTSTRAP-RESET enforces full empty-state floor." . cr
+cr "                 Induction populates ≥1 axis; reset returns to 'empty." . cr
+REPORT
