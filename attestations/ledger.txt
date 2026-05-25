@@ -48,3 +48,4 @@
 2026-05-25T19:26:25Z  3e698b8a53d38d85d8a47bf016cb9f10c355a70bf17afec2cff11868c9bf4591  examples/PREDICTIONS-180-deficit-communication.md  5cbf5bd
 2026-05-25T19:32:40Z  05baa78cdbc3657c9a5bf0f01209c454c8e7a63b9e66f5f637587ed9a30dfd0e  examples/PREDICTIONS-180-deficit-communication.md  b8fb890
 2026-05-25T19:32:40Z  57f5f423e64bdd4cf762b3d0ab146ad801ff987153e5b33d5ef2b6470068496e  examples/PREDICTIONS-181-proto-primitive-selection.md  b8fb890
+2026-05-25T20:06:26Z  ed863bd23ec4ebe91a289832292ac205945f01506aa841fc764cce67643921d5  examples/PREDICTIONS-182-selection-law-scaffold.md  1482133
