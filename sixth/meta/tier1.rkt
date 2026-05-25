@@ -31,7 +31,15 @@
          "../substrate/core.rkt"
          "../vm.rkt"
          "runtime.rkt"
-         (only-in "profiles.rkt" profile-inflation-cost))
+         (only-in "profiles.rkt"
+                  profile-inflation-cost
+                  profile-coupling-n
+                  profile-coupling-m
+                  profile-stale-tolerance
+                  profile-negative-threshold
+                  profile-momentum-window
+                  profile-budget-conservative
+                  profile-budget-liberal))
 
 ;; ---- mining params (frozen here for cycle 25; will move to
 ;;      mining_protocol.md attestation in cycle 25C) ----
@@ -513,7 +521,7 @@
 ;;   - non-candidate symbol
 ;;   - candidate not currently active (rolled back or never induced)
 ;;   - candidate status indicates rolled-back / contaminated
-;;   - use-count below COUPLING-N
+;;   - use-count below (profile-coupling-n)
 ;;
 ;; M=3 distinct runs check is in-process only here (we don't have
 ;; cross-process session persistence yet); cycle 26 extends this.
@@ -560,11 +568,11 @@
                      (format-srcloc (current-prim-srcloc)) cand-sym cand-status)
              (current-continuation-marks)
              (current-prim-srcloc)))]
-    [(or (not cand-uses) (< cand-uses COUPLING-N))
+    [(or (not cand-uses) (< cand-uses (profile-coupling-n)))
      (raise (exn:fail:sixth
              (format "~a — COMMIT-PRIMITIVE: candidate ~a has only ~a uses (require >= ~a per coupling rule)"
                      (format-srcloc (current-prim-srcloc))
-                     cand-sym (or cand-uses 0) COUPLING-N)
+                     cand-sym (or cand-uses 0) (profile-coupling-n))
              (current-continuation-marks)
              (current-prim-srcloc)))]
     [else
@@ -587,11 +595,11 @@
                                     'would-pass-energy-gate would-pass-energy
                                     'distinct-sessions distinct-m)))
      (cond
-       [(< distinct-m COUPLING-M)
+       [(< distinct-m (profile-coupling-m))
         (raise (exn:fail:sixth
                 (format "~a — COMMIT-PRIMITIVE: candidate ~a used in ~a distinct sessions (require >= ~a per coupling rule)"
                         (format-srcloc (current-prim-srcloc))
-                        cand-sym distinct-m COUPLING-M)
+                        cand-sym distinct-m (profile-coupling-m))
                 (current-continuation-marks)
                 (current-prim-srcloc)))]
        [(not would-pass-energy)
@@ -811,7 +819,7 @@
   ;; Cycle 30 direct-only predicate.  Kept for diagnostics; Pass C
   ;; uses has-recent-load-bearing? (cycle 32 strengthened version).
   (for/or ([d (in-list (active-dependents-of e cand))])
-    (> (compute-momentum-for e d) MOMENTUM-STALE-TOLERANCE)))
+    (> (compute-momentum-for e d) (profile-stale-tolerance))))
 
 ;; ============================================================
 ;; Cycle 32 — runtime-observed transitive load-bearing predicate.
@@ -825,14 +833,14 @@
 ;; external positive anchor cannot mutually save each other).
 ;;
 ;; Positive anchor predicate: status in {stable-active, sandbox-stable}
-;; AND momentum > MOMENTUM-STALE-TOLERANCE.  Pre-cycle-31 it was just
+;; AND momentum > (profile-stale-tolerance).  Pre-cycle-31 it was just
 ;; m > STALE_TOLERANCE; the status filter additionally excludes
 ;; intermediate dependency-held / demotion-candidate cands from
 ;; being the terminal anchor (they must be transitively traced).
 
 (define (positive-anchor? e cand)
   (and (memq (get-status e cand) '(stable-active sandbox-stable))
-       (> (compute-momentum-for e cand) MOMENTUM-STALE-TOLERANCE)))
+       (> (compute-momentum-for e cand) (profile-stale-tolerance))))
 
 (define (has-recent-load-bearing? e cand)
   (let walk ([c cand] [visited (list cand)])
@@ -900,7 +908,7 @@
     [else
      (define m-native-B (compute-momentum-for e B))
      (cond
-       [(<= m-native-B MOMENTUM-STALE-TOLERANCE) 0]
+       [(<= m-native-B (profile-stale-tolerance)) 0]
        [else
         (define dc (dep-count-of e B))
         (cond
@@ -943,7 +951,7 @@
   (define c (require-sym (pop! e) 'AUTO-DECOMPOSE-SAFE?))
   (define local-m (compute-momentum-for e c))
   (cond
-    [(>= local-m (- MOMENTUM-STALE-TOLERANCE))
+    [(>= local-m (- (profile-stale-tolerance)))
      ;; Local momentum has not crossed the negative tolerance band yet.
      (push! e 0)]
     [(has-positive-dependent-momentum? e c)
@@ -1025,8 +1033,8 @@
                            (and x (cdr x))) '()))
     (define new-hist
       (let ([h (cons m cur-hist)])
-        (if (> (length h) MOMENTUM-HISTORY-WINDOW)
-            (take h MOMENTUM-HISTORY-WINDOW)
+        (if (> (length h) (profile-momentum-window))
+            (take h (profile-momentum-window))
             h)))
     (set-box! hb (cons (cons c new-hist)
                        (filter (lambda (ent) (not (eq? (car ent) c)))
@@ -1053,25 +1061,25 @@
     (define hb (cand-momentum-history-of e))
     (define hist (or (let ([x (assq c (unbox hb))]) (and x (cdr x))) '()))
     (cond
-      [(> m-native MOMENTUM-STALE-TOLERANCE)
+      [(> m-native (profile-stale-tolerance))
        ;; Native productive — support irrelevant for status.
        (set-status! e c 'stable-active)]
-      [(and (> support 0) (>= m-eff (- MOMENTUM-STALE-TOLERANCE)))
+      [(and (> support 0) (>= m-eff (- (profile-stale-tolerance))))
        ;; Cycle 33: support pulled effective into safe zone.  Not
        ;; native-positive, just carry-offset.
        (set-status! e c 'dependency-supported)]
-      [(<= (abs m-eff) MOMENTUM-STALE-TOLERANCE)
+      [(<= (abs m-eff) (profile-stale-tolerance))
        (set-status! e c 'stale)]
       [else
        ;; m-eff < -STALE_TOL — support didn't save us.  Check m_native
        ;; history (intrinsic; support is not history) for the demotion
        ;; trigger.
-       (define last-n (if (>= (length hist) MOMENTUM-NEGATIVE-THRESHOLD)
-                          (take hist MOMENTUM-NEGATIVE-THRESHOLD)
+       (define last-n (if (>= (length hist) (profile-negative-threshold))
+                          (take hist (profile-negative-threshold))
                           hist))
        (cond
-         [(and (= (length last-n) MOMENTUM-NEGATIVE-THRESHOLD)
-               (andmap (lambda (mm) (< mm (- MOMENTUM-STALE-TOLERANCE)))
+         [(and (= (length last-n) (profile-negative-threshold))
+               (andmap (lambda (mm) (< mm (- (profile-stale-tolerance))))
                        last-n))
           (set-status! e c 'demotion-candidate)]
          [else
@@ -1295,8 +1303,8 @@
 (define (prim-profile-budget e)
   (push! e
          (case (discovery-profile-of e)
-           [(liberal)      PROFILE-BUDGET-LIBERAL]
-           [else           PROFILE-BUDGET-CONSERVATIVE])))
+           [(liberal)      (profile-budget-liberal)]
+           [else           (profile-budget-conservative)])))
 
 (define (prim-profile-scope e)
   (push! e
