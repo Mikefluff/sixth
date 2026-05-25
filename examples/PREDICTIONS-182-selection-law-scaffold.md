@@ -167,6 +167,180 @@ These are reserved for cycle 37+.  Cycle 36 only enables the
 question to be asked.
 ```
 
+### 6. Minimal-origin fairness (binding addendum 2026-05-25)
+
+```
+All selector profiles in genesis-arena mode MUST start from the
+same MINIMAL BOOTSTRAP law-state.  No profile may inherit:
+
+  - previously promoted law candidates from prior cycle runs
+  - demo artifacts (fixture-induced cand_NNN from examples/*.6th)
+  - sandbox-stable artifacts (cycle 31 'sandbox-stable cands)
+  - dependency-supported / communication / external-energy
+    layers (not needed for genesis selection comparison)
+  - any L2 entries (when they appear; currently L2 = 0)
+
+Differences in outcomes between profiles MUST come from
+SELECTION RULES, not from the initial accumulated vocabulary.
+
+Rationale (user spec 2026-05-25):
+
+  Otherwise we test "which selector handles an already-built
+  civilization" rather than "which selector creates the first
+  laws".  Profile A would get unfair inherited advantage from
+  prior selection events.
+
+This invariant is mechanically enforced by the BOOTSTRAP-RESET
+helper used at every genesis-arena run start.
+```
+
+---
+
+## Two operational modes (binding addendum 2026-05-25)
+
+The scaffold operates in EXACTLY two modes, mutually exclusive
+within a single arena execution:
+
+### Mode 1 — canon-regression
+
+- Uses FULL evolved canon dictionary (current cycle 25-33 stdlib
+  + all standard active dictionary entries).
+- Runs existing 174 demos verbatim.
+- Purpose: verify Invariant 3 (baseline reproduces canon bit-for-
+  bit; 2269 / 2269 ✓ unchanged).
+- ONLY profile A is exercised here.  Other profiles are NOT
+  applicable to canon-regression mode.
+
+### Mode 2 — genesis-arena
+
+- Uses ONLY minimal bootstrap law-state (specified below).
+- No accumulated cand_NNN, no promoted stdlib additions, no
+  fixture artifacts.
+- Each profile (A through E) gets a FRESH bootstrap-equivalent
+  start on every run.
+- Purpose: empirically compare selection laws starting from the
+  same minimal vocabulary.
+- This is where the genuine selection-law comparison happens.
+
+**Profile A in genesis-arena ≠ Profile A in canon-regression.**
+
+The same selection RULES (canon hyperparameters) are applied
+in both modes, but the INITIAL LAW-STATE differs:
+
+- canon-regression Profile A → full evolved dictionary + current rules
+- genesis-arena Profile A → minimal bootstrap + current rules
+
+The comparison among A/B/C/D/E in genesis-arena tests RULES,
+not accumulated vocabulary.
+
+---
+
+## Minimal bootstrap law-state (binding spec)
+
+All genesis-arena profile runs start from this exact law-state:
+
+### Object-level primitives (substrate axioms — bootloader)
+
+```
+MARK, NODES, EDGES, EDGE+, EDGE-, NODE?, EDGE?,
+HEDGE+, HEDGE3+, NEIGH (or equivalent traversal),
+RESET (in test-harness contexts only), STEP, BORN, NOW
+```
+
+### Base stack primitives
+
+```
+dup, drop, swap, over, rot, -rot,
++, -, *, /, mod, =, <, >, not, and, or,
+store, load, assert-eq, .  (print), cr
+```
+
+### Substrate hashes
+
+```
+HASH-WORLD
+```
+
+### Tier 1 meta-primitives for induction (MINIMUM REQUIRED)
+
+```
+DETECT-MOTIF-AUTO  (cycle 27 mining; required for auto-discovery)
+SHADOW-CHECK
+INDUCE-RUNTIME
+USE-RUNTIME (implicit; dispatch behavior)
+ROLLBACK-RUNTIME
+COMMIT-PRIMITIVE
+LAW-HASH (inspection)
+```
+
+### Tier 2 meta-primitives for promotion (MINIMUM REQUIRED)
+
+```
+HELD-OUT-EVAL
+PROMOTE-STABLE
+SESSION-ID, NEW-SESSION  (cycle 26 coupling tracking)
+CONTAMINATE!, CAND-STATUS (inspection)
+```
+
+### Metabolism ops (MINIMUM REQUIRED)
+
+```
+NEW-EPOCH
+LAW-MOMENTUM, MOMENTUM-NATIVE (inspection)
+E-WORLD, E-LAW, E-TRACE, E-CONFLICT, E-SEARCH,
+E-REUSE-GAIN, E-TOTAL  (energy inspection — cycle 25E)
+```
+
+### Definition mechanism
+
+```
+: ... ;  (word definition syntax)
+QUOTE, EVAL  (if needed for harness scripting)
+```
+
+### EXCLUDED from minimal bootstrap (must NOT be present at start)
+
+```
+- Any cand_NNN from previous cycles (none are persisted today
+  per cycle 34C-bis L2=0 finding, but if persistence ever lands,
+  it must be skipped in genesis-arena mode)
+- 'sandbox-stable cands from cycle 31 liberal-profile runs
+- 'dependency-held / 'dependency-supported entries
+- cycle 33 SUPPORT-CREDIT / MOMENTUM-EFFECTIVE machinery — NOT
+  excluded as a mechanism but the per-cand support_credit state
+  must start empty (no cands, so trivially empty)
+- cycle 34A INJECT-ENERGY / capacity / 'subsidized machinery
+  (still blocked anyway)
+- 'demo / 'fixture-equivalent test harness primitives like
+  REBIND-CAND-BODY (cycle 32 test harness)
+- stdlib-level promoted words from cycle 35-demo runs
+- Any manually-loaded historical motifs
+```
+
+### Bootstrap-reset helper (binding)
+
+```
+BOOTSTRAP-RESET ( -- )
+  ; Resets engine to minimal bootstrap law-state.  Equivalent
+  ; to launching a fresh runtime with only the inclusion list
+  ; above loaded.  Used at start of every genesis-arena run.
+
+  ; Reset semantics:
+  ;   1. Clear all cand_NNN entries from active dictionary
+  ;   2. Reset all cand-bodies / status / counters / momentum-history
+  ;   3. Reset _energy-* counters
+  ;   4. Reset _support-credit, _observed-deps, etc.
+  ;   5. Reset _session-id alist (but generate new session id)
+  ;   6. Preserve only bootstrap primitives + inclusion list
+  ;
+  ; Implementation: probably via fresh-env factory rather than
+  ; in-place mutation, to avoid edge cases.
+```
+
+This helper is itself part of the meta-protocol M (frozen at
+cycle 36 commit).  Selector candidates cannot modify
+BOOTSTRAP-RESET semantics.
+
 ---
 
 ## What cycle 36 IS
@@ -221,8 +395,21 @@ support_credit_cap     = LAW_CARRY        (cycle 33)
 ```
 
 Reference implementation: existing cycle 25-33 constants
-verbatim.  Running cycle 36 demos through Profile A MUST
-reproduce existing 174 demos bit-for-bit.
+verbatim.
+
+**Profile A in canon-regression mode:** runs existing 174 demos
+through the full evolved dictionary.  MUST reproduce
+2269 / 2269 ✓ unchanged.
+
+**Profile A in genesis-arena mode:** these SAME rules applied
+to MINIMAL BOOTSTRAP law-state.  This is the comparison-fair
+baseline used in 36C/36D against profiles B-E.  No accumulated
+canon vocabulary; each run starts via `BOOTSTRAP-RESET`.
+
+The two roles of Profile A are different empirical regimes,
+even though the rules are identical.  Per Invariant 6 (minimal-
+origin fairness), only the genesis-arena Profile A is a fair
+baseline against B-E.
 
 ### Profile B — LOW-INFLATION (rent-tolerant)
 
@@ -409,30 +596,51 @@ demo regresses, parameterization is wrong.
 ## 36C deliverable — baseline characterization
 
 Before running selectors B-E, cycle 36C runs ONLY profile A
-(BASELINE) through the blind arena and reports the metrics.
+(BASELINE) through the blind arena IN GENESIS-ARENA MODE
+(minimal bootstrap law-state per Invariant 6).
 
 This is the first ever empirical characterization of the
-current canon under blind conditions.  Results recorded in
+current selection rules applied to a minimal-bootstrap
+substrate under blind conditions.  Results recorded in
 `RESULTS-182-cycle36-baseline.md`.
 
 Specific baseline runs:
-- 3 seeded runs (seeds 42, 137, 271) at N_OPS=5000
+- 3 seeded genesis-arena runs (seeds 42, 137, 271) at N_OPS=5000
+- Each run starts with `BOOTSTRAP-RESET`
 - Report all 10 metrics per run + averages
-- This becomes the BASELINE NUMBER for any future comparison
+- This becomes the BASELINE NUMBER for fair comparison vs B-E
 
-**Cycle 36 PASS condition includes this baseline characterization
-existing in the results file.  No comparison yet.**
+Separately: canon-regression mode runs existing 174 demos to
+verify 2269 / 2269 ✓ unchanged (Invariant 3).  This is a
+sanity check that parameterization didn't break canon, not
+part of the selector comparison.
+
+**Cycle 36 PASS condition includes BOTH:**
+- baseline characterization in genesis-arena mode (this section)
+- canon-regression integrity (Invariant 3 check)
 
 ---
 
 ## 36D deliverable — comparison run (NO promotion)
 
 Cycle 36D runs profiles B, C, D, E through the same blind
-workload + reports metrics side-by-side with baseline A.
+workload IN GENESIS-ARENA MODE (each from `BOOTSTRAP-RESET`)
++ reports metrics side-by-side with genesis-arena baseline A.
+
+All five profiles share:
+- identical minimal bootstrap law-state at start
+- identical seeded workload (per seed)
+- identical meta-protocol M
+- identical metric formulas
+
+The ONLY differentiator is the selection rule parameters.
+Per Invariant 6 (minimal-origin fairness), any outcome
+differences must be attributable to selection rules, not to
+inherited vocabulary.
 
 Comparison is REPORTED, not DECIDED.  No promotion happens.
 The output is a metrics table comparing 5 selectors on 10
-dimensions.
+dimensions across 3 seeds.
 
 Results recorded in `RESULTS-183-cycle36-comparison.md`.
 
@@ -447,21 +655,32 @@ for future evaluation.
 ### PASS (all required)
 
 1. SelectionProfile struct implemented; baseline = current canon.
-2. All existing 174 demos pass 2269/2269 ✓ unchanged (regression).
+2. **canon-regression mode:** all existing 174 demos pass
+   2269/2269 ✓ unchanged through Profile A on full canon
+   dictionary (Invariant 3).
 3. Sandbox runtime mode works: a sandbox profile run does NOT
    modify canonical law_state.
-4. Meta-protocol cannot be modified by any selector candidate
+4. Meta-protocol (M, BOOTSTRAP-RESET, blind workload generator,
+   metric formulas) cannot be modified by any selector candidate
    (mechanically enforced — selector code has no read-write
-   access to canon hyperparameters or workload generator).
-5. Blind arena runs the baseline profile on ≥3 seeded workloads.
+   access to canon hyperparameters, workload generator, or
+   bootstrap inclusion list).
+5. **genesis-arena mode:** blind arena runs Profile A on ≥3
+   seeded workloads, EACH starting from `BOOTSTRAP-RESET`
+   (Invariant 6).
 6. All 10 metrics computed and reported per run.
-7. 36C baseline metrics file written.
-8. 36D comparison metrics file written (5 profiles × 10 metrics).
+7. 36C baseline metrics file written (genesis-arena Profile A,
+   3 seeds, full metric set).
+8. 36D comparison metrics file written (5 profiles × 10 metrics
+   × 3 seeds, all in genesis-arena mode).
 9. NO selector promoted to canon.
+10. `BOOTSTRAP-RESET` verified empty-state via inspection: zero
+    cand_NNN entries, zero accumulated counters, only the
+    minimal bootstrap inclusion list present.
 
 ### FAIL (any one triggers)
 
-1. Any existing demo regresses.
+1. Any existing demo regresses (canon-regression mode integrity).
 2. A selector candidate modifies canon law_state, workload, or
    meta-protocol.
 3. A selector candidate is promoted to canon without separate
@@ -473,6 +692,14 @@ for future evaluation.
    mutation visible from canon view).
 7. Metric computation is non-deterministic (different runs of
    same seed produce different metrics).
+8. **Genesis-arena profile inherits ANY pre-existing cand_NNN**,
+   sandbox artifact, promoted stdlib entry, or accumulated
+   counter from canon or prior arena run.  Invariant 6 violation.
+9. Any genesis-arena run starts WITHOUT `BOOTSTRAP-RESET` or
+   equivalent fresh-engine init.
+10. Profile A in genesis-arena run is compared against profiles
+    B-E using DIFFERENT initial law-state (any source of
+    inherited-vocabulary asymmetry).
 
 ### VALID NEGATIVE RESULT
 
@@ -526,6 +753,25 @@ computation is authoritative.
 
 If any code path triggers selector promotion to canon during
 cycle 36, error: `'amendment-out-of-scope`.
+
+### NEG-7 — Inherited-vocabulary in genesis-arena rejected
+
+Attempt: a genesis-arena run skips `BOOTSTRAP-RESET` (or starts
+with a non-empty cand dictionary).
+
+Expected: arena rejects the run with
+`'genesis-arena-impure-start`; metrics for that run are NOT
+recorded; ledger event documents the rejection.
+
+Verification:
+- Construct a test that pre-promotes a cand_NNN, then attempts
+  a genesis-arena run without BOOTSTRAP-RESET.
+- Assert: the arena either auto-resets (preferred) or fails with
+  the documented error.
+- Assert: no leaked cand reaches the metric computation.
+
+Rationale: this is the operational enforcement of Invariant 6
+(minimal-origin fairness).
 
 ---
 
