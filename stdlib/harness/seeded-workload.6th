@@ -1,0 +1,85 @@
+\ stdlib/harness/seeded-workload.6th
+\ Cycle 36R — three structurally-different starting conditions
+\ ("seeds") for fixed-physics genesis runs.
+\
+\ Each seed: distinct induction shape + same metabolism (COMMIT →
+\ HELD-OUT → PROMOTE → epochs).  Cross-seed comparison observes
+\ whether the canon's fixed physics produces convergent /
+\ divergent / decaying survivor classes.
+\
+\ Pragmatic substitute for full LCG generator (deferred).  Each
+\ seed is a distinct starting condition; cross-seed comparison
+\ tests repeatability of canon physics under varied inputs.
+\
+\ Frozen as part of meta-protocol M.
+
+use graph
+
+\ Seed 1 — dense L=2 motif (MARK drop) × 6 + saturate coupling
+\          + full lifecycle + 4 epochs.
+: seed-1-workload
+  MARK drop  MARK drop  MARK drop
+  MARK drop  MARK drop  MARK drop
+  DETECT-MOTIF-AUTO "s1-m" store
+  "s1-m" load SHADOW-CHECK drop
+  "s1-m" load INDUCE-RUNTIME "s1-c" store
+  cand_001 cand_001
+  NEW-SESSION cand_001 cand_001
+  NEW-SESSION cand_001 cand_001
+  NEW-SESSION cand_001 cand_001
+  NEW-SESSION cand_001 cand_001
+  "s1-c" load COMMIT-PRIMITIVE drop
+  "s1-c" load HELD-OUT-EVAL drop
+  "s1-c" load PROMOTE-STABLE drop
+  NEW-EPOCH
+  cand_001 cand_001 cand_001 cand_001 cand_001 cand_001
+  NEW-EPOCH
+  cand_001 cand_001 cand_001 cand_001 cand_001 cand_001
+  NEW-EPOCH
+;
+
+\ Seed 2 — L=3 motif (MARK MARK bi-edge) high frequency.
+: seed-2-workload
+  MARK MARK bi-edge   NODES drop
+  MARK MARK bi-edge   NODES drop
+  MARK MARK bi-edge   NODES drop
+  MARK MARK bi-edge
+  DETECT-MOTIF-AUTO "s2-m" store
+  "s2-m" load SHADOW-CHECK drop
+  "s2-m" load INDUCE-RUNTIME "s2-c" store
+  cand_001 cand_001 cand_001
+  NEW-SESSION cand_001 cand_001
+  NEW-SESSION cand_001 cand_001
+  NEW-SESSION cand_001 cand_001
+  NEW-SESSION cand_001 cand_001
+  "s2-c" load COMMIT-PRIMITIVE drop
+  "s2-c" load HELD-OUT-EVAL drop
+  "s2-c" load PROMOTE-STABLE drop
+  NEW-EPOCH
+  cand_001 cand_001 cand_001 cand_001 cand_001 cand_001 cand_001 cand_001
+  NEW-EPOCH
+  cand_001 cand_001 cand_001 cand_001 cand_001 cand_001 cand_001 cand_001
+  NEW-EPOCH
+;
+
+\ Seed 3 — sparse L=2 motif: minimal usage above coupling, then
+\         idle.  Tests whether the canon decays barely-productive
+\         primitives or lets them coast.
+: seed-3-workload
+  MARK drop  MARK drop  MARK drop
+  MARK drop  MARK drop  MARK drop
+  DETECT-MOTIF-AUTO "s3-m" store
+  "s3-m" load SHADOW-CHECK drop
+  "s3-m" load INDUCE-RUNTIME "s3-c" store
+  cand_001
+  NEW-SESSION cand_001 cand_001
+  NEW-SESSION cand_001 cand_001
+  NEW-SESSION cand_001 cand_001
+  NEW-SESSION cand_001 cand_001
+  "s3-c" load COMMIT-PRIMITIVE drop
+  "s3-c" load HELD-OUT-EVAL drop
+  "s3-c" load PROMOTE-STABLE drop
+  NEW-EPOCH
+  NEW-EPOCH
+  NEW-EPOCH
+;

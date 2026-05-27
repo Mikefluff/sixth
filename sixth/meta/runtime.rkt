@@ -411,7 +411,7 @@
     ;; cycle 36B arena: selector profile + pre-flight gate.
     PROFILE-ACTIVE PROFILE-SET PROFILE-RESET-CANON
     PREFLIGHT-ARENA ARENA-IDENTICAL-HASH? ARENA-PROFILE-COUNT
-    RUN-WORKLOAD-PROFILE))
+    RUN-WORKLOAD-PROFILE RUN-GENESIS-SEED))
 
 (define (inspection-op? name)
   (and (memq name INSPECTION-OPS) #t))

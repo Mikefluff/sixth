@@ -191,6 +191,48 @@
   (push! e cand-count)
   (push! e promoted?))
 
+;; ---- RUN-GENESIS-SEED ------------------------------------------------
+;;
+;; Stack effect: ( workload-word-sym -- promoted_count decomposed_count )
+;;
+;; Cycle 36R driver: runs a seeded blind workload under the FIXED
+;; canon rule-set (no profile switching).  Captures two cross-seed
+;; comparable metrics.  Detailed per-event log accumulates in
+;; _ledger throughout the run.
+;;
+;; This primitive deliberately does NOT take a profile-sym argument.
+;; Cycle 36R is about evolution under one physics, multiple starting
+;; conditions — not selection-law comparison.  NEG-6 enforcement.
+
+(define (prim-run-genesis-seed e)
+  (define wname (pop! e))
+  (define w (env-lookup-word e wname))
+  (unless w
+    (raise (exn:fail:sixth
+            (format "RUN-GENESIS-SEED: word ~v not defined" wname)
+            (current-continuation-marks)
+            (current-prim-srcloc))))
+  ;; Run under BASELINE always; no with-profile.
+  (current-profile BASELINE-PROFILE)
+  (bootstrap-reset! e)
+  (with-handlers ([exn:fail?
+                   (lambda (ex)
+                     (current-profile BASELINE-PROFILE)
+                     (raise ex))])
+    (run! (word-opcodes w) e))
+  ;; Forensic capture: count promoted and decomposed cands.
+  (define statuses (unbox (cand-status-of e)))
+  (define promoted-count
+    (for/sum ([row (in-list statuses)]
+              #:when (eq? (cdr row) 'stable-active))
+      1))
+  (define decomposed-count
+    (for/sum ([row (in-list statuses)]
+              #:when (memq (cdr row) '(decomposed rolled-back)))
+      1))
+  (push! e promoted-count)
+  (push! e decomposed-count))
+
 ;; ---- registration ----------------------------------------------------
 
 (define ARENA-TABLE
@@ -200,7 +242,8 @@
         (cons 'PREFLIGHT-ARENA        prim-preflight-arena)
         (cons 'ARENA-IDENTICAL-HASH?  prim-arena-identical-hash?)
         (cons 'ARENA-PROFILE-COUNT    prim-arena-profile-count)
-        (cons 'RUN-WORKLOAD-PROFILE   prim-run-workload-profile)))
+        (cons 'RUN-WORKLOAD-PROFILE   prim-run-workload-profile)
+        (cons 'RUN-GENESIS-SEED       prim-run-genesis-seed)))
 
 (define (register-arena! e)
   (for ([entry (in-list ARENA-TABLE)])

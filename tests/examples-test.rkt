@@ -790,7 +790,11 @@
     ;;      workload (stdlib/harness/blind-arena-workload.6th).
     ;;      Metrics: cand_count + promoted? per profile.  NO promotion
     ;;      of any selector to canon.  7 asserts.
-    ("190-arena-5-profile-comparison.6th"         7)))
+    ("190-arena-5-profile-comparison.6th"         7)
+    ;; 191. Cycle 36R — fixed-physics genesis: 3 seeded workloads
+    ;;      under one canon rule-set; NEG-1 determinism check.
+    ;;      6 liveness + 2 determinism = 8 asserts.
+    ("191-cycle36R-fixed-physics-genesis.6th"     8)))
 
 (define (run-demo file)
   (define out
@@ -815,8 +819,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 2297
-                (format "cumulative ✓ count: ~a (expected 2297)" total-pass)))
+  (check-equal? total-pass 2305
+                (format "cumulative ✓ count: ~a (expected 2305)" total-pass)))
 
-(displayln (format "examples regression: ~a / 2297 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 2305 ✓ across ~a demos"
                    total-pass (length expected)))

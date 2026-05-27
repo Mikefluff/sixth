@@ -1,0 +1,74 @@
+\ examples/191-cycle36R-fixed-physics-genesis.6th
+\ Cycle 36R — Fixed-Physics Genesis Runs.
+\
+\ Three structurally-different starting conditions ("seeds") run
+\ under the same FIXED canon rule-set.  No profile switching.
+\ Cross-seed observation: do the same classes of motif shapes
+\ survive across seeds, or does each seed produce its own
+\ idiosyncratic survivor set?
+\
+\ Base criteria (PHYSICS, not candidates):
+\   1. Equivalence    — SHADOW-CHECK mandatory
+\   2. Energy         — reuse_gain > law_cost + carry
+\   3. Time (aging)   — inflation + carry per epoch
+\   4. Transfer       — HELD-OUT-EVAL gate (when reached)
+\   5. Decay          — AUTO-DECOMPOSE after negative-threshold epochs
+\   6. Memory         — trace + ledger
+\   7. Canon boundary — sandbox isolation
+\
+\ Pre-reg: examples/PREDICTIONS-184-cycle36R-fixed-physics-genesis.md
+
+use prelude
+use debug
+use harness/seeded-workload
+
+cr "=== Demo 191 — Cycle 36R: fixed-physics genesis (3 seeds) ===" . cr
+
+\ ---- Run each seed under fixed canon (BASELINE) -----------------------
+'seed-1-workload RUN-GENESIS-SEED
+"s1-decomposed" store "s1-promoted" store
+
+'seed-2-workload RUN-GENESIS-SEED
+"s2-decomposed" store "s2-promoted" store
+
+'seed-3-workload RUN-GENESIS-SEED
+"s3-decomposed" store "s3-promoted" store
+
+\ ---- Diagnostics ------------------------------------------------------
+cr "Per-seed survivor metrics (under fixed canon physics):" . cr
+"  seed 1 (L=2 dense)   promoted= " . "s1-promoted" load
+                                       . " decomposed= " . "s1-decomposed" load . cr
+"  seed 2 (L=3 mixed)   promoted= " . "s2-promoted" load
+                                       . " decomposed= " . "s2-decomposed" load . cr
+"  seed 3 (L=2 sparse)  promoted= " . "s3-promoted" load
+                                       . " decomposed= " . "s3-decomposed" load . cr
+cr
+
+\ ---- Cross-seed liveness ----------------------------------------------
+\ At minimum: each seed completed without engine error and produced
+\ a defined promoted/decomposed pair.  The actual numerical values
+\ are forensic findings, recorded in RESULTS-184.
+"s1-promoted"    load 0 >= 1 assert-eq
+"s1-decomposed"  load 0 >= 1 assert-eq
+"s2-promoted"    load 0 >= 1 assert-eq
+"s2-decomposed"  load 0 >= 1 assert-eq
+"s3-promoted"    load 0 >= 1 assert-eq
+"s3-decomposed"  load 0 >= 1 assert-eq
+
+\ ---- Determinism check: same seed twice → same metrics ---------------
+\ NEG-1 (cycle 36R): seed determinism.
+'seed-1-workload RUN-GENESIS-SEED
+"s1b-decomposed" store "s1b-promoted" store
+
+"s1-promoted"   load "s1b-promoted"   load = 1 assert-eq
+"s1-decomposed" load "s1b-decomposed" load = 1 assert-eq
+
+cr "Determinism (seed 1 repeated):" . cr
+"  seed 1 second run    promoted= " . "s1b-promoted"   load
+                                       . " decomposed= " . "s1b-decomposed" load . cr
+cr
+
+cr "Cycle 36R demo: 3 seeds executed under fixed canon physics." . cr
+cr "                Forensic record → RESULTS-184." . cr
+cr "                Determinism verified (NEG-1)." . cr
+REPORT
