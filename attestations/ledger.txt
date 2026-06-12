@@ -53,3 +53,4 @@
 2026-05-25T20:22:29Z  b39ab4e3f2063b6cfc86c8e1699f9d3cde6f7feac8b930bc0e53c81b0328389d  examples/PREDICTIONS-182-selection-law-scaffold.md  a9e2d22
 2026-05-25T21:56:33Z  cda3cac66452112a68f7aa879500e34e133769198d8b841f2ec40f477d87d793  examples/PREDICTIONS-184-cycle36R-fixed-physics-genesis.md  d4d056e
 2026-05-25T21:56:34Z  cf914d05208107677843c10552da5bcf7b04f5f05fc4014cf0defbed593de602  examples/PREDICTIONS-182-selection-law-scaffold.md  d4d056e
+2026-06-12T13:02:56Z  7c37195806eacd435e3f4a86b68c01700180f42f8442d24c28734a6db30be7d3  examples/PREDICTIONS-185-cycle37-reentry-first-closure.md  09cbad6
