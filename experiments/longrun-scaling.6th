@@ -1,0 +1,54 @@
+\ experiments/longrun-scaling.6th
+\ Parameterized long-run: epoch count via --define epochs=N
+\   racket -l sixth/cli -- -D epochs=2000 run experiments/longrun-scaling.6th
+\ Defaults to 500 if not given.
+
+use prelude
+use debug
+use graph
+use manifest
+
+BOOTSTRAP-RESET
+
+\ ---- Genesis + discovery (as demo 194) ---------------------------------
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+DETECT-MOTIF-AUTO "m" store
+"m" load SHADOW-CHECK drop
+"m" load INDUCE-RUNTIME "c" store
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c" load COMMIT-PRIMITIVE drop
+"c" load HELD-OUT-EVAL drop
+"c" load PROMOTE-STABLE drop
+NEW-EPOCH
+DETECT-BINDING-AUTO drop
+
+RESET
+MARK MARK bi-edge
+
+: epoch-block          \ ( n -- )
+  dup 0 > if
+    WORLD-TICK drop
+    NEW-EPOCH
+    1 -
+    epoch-block
+  else
+    drop
+  then ;
+
+"epochs" load dup 0 = if drop 500 then "n" store
+"n" load epoch-block
+
+cr "epochs= " . "n" load .
+"  status= " . "c" load CAND-STATUS .
+"  nodes= " . NODES .
+"  edges= " . EDGES . cr
+"c" load CAND-STATUS 'stable-active = 1 assert-eq
+REPORT

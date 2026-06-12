@@ -88,14 +88,38 @@ growth (+16 nodes, +8 edges per epoch — budget-limited steady-state
 metabolism).  The law survived every one of 500 epochs on
 discovered bindings, paying carry + inflation each time.
 
-Performance note: no GPU/Metal is warranted at this scale — 500
-epochs cost 1.8 s; ~100K epochs extrapolate to minutes.  The
-eventual bottleneck is the pattern-matcher scan over a growing
-graph (O(nodes) early-exit), not arithmetic.  Metal/MPS becomes
-relevant only for (a) massively parallel independent worlds
-(better served first by Racket places across CPU cores) or (b) the
-libtorch bridge demos (torch MPS backend, already available).
-Filed as scaling note, not a current need.
+## Scaling series (experiments/longrun-scaling.6th, measured)
+
+| epochs | nodes | edges | wall-clock | ratio vs prev |
+|---|---|---|---|---|
+| 500 | 8 002 | 4 002 | 1.6 s | — |
+| 1 000 | 16 002 | 8 002 | 3.9 s | ×2.5 |
+| 2 000 | 32 002 | 16 002 | 14.3 s | ×3.6 |
+| 4 000 | 64 002 | 32 002 | 50.5 s | ×3.5 |
+| 10 000 | 160 002 | 80 002 | 321.4 s | (quadratic fit: predicted 315 s) |
+
+Survival: `'stable-active` at every horizon.  World growth exactly
+linear (+16 nodes, +8 edges per epoch).  Wall-clock approaches ×4
+per doubling — **quadratic, as predicted by matcher locality
+drift**: `find-edge` scans from node id 1 on every match, but
+consumption eats the lowest edges while production creates the
+highest, so the dead-prefix of empty nodes grows linearly and the
+scan re-walks it every firing.  Cost ≈ O(age of world) per match.
+
+Consequences:
+- 10K epochs measured at 5.4 min, `'stable-active`, 160 002 nodes /
+  80 002 edges — the quadratic fit predicted 315 s vs measured
+  321 s (2% error).  The cost model is confirmed, not conjectured.
+- ~100K epochs ≈ hours — requires a matcher frontier cursor.
+  That optimization CHANGES the observable match order in the
+  general case (a rule may re-edge a low node), i.e. it is physics
+  semantics, not just engineering — so it needs its own pre-reg
+  (cycle 39 candidate).
+- GPU/Metal is NOT the answer to this bottleneck: the scan is a
+  sequential pointer chase, not parallel arithmetic.  Metal/MPS
+  remains relevant only for massively parallel independent worlds
+  (better served first by Racket places across CPU cores) or the
+  libtorch bridge demos (torch MPS backend, already available).
 
 ## NEG coverage — all 7
 
