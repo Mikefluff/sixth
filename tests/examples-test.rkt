@@ -796,7 +796,17 @@
     ;; 191. Cycle 36R — fixed-physics genesis: 3 seeded workloads
     ;;      under one canon rule-set; NEG-1 determinism check.
     ;;      6 liveness + 2 determinism = 8 asserts.
-    ("191-cycle36R-fixed-physics-genesis.6th"     8)))
+    ("191-cycle36R-fixed-physics-genesis.6th"     8)
+    ;; --- Cycle 37 — Re-entry / First Closure ---
+    ;; 192. H1 closure: (MARK MARK bi-edge) bound to 'edge sustains
+    ;;      itself 3 epochs after external cutoff (m=+12 world-driven);
+    ;;      rebuild proof (2 seed edges → 10 after one tick); unbind
+    ;;      control decays; NEG-2/4/7.  19 asserts.
+    ("192-closure-autocatalysis.6th"              19)
+    ;; 193. H2 no-perpetual-motion: (MARK drop) parasite drains 20
+    ;;      edges (8/8/4), half-starves to 'stale at m=+1, starves to
+    ;;      'decomposed, no resurrection on refill; NEG-3/5.  16 asserts.
+    ("193-closure-parasite-starves.6th"           16)))
 
 (define (run-demo file)
   (define out
@@ -821,8 +831,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 2305
-                (format "cumulative ✓ count: ~a (expected 2305)" total-pass)))
+  (check-equal? total-pass 2340
+                (format "cumulative ✓ count: ~a (expected 2340)" total-pass)))
 
-(displayln (format "examples regression: ~a / 2305 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 2340 ✓ across ~a demos"
                    total-pass (length expected)))

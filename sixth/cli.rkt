@@ -23,7 +23,8 @@
          "meta/tier2.rkt"
          "meta/test-harness.rkt"
          "meta/bootstrap.rkt"
-         "meta/arena.rkt")
+         "meta/arena.rkt"
+         "meta/triggers.rkt")
 
 (define no-prelude? (make-parameter #f))
 (define defines    (make-parameter '()))   ; list of (cons KEY VAL)
@@ -62,6 +63,8 @@
   ;; Cycle 36B: BOOTSTRAP-RESET / BOOTSTRAP-LAW-HASH primitives.
   (register-bootstrap! e)
   (register-arena! e)
+  ;; Cycle 37: pattern-triggered laws (BIND-TRIGGER / WORLD-TICK).
+  (register-triggers! e)
   (unless (no-prelude?)
     (use-module! "prelude" e))
   (apply-defines! e)

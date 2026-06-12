@@ -222,6 +222,8 @@
   (hash-set! mem MEM_OPCODES_TO_CAND  (make-hasheq))
   ;; cycle 33: support credit snapshot
   (hash-set! mem MEM_SUPPORT_CREDIT   (box '()))
+  ;; cycle 37: pattern-trigger bindings (meta/triggers.rkt)
+  (hash-set! mem '_triggers           (box '()))
   (void))
 
 ;; In-place reset of every meta-runtime slot to its initial empty
@@ -274,6 +276,8 @@
   (reset-box! MEM_OBSERVED_DEPS           '())
   (reset-hash! MEM_OPCODES_TO_CAND)
   (reset-box! MEM_SUPPORT_CREDIT          '())
+  ;; cycle 37: trigger bindings cleared on reset (NEG-7 hygiene)
+  (reset-box! '_triggers                  '())
   (void))
 
 ;; Allow tests / NEW-SESSION primitive to update session_id deterministically.
@@ -413,7 +417,12 @@
     ;; cycle 36B arena: selector profile + pre-flight gate.
     PROFILE-ACTIVE PROFILE-SET PROFILE-RESET-CANON
     PREFLIGHT-ARENA ARENA-IDENTICAL-HASH? ARENA-PROFILE-COUNT
-    RUN-WORKLOAD-PROFILE RUN-GENESIS-SEED))
+    RUN-WORKLOAD-PROFILE RUN-GENESIS-SEED
+    ;; cycle 37: trigger inspection ops.  WORLD-TICK is NOT here —
+    ;; it mutates the world and dispatches laws, so it bumps
+    ;; semantic-trace like any world operation (per PREDICTIONS-185
+    ;; implementation contract item 3).
+    BIND-TRIGGER UNBIND-TRIGGER TRIGGER-COUNT))
 
 (define (inspection-op? name)
   (and (memq name INSPECTION-OPS) #t))

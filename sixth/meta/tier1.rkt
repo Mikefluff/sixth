@@ -20,7 +20,11 @@
 (provide register-tier1!
          prim-held-out-eval-real
          K_HELDOUT
-         HELD-OUT-SUBSTRATES)
+         HELD-OUT-SUBSTRATES
+         ;; cycle 37: world-driven dispatch reuses the honest
+         ;; dispatch path (hook fires on success only, fails bump
+         ;; recent_failures) — exported for meta/triggers.rkt.
+         try-dispatch-cand!)
 
 (require racket/list
          racket/string

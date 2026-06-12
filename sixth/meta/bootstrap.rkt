@@ -164,6 +164,7 @@
    (axis-empty-list e '_cand-decompose-snapshot  'cand-decompose-snap)
    (axis-empty-list e '_observed-deps            'observed-deps)
    (axis-empty-list e '_support-credit           'support-credit)
+   (axis-empty-list e '_triggers                 'triggers)
    (axis-empty-hash e '_opcodes-to-cand          'opcodes-to-cand)
    (axis-zero       e '_energy-conflict          'energy-conflict)
    (axis-zero       e '_energy-search            'energy-search)

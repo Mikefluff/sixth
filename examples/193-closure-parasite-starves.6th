@@ -1,0 +1,144 @@
+\ examples/193-closure-parasite-starves.6th
+\ Cycle 37 — H2 (no perpetual motion) + NEG-5 (budget cap) +
+\ NEG-3 (no resurrection via trigger path).
+\
+\ The parasite: (MARK drop), L=2 — consumes an edge per firing but
+\ its body creates only isolated nodes, never an edge.  It eats the
+\ world without rebuilding it.  Under the SAME physics as demo 192:
+\ the edge supply drains, firings stop, momentum goes negative, the
+\ law decomposes.  Presence must be paid for in world structure;
+\ consumption without reconstruction is not a loop, it is a leak.
+\
+\ Pre-reg: examples/PREDICTIONS-185-cycle37-reentry-first-closure.md
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 193 — cycle 37: parasite drains the world and dies ===" . cr
+
+BOOTSTRAP-RESET
+
+\ ---- Genesis: standard promotion of (MARK drop) ------------------------
+MARK drop MARK drop MARK drop
+MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "m" store
+"m" load SHADOW-CHECK drop
+"m" load INDUCE-RUNTIME "c" store
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c" load COMMIT-PRIMITIVE drop
+"c" load HELD-OUT-EVAL drop
+"c" load PROMOTE-STABLE drop
+"c" load CAND-STATUS "status-promoted" store
+
+\ ---- Drain inducement counters ------------------------------------------
+NEW-EPOCH
+
+\ ---- Clean the world ------------------------------------------------------
+\ HELD-OUT-EVAL leaves the last held-out substrate's graph in the
+\ world (~116 edges) — startup capital that would feed the parasite
+\ for 14+ epochs and mask starvation.  RESET wipes world state only
+\ (dictionary and metabolism untouched).
+RESET
+
+\ ---- Stock the world: 20 edges (10 bidirectional pairs) -----------------
+MARK MARK bi-edge MARK MARK bi-edge MARK MARK bi-edge
+MARK MARK bi-edge MARK MARK bi-edge MARK MARK bi-edge
+MARK MARK bi-edge MARK MARK bi-edge MARK MARK bi-edge
+MARK MARK bi-edge
+EDGES "edges-initial" store
+
+\ ---- Bind the parasite ----------------------------------------------------
+'edge 'cand_001 BIND-TRIGGER
+
+\ ======================================================================
+\ EXTERNAL CUTOFF.  All activity below is world-driven.
+\ ======================================================================
+
+\ ---- Epoch 1: supply 20 > budget 8 → fires exactly 8 (NEG-5) -----------
+WORLD-TICK "f1" store
+EDGES "edges-after-1" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-e1" store
+
+\ ---- Epoch 2: supply 12 → fires 8 ---------------------------------------
+WORLD-TICK "f2" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-e2" store
+
+\ ---- Epoch 3: supply 4 → fires 4, world is now EMPTY of edges -----------
+WORLD-TICK "f3" store
+EDGES "edges-after-3" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-e3" store
+
+\ ---- Epoch 4: nothing left to eat → 0 firings → momentum -3 -------------
+WORLD-TICK "f4" store
+"c" load LAW-MOMENTUM "m4" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-e4" store
+
+\ ---- Epoch 5: second negative epoch → decomposed -------------------------
+WORLD-TICK "f5" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-e5" store
+
+\ ---- NEG-3: refill the world; the dead law must NOT fire -----------------
+MARK MARK bi-edge MARK MARK bi-edge
+WORLD-TICK "f-postmortem" store
+
+\ ---- Diagnostics -----------------------------------------------------------
+cr "Parasite lifecycle (L=2, consumes edges, builds nothing):" . cr
+"  edges initial   = " . "edges-initial" load . cr
+"  e1: fired= " . "f1" load . "  edges left= " . "edges-after-1" load
+                                 . "  status= " . "status-e1" load . cr
+"  e2: fired= " . "f2" load . "  status= " . "status-e2" load . cr
+"  e3: fired= " . "f3" load . "  edges left= " . "edges-after-3" load
+                                 . "  status= " . "status-e3" load . cr
+"  e4: fired= " . "f4" load . "  m= " . "m4" load
+                                 . "  status= " . "status-e4" load . cr
+"  e5: fired= " . "f5" load . "  status= " . "status-e5" load . cr
+"  post-mortem fired (world refilled) = " . "f-postmortem" load . cr
+cr
+
+\ ---- Assertions --------------------------------------------------------------
+"status-promoted" load 'stable-active assert-eq
+"edges-initial"   load 20 assert-eq
+
+\ NEG-5: saturated world fires exactly the budget, not more.
+"f1" load 8 assert-eq
+"edges-after-1" load 12 assert-eq
+
+\ Drain progresses: 12 → fires 8; 4 → fires 4 → empty.
+"f2" load 8 assert-eq
+"f3" load 4 assert-eq
+"edges-after-3" load 0 assert-eq
+
+\ While fully fed, the parasite is metabolically healthy — eating
+\ pays.  At e3 only 4 edges remained: m = 4 - 2 - 1 = +1, which is
+\ within MOMENTUM-STALE-TOLERANCE=1 → 'stale.  The physics marks
+\ the half-starved state before death — finer-grained than the
+\ pre-reg's coarse prediction.
+"status-e1" load 'stable-active assert-eq
+"status-e2" load 'stable-active assert-eq
+"status-e3" load 'stale assert-eq
+
+\ H2: starvation.  No edges → no firings → m = 0 - 2 - 1 = -3 →
+\ stale → second negative epoch → decomposed.  Same physics that
+\ kept demo 192 alive kills the law that does not rebuild.
+"f4" load 0 assert-eq
+"m4" load -3 assert-eq
+"status-e4" load 'stale assert-eq
+"f5" load 0 assert-eq
+"status-e5" load 'decomposed assert-eq
+
+\ NEG-3: a decomposed law does not fire even with food available.
+"f-postmortem" load 0 assert-eq
+
+cr "H2 CONFIRMED: no perpetual motion.  Consumption without" . cr
+cr "              reconstruction drains the world, then the law" . cr
+cr "              starves and decomposes.  No resurrection (NEG-3)." . cr
+REPORT

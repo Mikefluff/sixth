@@ -66,7 +66,7 @@ TRIGGER-COUNT  ( -- n )
 | `'edge` | any directed edge (a,b) | delete that edge |
 | `'path2` | edges (a,b),(b,c) | delete both edges |
 | `'selfloop` | edge (a,a) | delete it |
-| `'isolated-node` | node with in-degree 0 and out-degree 0 | delete the node |
+| `'isolated-node` | **DEFERRED at implementation** — substrate nodes are never deleted by design (`validate-node!` relies on monotone ids); consume semantics would require a substrate physics change.  Needs its own cycle if ever needed. |
 
 General unification / variable patterns deferred to a future
 cycle.  v0 vocabulary is deliberately small: enough to express

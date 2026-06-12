@@ -1,0 +1,168 @@
+\ examples/192-closure-autocatalysis.6th
+\ Cycle 37 — H1: FIRST CLOSURE.  A promoted law bound to a world
+\ pattern maintains its own metabolism after ALL external dispatches
+\ stop.
+\
+\ The law: (MARK MARK bi-edge), L=3 — creates two nodes and a
+\ bidirectional edge pair between them.  Bound to 'edge: each firing
+\ CONSUMES one edge from the world and (by its own body) creates two
+\ new ones.  The law's output rebuilds its own trigger condition —
+\ re-entry, operationally.
+\
+\ Closure criterion (PREDICTIONS-185): zero external dispatches,
+\ status 'stable-active through >= 3 epochs (above MOMENTUM-
+\ NEGATIVE-THRESHOLD=2), reuse exclusively from WORLD-TICK.
+\
+\ Also covers: NEG-2 (no free firing), NEG-4 (honest accounting),
+\ NEG-7 (reset hygiene), and the unbind control (cutting the
+\ trigger ends the closure — presence requires the loop).
+\
+\ Pre-reg: examples/PREDICTIONS-185-cycle37-reentry-first-closure.md
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 192 — cycle 37: first closure (autocatalysis) ===" . cr
+
+BOOTSTRAP-RESET
+
+\ ---- NEG-2a: tick with zero bindings fires nothing --------------------
+WORLD-TICK "f-nobind" store
+
+\ ---- Genesis: standard promotion of (MARK MARK bi-edge) ---------------
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+DETECT-MOTIF-AUTO "m" store
+"m" load SHADOW-CHECK drop
+"m" load INDUCE-RUNTIME "c" store
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c" load COMMIT-PRIMITIVE drop
+"c" load HELD-OUT-EVAL drop
+"c" load PROMOTE-STABLE drop
+"c" load CAND-STATUS "status-promoted" store
+
+\ ---- Drain inducement counters ----------------------------------------
+NEW-EPOCH
+
+\ ---- Clean the world, seed minimal capital -----------------------------
+\ HELD-OUT-EVAL leaves the last held-out substrate's graph in the
+\ world (~116 edges).  To prove the closure feeds ITSELF rather
+\ than consuming startup capital, wipe the world and seed exactly
+\ ONE bidirectional pair (2 edges).  24 firings over 3 epochs
+\ cannot be explained by 2 edges of capital — only by rebuild.
+RESET
+MARK MARK bi-edge
+EDGES "edges-seed" store
+
+\ ---- Bind the law to the world ----------------------------------------
+'edge 'cand_001 BIND-TRIGGER
+TRIGGER-COUNT "n-triggers" store
+
+\ ======================================================================
+\ EXTERNAL CUTOFF.  From this point cand_001 is NEVER dispatched by
+\ this program.  All reuse below comes from WORLD-TICK only.
+\ ======================================================================
+
+\ ---- Closure epoch 1 ---------------------------------------------------
+"c" load CAND-USES "uses-before-1" store
+WORLD-TICK "f1" store
+"c" load CAND-USES "uses-after-1" store
+EDGES "edges-after-1" store
+"c" load LAW-MOMENTUM "m1" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-e1" store
+
+\ ---- Closure epoch 2 ---------------------------------------------------
+WORLD-TICK "f2" store
+"c" load LAW-MOMENTUM "m2" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-e2" store
+
+\ ---- Closure epoch 3 ---------------------------------------------------
+WORLD-TICK "f3" store
+"c" load LAW-MOMENTUM "m3" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-e3" store
+
+\ ---- Unbind control: cut the loop, presence ends ----------------------
+'cand_001 UNBIND-TRIGGER
+TRIGGER-COUNT "n-triggers-after" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-unbound-1" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-unbound-2" store
+
+\ ---- NEG-7: reset hygiene ----------------------------------------------
+'edge 'cand_001 BIND-TRIGGER
+BOOTSTRAP-RESET
+TRIGGER-COUNT "n-triggers-postreset" store
+
+\ ---- Diagnostics --------------------------------------------------------
+cr "Genesis:" . cr
+"  status promoted      = " . "status-promoted" load . cr
+"  fired (no bindings)  = " . "f-nobind" load . cr
+"  bindings             = " . "n-triggers" load . cr
+cr "Closure epochs (external cutoff active):" . cr
+"  e1: fired= " . "f1" load . "  m= " . "m1" load . "  status= " . "status-e1" load . cr
+"  e2: fired= " . "f2" load . "  m= " . "m2" load . "  status= " . "status-e2" load . cr
+"  e3: fired= " . "f3" load . "  m= " . "m3" load . "  status= " . "status-e3" load . cr
+"  use-counter delta e1 = " . "uses-after-1" load "uses-before-1" load - . cr
+cr "Unbind control:" . cr
+"  status +1 epoch      = " . "status-unbound-1" load . cr
+"  status +2 epochs     = " . "status-unbound-2" load . cr
+"  triggers after reset = " . "n-triggers-postreset" load . cr
+cr
+
+\ ---- Assertions ----------------------------------------------------------
+\ NEG-2a: no bindings → no firings.
+"f-nobind" load 0 assert-eq
+
+\ Genesis reached stable-active; one binding registered.
+"status-promoted" load 'stable-active assert-eq
+"n-triggers" load 1 assert-eq
+
+\ H1 CLOSURE: three epochs of world-driven survival.
+\ Each tick: 8 firings (budget), m = 8*(3-1) - 3 - 1 = +12.
+"f1" load 8 assert-eq
+"f2" load 8 assert-eq
+"f3" load 8 assert-eq
+"m1" load 12 assert-eq
+"m2" load 12 assert-eq
+"m3" load 12 assert-eq
+"status-e1" load 'stable-active assert-eq
+"status-e2" load 'stable-active assert-eq
+"status-e3" load 'stable-active assert-eq
+
+\ NEG-4 honest accounting: use-counter delta == fired count.
+"uses-after-1" load "uses-before-1" load - 8 assert-eq
+
+\ REBUILD PROOF: seeded with 2 edges; after 8 firings (each
+\ consumes 1, body creates 2) the world has 2 + 8 = 10 edges.
+\ The loop GROWS its own trigger supply — closure is self-funded,
+\ not capital-funded.
+"edges-seed" load 2 assert-eq
+"edges-after-1" load 10 assert-eq
+
+\ Unbind control: without the loop, decay in 2 epochs (stale →
+\ decomposed) — existing physics, nothing special-cased.
+"n-triggers-after" load 0 assert-eq
+"status-unbound-1" load 'stale assert-eq
+"status-unbound-2" load 'decomposed assert-eq
+
+\ NEG-7: BOOTSTRAP-RESET clears bindings.
+"n-triggers-postreset" load 0 assert-eq
+
+cr "H1 CONFIRMED: closure — a law sustained itself for 3 epochs" . cr
+cr "              with zero external dispatches.  Its firings" . cr
+cr "              consumed world structure and rebuilt it." . cr
+cr "              Cutting the binding ended the persistence." . cr
+REPORT
