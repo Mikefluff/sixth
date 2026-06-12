@@ -1,0 +1,152 @@
+# RESULTS-186 — Cycle 38: Evolved Closure (Discovered Bindings)
+
+Pre-reg: `examples/PREDICTIONS-186-cycle38-evolved-closure.md`
+Demos: 194 (16 asserts), 195 (17 asserts)
+Long-run: `experiments/longrun-closure.6th` (manual, not in suite)
+Regression: **2373 / 2373 ✓** across 184 demos
+
+---
+
+## Headline
+
+**CLAIM-38 CONFIRMED.** The substrate discovered its own
+(pattern, law) bindings from co-occurrence statistics accumulated
+during ordinary life — zero hand-wiring — and the law survived
+external cutoff on those discovered bindings.  The first closure
+that was FOUND, not built.
+
+And the long-run: **the evolved closure survived 500 consecutive
+epochs** of world-driven metabolism (1.8 s wall-clock), growing
+the world from 2 edges to 4002 while paying full canon taxes
+every epoch.
+
+Operational terms only.  "Discovery" = threshold-crossing of an
+observed co-occurrence counter.  No claims of learning, intention,
+cognition, or life.
+
+## H1 — evolved closure: CONFIRMED (demo 194)
+
+The elegant part: **the genesis pipeline itself is the discovery
+data.**  The law (MARK MARK bi-edge) was coupled (5 dispatches) in
+a world its own induction workload had filled with edges.  The
+ecological observer counted:
+
+```
+cooccur (cand_001, 'edge)  = 5
+cooccur (cand_001, 'path2) = 5    (a bidirectional pair is a→b→a)
+```
+
+DETECT-BINDING-AUTO then proposed BOTH bindings — no BIND-TRIGGER
+anywhere in the demo.  After external cutoff: 3 epochs, fired=8,
+m=+12, stable-active.  Idempotence (NEG-4) and reset hygiene
+(NEG-5) verified.
+
+## H2 — no spurious discovery: CONFIRMED (demo 195)
+
+| evidence | discovered |
+|---|---|
+| 0 co-occurrences (pattern-free ecology) | 0 |
+| 3 co-occurrences (sub-threshold) | 0 |
+| 5 co-occurrences (threshold) | 2 |
+
+The gate responds to accumulating evidence, not single events.
+
+## H3 — selection filters dumb discovery: CONFIRMED (demo 195)
+
+The parasite (MARK drop) earned its binding honestly (5 ecological
+co-occurrences with edges present) — and then the unchanged
+physics did its job: 8 stocked edges eaten in one tick, zero
+rebuild, m=−3, stale, decomposed.
+
+**Discovery is permissive; metabolism is the filter.**  This is
+the Kauffman division of labor: generation can afford to be dumb
+because selection is strict.  No binding-quality heuristics were
+needed, and none were added.
+
+## H4 — test-chamber exclusion: CONFIRMED (demo 195)
+
+The parasite's promotion involved ~30 held-out dispatches inside
+edge-rich test substrates.  Co-occurrence after genesis: **0**.
+The suspension flag (set for HELD-OUT-EVAL's dynamic extent)
+cleanly separates evaluation from ecology.  Without it, every
+promoted law would trivially "discover" an 'edge binding from the
+test worlds — the control would be impossible.
+
+## Long-run probe: 500 epochs (experiments/longrun-closure.6th)
+
+| epoch | status | nodes | edges |
+|---|---|---|---|
+| 0 | stable-active | 2 | 2 |
+| 100 | stable-active | 1602 | 802 |
+| 200 | stable-active | 3202 | 1602 |
+| 300 | stable-active | 4802 | 2402 |
+| 400 | stable-active | 6402 | 3202 |
+| 500 | stable-active | 8002 | 4002 |
+
+Wall-clock: **1.8 seconds** (single CPU core).  Perfectly linear
+growth (+16 nodes, +8 edges per epoch — budget-limited steady-state
+metabolism).  The law survived every one of 500 epochs on
+discovered bindings, paying carry + inflation each time.
+
+Performance note: no GPU/Metal is warranted at this scale — 500
+epochs cost 1.8 s; ~100K epochs extrapolate to minutes.  The
+eventual bottleneck is the pattern-matcher scan over a growing
+graph (O(nodes) early-exit), not arithmetic.  Metal/MPS becomes
+relevant only for (a) massively parallel independent worlds
+(better served first by Racket places across CPU cores) or (b) the
+libtorch bridge demos (torch MPS backend, already available).
+Filed as scaling note, not a current need.
+
+## NEG coverage — all 7
+
+| NEG | covered by |
+|---|---|
+| NEG-1 no correlation, no binding | demo 195 (cooccur 0 → 0) |
+| NEG-2 threshold honest | demo 195 (3 → 0; 5 → discovery) |
+| NEG-3 status gate | by construction (DETECT-BINDING-AUTO filters non-stable-active) + demo 195 H3 (decomposed law's bindings inert) |
+| NEG-4 idempotence | demo 194 (second call → 0) |
+| NEG-5 reset hygiene | demo 194 (_binding-cooccur + triggers cleared; new axis) |
+| NEG-6 test-chamber exclusion | demo 195 (heldout dispatches → 0 counts) |
+| NEG-7 canon preservation | regression 2373/2373 ✓ |
+
+## Cycle 38 status — CLOSED
+
+| item | status |
+|---|---|
+| PREDICTIONS-186 pre-reg | attested before source |
+| Ecological observer (runtime.rkt hook) | ✓ |
+| Test-chamber suspension (tier1.rkt) | ✓ |
+| DETECT-BINDING-AUTO / BINDING-COOCCUR (triggers.rkt) | ✓ |
+| H1 evolved closure | ✓ confirmed |
+| H2 no spurious discovery | ✓ confirmed |
+| H3 selection filters discovery | ✓ confirmed |
+| H4 test-chamber exclusion | ✓ confirmed |
+| 500-epoch long-run survival | ✓ |
+| Regression | 2373/2373 ✓ |
+
+## The chain so far
+
+различие → отбор → наличие → **найденное наличие**:
+
+- Cycle 35-36R: fixed physics selects productive laws.
+- Cycle 37: a law bound to a world pattern exists by itself
+  (closure), and parasites starve (non-trivial).
+- Cycle 38: the binding itself emerges from the system's history.
+  Nobody told the law what feeds it; it was dispatched in a world
+  it had filled with edges, the coincidence was counted, the
+  threshold crossed, the loop closed — and held for 500 epochs.
+
+## Cycle 39 directions (informational, each needs its own pre-reg)
+
+1. **Multi-law ecosystems:** two laws whose discovered bindings
+   cross-feed (one's output is the other's trigger) — mutualism,
+   competition for the tick budget, niche formation.
+2. **Binding metabolism:** bindings that stop firing for N epochs
+   accrue their own decay (currently inert bindings persist
+   harmlessly; an economy of bindings would prune them).
+3. **Longer-horizon long-runs:** 10K-100K epochs, watching for
+   late-emerging dynamics (matcher locality drift, momentum
+   oscillations) — cheap on CPU per the performance note.
+4. **Pattern vocabulary growth:** mined patterns (the world-side
+   analog of DETECT-MOTIF-AUTO) — the natural next rung after
+   mined laws and mined bindings.

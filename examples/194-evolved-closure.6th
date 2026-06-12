@@ -1,0 +1,139 @@
+\ examples/194-evolved-closure.6th
+\ Cycle 38 — H1: EVOLVED CLOSURE.  The binding is DISCOVERED by the
+\ substrate from its own history, not wired by the engineer.
+\
+\ Key move: the standard genesis pipeline ITSELF is the discovery
+\ data.  The law (MARK MARK bi-edge) is coupled (5 dispatches) in a
+\ world that its own induction workload filled with edges — so the
+\ ecological observer accumulates co-occurrence (cand, 'edge) >= 5
+\ as a side effect of ordinary life.  DETECT-BINDING-AUTO then
+\ proposes the binding.  No BIND-TRIGGER anywhere in this demo.
+\
+\ Also: NEG-4 (idempotence), NEG-5 (reset hygiene).
+\
+\ Pre-reg: examples/PREDICTIONS-186-cycle38-evolved-closure.md
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 194 — cycle 38: evolved closure (discovered binding) ===" . cr
+
+BOOTSTRAP-RESET
+
+\ ---- Genesis (also: ecological observation period) ---------------------
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+DETECT-MOTIF-AUTO "m" store
+"m" load SHADOW-CHECK drop
+"m" load INDUCE-RUNTIME "c" store
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c" load COMMIT-PRIMITIVE drop
+"c" load HELD-OUT-EVAL drop
+"c" load PROMOTE-STABLE drop
+"c" load CAND-STATUS "status-promoted" store
+
+\ Co-occurrence accumulated during the 5 coupling dispatches (the
+\ world had edges every time — the law's own workload put them
+\ there).  Held-out dispatches are EXCLUDED (test chamber).
+'edge  'cand_001 BINDING-COOCCUR "cooccur-edge"  store
+'path2 'cand_001 BINDING-COOCCUR "cooccur-path2" store
+
+NEW-EPOCH
+
+\ ---- Discovery -----------------------------------------------------------
+TRIGGER-COUNT "triggers-before" store
+DETECT-BINDING-AUTO "discovered" store
+TRIGGER-COUNT "triggers-after" store
+
+\ NEG-4: idempotence — second call discovers nothing new.
+DETECT-BINDING-AUTO "discovered-again" store
+
+\ ---- Clean world, minimal seed -------------------------------------------
+RESET
+MARK MARK bi-edge
+
+\ ======================================================================
+\ EXTERNAL CUTOFF.  The law is never dispatched below.  Whatever
+\ keeps it alive, the substrate found on its own.
+\ ======================================================================
+
+WORLD-TICK "f1" store
+"c" load LAW-MOMENTUM "m1" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-e1" store
+
+WORLD-TICK "f2" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-e2" store
+
+WORLD-TICK "f3" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-e3" store
+
+\ ---- NEG-5: reset hygiene --------------------------------------------------
+BOOTSTRAP-RESET
+TRIGGER-COUNT "triggers-postreset" store
+'edge 'cand_001 BINDING-COOCCUR "cooccur-postreset" store
+
+\ ---- Diagnostics ------------------------------------------------------------
+cr "Ecological observation (from genesis itself):" . cr
+"  cooccur (edge)   = " . "cooccur-edge"  load . cr
+"  cooccur (path2)  = " . "cooccur-path2" load . cr
+cr "Discovery:" . cr
+"  triggers before  = " . "triggers-before" load . cr
+"  discovered       = " . "discovered"      load . cr
+"  triggers after   = " . "triggers-after"  load . cr
+"  re-run discovers = " . "discovered-again" load . cr
+cr "Post-cutoff epochs (no external dispatches, discovered bindings only):" . cr
+"  e1: fired= " . "f1" load . "  m= " . "m1" load . "  status= " . "status-e1" load . cr
+"  e2: fired= " . "f2" load . "  status= " . "status-e2" load . cr
+"  e3: fired= " . "f3" load . "  status= " . "status-e3" load . cr
+cr "Reset hygiene:" . cr
+"  triggers after reset = " . "triggers-postreset" load . cr
+"  cooccur after reset  = " . "cooccur-postreset"  load . cr
+cr
+
+\ ---- Assertions ---------------------------------------------------------------
+"status-promoted" load 'stable-active assert-eq
+
+\ The genesis pipeline alone accumulated >= 5 co-occurrences for
+\ 'edge AND 'path2 (a bidirectional pair a<->b is also a->b->a).
+"cooccur-edge"  load 5 >= 1 assert-eq
+"cooccur-path2" load 5 >= 1 assert-eq
+
+\ Discovery: zero hand-wired triggers before; both bindings found.
+"triggers-before" load 0 assert-eq
+"discovered"      load 2 assert-eq
+"triggers-after"  load 2 assert-eq
+
+\ NEG-4: idempotent.
+"discovered-again" load 0 assert-eq
+
+\ EVOLVED CLOSURE: three epochs of survival on discovered bindings.
+\ Both bindings feed the same law; budget caps total firings at 8;
+\ m = 8*(3-1) - 3 - 1 = +12.
+"f1" load 8 assert-eq
+"m1" load 12 assert-eq
+"status-e1" load 'stable-active assert-eq
+"f2" load 8 assert-eq
+"status-e2" load 'stable-active assert-eq
+"f3" load 8 assert-eq
+"status-e3" load 'stable-active assert-eq
+
+\ NEG-5: reset clears bindings AND co-occurrence counters.
+"triggers-postreset" load 0 assert-eq
+"cooccur-postreset"  load 0 assert-eq
+
+cr "H1 CONFIRMED: evolved closure.  The substrate discovered the" . cr
+cr "              (pattern, law) coupling from its own history and" . cr
+cr "              the law survived cutoff on bindings nobody wired." . cr
+REPORT

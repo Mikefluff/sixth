@@ -182,13 +182,54 @@
   (set-box! lb (cons (list 'world-tick fired) (unbox lb)))
   (push! e fired))
 
+;; ---- cycle 38: binding discovery ----------------------------------------
+;;
+;; DETECT-BINDING-AUTO mines _binding-cooccur (populated by the
+;; ecological observer in runtime.rkt's cand-dispatch-hook) and
+;; registers (pattern, law) bindings for every pair that crossed
+;; BINDING-COOCCUR-N — provided the law is currently 'stable-active
+;; and the binding is not already present.  Auto-bindings land in
+;; the same _triggers registry as hand-wired ones; cycle 37 physics
+;; applies unchanged.  Discovery is correlation-only and
+;; deliberately permissive: the metabolism decides which discovered
+;; bindings are loops and which are leaks.
+
+(define BINDING-COOCCUR-N 5)
+
+(define (prim-binding-cooccur e)
+  ;; ( pattern-sym cand-sym -- n )
+  (define cand (pop! e))
+  (define pat  (pop! e))
+  (define hit (assoc (cons cand pat) (unbox (binding-cooccur-of e))))
+  (push! e (if hit (cdr hit) 0)))
+
+(define (prim-detect-binding-auto e)
+  ;; ( -- new-bindings-count )
+  (define tb (triggers-of e))
+  (define existing (unbox tb))
+  (define new-bindings
+    (for/list ([row (in-list (reverse (unbox (binding-cooccur-of e))))]
+               #:when (and (>= (cdr row) BINDING-COOCCUR-N)
+                           (stable-active? e (car (car row)))
+                           (not (member (car row) existing))))
+      (car row)))   ; (cand . pattern) — same shape as _triggers entries
+  (for ([b (in-list new-bindings)])
+    (set-box! tb (append (unbox tb) (list b)))
+    (define lb (ledger-of e))
+    (set-box! lb (cons (list 'auto-bind (car b) (cdr b)
+                             'cooccur (cdr (assoc b (unbox (binding-cooccur-of e)))))
+                       (unbox lb))))
+  (push! e (length new-bindings)))
+
 ;; ---- registration -------------------------------------------------------
 
 (define TRIGGERS-TABLE
-  (list (cons 'BIND-TRIGGER   prim-bind-trigger)
-        (cons 'UNBIND-TRIGGER prim-unbind-trigger)
-        (cons 'TRIGGER-COUNT  prim-trigger-count)
-        (cons 'WORLD-TICK     prim-world-tick)))
+  (list (cons 'BIND-TRIGGER        prim-bind-trigger)
+        (cons 'UNBIND-TRIGGER      prim-unbind-trigger)
+        (cons 'TRIGGER-COUNT       prim-trigger-count)
+        (cons 'WORLD-TICK          prim-world-tick)
+        (cons 'DETECT-BINDING-AUTO prim-detect-binding-auto)
+        (cons 'BINDING-COOCCUR     prim-binding-cooccur)))
 
 (define (register-triggers! e)
   (for ([entry (in-list TRIGGERS-TABLE)])

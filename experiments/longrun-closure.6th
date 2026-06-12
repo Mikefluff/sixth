@@ -1,0 +1,71 @@
+\ experiments/longrun-closure.6th
+\ Cycle 38 long-run probe (NOT in the regression suite — run manually):
+\   racket -l sixth/cli -- experiments/longrun-closure.6th
+\
+\ Evolved closure at scale: genesis → discovery → cutoff → 500
+\ epochs of world-driven life.  Reports survival, world growth,
+\ and metabolic stability every 100 epochs.
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Long-run: evolved closure, 500 epochs ===" . cr
+
+BOOTSTRAP-RESET
+
+\ ---- Genesis + discovery (as demo 194) ---------------------------------
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+DETECT-MOTIF-AUTO "m" store
+"m" load SHADOW-CHECK drop
+"m" load INDUCE-RUNTIME "c" store
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c" load COMMIT-PRIMITIVE drop
+"c" load HELD-OUT-EVAL drop
+"c" load PROMOTE-STABLE drop
+NEW-EPOCH
+DETECT-BINDING-AUTO "discovered" store
+
+RESET
+MARK MARK bi-edge
+
+\ ---- 100-epoch block: tick+epoch, recursive with TCO --------------------
+: epoch-block          \ ( n -- )  run n epochs of WORLD-TICK + NEW-EPOCH
+  dup 0 > if
+    WORLD-TICK drop
+    NEW-EPOCH
+    1 -
+    epoch-block
+  else
+    drop
+  then ;
+
+: report-state         \ ( label -- )
+  . "  status= " . "c" load CAND-STATUS .
+  "  m(last)= " . "c" load MOMENTUM-NATIVE .
+  "  nodes= " . NODES .
+  "  edges= " . EDGES . cr ;
+
+cr "discovered bindings = " . "discovered" load . cr
+"epoch   0" report-state
+
+100 epoch-block "epoch 100" report-state
+100 epoch-block "epoch 200" report-state
+100 epoch-block "epoch 300" report-state
+100 epoch-block "epoch 400" report-state
+100 epoch-block "epoch 500" report-state
+
+\ ---- Final verdict --------------------------------------------------------
+"c" load CAND-STATUS 'stable-active = "alive?" store
+cr "ALIVE AFTER 500 EPOCHS = " . "alive?" load . cr
+"alive?" load 1 assert-eq
+REPORT

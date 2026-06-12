@@ -1373,6 +1373,11 @@
                  (current-prim-srcloc)))))
      (define expected-gain (* K_HELDOUT (max 0 (- exp-len 1))))
      (define wins
+       ;; Cycle 38 test-chamber exclusion: held-out dispatches are
+       ;; evaluation, not ecology — they must not feed binding
+       ;; co-occurrence counters (otherwise every promoted law would
+       ;; "discover" an 'edge binding from the edge-rich test worlds).
+       (parameterize ([current-binding-observation-suspended #t])
        (for/sum ([sub-name (in-list HELD-OUT-SUBSTRATES)])
          (substrate-RESET! e)
          ;; This handler now catches only genuine cand-on-substrate
@@ -1388,7 +1393,7 @@
            (define delta (- reuse-post reuse-pre))
            (if (and all-succeeded? (>= delta expected-gain))
                1
-               0))))
+               0)))))
      (record-ledger! e (list 'heldout-eval cand-sym wins
                               'k_heldout K_HELDOUT
                               'expansion-length exp-len

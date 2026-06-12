@@ -1,0 +1,144 @@
+\ examples/195-discovery-controls.6th
+\ Cycle 38 — H2 (no spurious discovery) + H3 (selection filters
+\ dumb discovery) + H4/NEG-6 (test-chamber exclusion).
+\
+\ Arc: the parasite law (MARK drop) is promoted in a PATTERN-FREE
+\ ecology — its workload creates only isolated nodes.  Despite ~30
+\ held-out dispatches in edge-rich TEST worlds, co-occurrence stays
+\ ZERO (test chamber is not ecology, H4).  No binding is
+\ discovered (NEG-1).  Then edges appear in its world and it gets
+\ dispatched among them: 3 co-occurrences — still below threshold,
+\ no binding (NEG-2).  Two more cross the threshold: the binding
+\ is discovered.  And then the physics does what physics does:
+\ the discovered parasite eats the world, starves, decomposes (H3).
+\
+\ Discovery is permissive; selection is the filter.
+\
+\ Pre-reg: examples/PREDICTIONS-186-cycle38-evolved-closure.md
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 195 — cycle 38: discovery controls + filtered parasite ===" . cr
+
+BOOTSTRAP-RESET
+
+\ ---- Genesis in a pattern-free ecology ---------------------------------
+\ (MARK drop) workload: isolated nodes only — no edges anywhere.
+MARK drop MARK drop MARK drop
+MARK drop MARK drop MARK drop
+DETECT-MOTIF-AUTO "m" store
+"m" load SHADOW-CHECK drop
+"m" load INDUCE-RUNTIME "c" store
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"c" load COMMIT-PRIMITIVE drop
+"c" load HELD-OUT-EVAL drop
+"c" load PROMOTE-STABLE drop
+"c" load CAND-STATUS "status-promoted" store
+
+\ ---- H4 / NEG-6: test-chamber exclusion ----------------------------------
+\ HELD-OUT-EVAL ran ~30 dispatches inside edge-rich test substrates.
+\ If those counted as ecology, cooccur would be ~30.  It must be 0.
+'edge 'cand_001 BINDING-COOCCUR "cooccur-after-genesis" store
+
+\ ---- NEG-1: no correlation → no binding -----------------------------------
+DETECT-BINDING-AUTO "discovered-0" store
+
+NEW-EPOCH
+
+\ ---- NEG-2: sub-threshold (3 < 5) → still no binding ----------------------
+RESET
+MARK MARK bi-edge MARK MARK bi-edge
+cand_001 cand_001 cand_001
+'edge 'cand_001 BINDING-COOCCUR "cooccur-3" store
+DETECT-BINDING-AUTO "discovered-sub" store
+
+\ ---- Threshold crossing: 2 more ecological dispatches → 5 -----------------
+cand_001 cand_001
+'edge 'cand_001 BINDING-COOCCUR "cooccur-5" store
+DETECT-BINDING-AUTO "discovered-at-5" store
+TRIGGER-COUNT "triggers-now" store
+
+NEW-EPOCH
+
+\ ---- H3: the discovered parasite is subject to unchanged physics ----------
+\ Stock exactly 8 edges, cutoff, let the discovered binding run.
+RESET
+MARK MARK bi-edge MARK MARK bi-edge
+MARK MARK bi-edge MARK MARK bi-edge
+EDGES "edges-stock" store
+
+WORLD-TICK "f1" store
+EDGES "edges-after-1" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-e1" store
+
+WORLD-TICK "f2" store
+"c" load LAW-MOMENTUM "m2" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-e2" store
+
+WORLD-TICK "f3" store
+NEW-EPOCH
+"c" load CAND-STATUS "status-e3" store
+
+\ ---- Diagnostics -------------------------------------------------------------
+cr "Pattern-free genesis:" . cr
+"  status promoted        = " . "status-promoted" load . cr
+"  cooccur after genesis  = " . "cooccur-after-genesis" load
+                               . " (heldout excluded)" . cr
+"  discovered (0 evidence)= " . "discovered-0" load . cr
+cr "Threshold behavior:" . cr
+"  cooccur at 3           = " . "cooccur-3" load
+                               . " -> discovered " . "discovered-sub" load . cr
+"  cooccur at 5           = " . "cooccur-5" load
+                               . " -> discovered " . "discovered-at-5" load . cr
+cr "Discovered parasite under physics (8 edges stocked):" . cr
+"  e1: fired= " . "f1" load . "  edges left= " . "edges-after-1" load
+                               . "  status= " . "status-e1" load . cr
+"  e2: fired= " . "f2" load . "  m= " . "m2" load
+                               . "  status= " . "status-e2" load . cr
+"  e3: fired= " . "f3" load . "  status= " . "status-e3" load . cr
+cr
+
+\ ---- Assertions -----------------------------------------------------------------
+"status-promoted" load 'stable-active assert-eq
+
+\ H4/NEG-6: heldout dispatches contributed NOTHING.
+"cooccur-after-genesis" load 0 assert-eq
+
+\ NEG-1: zero evidence → zero bindings.
+"discovered-0" load 0 assert-eq
+
+\ NEG-2: sub-threshold → zero bindings.
+"cooccur-3" load 3 assert-eq
+"discovered-sub" load 0 assert-eq
+
+\ Threshold crossing at exactly 5 → discovery.  TWO bindings appear:
+\ the bi-edge pairs in the world form both 'edge and 'path2
+\ (a->b->a), so both counters crossed 5 on the same dispatch.
+"cooccur-5" load 5 assert-eq
+"discovered-at-5" load 2 assert-eq
+"triggers-now" load 2 assert-eq
+
+\ H3: the discovered parasite eats 8 edges in one tick, then
+\ starves: m = 0 - 2 - 1 = -3 → stale → decomposed.  Discovery
+\ was permissive; metabolism filtered.
+"edges-stock" load 8 assert-eq
+"f1" load 8 assert-eq
+"edges-after-1" load 0 assert-eq
+"status-e1" load 'stable-active assert-eq
+"f2" load 0 assert-eq
+"m2" load -3 assert-eq
+"status-e2" load 'stale assert-eq
+"f3" load 0 assert-eq
+"status-e3" load 'decomposed assert-eq
+
+cr "H2+H3+H4 CONFIRMED: no spurious discovery; threshold honest;" . cr
+cr "                    test chamber excluded; and the substrate's" . cr
+cr "                    own physics killed the bad discovery." . cr
+REPORT

@@ -806,7 +806,18 @@
     ;; 193. H2 no-perpetual-motion: (MARK drop) parasite drains 20
     ;;      edges (8/8/4), half-starves to 'stale at m=+1, starves to
     ;;      'decomposed, no resurrection on refill; NEG-3/5.  16 asserts.
-    ("193-closure-parasite-starves.6th"           16)))
+    ("193-closure-parasite-starves.6th"           16)
+    ;; --- Cycle 38 — Evolved Closure (discovered bindings) ---
+    ;; 194. H1: genesis itself is the discovery data; DETECT-BINDING-
+    ;;      AUTO finds (edge)+(path2) with zero hand-wiring; law
+    ;;      survives 3 post-cutoff epochs on discovered bindings;
+    ;;      idempotence + reset hygiene.  16 asserts.
+    ("194-evolved-closure.6th"                    16)
+    ;; 195. H2+H3+H4: pattern-free ecology → cooccur 0 (heldout
+    ;;      excluded) → no binding; sub-threshold 3 → none; at 5 →
+    ;;      2 bindings; discovered parasite eats 8 edges, starves,
+    ;;      decomposes.  17 asserts.
+    ("195-discovery-controls.6th"                 17)))
 
 (define (run-demo file)
   (define out
@@ -831,8 +842,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 2340
-                (format "cumulative ✓ count: ~a (expected 2340)" total-pass)))
+  (check-equal? total-pass 2373
+                (format "cumulative ✓ count: ~a (expected 2373)" total-pass)))
 
-(displayln (format "examples regression: ~a / 2340 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 2373 ✓ across ~a demos"
                    total-pass (length expected)))

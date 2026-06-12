@@ -50,6 +50,9 @@
          bump-cand-session!
          distinct-session-count
          make-cand-dispatch-hook
+         ;; cycle 38: binding discovery observation
+         current-binding-observation-suspended
+         binding-cooccur-of
          ;; cycle 25E energy accounting
          energy-conflict-of
          energy-search-of
@@ -224,6 +227,9 @@
   (hash-set! mem MEM_SUPPORT_CREDIT   (box '()))
   ;; cycle 37: pattern-trigger bindings (meta/triggers.rkt)
   (hash-set! mem '_triggers           (box '()))
+  ;; cycle 38: ecological co-occurrence counters for binding discovery
+  ;; alist ((cand-sym . pattern-sym) . count)
+  (hash-set! mem '_binding-cooccur    (box '()))
   (void))
 
 ;; In-place reset of every meta-runtime slot to its initial empty
@@ -278,6 +284,8 @@
   (reset-box! MEM_SUPPORT_CREDIT          '())
   ;; cycle 37: trigger bindings cleared on reset (NEG-7 hygiene)
   (reset-box! '_triggers                  '())
+  ;; cycle 38: co-occurrence counters cleared on reset
+  (reset-box! '_binding-cooccur           '())
   (void))
 
 ;; Allow tests / NEW-SESSION primitive to update session_id deterministically.
@@ -422,7 +430,10 @@
     ;; it mutates the world and dispatches laws, so it bumps
     ;; semantic-trace like any world operation (per PREDICTIONS-185
     ;; implementation contract item 3).
-    BIND-TRIGGER UNBIND-TRIGGER TRIGGER-COUNT))
+    BIND-TRIGGER UNBIND-TRIGGER TRIGGER-COUNT
+    ;; cycle 38: binding discovery (mining/inspection class, same
+    ;; as DETECT-MOTIF-AUTO)
+    DETECT-BINDING-AUTO BINDING-COOCCUR))
 
 (define (inspection-op? name)
   (and (memq name INSPECTION-OPS) #t))
@@ -648,12 +659,71 @@
 ;;     (expansion_length - 1) (each invocation saves L-1 ops vs
 ;;     inline expansion)
 ;;   - on any non-inspection top-level dispatch: bump E_semantic_trace
+;; ---- cycle 38: ecological co-occurrence observation -------------------
+;;
+;; On every top-level cand dispatch, check which v0 patterns are
+;; PRESENT in the world (early-exit scans, no consumption) and bump
+;; per-(cand, pattern) counters.  Mirrors DETECT-MOTIF-AUTO's
+;; epistemology at the binding level: observe coincidence, do not
+;; interpret.  Suspended during HELD-OUT-EVAL (test chamber is not
+;; ecology — see PREDICTIONS-186 test-chamber exclusion).
+
+(define current-binding-observation-suspended (make-parameter #f))
+
+(define (binding-cooccur-of e)
+  (hash-ref (env-memory e) '_binding-cooccur (box '())))
+
+(define (world-edge-present? s [self-only? #f])
+  (let loop ([a 1])
+    (cond
+      [(> a (substrate-node-count s)) #f]
+      [else
+       (define bs (substrate-outs s a))
+       (if (if self-only? (and (member a bs) #t) (pair? bs))
+           #t
+           (loop (+ a 1)))])))
+
+(define (world-path2-present? s)
+  (let loop ([a 1])
+    (cond
+      [(> a (substrate-node-count s)) #f]
+      [else
+       (define hit
+         (for*/first ([b (in-list (substrate-outs s a))]
+                      [c (in-list (substrate-outs s b))])
+           #t))
+       (or hit (loop (+ a 1)))])))
+
+(define (present-patterns s)
+  (append (if (world-edge-present? s)    '(edge)     '())
+          (if (world-path2-present? s)   '(path2)    '())
+          (if (world-edge-present? s #t) '(selfloop) '())))
+
+(define (bump-binding-cooccur! e cand-sym)
+  (define s (env-substrate e))
+  (when s
+    (define pats (present-patterns s))
+    (unless (null? pats)
+      (define b (binding-cooccur-of e))
+      (for ([p (in-list pats)])
+        (define key (cons cand-sym p))
+        (define hit (assoc key (unbox b)))
+        (set-box! b
+                  (cons (cons key (if hit (+ 1 (cdr hit)) 1))
+                        (if hit
+                            (filter (lambda (row) (not (equal? (car row) key)))
+                                    (unbox b))
+                            (unbox b))))))))
+
 (define (make-cand-dispatch-hook)
   (lambda (e name)
     (cond
       [(cand-name? name)
        (bump-use-count! e name)
        (bump-cand-session! e name (session-id-of e))
+       ;; cycle 38: ecological observation (skipped in test chamber)
+       (unless (current-binding-observation-suspended)
+         (bump-binding-cooccur! e name))
        (define save (- (expansion-length-of e name) 1))
        (when (> save 0)
          (define rb (energy-reuse-gain-of e))
