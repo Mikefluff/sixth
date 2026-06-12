@@ -22,6 +22,7 @@
 
 use prelude
 use debug
+use manifest
 
 cr "=== Demo 187 — NEG-8: BOOTSTRAP-LAW-HASH symmetry ===" . cr
 

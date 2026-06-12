@@ -7,12 +7,17 @@
 ;;   - "Bootstrap-reset helper (binding)" — 14-item full empty-state
 ;;   - "Identical bootstrap law-hash invariant (binding)"
 ;;
-;; Implementation strategy: bootstrap-reset! re-runs install-meta-runtime!
-;; (the single source of truth for empty meta-state) plus substrate-reset!
-;; plus removal of all cand_NNN entries from env-words.  This guarantees
-;; identical empty-state semantics between fresh-runtime init and reset:
-;; if a new meta-state field is added in a future cycle, install-meta-
-;; runtime! is the one place to update — and BOOTSTRAP-RESET inherits it.
+;; Implementation strategy: bootstrap-reset! calls reset-meta-state!
+;; (runtime.rkt) — an IN-PLACE reset that mutates existing boxes via
+;; set-box! / hash-clear! — plus substrate-reset! plus removal of all
+;; cand_NNN entries from env-words.  In-place (rather than the
+;; fresh-env factory the pre-reg suggested) because cli.rkt captures
+;; box identities in current-engine-trace / dispatch-hook parameters;
+;; replacing boxes would orphan those captures and create phantom
+;; cleanliness.  Deviation from PREDICTIONS-182 §bootstrap-reset is
+;; deliberate and documented here.  reset-meta-state! must stay
+;; field-parallel with install-meta-runtime! (audited 25/25 slots,
+;; 2026-06-12).
 ;;
 ;; BOOTSTRAP-LAW-HASH hashes over the frozen meta-protocol version tag
 ;; plus the sorted prim registry plus compute-law-hash (over env-words).
@@ -103,7 +108,6 @@
 ;;   energy-conflict     _energy-conflict > 0
 ;;   energy-search       _energy-search > 0
 ;;   energy-reuse-gain   _energy-reuse-gain > 0
-;;   energy-sem-trace    _energy-semantic-trace > 0
 ;;   epoch-counter       _epoch-counter > 0
 ;;
 ;; NOT axes (excluded from clean? — monitoring/per-run state):

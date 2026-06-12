@@ -189,10 +189,12 @@
   (hash-set! mem MEM_CAND_USE_COUNTS (box '()))   ; alist (sym . count)
   (hash-set! mem MEM_CAND_STATUS     (box '()))   ; alist (sym . status)
   (hash-set! mem MEM_CONTAMINATION   (box '()))   ; set of flags
-  ;; Session id is a deterministic digest of (env-words key set) at
-  ;; install time + a per-process gensym.  This avoids wall-clock /
-  ;; pid leakage into law-state but still gives distinct ids per run.
-  ;; The gensym() is per-call counter, not entropy from OS.
+  ;; Session id is a digest of the (env-words key set) at install
+  ;; time via equal-hash-code.  IN-PROCESS this is stable; ACROSS
+  ;; processes equal-hash-code is salted, so the id naturally
+  ;; differs per run without wall-clock / pid leakage.  (Audit
+  ;; 2026-06-12: earlier comment claimed a per-process gensym that
+  ;; never existed in the code — removed.)
   (hash-set! mem MEM_SESSION_ID
              (equal-hash-code
               (cons 'session
@@ -695,9 +697,16 @@
   ;; immutable, identical across processes.  Hash is sensitive only
   ;; to user-visible / runtime-induced words.
   ;;
-  ;; equal-hash-code is deterministic across Racket runs in 8.x
-  ;; (Racket's hash function does not use per-process salt for
-  ;; equal-hash-code on lists/strings/symbols).
+  ;; DETERMINISM SCOPE (corrected, audit 2026-06-12): equal-hash-code
+  ;; is deterministic WITHIN one process only.  Across processes it
+  ;; is salted — empirically verified: two runs of demo 187 produced
+  ;; different hash values for identical state.  Every current use
+  ;; (law-hash comparison, BOOTSTRAP-LAW-HASH pre-flight gate,
+  ;; PREFLIGHT-ARENA) is in-process, so this suffices.  Anything
+  ;; requiring CROSS-PROCESS stable hashes (cycle-27 cross-process
+  ;; coupling persistence, attestation of runtime state) must use
+  ;; SHA-256 over a canonical serialization instead.  Do not put
+  ;; these hash values into byte-identical repro checks.
   (define names (sort (hash-keys (env-words e)) symbol<?))
   (define pairs
     (for/list ([n (in-list names)])

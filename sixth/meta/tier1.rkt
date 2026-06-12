@@ -1352,10 +1352,28 @@
      (record-ledger! e (list 'heldout-eval cand-sym 0 'no-body))
      (push! e 0)]
     [else
+     ;; Infrastructure pre-check (audit 2026-06-12): every held-out
+     ;; substrate word must exist BEFORE the evaluation loop.  A
+     ;; missing manifest is an infrastructure error and must RAISE —
+     ;; not be silently absorbed as "0 wins" by the per-substrate
+     ;; handler below.  That silent absorption produced the false
+     ;; "universal no-promote" finding in RESULTS-184 (cand stuck
+     ;; at 'committed because heldout returned 0/6 with no signal
+     ;; that the substrates were simply never loaded).
+     (for ([sub-name (in-list HELD-OUT-SUBSTRATES)])
+       (unless (env-lookup-word e sub-name)
+         (raise (exn:fail:sixth
+                 (format "~a — HELD-OUT-EVAL: substrate word ~a not in dictionary; load it first (`use manifest`).  Infrastructure absence is not a cand failure."
+                         (format-srcloc (current-prim-srcloc)) sub-name)
+                 (current-continuation-marks)
+                 (current-prim-srcloc)))))
      (define expected-gain (* K_HELDOUT (max 0 (- exp-len 1))))
      (define wins
        (for/sum ([sub-name (in-list HELD-OUT-SUBSTRATES)])
          (substrate-RESET! e)
+         ;; This handler now catches only genuine cand-on-substrate
+         ;; failures (stack underflow inside cand body, etc.) —
+         ;; substrate presence was verified above.
          (with-handlers ([exn:fail? (lambda (_) 0)])
            (load-substrate-by-name! e sub-name)
            (define reuse-pre (unbox (energy-reuse-gain-of e)))

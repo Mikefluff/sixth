@@ -20,7 +20,17 @@
 
 use prelude
 use debug
+use manifest
 use harness/seeded-workload
+
+\ AUDIT NOTE 2026-06-12: the original version of this demo omitted
+\ `use manifest`.  Held-out substrate words were absent, HELD-OUT-
+\ EVAL silently returned 0/6 wins (per-substrate handler absorbed
+\ the infrastructure error), PROMOTE-STABLE quietly rejected, and
+\ every cand stalled at 'committed — invisible to both metrics.
+\ That produced the FALSE "universal no-promote" finding in the
+\ first RESULTS-184.  The engine now raises on missing substrates
+\ (tier1.rkt heldout pre-check), making this failure mode loud.
 
 cr "=== Demo 191 — Cycle 36R: fixed-physics genesis (3 seeds) ===" . cr
 
@@ -44,16 +54,18 @@ cr "Per-seed survivor metrics (under fixed canon physics):" . cr
                                        . " decomposed= " . "s3-decomposed" load . cr
 cr
 
-\ ---- Cross-seed liveness ----------------------------------------------
-\ At minimum: each seed completed without engine error and produced
-\ a defined promoted/decomposed pair.  The actual numerical values
-\ are forensic findings, recorded in RESULTS-184.
-"s1-promoted"    load 0 >= 1 assert-eq
-"s1-decomposed"  load 0 >= 1 assert-eq
-"s2-promoted"    load 0 >= 1 assert-eq
-"s2-decomposed"  load 0 >= 1 assert-eq
-"s3-promoted"    load 0 >= 1 assert-eq
-"s3-decomposed"  load 0 >= 1 assert-eq
+\ ---- Cross-seed outcome asserts ---------------------------------------
+\ Outcome #1 from the pre-reg's predicted triple (convergent shapes):
+\ productive motifs survive under fixed canon physics regardless of
+\ shape (L=2 dense and L=3 frequent both promote); the sparse-then-
+\ idle seed decomposes.  The physics discriminates on productivity,
+\ not on shape.
+"s1-promoted"    load 1 assert-eq    \ dense L=2 promotes
+"s1-decomposed"  load 0 assert-eq
+"s2-promoted"    load 1 assert-eq    \ frequent L=3 promotes
+"s2-decomposed"  load 0 assert-eq
+"s3-promoted"    load 0 assert-eq    \ sparse seed does NOT survive
+"s3-decomposed"  load 1 assert-eq    \ ...it decomposes (decay works)
 
 \ ---- Determinism check: same seed twice → same metrics ---------------
 \ NEG-1 (cycle 36R): seed determinism.

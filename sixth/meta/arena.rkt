@@ -54,10 +54,17 @@
 
 ;; ---- PROFILE-SET -----------------------------------------------------
 ;;
-;; Symbol → switch active profile.  Unlike with-profile (Racket
-;; dynamic-extent), this is a top-level mutation of current-profile's
-;; parameter cell.  Used in NEG demos and short-extent arena calls.
-;; PROFILE-RESET-CANON restores BASELINE.
+;; Symbol → switch active profile.  TOP-LEVEL-ONLY semantics
+;; (audit 2026-06-12): this mutates current-profile's parameter
+;; cell.  At top level the mutation persists process-wide until
+;; PROFILE-RESET-CANON — forgetting the reset leaks the profile
+;; into subsequent code (this exact leak produced the spurious
+;; "require >= 5" COMMIT failure: profile E was still active).
+;; Inside a parameterize extent (RUN-WORKLOAD-PROFILE /
+;; RUN-GENESIS-SEED / PREFLIGHT-ARENA) the mutation only affects
+;; that extent's binding and silently reverts on exit.  Do NOT
+;; call PROFILE-SET from workload words; demos must pair every
+;; top-level PROFILE-SET with PROFILE-RESET-CANON.
 (define (prim-profile-set e)
   (define sym (pop! e))
   (define p (lookup-profile-by-name sym))
@@ -165,16 +172,13 @@
                     wname)
             (current-continuation-marks)
             (current-prim-srcloc))))
-  ;; Use dynamic-wind to ensure baseline is restored even on
-  ;; workload exception (NEG-2: canon cannot stay mutated).
+  ;; parameterize alone guarantees baseline restoration on both
+  ;; normal exit and exception — no manual restore needed (a
+  ;; mutation inside the parameterize extent would only touch the
+  ;; extent's own binding anyway).
   (parameterize ([current-profile p])
     (bootstrap-reset! e)
-    (with-handlers ([exn:fail?
-                     (lambda (ex)
-                       (current-profile BASELINE-PROFILE)
-                       (raise ex))])
-      ;; Run the workload word body.
-      (run! (word-opcodes w) e)))
+    (run! (word-opcodes w) e))
   ;; After dynamic extent exits, current-profile is BASELINE again
   ;; via parameterize.  Now collect metrics from the post-workload
   ;; state — BEFORE another BOOTSTRAP-RESET would wipe them.
@@ -212,24 +216,27 @@
             (format "RUN-GENESIS-SEED: word ~v not defined" wname)
             (current-continuation-marks)
             (current-prim-srcloc))))
-  ;; Run under BASELINE always; no with-profile.
-  (current-profile BASELINE-PROFILE)
-  (bootstrap-reset! e)
-  (with-handlers ([exn:fail?
-                   (lambda (ex)
-                     (current-profile BASELINE-PROFILE)
-                     (raise ex))])
-    (run! (word-opcodes w) e))
-  ;; Forensic capture: count promoted and decomposed cands.
-  (define statuses (unbox (cand-status-of e)))
-  (define promoted-count
-    (for/sum ([row (in-list statuses)]
-              #:when (eq? (cdr row) 'stable-active))
-      1))
-  (define decomposed-count
-    (for/sum ([row (in-list statuses)]
-              #:when (memq (cdr row) '(decomposed rolled-back)))
-      1))
+  ;; Run under BASELINE always, via parameterize (consistent with
+  ;; RUN-WORKLOAD-PROFILE; no parameter-cell mutation).  Any prior
+  ;; PROFILE-SET leak is thereby neutralized for the run's extent,
+  ;; and restoration on exception is automatic.
+  (define-values (promoted-count decomposed-count)
+    (parameterize ([current-profile BASELINE-PROFILE])
+      (bootstrap-reset! e)
+      (run! (word-opcodes w) e)
+      ;; Forensic capture INSIDE the extent, before any later reset.
+      ;; promoted: metabolically alive promoted cands.
+      ;; decomposed: metabolism-driven decay ONLY ('decomposed).
+      ;; 'rolled-back is a discovery-time rejection, not metabolism
+      ;; (audit 2026-06-12) — counting it here inflated the metric.
+      (define statuses (unbox (cand-status-of e)))
+      (values
+       (for/sum ([row (in-list statuses)]
+                 #:when (eq? (cdr row) 'stable-active))
+         1)
+       (for/sum ([row (in-list statuses)]
+                 #:when (eq? (cdr row) 'decomposed))
+         1))))
   (push! e promoted-count)
   (push! e decomposed-count))
 

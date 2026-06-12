@@ -2,8 +2,10 @@
 
 ;; tests/examples-test.rkt — regression gate.
 ;;
-;; Runs each of the 98 emergence demos and asserts the cumulative
-;; ✓ pass count is unchanged at 1469.  Each demo's expected pass
+;; Runs every registered demo and asserts the cumulative ✓ pass
+;; count equals the gate constant in the final check-equal? at the
+;; bottom of this file (the table and the gate must stay in sync —
+;; update both when registering a demo).  Each demo's expected pass
 ;; count is listed in the `expected` table below; the sum must
 ;; equal the gate constant.  Counting ✓ marks printed during the
 ;; run (engine prints ✓ for every successful ASSERT, including

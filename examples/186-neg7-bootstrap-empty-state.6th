@@ -19,6 +19,7 @@
 
 use prelude
 use debug
+use manifest
 
 cr "=== Demo 186 — NEG-7: BOOTSTRAP-RESET full empty-state ===" . cr
 

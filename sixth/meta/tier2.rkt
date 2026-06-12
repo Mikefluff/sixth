@@ -33,7 +33,8 @@
          "../errors.rkt"
          "../vm.rkt"
          "runtime.rkt"
-         (only-in "tier1.rkt" prim-held-out-eval-real))
+         (only-in "tier1.rkt" prim-held-out-eval-real)
+         (only-in "profiles.rkt" profile-heldout-min-wins))
 
 (define (push! e v) (env-push! e v))
 (define (pop! e) (env-pop! e (current-prim-srcloc)))
@@ -115,7 +116,11 @@
 ;; runtime_overhead, relabel_invariance, challenge wins from
 ;; META-SEMANTICS §9 are DEFERRED to cycle 29 (substrate snapshot).
 
-(define STABLE_WINS_THRESHOLD 4)
+;; Cycle 36B audit follow-up: threshold routed through the active
+;; selection profile (baseline = 4).  Was the 9th unrouted
+;; hyperparameter — a profile varying heldout-min-wins would have
+;; silently had no effect.
+(define (STABLE_WINS_THRESHOLD) (profile-heldout-min-wins))
 (define HELD_OUT_TOTAL 6)
 
 (define (prim-promote-stable e)
@@ -151,7 +156,7 @@
      (prim-held-out-eval-real e)
      (define wins (env-pop! e (current-prim-srcloc)))
      (cond
-       [(>= wins STABLE_WINS_THRESHOLD)
+       [(>= wins (STABLE_WINS_THRESHOLD))
         ;; Promote to stable.
         (define sb (cand-status-of e))
         (set-box! sb (cons (cons c 'stable-active)
@@ -159,13 +164,13 @@
                                       (not (eq? (car entry) c)))
                                     (unbox sb))))
         (stub-event! e 'promote-stable-success
-                     (list c 'wins wins 'threshold STABLE_WINS_THRESHOLD
+                     (list c 'wins wins 'threshold (STABLE_WINS_THRESHOLD)
                            'of HELD_OUT_TOTAL))
         (push! e c)]
        [else
         (stub-event! e 'promote-stable-rejected
                      (list c 'heldout-insufficient
-                           'wins wins 'threshold STABLE_WINS_THRESHOLD))
+                           'wins wins 'threshold (STABLE_WINS_THRESHOLD)))
         (push! e 'rejected-heldout-insufficient)])]))
 
 ;; ---- RETEST ----------------------------------------------------------

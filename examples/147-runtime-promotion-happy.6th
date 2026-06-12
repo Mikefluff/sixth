@@ -14,6 +14,15 @@
 use prelude
 use debug
 use graph
+use manifest
+
+\ AUDIT UPDATE 2026-06-12: originally this demo asserted that
+\ HELD-OUT-EVAL "stub stays conservative (returns 0)" — cycle 26
+\ semantics.  Since cycle 28 HELD-OUT-EVAL is real, and this demo
+\ only kept passing because a missing manifest was silently
+\ absorbed as 0 wins.  The engine now raises on absent held-out
+\ substrates, so this demo loads the manifest and asserts the
+\ REAL held-out result for this motif (passes the gate).
 
 cr "=== Demo 147 — happy-path runtime promotion (cycle 26) ===" . cr
 cr
@@ -65,7 +74,7 @@ E-REUSE-GAIN                       "er" store
 \ FREEZE-CANDIDATE (stub passes for committed status).
 "c" load FREEZE-CANDIDATE          "frozen" store
 
-\ HELD-OUT-EVAL stub stays conservative (returns 0).
+\ HELD-OUT-EVAL (real since cycle 28): wins on held-out substrates.
 "c" load HELD-OUT-EVAL             "ho" store
 
 \ Diagnostics ==================================================
@@ -82,7 +91,7 @@ cr "Diagnostics:" . cr
 "  status post-commit  = " . "status-post-commit" load . cr
 "  commit returned     = " . "commit-result" load . cr
 "  freeze returned     = " . "frozen" load . cr
-"  held-out (stub)     = " . "ho" load . cr
+"  held-out (real)     = " . "ho" load . cr
 cr
 
 \ Derived predicates ===========================================
@@ -101,7 +110,7 @@ cr
 "status-post-commit" load 'committed = "committed?"     store
 "commit-result"    load "c" load = "commit-returned-cand?" store
 "frozen"           load "c" load = "freeze-returned-cand?" store
-"ho"               load 0 = "heldout-conservative?"     store
+"ho"               load 6 = "heldout-real-pass?"        store
 "status-pre-commit" load 'contaminated = "pre-commit-contaminated?" store
 \ pre-commit should NOT be contaminated — assert negation
 "pre-commit-contaminated?" load 0 = "pre-commit-clean?" store
@@ -118,7 +127,7 @@ cr
 "committed?"            load 1 assert-eq        \ c-7
 "freeze-returned-cand?" load 1 assert-eq        \ c-8 FREEZE stub passes
 "pre-commit-clean?"     load 1 assert-eq        \ c-9 no contamination
-"heldout-conservative?" load 1 assert-eq        \ c-11 HELD-OUT stub still 0
+"heldout-real-pass?"    load 1 assert-eq        \ c-11 (updated): real HELD-OUT 6/6
 \ c-10 (ledger has commit) and c-12 (regression green) verified
 \ externally by raco test 2NNN/2NNN.
 
