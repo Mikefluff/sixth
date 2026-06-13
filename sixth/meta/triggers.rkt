@@ -155,29 +155,37 @@
 
 (define (prim-world-tick e)
   ;; ( -- fired-count )
-  ;; Iterate bindings in binding order; each binding fires repeatedly
-  ;; while its pattern matches and the tick budget remains.  Only
-  ;; successful dispatches count toward fired/budget; consumed
-  ;; elements are never restored.
+  ;; Round-robin budget allocation (cycle 39A): in each round, each
+  ;; binding gets at most one firing attempt; rounds repeat until
+  ;; the budget is spent or a full round produced zero firings (no
+  ;; work left, or every remaining binding has lost stable-active
+  ;; status mid-tick).  This replaces cycle 37's greedy iteration
+  ;; (per PREDICTIONS-187 cycle 39A probe; see RESULTS-187).
+  ;;
+  ;; Cycle 37 honesty mechanics unchanged: status gate, honest
+  ;; counters via try-dispatch-cand!, consume-before-dispatch,
+  ;; consumed elements not restored on failure, attempts cap.
   (define s (env-substrate e))
   (define fired 0)
-  ;; attempts cap: a cand whose body repopulates its own pattern but
-  ;; then FAILS dispatch would otherwise loop forever (consume on
-  ;; failure keeps matching).  4× budget bounds total work per tick.
   (define attempts 0)
   (define MAX-ATTEMPTS (* 4 WORLD-TICK-BUDGET))
-  (for ([binding (in-list (unbox (triggers-of e)))])
-    (let fire-loop ()
-      (when (and (< fired WORLD-TICK-BUDGET)
-                 (< attempts MAX-ATTEMPTS)
-                 (stable-active? e (car binding)))
+  (let round-loop ()
+    (define round-fired 0)
+    (for ([binding (in-list (unbox (triggers-of e)))]
+          #:break (or (>= fired WORLD-TICK-BUDGET)
+                      (>= attempts MAX-ATTEMPTS)))
+      (when (stable-active? e (car binding))
         (define consume! (match-pattern s (cdr binding)))
         (when consume!
           (consume!)
           (set! attempts (+ attempts 1))
           (when (try-dispatch-cand! e (car binding))
-            (set! fired (+ fired 1)))
-          (fire-loop)))))
+            (set! fired (+ fired 1))
+            (set! round-fired (+ round-fired 1))))))
+    (when (and (> round-fired 0)
+               (< fired WORLD-TICK-BUDGET)
+               (< attempts MAX-ATTEMPTS))
+      (round-loop)))
   (define lb (ledger-of e))
   (set-box! lb (cons (list 'world-tick fired) (unbox lb)))
   (push! e fired))

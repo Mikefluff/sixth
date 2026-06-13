@@ -125,11 +125,20 @@ cr
 "discovered-at-5" load 2 assert-eq
 "triggers-now" load 2 assert-eq
 
-\ H3: the discovered parasite eats 8 edges in one tick, then
-\ starves: m = 0 - 2 - 1 = -3 → stale → decomposed.  Discovery
-\ was permissive; metabolism filtered.
+\ H3: the discovered parasite drains its 8-edge stock in one tick,
+\ then starves: m = 0 - 2 - 1 = -3 → stale → decomposed.
+\ Discovery was permissive; metabolism filtered.
+\
+\ Cycle 39A note: under round-robin the parasite has TWO active
+\ bindings ('edge, 'path2) instead of one effective one.  Per
+\ round: 'edge consumes 1 edge, 'path2 consumes 2 edges; both
+\ body MARK drop produces zero edges.  Three rounds drain
+\ 3 + 6 = 9 edges from the 8 stocked (the third 'path2 has no
+\ pair to match and the third 'edge consumes the last one); fired
+\ caps at 6 successful dispatches (not 8 — budget undershoot is a
+\ real consequence of the parasite's pattern voracity).
 "edges-stock" load 8 assert-eq
-"f1" load 8 assert-eq
+"f1" load 6 assert-eq
 "edges-after-1" load 0 assert-eq
 "status-e1" load 'stable-active assert-eq
 "f2" load 0 assert-eq
