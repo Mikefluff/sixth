@@ -121,6 +121,58 @@ Consequences:
   (better served first by Racket places across CPU cores) or the
   libtorch bridge demos (torch MPS backend, already available).
 
+## Limitation: monoclone replication (post-publication note)
+
+The scaling series above shows EXACTLY +16 nodes / +8 edges per
+epoch over four orders of magnitude.  This is suspicious, and it
+is suspicious for a reason: the long-run is NOT a rich evolution,
+it is a counter incrementing in disguise.
+
+Mechanism (verified by tracing the demo):
+
+1. Two bindings were discovered: `(cand_001, 'edge)` and
+   `(cand_001, 'path2)`, in that order (the order discovery
+   registered them).
+2. WORLD-TICK iterates bindings in order; each binding fires
+   repeatedly while its pattern matches and the per-tick budget
+   has not been spent.
+3. The first binding therefore consumes the ENTIRE budget=8 every
+   tick.  The second binding never fires — not once, across 10K
+   epochs.
+4. The active law's body, `MARK MARK bi-edge`, monotonically adds
+   two fresh nodes and one bi-edge pair per firing; consumption
+   removes one edge.  Net: +2 nodes, +1 edge per firing.  Times 8
+   firings/tick: exactly +16 nodes, +8 edges.  Period.
+
+What cycle 38 demonstrated, accurately rephrased:
+
+- A binding can be DISCOVERED.  Yes.
+- A discovered binding can sustain a law's metabolism after
+  external cutoff.  Yes.
+- The discovered closure represents rich emergent behavior.  **No.**
+  It is a stable replication of one pattern by one law forever.
+  Monoclonal.
+
+This does not invalidate the closure claim — survival on
+discovered bindings is a real machine-verifiable property — but
+it bounds it.  The headline "first closure that was FOUND, not
+built" stands.  The implied step toward rich evolution does not.
+
+Two distinct mechanisms collaborate to produce the monoclone:
+greedy budget allocation in WORLD-TICK (one binding eats the
+ration), and a homogeneous law body that creates fresh structure
+disjoint from existing structure (firings never interfere).  The
+first is an engineering choice masquerading as physics; the
+second is a property of the specific law that promoted, not of
+the substrate.
+
+Disentangled in PREDICTIONS-187 / RESULTS-187 (round-robin probe,
+cycle 39A): if greedy is the cause, round-robin breaks linearity;
+if the law's body is the cause, round-robin only changes the
+ratio.  The probe distinguishes.
+
+---
+
 ## NEG coverage — all 7
 
 | NEG | covered by |
