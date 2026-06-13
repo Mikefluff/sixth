@@ -817,7 +817,13 @@
     ;;      excluded) → no binding; sub-threshold 3 → none; at 5 →
     ;;      2 bindings; discovered parasite eats 8 edges, starves,
     ;;      decomposes.  17 asserts.
-    ("195-discovery-controls.6th"                 17)))
+    ("195-discovery-controls.6th"                 17)
+    ;; --- Cycle 39B — Multi-Law Ecosystem ---
+    ;; 196. Two interfering laws (A: bi-edge / +1 edge per firing,
+    ;;      B: EDGE+ / -1 edge per firing); round-robin 4/4 -> OUT-EQ
+    ;;      with edges = 2 (seed) across all 8 epochs; both stable-
+    ;;      active; nodes track budget (+16/epoch).  25 asserts.
+    ("196-multilaw-ecosystem.6th"                 25)))
 
 (define (run-demo file)
   (define out
@@ -842,8 +848,8 @@
     passes))
 
 (test-case "cumulative regression gate"
-  (check-equal? total-pass 2373
-                (format "cumulative ✓ count: ~a (expected 2373)" total-pass)))
+  (check-equal? total-pass 2398
+                (format "cumulative ✓ count: ~a (expected 2398)" total-pass)))
 
-(displayln (format "examples regression: ~a / 2373 ✓ across ~a demos"
+(displayln (format "examples regression: ~a / 2398 ✓ across ~a demos"
                    total-pass (length expected)))

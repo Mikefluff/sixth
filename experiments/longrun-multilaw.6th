@@ -1,0 +1,78 @@
+\ experiments/longrun-multilaw.6th
+\ Long-run probe of the cycle 39B two-law ecosystem.  Same
+\ construction as demo 196, just longer.  Reports edges at
+\ checkpoints to confirm OUT-EQ persistence.
+\
+\ Manual; not in regression suite.
+\   racket -l sixth/cli -- -D epochs=500 run experiments/longrun-multilaw.6th
+
+use prelude
+use debug
+use graph
+use manifest
+
+BOOTSTRAP-RESET
+
+\ Phase 1: promote A
+MARK MARK bi-edge NODES drop
+MARK MARK bi-edge NODES drop
+MARK MARK bi-edge NODES drop
+MARK MARK bi-edge
+DETECT-MOTIF-AUTO "mA" store
+"mA" load SHADOW-CHECK drop
+"mA" load INDUCE-RUNTIME "cA" store
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"cA" load COMMIT-PRIMITIVE drop
+"cA" load HELD-OUT-EVAL drop
+"cA" load PROMOTE-STABLE drop
+
+\ Phase 2: promote B (no NEW-EPOCH between phases — see demo 196 note)
+RESET
+MARK MARK EDGE+
+MARK MARK EDGE+
+MARK MARK EDGE+
+MARK MARK EDGE+
+DETECT-MOTIF-AUTO "mB" store
+"mB" load SHADOW-CHECK drop
+"mB" load INDUCE-RUNTIME "cB" store
+cand_002
+NEW-SESSION cand_002 cand_002
+NEW-SESSION cand_002 cand_002
+"cB" load COMMIT-PRIMITIVE drop
+"cB" load HELD-OUT-EVAL drop
+"cB" load PROMOTE-STABLE drop
+
+\ Hand-wire intended bindings (cycle 37 mechanic, labeled)
+DETECT-BINDING-AUTO drop
+'cand_001 UNBIND-TRIGGER
+'cand_002 UNBIND-TRIGGER
+'edge  'cand_001 BIND-TRIGGER
+'path2 'cand_002 BIND-TRIGGER
+
+\ Seed
+RESET
+MARK MARK bi-edge
+
+: epoch-block          \ ( n -- )
+  dup 0 > if
+    WORLD-TICK drop
+    NEW-EPOCH
+    1 -
+    epoch-block
+  else
+    drop
+  then ;
+
+"epochs" load dup 0 = if drop 500 then "n" store
+"n" load epoch-block
+
+cr "epochs= " . "n" load .
+"  statusA= " . 'cand_001 CAND-STATUS .
+"  statusB= " . 'cand_002 CAND-STATUS .
+"  nodes= " . NODES .
+"  edges= " . EDGES . cr
+'cand_001 CAND-STATUS 'stable-active = 1 assert-eq
+'cand_002 CAND-STATUS 'stable-active = 1 assert-eq
+REPORT

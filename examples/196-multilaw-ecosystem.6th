@@ -1,0 +1,267 @@
+\ examples/196-multilaw-ecosystem.6th
+\ Cycle 39B — multi-law ecosystem with interfering bodies.
+\
+\ Two laws promoted through the standard canon pipeline:
+\   A: (MARK MARK bi-edge), L=3, body creates +2 nodes +2 edges
+\   B: (MARK MARK EDGE+),   L=3, body creates +2 nodes +1 edge
+\
+\ Bindings (hand-wired fallback per pre-reg §"Construction"):
+\   A bound to 'edge   → per firing: consume 1 edge, body +2 edges
+\                        = net +1 edge, +2 nodes
+\   B bound to 'path2  → per firing: consume 2 edges, body +1 edge
+\                        = net -1 edge, +2 nodes
+\
+\ Round-robin 4 A + 4 B per full tick → net 0 edges, +16 nodes —
+\ IF both can match every round.  But every firing changes the
+\ world, so what one fires affects whether the other still has a
+\ match.  The control loop has gain.
+\
+\ The pre-reg classifies outcome as one of: OUT-OSC / OUT-EQ /
+\ OUT-STARVE / OUT-SUICIDE.  We log per-epoch (fired_A, fired_B,
+\ nodes, edges) and report which.
+\
+\ Pre-reg: examples/PREDICTIONS-188-cycle39B-multilaw-ecosystem.md
+
+use prelude
+use debug
+use graph
+use manifest
+
+cr "=== Demo 196 — cycle 39B: two-law ecosystem ===" . cr
+
+BOOTSTRAP-RESET
+
+\ ---- Phase 1: promote A (MARK MARK bi-edge) ----------------------------
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+NODES drop
+MARK MARK bi-edge
+DETECT-MOTIF-AUTO "mA" store
+"mA" load SHADOW-CHECK drop
+"mA" load INDUCE-RUNTIME "cA" store
+cand_001
+NEW-SESSION cand_001 cand_001
+NEW-SESSION cand_001 cand_001
+"cA" load COMMIT-PRIMITIVE drop
+"cA" load HELD-OUT-EVAL drop
+"cA" load PROMOTE-STABLE drop
+"cA" load CAND-STATUS "statusA-promoted" store
+
+\ ---- Phase 2: promote B (MARK MARK EDGE+) ------------------------------
+\ No NEW-EPOCH between phases: cand_001 has only its coupling
+\ reuse on the books and one idle epoch would push its momentum
+\ negative before WORLD-TICK could feed it.
+RESET
+MARK MARK EDGE+
+MARK MARK EDGE+
+MARK MARK EDGE+
+MARK MARK EDGE+
+DETECT-MOTIF-AUTO "mB" store
+"mB" load SHADOW-CHECK drop
+"mB" load INDUCE-RUNTIME "cB" store
+cand_002
+NEW-SESSION cand_002 cand_002
+NEW-SESSION cand_002 cand_002
+"cB" load COMMIT-PRIMITIVE drop
+"cB" load HELD-OUT-EVAL drop
+"cB" load PROMOTE-STABLE drop
+"cB" load CAND-STATUS "statusB-promoted" store
+
+\ ---- Discovery report (mining didn't necessarily find what we want) ----
+DETECT-BINDING-AUTO "discovered-mining" store
+TRIGGER-COUNT "triggers-after-mining" store
+'edge  'cand_001 BINDING-COOCCUR "cooc-A-edge"  store
+'path2 'cand_001 BINDING-COOCCUR "cooc-A-path2" store
+'edge  'cand_002 BINDING-COOCCUR "cooc-B-edge"  store
+'path2 'cand_002 BINDING-COOCCUR "cooc-B-path2" store
+
+\ ---- Hand-wire intended bindings (cycle 37 mechanic, labeled) ----------
+\ We unbind whatever discovery may have proposed and bind exactly
+\ what the pre-reg specifies, so the dynamics question is answered
+\ independently of the mining question (per pre-reg §"Fallback").
+'cand_001 UNBIND-TRIGGER
+'cand_002 UNBIND-TRIGGER
+'edge  'cand_001 BIND-TRIGGER
+'path2 'cand_002 BIND-TRIGGER
+TRIGGER-COUNT "triggers-final" store
+
+\ ---- Seed minimal: one bi-edge gives both 'edge AND 'path2 -------------
+RESET
+MARK MARK bi-edge
+NODES "n-seed" store
+EDGES "e-seed" store
+
+\ ---- 8-epoch observation ------------------------------------------------
+\ Capture per-epoch firings using CAND-USES delta.
+'cand_001 CAND-USES "uA0" store
+'cand_002 CAND-USES "uB0" store
+
+WORLD-TICK drop
+'cand_001 CAND-USES "uA1" store
+'cand_002 CAND-USES "uB1" store
+NODES "n1" store EDGES "e1" store
+NEW-EPOCH
+'cand_001 CAND-STATUS "sA1" store
+'cand_002 CAND-STATUS "sB1" store
+
+WORLD-TICK drop
+'cand_001 CAND-USES "uA2" store
+'cand_002 CAND-USES "uB2" store
+NODES "n2" store EDGES "e2" store
+NEW-EPOCH
+'cand_001 CAND-STATUS "sA2" store
+'cand_002 CAND-STATUS "sB2" store
+
+WORLD-TICK drop
+'cand_001 CAND-USES "uA3" store
+'cand_002 CAND-USES "uB3" store
+NODES "n3" store EDGES "e3" store
+NEW-EPOCH
+'cand_001 CAND-STATUS "sA3" store
+'cand_002 CAND-STATUS "sB3" store
+
+WORLD-TICK drop
+'cand_001 CAND-USES "uA4" store
+'cand_002 CAND-USES "uB4" store
+NODES "n4" store EDGES "e4" store
+NEW-EPOCH
+'cand_001 CAND-STATUS "sA4" store
+'cand_002 CAND-STATUS "sB4" store
+
+WORLD-TICK drop
+'cand_001 CAND-USES "uA5" store
+'cand_002 CAND-USES "uB5" store
+NODES "n5" store EDGES "e5" store
+NEW-EPOCH
+'cand_001 CAND-STATUS "sA5" store
+'cand_002 CAND-STATUS "sB5" store
+
+WORLD-TICK drop
+'cand_001 CAND-USES "uA6" store
+'cand_002 CAND-USES "uB6" store
+NODES "n6" store EDGES "e6" store
+NEW-EPOCH
+'cand_001 CAND-STATUS "sA6" store
+'cand_002 CAND-STATUS "sB6" store
+
+WORLD-TICK drop
+'cand_001 CAND-USES "uA7" store
+'cand_002 CAND-USES "uB7" store
+NODES "n7" store EDGES "e7" store
+NEW-EPOCH
+'cand_001 CAND-STATUS "sA7" store
+'cand_002 CAND-STATUS "sB7" store
+
+WORLD-TICK drop
+'cand_001 CAND-USES "uA8" store
+'cand_002 CAND-USES "uB8" store
+NODES "n8" store EDGES "e8" store
+NEW-EPOCH
+'cand_001 CAND-STATUS "sA8" store
+'cand_002 CAND-STATUS "sB8" store
+
+\ ---- Diagnostics --------------------------------------------------------
+cr "Promotion:" . cr
+"  A status = " . "statusA-promoted" load . " (motif " . "mA" load . ")" . cr
+"  B status = " . "statusB-promoted" load . " (motif " . "mB" load . ")" . cr
+cr "Mining outcome (informational; we hand-wire below):" . cr
+"  discovered           = " . "discovered-mining" load . cr
+"  cooccur(A,edge)      = " . "cooc-A-edge" load . cr
+"  cooccur(A,path2)     = " . "cooc-A-path2" load . cr
+"  cooccur(B,edge)      = " . "cooc-B-edge" load . cr
+"  cooccur(B,path2)     = " . "cooc-B-path2" load . cr
+"  triggers after mining= " . "triggers-after-mining" load . cr
+cr "Hand-wired bindings (per pre-reg fallback):" . cr
+"  bindings final       = " . "triggers-final" load
+                              . " (expected 2: A->edge, B->path2)" . cr
+cr "Seed:" . cr
+"  nodes = " . "n-seed" load . "  edges = " . "e-seed" load . cr
+cr "Eight post-genesis epochs (round-robin physics):" . cr
+"  ep  fA  fB   nodes  edges    statusA           statusB" . cr
+"   1  " . "uA1" load "uA0" load - . "   " . "uB1" load "uB0" load - .
+       "   " . "n1" load . "   " . "e1" load
+       . "    " . "sA1" load . "      " . "sB1" load . cr
+"   2  " . "uA2" load "uA1" load - . "   " . "uB2" load "uB1" load - .
+       "   " . "n2" load . "   " . "e2" load
+       . "    " . "sA2" load . "      " . "sB2" load . cr
+"   3  " . "uA3" load "uA2" load - . "   " . "uB3" load "uB2" load - .
+       "   " . "n3" load . "   " . "e3" load
+       . "    " . "sA3" load . "      " . "sB3" load . cr
+"   4  " . "uA4" load "uA3" load - . "   " . "uB4" load "uB3" load - .
+       "   " . "n4" load . "   " . "e4" load
+       . "    " . "sA4" load . "      " . "sB4" load . cr
+"   5  " . "uA5" load "uA4" load - . "   " . "uB5" load "uB4" load - .
+       "   " . "n5" load . "   " . "e5" load
+       . "    " . "sA5" load . "      " . "sB5" load . cr
+"   6  " . "uA6" load "uA5" load - . "   " . "uB6" load "uB5" load - .
+       "   " . "n6" load . "   " . "e6" load
+       . "    " . "sA6" load . "      " . "sB6" load . cr
+"   7  " . "uA7" load "uA6" load - . "   " . "uB7" load "uB6" load - .
+       "   " . "n7" load . "   " . "e7" load
+       . "    " . "sA7" load . "      " . "sB7" load . cr
+"   8  " . "uA8" load "uA7" load - . "   " . "uB8" load "uB7" load - .
+       "   " . "n8" load . "   " . "e8" load
+       . "    " . "sA8" load . "      " . "sB8" load . cr
+cr
+
+\ ---- Assertions ---------------------------------------------------------
+\ H1: both laws promoted through standard canon pipeline.
+"statusA-promoted" load 'stable-active assert-eq
+"statusB-promoted" load 'stable-active assert-eq
+
+\ Hand-wired bindings as specified.
+"triggers-final" load 2 assert-eq
+
+\ Seed state matches design.
+"n-seed" load 2 assert-eq
+"e-seed" load 2 assert-eq
+
+\ H3: node growth tracks budget — bodies emit fresh nodes constantly.
+\ Each tick: fired_A + fired_B firings * 2 nodes per firing.  Will not
+\ assert exact equality (depends on outcome class) but: every epoch's
+\ node count is >= previous.  We check final >= seed.
+"n8" load "n-seed" load >= 1 assert-eq
+
+\ NEG-1: total per tick <= budget=8.  Spot-check first three.
+"uA1" load "uA0" load - "uB1" load "uB0" load - + 8 <= 1 assert-eq
+"uA2" load "uA1" load - "uB2" load "uB1" load - + 8 <= 1 assert-eq
+"uA3" load "uA2" load - "uB3" load "uB2" load - + 8 <= 1 assert-eq
+
+\ ---- Outcome classification (OUT-EQ confirmed) -----------------------
+\ Edges stay at 2 every epoch — the seed quantity — because each
+\ tick A nets +4 edges and B nets -4 edges (4 firings each, A +1
+\ per firing, B -1 per firing).  Both laws stable-active throughout.
+\ Node growth tracks budget exactly: +16 per epoch (8 firings * 2
+\ fresh nodes per body).
+
+\ Edges constant at 2 across all 8 epochs.
+"e1" load 2 assert-eq
+"e2" load 2 assert-eq
+"e3" load 2 assert-eq
+"e4" load 2 assert-eq
+"e5" load 2 assert-eq
+"e6" load 2 assert-eq
+"e7" load 2 assert-eq
+"e8" load 2 assert-eq
+
+\ Both laws stable-active at the final epoch.
+"sA8" load 'stable-active assert-eq
+"sB8" load 'stable-active assert-eq
+
+\ Firing split 4/4 every epoch.
+"uA1" load "uA0" load - 4 assert-eq
+"uB1" load "uB0" load - 4 assert-eq
+"uA8" load "uA7" load - 4 assert-eq
+"uB8" load "uB7" load - 4 assert-eq
+
+\ Node growth tracks budget: +16 per epoch.
+"n1" load 18 assert-eq
+"n8" load 130 assert-eq
+
+cr "Cycle 39B observations recorded.  See RESULTS-188 for the" . cr
+cr "classification of the outcome class (OUT-OSC/EQ/STARVE/SUICIDE)" . cr
+cr "based on the per-epoch trace above." . cr
+REPORT
